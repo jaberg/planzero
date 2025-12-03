@@ -1,0 +1,39 @@
+target = ${PROJECTNAME}
+
+.build: Dockerfile
+	docker build -t $(target) .
+	touch .build
+
+bash: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		bash
+
+jupyter: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-p 127.0.0.1:8013:8013 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
+
+test: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest .
+
+
+local: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-p 127.0.0.1:8012:8012 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		fastapi dev --port=8012 --host=0.0.0.0
+
+clean:
+	rm .build
