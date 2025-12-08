@@ -1,0 +1,146 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+    {% if error_text %}
+    <p>Sorry! We don't have that page yet, here's the overall IPCC findings again</p>
+    {% endif %}
+
+<section class="post">
+    <header class="major">
+        <h1>IPCC Sectors</h1>
+        <p>What are Canada's emissions and where are they coming from?
+        Canada maintains both national and provincial greenhouse gas inventories
+        and reports them to the United Nations every year.
+        Click on the graph to learn more about the
+        different sources of emissions in Canada.
+        </p>
+    </header>
+
+<div id="mychart" style="width: 800px; height: 600px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('mychart'));
+var option;
+
+option = {
+  title: {
+      text: 'Canadian Emissions by IPCC Sector',
+      subtext: 'Click on data points to explore sectors', // Optional subtitle
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Year', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+      data: {{ ipcc_canada.echart_years() }},
+  },
+  yAxis: {
+      name: 'Emissions (Mt CO2e)', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+      {% for series_elem in ipcc_canada.echart_series_all_Mt(only_positive=True) %}
+      {{ json.dumps(series_elem) | safe }},
+      {% endfor %}
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    formatter: '{a}',
+  },
+};
+
+option && myChart.setOption(option);
+
+// 3. Add the Click Listener
+myChart.on('click', function(params) {
+  // Console log to see what data is available
+  console.log(params);
+
+  // params.data contains the array for that point: [x, y, url]
+  // So the URL is at index 2
+  var url = params.data.url;
+
+  if (url) {
+    // Open in new tab
+    //window.open(url, '_blank');
+
+    // OR open in same tab:
+    window.location.href = url;
+  }
+});
+
+
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+
+</script>
+
+    <div class="overflow-x-auto">
+            <!-- IMPORTANT: We start with table-layout fixed applied in CSS, and override it temporarily in JS -->
+            <table id="gemini-sort-data-table" class="w-full divide-y divide-gray-200 border border-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <!-- Columns: 0, 1, 2, 3 -->
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Non-Aggregate Category
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Min (Mt)
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Max (Mt)
+                        </th>
+
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Latest (Mt)
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Have Page
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <!-- Sample Data Rows (Note the 'Name of Employee' is long to test auto-sizing) -->
+                    {% for series_elem in ipcc_canada.echart_series_all_Mt() %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {% if have_page_for_catpath(series_elem.catpath) %}
+                            <a href="{{url_for_catpath(series_elem.catpath) }}">{{series_elem.catpath}}</a>
+                            {% else %}
+                            {{series_elem.name}}
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{"{:.2f}".format(min(series_elem.list_raw_data))}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{"{:.2f}".format(max(series_elem.list_raw_data))}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{"{:.2f}".format(series_elem.data[-1]['value'])}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {% if have_page_for_catpath(series_elem.catpath) %}
+                            <a href="{{url_for_catpath(series_elem.catpath) }}">Y</a>
+                            {% else %}
+                            N
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+</section>
+</div>
+
+{% include "post-main.html" %}

@@ -1,0 +1,65 @@
+<!DOCTYPE HTML>
+<!--
+	Massively by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>PlanZero</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+        <!-- Don't load Tailwind CSS for modern styling and responsiveness, b/c it interferes too much with the html5up template -->
+        <!--<script src="https://cdn.tailwindcss.com"></script>-->
+		<link rel="stylesheet" href="/assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="/assets/css/noscript.css" /></noscript>
+        <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+        <style>
+        /* Custom styles for the sort indicators */
+        .sort-indicator {
+            margin-left: 0.5rem;
+            display: inline-block;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        /* Styles for ascending and descending states */
+        .th-sorted-asc .sort-indicator {
+            transform: rotate(0deg);
+        }
+        .th-sorted-desc .sort-indicator {
+            transform: rotate(180deg);
+        }
+
+        /* Make header cells look clickable */
+        .sortable-th {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .sortable-th:hover {
+            background-color: #f3f4f6; /* Light gray on hover */
+        }
+    </style>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+                        <a href="/" class="logo"><b>Plan Zero</b></a>
+					</header>
+
+				<!-- Nav -->
+					<nav id="nav">
+						<ul class="links">
+							<li {% if active_tab == "blog" %}class="active" {% endif %}><a href="/">Blog</a></li>
+                            <li {% if active_tab == "ipcc_sectors" %}class="active" {% endif %}><a href="/ipcc-sectors/">IPCC Sectors</a></li>
+                            <li {% if active_tab == "strategies" %}class="active" {% endif %}><a href="/strategies/">Strategies</a></li>
+						</ul>
+						<ul class="icons">
+							<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+						</ul>
+					</nav>
+

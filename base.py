@@ -1,6 +1,11 @@
+# TODO:
+# For more accurate climate simulation, check out
+# https://climate-assessment.readthedocs.io/en/latest/index.html
+
 import bisect
 import contextlib
 import heapq
+from io import StringIO
 import math
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -26,6 +31,8 @@ u = ureg
 #       to avoid floating point rounding errors where years are supposed to line up
 #       Same for months, maybe weeks.
 
+
+import stakeholders
 
 class SparseTimeSeries(object):
 
@@ -442,7 +449,7 @@ class GlobalHeatEnergy(SparseTimeSeries):
 
 class AtmosphericChemistry(Project):
     methane_decay_timescale = 10.0
-    methane_GWP = 28.0
+    methane_GWP = 28.0 # global warming potential, for CO2e calculation
     molar_mass_CH4 = 16.0
     molar_mass_CO2 = 44.0
 
@@ -461,6 +468,7 @@ class AtmosphericChemistry(Project):
         with state.defining(self) as ctx:
             ctx.Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kiloton)
             ctx.Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kiloton)
 
             ctx.Atmospheric_CO2_conc = SparseTimeSeries(unit=u.ppm, default_value=400.0 * u.ppm)
             ctx.Atmospheric_CH4_conc = SparseTimeSeries(unit=u.ppb, default_value=1775.0 * u.ppb)
@@ -490,6 +498,7 @@ class AtmosphericChemistry(Project):
 
         current.Annual_Emitted_CO2_mass = annual_CO2_mass
         current.Annual_Emitted_CH4_mass = annual_CH4_mass
+        current.Annual_Emitted_CO2e_mass = annual_CO2_mass + self.methane_GWP * annual_CH4_mass
 
         # apply an atmospheric climate model
         annual_CO2_mass_atmospheric = annual_CO2_mass * .45 # Gemini claimed a lot gets absorbed by sinks, keep this much
@@ -554,10 +563,10 @@ class AtmosphericChemistry(Project):
             self.stepsize # integrate over duration of stepsize aka 1 year
             * (current.DeltaF_forcing + current.DeltaF_feedback))
 
-        specific_heat_of_top_100m_of_ocean = 151200.0 * u.exajoule / u.kelvin
+        specific_heat_of_top_200m_of_ocean = 151200.0 * u.exajoule / u.kelvin * 2
         current.Ocean_Temperature_Anomaly += (
             current.Heat_Energy_imbalance
-            / (specific_heat_of_top_100m_of_ocean * 2))
+            / (specific_heat_of_top_200m_of_ocean))
 
         current.Cumulative_Heat_Energy += current.Heat_Energy_imbalance
 
@@ -586,7 +595,10 @@ class GeometricHumanPopulationForecast(Project):
 class GeometricBovinePopulationForecast(Project):
 
     # 70% of emissions remain, according to https://www.helsinki.fi/en/news/climate-change/new-feed-additive-can-significantly-reduce-methane-emissions-generated-ruminants-already-dairy-farm
-    bovaer_methane_reduction_fraction = .7
+    # https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html
+    bovaer_methane_reduction_fraction = .625
+    # TODO: dairy cattle average is .7
+    # TODO: beef cattle reduction is greater, multiplier should be .55
 
     methane_per_head_per_year = 220 * u.pounds / u.cattle
     # https://www.ucdavis.edu/food/news/making-cattle-more-sustainable
@@ -620,7 +632,7 @@ class GeometricBovinePopulationForecast(Project):
         if state.t_now >= 2026 * u.years:
             current.bovine_population = (
                 max(
-                    13_000_000 * .992 ** (state.t_now.to('years').magnitude - 2010),
+                    12_500_000 * .995 ** (state.t_now.to('years').magnitude - 2010),
                     2_000_000
                    ) * u.cattle)
 
@@ -644,8 +656,9 @@ class NationalBovaerMandate(Project):
 
     bovaer_price = 150 * u.CAD / u.cattle / u.year
 
-    def __init__(self, peak_year=2035 * u.year, shoulder_years=5 * u.years):
+    def __init__(self, idea=None, peak_year=2035 * u.year, shoulder_years=5 * u.years):
         super().__init__()
+        self.idea = idea
         self.peak_year = peak_year
         self.shoulder_years = shoulder_years
         self.stepsize = 1.0 * u.years
@@ -659,13 +672,13 @@ class NationalBovaerMandate(Project):
             ctx.bovine_population_fraction_on_bovaer = SparseTimeSeries(
                 default_value=0 * u.dimensionless)
             setattr(ctx, self.after_tax_cashflow_name, SparseTimeSeries(
-                default_value=0 * u.CAD))
+                default_value=0 * u.MCAD))
         return state.t_now
 
     def step(self, state, current):
         zval = (
             (state.t_now - self.peak_year)
-            / (self.shoulder_years / 2.0))
+            / self.shoulder_years)
         current.bovine_population_fraction_on_bovaer = torch.sigmoid(
             zval.to('dimensionless').magnitude) * u.dimensionless
             
@@ -676,6 +689,147 @@ class NationalBovaerMandate(Project):
             * self.bovaer_price * self.stepsize)
 
         return state.t_now + self.stepsize
+
+    def project_page_vision(self): 
+        return f"""
+        <a href="https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html">Bovaer</a>
+        is a feed supplement that reduces the methane produced by bovine digestion.
+        A national Bovaer mandate would phase in the use of Bovaer nation-wide for all cattle.
+        There is no obvious economic benefit (or harm) to farmers for using Bovaer, so
+        it would be appropriate for a governing body to pay for the additive and drive adoption through regulation.
+        """
+
+    def project_page_graphs(self):
+        rval = []
+
+        descr = f"""
+        This analysis uses the following place-holder projection of the national bovine herd size, based simply on the extrapolation of recent decline.
+        """
+        rval.append(dict(
+            sts_key='bovine_population',
+            t_unit='years',
+            descr=descr))
+
+        descr = f"""
+        This project supposes a sigmoidal adoption curve of Bovaer, centered at year {self.peak_year.to('years').magnitude}.
+        """
+        rval.append(dict(
+            sts_key='bovine_population_fraction_on_bovaer',
+            t_unit='years',
+            descr=descr))
+
+
+        descr = """
+        Bovine methane is reduced through the use of Bovaer.
+        """
+        rval.append(dict(
+            sts_key='bovine_methane',
+            t_unit='years',
+            descr=descr))
+
+        descr = """
+        As Bovaer is adopted, the impact on Canada's emissions is modulated by the number of cattle.
+        The size of Canada's national herd has declined over the last decade, the future is not known.
+        """
+        rval.append(dict(
+            sts_key='bovine_population_on_bovaer',
+            t_unit='years',
+            descr=descr))
+
+        descr = """
+        The impact on national methane emissions from so-called enteric fermentation is expected to be significant.
+        """
+        rval.append(dict(
+            sts_key='Annual_Emitted_CH4_mass',
+            t_unit='years',
+            figtype='plot vs baseline',
+            descr=descr))
+
+        descr = """
+        The impact on global atmospheric methane concentration is expected to be noticeable.
+        """
+        rval.append(dict(
+            sts_key='Atmospheric_CH4_conc',
+            t_unit='years',
+            figtype='plot vs baseline',
+            descr=descr))
+
+        descr = """
+        The impact on global heat forcing is too small to see on a graph of that phenomenon.
+        """
+        rval.append(dict(
+            sts_key='DeltaF_forcing',
+            t_unit='years',
+            figtype='plot vs baseline',
+            descr=descr))
+
+        descr = """
+        Still, a visualization of the difference in global heat forcing reveals the shape of the impact over time.
+        The datapoints in this curve are used to compute the Net Present Heat for the project, by adding up the energy associated with each year (modulated by the future discount factor).
+        """
+        rval.append(dict(
+            sts_key='DeltaF_forcing',
+            t_unit='years',
+            figtype='plot delta',
+            descr=descr))
+
+        descr = """
+        In other terms, the difference in global heat forcing due to a national Bovaer mandate can be quantified as a small change in (upward) temperature trajectory for the top 200m of the world's oceans.
+        """
+        rval.append(dict(
+            sts_key='Ocean_Temperature_Anomaly',
+            t_unit='years',
+            figtype='plot delta',
+            descr=descr))
+
+        descr = f"""
+        In terms of financial modelling, the project assumes a price of Bovaer ( {NationalBovaerMandate.bovaer_price} ) that remains constant for the next 200 years. At the scale of production associated with national adoption in Canada and in other countries, this is arguably an over-estimate.
+        The curve is simply the product of the population on Bovaer with the price per head.
+        The datapoints in this curve are used to compute the Net Present Value for the project.
+        """
+        rval.append(dict(
+            sts_key='NationalBovaerMandate_AfterTaxCashflow',
+            t_unit='years',
+            figtype='plot',
+            descr=descr))
+
+        return rval
+
+    def project_graph_svg(self, config, state, comparison):
+        fig = plt.figure()
+        fig.set_layout_engine("constrained")
+        key = config['sts_key']
+        if config.get('figtype', 'plot') == 'plot':
+            sts = state.sts[key]
+            sts.plot(t_unit=config.get('t_unit'), label=self.name)
+        elif config.get('figtype') == 'plot vs baseline':
+            sts = state.sts[key]
+            sts.plot(t_unit=config.get('t_unit'), label=self.name)
+            comparison.state_B.sts[key].plot(
+                t_unit=config.get('t_unit'),
+                label='Baseline',
+                )
+            plt.legend(loc='lower left')
+        elif config.get('figtype') == 'plot delta':
+            years = comparison._years()
+            vals_A = comparison.state_A.sts[key].latest_vals(years, inclusive=True)
+            vals_B = comparison.state_B.sts[key].latest_vals(years, inclusive=True)
+            diff = vals_A - vals_B
+            plt.plot(
+                years.to(config['t_unit']).magnitude,
+                diff.magnitude)
+            plt.title(f'{key} Delta: Active - Inactive')
+            plt.xlabel(config['t_unit'])
+            plt.ylabel(diff.u)
+        else:
+            raise NotImplementedError(config.get('figtype'))
+        plt.grid()
+
+        svg_buffer = StringIO()
+        plt.savefig(svg_buffer, format="svg")
+        plt.close()
+        svg_string = svg_buffer.getvalue()
+        return svg_string
 
 
 class ProjectComparison(object):
@@ -702,14 +856,23 @@ class ProjectComparison(object):
                 envelope[ii] = base_rate ** (year_int - present_year_int)
         return torch.tensor(envelope)
 
-    def net_present_heat(self, base_rate):
-        key = 'Heat_Energy_forcing'
+    def net_present_discounted_sum(self, base_rate, key, inclusive=True):
         years = self._years()
-        vals_A = self.state_A.sts[key].latest_vals(years, inclusive=True)
-        vals_B = self.state_B.sts[key].latest_vals(years, inclusive=True)
-        heat_forcing = vals_A - vals_B
+        vals_A = self.state_A.sts[key].latest_vals(years, inclusive=inclusive)
+        vals_B = self.state_B.sts[key].latest_vals(years, inclusive=inclusive)
+        diff = vals_A - vals_B
         envelope = self._net_present_envelope(years, base_rate)
-        return torch.cumsum(heat_forcing.magnitude * envelope, dim=0)[-1] * heat_forcing.u
+        return torch.cumsum(diff.magnitude * envelope, dim=0)[-1] * diff.u
+
+    def net_present_CO2e(self, base_rate):
+        return self.net_present_discounted_sum(
+            base_rate,
+            key='Annual_Emitted_CO2e_mass')
+
+    def net_present_heat(self, base_rate):
+        return self.net_present_discounted_sum(
+            base_rate,
+            key='Heat_Energy_forcing')
 
     def net_present_value(self, base_rate):
         if self.project.after_tax_cashflow_name in self.state_B.sts:
@@ -719,6 +882,13 @@ class ProjectComparison(object):
         cashflow = self.state_A.sts[self.project.after_tax_cashflow_name].latest_vals(
             years, inclusive=True)
         return torch.cumsum(cashflow.magnitude * envelope, dim=0)[-1] * cashflow.u
+
+    def cost_per_ton_CO2e(self, base_rate):
+        npv = self.net_present_value(base_rate=base_rate)
+        npc = self.net_present_CO2e(base_rate=base_rate)
+        if npc >= 0:
+            return float('nan') * u.CAD / u.tonne
+        return (npv / npc).to(u.CAD / u.tonne)
 
 
 class ProjectEvaluation(object):
@@ -796,8 +966,8 @@ class ProjectEvaluation(object):
         nph1s = []
         npv1s = []
         for eval_name, cmp in self.comparisons.items():
-            nph1 = self.comparisons[eval_name].net_present_heat(base_rate=base_rate)
-            npv1 = self.comparisons[eval_name].net_present_value(base_rate=base_rate)
+            nph1 = cmp.net_present_heat(base_rate=base_rate)
+            npv1 = cmp.net_present_value(base_rate=base_rate)
             eval_names.append(eval_name)
             nph1s.append(nph1.to(nph_unit).magnitude)
             npv1s.append(npv1.to(npv_unit).magnitude)
@@ -809,6 +979,13 @@ class ProjectEvaluation(object):
             plt.annotate(eval_name, (npv1s[ii], nph1s[ii]))
         plt.xlabel(f'Net Present Value ({npv_unit})')
         plt.ylabel(f'Net Present Heat Forcing ({nph_unit})')
+
+    def iter_npv_nph_evalname(self, discount_rate):
+        base_rate = (1 - discount_rate)
+        for eval_name, cmp in self.comparisons.items():
+            nph = cmp.net_present_heat(base_rate=base_rate)
+            npv = cmp.net_present_value(base_rate=base_rate)
+            yield npv, nph, eval_name
 
 
 # carbon capture
