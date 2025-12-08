@@ -1,0 +1,246 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+<section class="post">
+    <header class="major">
+        <h1>Transport/<br />Marine/<br />Domestic Navigation</h1>
+        <p>
+        </p>
+    </header>
+
+<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('mychart'));
+var option;
+
+option = {
+  title: {
+      text: 'Emissions: {{catpath}}',
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Year', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+      data: {{ ipcc_canada.echart_years() }},
+  },
+  yAxis: {
+      name: 'Emissions (Mt CO2e)', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    formatter: '{a}',
+  },
+};
+
+option && myChart.setOption(option);
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+</script>
+<div>
+
+<h2>Causes of Emissions</h2>
+
+<h3>
+    1. The "Lakers" (Great Lakes Bulk Carriers)
+</h3>
+This is the industrial heavy-lifting of the sector. Huge bulk carrier ships move iron ore, grain, salt, and coal up and down the St. Lawrence Seaway and across the Great Lakes (e.g., from Thunder Bay, ON to Hamilton, ON).
+
+<ul>
+    <li>
+        <b>The Emission Source</b>: These are massive ships, often running on heavy fuel oil (HFO) or large diesel engines.
+    </li>
+    <li>
+        <b>Why it counts</b>: Because they travel long distances carrying thousands of tonnes of cargo, but never leave Canadian waters, their entire fuel consumption is counted in the national inventory.
+    </li>
+</ul>
+
+<h3>
+    2. Ferries (The Single Largest Passenger Source)
+</h3>
+
+<p>
+Canada has extensive ferry networks that operate like floating highways.
+</p>
+
+<ul>
+    <li><b>BC Ferries</b>: One of the largest ferry operators in the world. Their massive vessels (some carrying 400+ cars) run constantly between Vancouver, Vancouver Island, and the Gulf Islands.
+    </li>
+    <li><b>Atlantic Canada</b>: Marine Atlantic (connecting Newfoundland to Nova Scotia) and other inter-provincial ferries.
+    </li>
+</ul>
+
+<p>
+Historically, these ships have used massive diesel engines, however BC Ferries has recently been converting some ships to Liquefied Natural Gas (LNG) or battery-hybrid to lower these specific emissions.
+</p>
+
+<h3>
+    3. Tugs and Barges
+</h3>
+<p>
+While less visible than the giant ferries, the fleet of tugboats constitutes a steady baseline of emissions.
+</p>
+
+<ul>
+    <li>
+    <b>Coastal Logging</b>: On the West Coast, tugs are constantly towing barges of logs or wood chips.
+    </li>
+    <li>
+    <b>Northern Resupply</b>: In the summer, tugs and barges move fuel and food up the Mackenzie River or along the coast to supply remote Arctic communities that have no road access.
+    </li>
+</ul>
+
+<h3>
+    4. What is EXCLUDED? (Common Confusions)
+</h3>
+<p>
+To understand the data, you have to know what is removed from this line item:
+</p>
+
+<ul>
+<li>
+<b>Fishing Vessels</b>: Commercial fishing boats (lobster boats, trawlers) are not in this category. They are reported under Agriculture, Forestry, and Fishing.
+</li>
+
+<li>
+<b>International Shipping (Bunkers)</b>: If a ship loads grain in Vancouver and sails to China, the emissions for that trip are not in Canada's national total. They are reported separately as a "Memo Item" called International Bunkers, based only on fuel sold (and taxed) for an international voyage.
+Fuel sold for this purpose in Canada corresponds to 3-5 Mt CO2/year, which is coincidentally about the same as the emissions from Canada's domestic navigation.
+That said, Canada's ports are not considered major refuelling centers for international shipping.
+Emissions from fuel burned by ships making international voyages falls under the jurisdiction of the IMO, rather than any particular country (including the ship's flagged country).
+</li>
+
+<li>
+<b>Military</b>: Canadian Navy and Coast Guard vessels are often reported under a separate "Multilateral Operations" or government category, though civilian Coast Guard icebreaking sometimes blurs into domestic navigation depending on the specific report granularity.
+</li>
+</ul>
+
+<h2>
+    Stakeholders and their Problems
+</h2>
+
+<h3>Domestic Shipping Companies</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<p>
+Who are these companies?
+<ul>
+    <li><a href="https://cslships.com/">Canada Steamship Lines (CSL)</a></li>
+    <li><a href="https://www.algonet.com/">Algoma Central Corporation</a></li>
+    <li><a href="https://www.fednav.com/">Fednav</a></li>
+    <li><a href="https://mckeil.com/">McKeil Marine</a></li>
+    <li><a href="https://norvicshipping.com/company/">Norvic Shipping</a></li>
+</ul>
+</p>
+<p>
+What do they do?
+<ul>
+    <li>Transport large amounts of bulk cargo picked up at ports, and delivered to ports, at predictable times, moved at low price per ton mile?</li>
+    <li>Sometimes customers want steady movement (e.g. from mines)</li>
+    <li>Sometimes customers want seasonal movement (e.g. grain)</li>
+    <li>Sometimes customers want irregular movement? </li>
+    <li>Buy fuel from oil companies, refuel at ports</li>
+    <li>Subcontract ship construction, delivery, repair</li>
+    <li>May Subcontract ship operation</li>
+    <li>May have to perform or subcontract cargo hold cleaning</li>
+</ul>
+</p>
+<p>
+What are their main concerns?
+<ul>
+    <li>Price of fuel?</li>
+    <li>Price of labour?</li>
+    <li>Price of ship mortgage financing?</li>
+    <li>Canals close for winter, can't compete with rail and truck?</li>
+</ul>
+</p>
+
+<h3>International Shipping Companies</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Ports</h3>
+
+    <h4>Great Lakes Ports</h4>
+    <p>To-do: What are this group's private problems relating to this emission sector?<p>
+    <ul>
+        <li>Some ports (Toronto) run ongoing dredging operations</li>
+    </ul>
+
+    <h4>Port of Vancouver</h4>
+    <p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+    <h4>Port of Montreal</h4>
+    <p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+    <h4>Port of Halifax</h4>
+    <p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+    <h4>Port of St. John's</h4>
+    <p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Oil Companies</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Who is moving Grain</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Who is moving Potash</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Iron Ore - Mines, Steel Mills</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Shipyards</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+
+<h3>Ship Design Firms</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Dredging and Marine Construction</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>BC Logging Companies</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>BC Ferries</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Atlantic Ferry Operators</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+
+<h3>Colleges, Universities, Training Centres</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Federal Government</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<ul>
+    <li>Regulates Canada's navigable waterways</li>
+    <li>Sets emissions targets, reports status to UN, IPCC</li>
+    <li>Monitors activities of canadian ports</li>
+</ul>
+
+<h3>International Maritime Organization (IMO)</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+<h3>Green Marine</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+</div>
+</section>
+</div>
+
+{% include "post-main.html" %}

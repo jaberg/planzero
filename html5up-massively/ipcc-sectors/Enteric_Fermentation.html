@@ -1,0 +1,168 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+<section class="post">
+    <header class="major">
+        <h1>Enteric Fermentation</h1>
+        <p>
+        Enteric fermentation produces methane in bovine digestive systems.
+        Canada's cattle on dairy and beef farms produce this emission.
+        A feed additive called Bovaer can reduce this emission per bovine head, but it is
+        naturally proportional to the size of the national herd.
+        </p>
+    </header>
+
+<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('mychart'));
+var option;
+
+option = {
+  title: {
+      text: 'Emissions: {{catpath}}',
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Year', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+      data: {{ ipcc_canada.echart_years() }},
+  },
+  yAxis: {
+      name: 'Emissions (Mt CO2e)', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    formatter: '{a}',
+  },
+};
+
+option && myChart.setOption(option);
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+</script>
+<div>
+
+<h2>Causes of Emissions</h2>
+
+<p>
+"Enteric Fermentation" is the technical term for the digestive process in animals that produces methane.
+In Canada's inventory, cattle are responsible for roughly 96–97% of these emissions.
+Cattle belch out the gas, which is created in the first of their four stomachs.
+</p>
+
+<h3>Sources</h3>
+<p>
+While cattle are the main event, the IPCC category covers all livestock. However, the biology of the animal dictates how much methane it produces.
+<ul>
+    <li>The Ruminants (The Heavy Hitters): These animals have a four-chambered stomach (including a "rumen") specifically designed to ferment tough plant fibers. This fermentation creates massive amounts of methane as a by-product.
+        <ul>
+            <li>Beef Cattle: The overwhelming majority of emissions (due to the sheer size of the herd in provinces like Alberta and Saskatchewan).</li>
+
+            <li>Dairy Cattle: High per-animal emissions (because they eat a lot to produce milk), but there are fewer of them than beef cattle.</li>
+
+            <li>Others: Bison, Sheep, Goats, and Elk. These are also ruminants, but their total population in Canada is small compared to the millions of cows.</li>
+        </ul>
+    </li>
+
+    <li>The Monogastrics (The Minor Players): These animals have a simple single stomach (like humans). They produce very little enteric methane.
+        <ul>
+            <li>Pigs and Horses: They are included in the math, but their contribution is negligible compared to cattle.</li>
+        </ul>
+    </li>
+</ul>
+</p>
+
+<h3>Factors: What "Drives" the Emissions? (Why do they go up or down?)</h3>
+<p>
+<ol>
+    <li>Herd Population (The biggest driver): The total emissions correlate almost perfectly with the total number of cattle in Canada. When the beef herd shrinks (as it has in some recent years due to drought or market prices), this emissions category drops significantly.</li>
+    <li>Feed Quality (The "Digestibility" Factor): What the animal eats changes how much methane it produces.
+        <ul>
+            <li>Forage/Grass (High Methane): Cows eating rough, fibrous grass on open pasture produce more methane per calorie because the gut has to work harder to break it down.</li>
+            <li>Grain/Corn (Lower Methane): Cows in a feedlot eating processed grain produce less methane per calorie. Paradoxically, the "industrial" feedlot phase is often more carbon-efficient (per kg of meat) than the grass-fed phase.</li>
+        </ul>
+    </li>
+    <li> Animal Size and Genetics: We have bred cows to be much larger today than they were 30 years ago. A larger animal eats more and ferments more.
+    That said, while a modern cow produces more methane than a 1990 cow, it also produces significantly more meat or milk. The intensity (emissions per litre of milk) has actually gone down, even if the total emissions are high.
+    </li>
+</ol>
+
+</p>
+
+<h2>
+    How might Canada reduce enteric fermentation emissions to zero?
+</h2>
+
+<h3>
+    Critical Success Factors
+</h3>
+
+<ul>
+    <li>fewer cattle</li>
+    <li>less methane emitted to atmosphere per head</li>
+</ul>
+
+<h3>
+    Barriers
+</h3>
+
+<ul>
+    <li>the owners of herds do not want to reduce their herds</li>
+    <li>domestic and international demand for beef and milk products is high, and expected to rise with population</li>
+    <li>change in farming practices is typically very slow</li>
+    <li>the voting population likes cattle: they're cute, gentle, picturesque, iconic</li>
+</ul>
+
+<h3>
+    Possible Strategies
+</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>Who</td>
+            <th>What</td>
+            <th>For Whom</td>
+            <th>Cost / tonne CO2e</td>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+{% for idea in stakeholders.ideas_by_catpath(catpath) %}
+        <tr>
+            <td>{{idea.who.full_name}}</td>
+            <td> {{idea.descr}}</td>
+            <td>
+                {% for sg in idea.for_whom %}
+                {{sg.full_name}}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            </td>
+            <td>
+                {% if idea.name in peval.comparisons %}
+                <a href="/strategies/{{idea.name}}/">{{ "{:.2f}".format(peval.comparisons[idea.name].cost_per_ton_CO2e(base_rate=1-discount_rate)) }}</a>
+                {% endif %}
+            </td>
+        </tr>
+{% endfor %}
+</table>
+
+</div>
+</section>
+</div>
+
+{% include "post-main.html" %}

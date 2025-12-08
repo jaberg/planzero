@@ -27,6 +27,14 @@ test: .build
 		pytest .
 
 
+stakeholders: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python stakeholders.py
+
+
 local: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

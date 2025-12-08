@@ -1,0 +1,175 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+<section class="post">
+    <header class="major">
+        <h1>Transport/<br />Road Transportation<br />Light Duty Gasoline Trucks</h1>
+        <p>
+        Emissions from the operation of light-duty gasoline trucks is Canada's third-largest
+        emissions sector.
+        While engine efficiency continues to improve, Canada's population continues to grow,
+        and larger vehicles such as SUVs have become more popular.
+        Crossover SUVs, SUVs, and minivans are included in this emissions sector.
+        The technology of hybrid and EV alternatives to internal combustion engines seems to be superior,
+        and is currently crossing the chasm to mainstream adoption.
+        </p>
+    </header>
+
+<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('mychart'));
+var option;
+
+option = {
+  title: {
+      text: 'Emissions: {{catpath}}',
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Year', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+      data: {{ ipcc_canada.echart_years() }},
+  },
+  yAxis: {
+      name: 'Emissions (Mt CO2e)', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    formatter: '{a}',
+  },
+};
+
+option && myChart.setOption(option);
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+</script>
+<div>
+
+<h2>Causes of Emissions</h2>
+
+This sector measures emissions from the combustion of gasoline from vehicles such as
+<ul>
+    <li>SUVs / Crossovers: (e.g., Ford Explorer, Toyota RAV4, Honda CR-V)</li>
+    <li>Minivans: (e.g., Dodge Caravan, Honda Odyssey)</li>
+    <li>Pickup Trucks: (e.g., Ford F-150, Chevy Silverado)</li>
+    <li>Commercial Vans: (e.g., Ford Transit Connect)</li>
+</ul>
+
+Definition of this class of vehicles:
+Vehicles with a GVWR of less than 3,900 kg (8,500 lbs) that are designed for off-road operation,
+or have a certain cargo capacity that places them above light-duty gasoline <em>vehicles</em>,
+which is a separate IPCC emissions sector focused on sedans, hatchbacks, and coupes.
+
+<h2>
+    Stakeholders' Problems
+</h2>
+
+<h3>Individuals and Families</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<p>
+What they do: 
+<ul>
+    <li>Buy/lease vehicles, choose vehicle type</li>
+    <li>Drive themselves</li>
+    <li>Pay for maintenance</li>
+    <li>Pay for insurance</li>
+</ul>
+</p>
+
+<p>What they worry about:
+<ul>
+    <li>Purchase price/Lease price</li>
+    <li>Monthly / annual cost</li>
+    <li>Brand, appearance, style</li>
+    <li>Size</li>
+    <li>Safety</li>
+    <li>Range - will an EV leave me stranded?</li>
+</ul>
+</p>
+
+<h3>Fleet Operators</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<p>What they do:
+<ul>
+    <li>Buy vehicles, choose vehicle type</li>
+    <li>Sometimes employees drive vehicles, sometimes customers</li>
+</ul>
+</p>
+<p>What they worry about:
+<ul>
+    <li>Total cost of ownership</li>
+    <li>Role capability</li>
+    <li>Range - will an EV leave me stranded?</li>
+    <li>Scope 1-2-3 emissions, if the operator has committed to compliance frameworks</li>
+</ul>
+</p>
+
+<h3>Gasoline Vendors</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<ul>
+    <li>Operate fueling stations</li>
+    <li>Are also oil and gas extraction companies</li>
+</ul>
+
+<h3>Car Companies</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<ul>
+    <li>Sell gasoline vehicles and service</li>
+    <li>Sell electric vehicles and service</li>
+    <li>Sell hybrid vehicles and service</li>
+    <li>Need to be pretty sure of market demand before designing scalable manufacturing systems for EVs</li>
+</ul>
+
+<h3>Auto Mechanics</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+
+
+<h3>Federal Government</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<ul>
+    <li>Flip-flops on EV mandate</li>
+    <li>Sometimes offers EV incentives</li>
+    <li>Imposes huge tariffs on Chinese EVs to protect domestic manufacturing industry and American car brands</li>
+</ul>
+
+<h3>Provincial Government</h3>
+<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<ul>
+    <li>Sometimes offers EV incentives</li>
+</ul>
+
+</div>
+</section>
+</div>
+
+<h2>
+</h2>
+<h3>
+    Possible Strategies
+</h3>
+<ul>
+    <li>
+        <a href="https://www.purdue.edu/newsroom/2025/Q4/first-highway-segment-in-u-s-wirelessly-charges-electric-heavy-duty-truck-while-driving/">Provinces should embed wireless charging circuitry in roads, in a manner that is compatible with US wireless charging</a>
+    </li>
+    <li>purchase idea: municipalities should buy EVs</li>
+    <li>purchase idea: households should buy EVs or Plug-in Hybrids</li>
+    <li>regulatory idea: gov of canada should cover green premium, tapering off over N years</li>
+    <li>regulatory idea: gov of canada should reduce tariffs on Chinese EVs over some number of years</li>
+</ul>
+
+{% include "post-main.html" %}

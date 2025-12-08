@@ -1,0 +1,256 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+<section class="post">
+    <header class="major">
+        <h1>Stationary Combustion/<br />Public Electricity and Heat Production</h1>
+        <p>
+        Emissions from the processes and equipment of public power utilities.
+        It is Canada's second-largest-emission sector.
+        Emissions in this sector have been dropping, despite Canada's rising population,
+        due primarily to a transition away from the use of coal.
+        </p>
+    </header>
+
+<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('mychart'));
+var option;
+
+option = {
+  title: {
+      text: 'Emissions: {{catpath}}',
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Year', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+      data: {{ ipcc_canada.echart_years() }},
+  },
+  yAxis: {
+      name: 'Emissions (Mt CO2e)', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    formatter: '{a}',
+  },
+};
+
+option && myChart.setOption(option);
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+</script>
+<div>
+
+<p>
+The "Public Electricity and Heat Production" IPCC sector refers to companies whose primary business is selling electricity or heat to the grid or the public.
+Emissions from this sector peaked around year 2000, and have been steadily declining since then.
+</p>
+
+<h2>Google Gemini's assessment of what causes these emissions</h2>
+
+<ol>
+    <li><b>Steam Turbines (Thermal Power Plants)</b>: a technology in which huge boilers heat water, and high-pressure steam blasts through a massive fan (turbine) to spin a generator. Coal plants are of this type, but any combustible fuel can be used.</li>
+    <li><b>Combustion Gas Turbines</b>: a technology in which the expansion of combusting natural gas powers a turbine directly.
+        <ul>
+            <li>In <em>Peaker Plants</em>, the hot exhaust is vented, making the plant a relatively simple to construct and providing quick power for peak demand periods.</li>
+            <li>In <em>Combined Cycle Gas Turbines</em>, the hot exhaust is used to drive a second steam turbine, providing a less-responsive, more-efficient electricity-generation process.</li>
+        </ul>
+    </li>
+    <li><b>Reciprocating Engines</b>: diesel generators are commonly used to power remote communities. Gemini estimates there are roughly 200 such communities in Canada.</li>
+    <li><b>District Heating</b>: Some cities, such as Toronto (Enwave) and Vancouver (Creative Energy) have district heating systems powered by huge boilers. The emissions of those boilers are counted in this sector.</li>
+</ol>
+
+
+<h2>
+    Stakeholders' Problems
+</h2>
+
+<h3>Federal Government</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<p>
+The various branches of the Government of Canada set emissions targets nationally, collect data nationally, participate in the UN and IPCC, negotiate trade deals with other countries, and administer any carbon markets or pricing schemes nation-wide.
+</p>
+
+<h3>Provincial Governments</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Oversee public utilities, which are often province-focused organizations</li>
+    <li>Track emissions and report them for federal accounting (I think?) </li>
+    <li>Set provincial emissions targets</li>
+    <li>Operate ministries of natural resources</li>
+    <li>Administer zoning / land-use regulations (or is that municipality?)</li>
+</ul>
+
+<h3>Municipal Governments</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Oversee public utilities, which can be e.g. city-focused organizations</li>
+    <li>Administer zoning / land-use regulations (or is that province?)</li>
+</ul>
+
+<h3>Oil and Gas Companies</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Sell methane for gas turbines</li>
+    <li>Sell diesel for reciprocating generators</li>
+    <li>Sell various fuels for steam turbines</li>
+    <li>Maintain equipment for delivery of fuels (trucks, pipelines)</li>
+    <li>Subcontract for steps within supply chains (trucks, rail, ship)</li>
+</ul>
+
+<h3>Turbine-Operating Electricity Companies</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Buy fuel and manage supply</li>
+    <li>Sell electricity to customers</li>
+    <li>Sell electricity to other utilities</li>
+    <li>Maintain existing equipment, or subcontract</li>
+    <li>Invest in new equipment
+        <ul>
+            <li>Retrofit plants e.g. with scrubbers</li>
+            <li>Choose how to provide new capacity with new plants</li>
+        </ul>
+    </li>
+</ul>
+
+<h3>Gen-Set-Operating Electricity Companies</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Buy diesel fuel</li>
+    <li>Arrange to have diesel fuel delivered to remote communities</li>
+    <li>Sell electricity to customers</li>
+    <li>Maintain existing equipment, or subcontract</li>
+    <li>Invest in new equipment</li>
+</ul>
+
+<h3>Photovoltaic-Operating Electricity Companies</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Buy solar farm equipment</li>
+    <li>Buy utility-scale batteries, to meet the terms of fixed contracts for electricity at hours when the sun is not shining</li>
+    <li>Presumably buy contracts for backup power when they run out, on behalf of customers who don't want to bother doing that themselves (how does this work-are solar farms indepenent businesses? are they operated by the same company as maintains e.g. retail customer relationships, or different ones? How is it in different provinces? See also - how does this work for wind farms?)</li>
+    <li>Buy weather-prediction data to inform battery policy, real-time pricing</li>
+    <li>Sell electricity to customers on fixed contracts</li>
+    <li>Sell electricity to customers on spot contracts</li>
+    <li>Maintain existing equipment, or subcontract
+        <ul>
+            <li>Cleaning panels</li>
+            <li>Replacing battery cells</li>
+        </ul>
+    </li>
+    <li>Invest in new equipment</li>
+</ul>
+
+<h3>District Heat Companies</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Buy fuel and manage supply</li>
+    <li>Sell heat</li>
+    <li>Maintain existing equipment, or subcontract</li>
+    <li>Invest in new equipment</li>
+</ul>
+
+<h3>Turbine Vendors</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h3>Wind Farm Equipment Vendors</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h3>Solar Farm Equipment Vendors</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>Sell equipment and services to utility companies</li>
+</ul>
+
+<h3>Residential Customers</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h3>Commercial Customers</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h4>Farmers</h4>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>They buy electricity, much like any other commercial customer, mostly for constant energy loads
+        <ul>
+            <li>Running a co-located home</li>
+            <li>Dairy: cooling milk, vacuum lines, water heating, ventilation</li>
+            <li>Greenhouses: lighting, ventilation, robotics</li>
+            <li>Poultry: lighting, ventilation, robotics</li>
+            <li>Pork: lighting, ventilation, robotics</li>
+            <li>Field: aeration, irrigation, robotics</li>
+        </ul>
+    </li>
+    <li>They are able to implement behind-the-meter wind and/or solar because they tend to own lots of land, and simple buildings with big roofs.
+        They can use photovoltaic power opportunistically with or without battery buffering, but loads tend to be constant rather than aligned to solar energy.</li>
+    <li>Grow crops. Don't like things that shade fields, or remove water from the soil.</li>
+</ul>
+
+
+<h3>Industrial Customers</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h3>Behind-the-meter Technology for Residential Use</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h3>Behind-the-meter Technology for Commercial Use</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h3>Behind-the-meter Technology for Industrial Use</h3>
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+
+<h2>
+    Strategies
+</h2>
+<p>Goal: Reduce scope-1 emissions from public electricity and heat production to zero.
+</p>
+
+<h3>
+    Critical Success Factors
+</h3>
+
+<ul>
+    <li>fewer turbines, running less, less often</li>
+    <li>CO2 scrubbed from exhaust</li>
+</ul>
+
+<h3>
+    Barriers
+</h3>
+
+<ul>
+    <li>growing population, growing economy</li>
+    <li>electrification of emitting processes often means greater need for electricity</li>
+</ul>
+
+<h3>
+    Possible Strategies
+</h3>
+
+<ul>
+    <li>Meet demand with zero-emission technologies: solar, wind, geothermal, tide, nuclear fission, nuclear fusion</li>
+    <li>Don't install any more gas turbines</li>
+    <li></li>
+</ul>
+
+</div>
+</section>
+</div>
+
+{% include "post-main.html" %}

@@ -1,0 +1,224 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+<section class="post">
+    <header class="major">
+        <h1>Stationary Combustion/<br />Oil and Gas Extraction</h1>
+        <p>
+        Emissions from the processes and equipment that extract oil from the ground.
+        It is Canada's largest sectoral emissions, and it is one of the very few that is rising.
+        This sector is tragic from an environmental perspective, because the process of extraction from the oil
+        sands especially is devastating to the surface ecology, enormously demanding of energy, and the result of this extraction is oil which is itself ultimately combusted into greenhouse gases.
+        </p>
+    </header>
+
+<div id="mychart" style="width: 600px; height: 400px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('mychart'));
+var option;
+
+option = {
+  title: {
+      text: 'Emissions: {{catpath}}',
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Year', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+      data: {{ ipcc_canada.echart_years() }},
+  },
+  yAxis: {
+      name: 'Emissions (Mt CO2e)', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    formatter: '{a}',
+  },
+};
+
+option && myChart.setOption(option);
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+</script>
+<div>
+    <p>
+    Emissions from the extraction of oil and gas have risen steadily and enormously
+    over the past three decades.
+    </p>
+
+    <h2>Google Gemini's assessment of what causes these emissions</h2>
+
+    <p>
+    This can be a confusing part of the report because "extraction" sounds like a purely mechanical process (digging or drilling), but in Canada, it is actually a massive <em>thermal</em> (heat-based) process.
+    </p>
+
+    <p>
+    <em>Stationary Combustion</em> in this context refers to burning fossil fuels (usually natural gas or diesel) in fixed equipment to generate <em>heat</em> or <em>power</em> necessary to run the extraction operations.
+    </p>
+
+    <p>
+It is distinct from "Mobile Combustion" (trucks, excavators) and "Fugitive/Flaring" emissions (leaks or burning waste gas).
+    </p>
+
+    <p>
+Here is a breakdown of the specific processes and why combustion is required for them.
+    </p>
+
+    <h3>
+    1. Generating Steam for "In-Situ" Oil Sands (The Largest Source)
+    </h3>
+    <p>
+This is likely the single biggest driver of stationary combustion numbers in Canada's report.
+<ul>
+    <li> <b>The Problem:</b> A huge portion of Canada’s oil (bitumen) is underground but is too thick and heavy to flow like normal crude oil. It has the consistency of peanut butter or hockey pucks.</li>
+    <li> <b>The Combustion Solution:</b> Companies use massive gas-fired <em>boilers</em> to turn water into high-pressure steam.</li>
+    <li> <b>The Process:</b> This steam is injected underground (processes like SAGD - Steam Assisted Gravity Drainage). The heat from the steam melts the bitumen, lowering its viscosity so it can be pumped to the surface.</li>
+    <li> <b>Why it counts:</b> You have to burn a significant amount of natural gas to create enough steam to melt the oil. This is why "extraction" has such high combustion emissions.</li>
+</ul>
+<p>
+
+<h3>
+2. Driving Compressors and Pumps
+</h3>
+<p>
+Oil and gas sites are often in remote areas without access to the electrical grid. To move fluids and gases, they need massive mechanical power.
+<ul>
+    <li><b>The Combustion Solution:</b> Instead of electric motors, they use large stationary internal combustion engines (similar to a giant car engine) or gas turbines (similar to a jet engine bolted to the ground).</li>
+    <li><b>The Process:</b>
+        <ul>
+            <li><b>Gas Extraction:</b> Natural gas doesn't always flow out of the well at high enough pressure to enter a pipeline. Huge compressors, driven by gas-fired engines, suck the gas out of the ground and compress it for transport.</li>
+            <li><b>Oil Extraction:</b> Pumps (like "pump jacks") need power to lift oil to the surface.</li>
+        </ul>
+    </li>
+    <li><b>Why it counts:</b> These engines run 24/7, usually burning the raw natural gas produced at the site (field gas) to keep the operation moving.</li>
+</ul>
+</p>
+
+<h3>
+3. "Heater Treaters" and Separation
+</h3>
+<p>
+Once oil and gas reach the surface, they are usually a messy mixture of oil, gas, water, and sand. They cannot be put into a sales pipeline in this state.
+<ul>
+    <li><b>The Combustion Solution:</b> The mixture is passed through <em>Heater Treaters</em> or <em>Separators</em>. These are large vessels with a fire-tube inside (burning natural gas).</li>
+    <li><b>The Process:</b>
+        <ul>
+            <li><b>Separation:</b> Heat helps break the emulsion of oil and water (like separating salad dressing) so the water can be removed.</li>
+            <li><b>Flow Assurance:</b> In Canada's cold climate, the fluids would freeze or turn into a slush without heat. Combustors keep the oil hot enough to flow through the pipes at the surface facility.</li>
+            <li><b>Dehydration:</b> Natural gas often comes up "wet" (saturated with water). Glycol dehydrators use a gas burner to boil water out of the glycol solution so it can absorb more moisture from the gas.</li>
+        </ul>
+    </li>
+</ul>
+</p>
+
+<h3>
+Summary of Equipment
+</h3>
+<p>
+When you see "Stationary Combustion" in that report, visualize these specific pieces of hardware sitting at the well sites or processing plants:
+</p>
+
+<table>
+    <tr><th>Equipment</th><th>Fuel Source</th><th>Purpose</th></tr>
+    <tr><td> Steam Boilers / Generators </td><td> Natural Gas </td><td> Creating steam to inject underground to melt bitumen (Oil Sands). </td></tr>
+    <tr><td> Reciprocating Engines </td><td> Field Gas / Diesel </td><td> Powering compressors to push gas through pipelines or lift oil. </td></tr>
+    <tr><td> Gas Turbines </td><td> Natural Gas </td><td> Generating electricity for the site or driving large compressors. </td></tr>
+    <tr><td> Process Heaters </td><td> Natural Gas </td><td> Heating crude oil to separate out water and sand. </td></tr>
+    <tr><td> Glycol Reboilers </td><td> Natural Gas </td><td> Boiling off water to dry natural gas. </td></tr>
+</table>
+
+<h2>
+    Stakeholders' Problems
+</h2>
+
+<h3>Government of Canada</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<p>
+The various branches of the Government of Canada set emissions targets nationally, collect data nationally, participate in the UN and IPCC, negotiate trade deals with other countries, and administer any carbon markets or pricing schemes nation-wide. The Government of Canada also collects various revenues from the activities of oil and gas extraction.
+</p>
+<h3>Government of Alberta</h3>
+<p>Emissions in this sector are primarily related to oil sands, and oil sands are primarily in Alberta.</p>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>Government of British Columbia</h3>
+<p>British Columbia's coast is one of the primary routes from Alberta oil sands to international markets.
+There are already pipelines crossing the Rocky Mountains.
+The question of whether to approve and/or build another pipeline is a hot political topic at the time of writing.
+</p>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>Municipal Governments</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>Oil and Gas Companies</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>Extraction Equipment Vendors</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>Oil and Gas Company Employees</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>Indigenous Groups</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>Environmental Groups</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<h3>International Oil and Gas Buyers</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<ul>
+    <li>TODO: Who are they? Who is buying oil and who is buying gas? What for?</li>
+    <li>They drive emissions in this sector by buying fuel from Oil and Gas extractors.</li>
+    <li>They may be bound to participate in carbon markets, or not.</li>
+    <li>They may be committed to buy certain quantities over certain amounts of time from certain suppliers.</li>
+</ul>
+<h3>Domestic Oil and Gas Buyers</h3>
+<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
+<ul>
+    <li>TODO: Who are they? Who is buying oil and who is buying gas? What for?</li>
+    <li>They drive emissions in this sector by buying fuel from Oil and Gas extractors.</li>
+    <li>They may be committed to buy certain quantities over certain amounts of time from certain suppliers.</li>
+</ul>
+
+<h2>
+    Strategies
+</h2>
+<p>How might we reduce oil and gas extraction emissions by 2050?
+</p>
+
+<h3>
+    Critical Success Factors
+</h3>
+
+<ul>
+    <li>extract less oil and gas</li>
+    <li>use more-efficient extraction processes</li>
+</ul>
+
+<h3>
+    Possible Strategies
+</h3>
+
+<ul>
+    <li>Regulatory and legal blocks of oil sands exploitation</li>
+    <li>Use renewable electricity to drive equipment</li>
+    <li>Develop and scale technology to synthesize petroleum products without extracted oil</li>
+</ul>
+<p>Ultimately, the most effective solution is likely to be a reduction in oil demand by e.g.
+transitioning oil customers to non-oil-based technologies. Such technology transitions appear
+as strategies in for other sectors.
+</li>
+
+</div>
+</section>
+</div>
+
+{% include "post-main.html" %}

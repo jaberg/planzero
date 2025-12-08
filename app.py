@@ -1,0 +1,159 @@
+import json
+import datetime
+
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+app = FastAPI()
+
+htmlroot = 'html5up-massively'
+
+app.mount("/assets", StaticFiles(directory=f"{htmlroot}/assets/"), name="assets")
+app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images")
+
+
+templates = Jinja2Templates(directory=htmlroot)
+
+import ipcc_canada
+import stakeholders
+
+import base
+u = base.u
+peval = base.ProjectEvaluation(
+    projects={prj.idea.name: prj for prj in [
+        base.NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
+    ]},
+    common_projects=[
+        base.GeometricBovinePopulationForecast(),
+        base.AtmosphericChemistry(),
+    ],
+)
+peval.run_until(2225 * u.years)
+
+
+@app.get("/strategies/{eval_name}/", response_class=HTMLResponse)
+async def get_strategy_eval(request: Request, eval_name:str):
+    return templates.TemplateResponse(
+        request=request,
+        name="strategy-eval.html",
+        context=dict(
+            default_context,
+            active_tab='strategies',
+            eval_name=eval_name,
+            comparison=peval.comparisons[eval_name],
+            project=peval.comparisons[eval_name].project,
+            state_A=peval.comparisons[eval_name].state_A,
+            ),
+    )
+
+@app.get("/ipcc-sectors/", response_class=HTMLResponse)
+async def get_ipcc_sectors(request: Request, error_text:str=None):
+    return templates.TemplateResponse(
+        request=request,
+        name="ipcc-sectors.html",
+        context=dict(
+            default_context,
+            active_tab='ipcc_sectors',
+            error_text=error_text,
+            npv_unit='MCAD',
+            nph_unit='exajoule',
+            ),
+    )
+
+
+def url_for_catpath(catpath):
+    return f'/ipcc-sectors/{catpath}/'.replace(' ', '_')
+
+def filepath_for_catpath(catpath):
+    return f'{htmlroot}/ipcc-sectors/{catpath}.html'.replace(' ', '_')
+
+def templatepath_for_catpath(catpath):
+    return f'/ipcc-sectors/{catpath}.html'.replace(' ', '_')
+
+
+def have_page_for_catpath(catpath):
+    try:
+        open(filepath_for_catpath(catpath))
+        print(catpath, filepath_for_catpath(catpath), True)
+        return True
+    except IOError:
+        print(catpath, filepath_for_catpath(catpath), False)
+        return False
+
+
+@app.get("/ipcc-sectors/{category}/", response_class=HTMLResponse)
+@app.get("/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
+@app.get("/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
+async def get_ipcc_sectors_category(
+    request: Request,
+    category,
+    subcategory:str=None,
+    subsubcategory:str=None):
+
+    if subsubcategory is not None:
+        catpath=f'{category}/{subcategory}/{subsubcategory}'
+    elif subcategory is not None:
+        catpath = f'{category}/{subcategory}'
+    else:
+        catpath = f'{category}'
+
+    if have_page_for_catpath(catpath):
+        return templates.TemplateResponse(
+            request=request,
+            name=templatepath_for_catpath(catpath),
+            context=dict(
+                default_context,
+                active_tab='ipcc_sectors',
+                stakeholders=stakeholders,
+                catpath=catpath,
+                ),
+        )
+    else:
+        return get_ipcc_sectors(
+            request, 
+            error_text="Sorry, we don't have that page yet")
+
+
+@app.get("/strategies/", response_class=HTMLResponse)
+async def get_strategies(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="strategies.html",
+        context=dict(
+            default_context,
+            active_tab='strategies',
+            npv_unit='MCAD',
+            nph_unit='exajoule',
+            ),
+    )
+
+@app.get("/index.html", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
+async def get_index(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context=dict(
+            default_context,
+            active_tab='blog',
+            ),
+    )
+
+default_context = dict(
+    int=int,
+    float=float,
+    min=min,
+    max=max,
+    peval=peval,
+    have_page_for_catpath=have_page_for_catpath,
+    url_for_catpath=url_for_catpath,
+    json=json,
+    datetime=datetime,
+    ipcc_canada=ipcc_canada,
+    stakeholders=stakeholders,
+    base=base,
+    discount_rate=.02,
+    )
+

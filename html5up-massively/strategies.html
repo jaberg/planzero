@@ -1,0 +1,99 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Strategies</h1>
+        <p>What might we do now, and over the decades to come, to reduce Canada's emissions?
+        </p>
+    </header>
+    <!--
+        <p>
+        This site offers a strategy-ranking framework based on simple climate and financial modelling. 
+        Annual emissions, like annual cashflow, are not the best way to compare projects.
+        The following scatterplot looks at projects in terms of future-discounted net trapped heat vs. future-discounted net earned money. The projects that trap less heat are associated with lower emissions. A combination of the best projects shows a trajectory toward our net-zero emissions goals.
+        </p>
+    -->
+
+<div id="main-chart" style="width: 600px; height: 400px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('main-chart'));
+var option;
+
+option = {
+  title: {
+      text: 'Future-Discounted Project Comparison @ {{ "{:.1f}".format(discount_rate * 100) }}% ({{ "{:.3f}".format((1 - discount_rate) ** 100) }} at 100 years)',
+      subtext: 'Click on points to explore project details', // Optional subtitle
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Net Present Value (${{npv_unit}})', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+  },
+  yAxis: {
+      name: 'Net Present Heat ({{nph_unit}})', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+    {
+      symbolSize: 20,
+      data: [
+          {% for npv, nph, evalname in peval.iter_npv_nph_evalname(discount_rate=discount_rate) %}
+          {
+              name: "{{evalname}}",
+              value: [{{float(npv.to(npv_unit).magnitude)}}, {{float(nph.to(nph_unit).magnitude)}}],
+              url: "/strategies/{{evalname}}",
+          }
+          {% endfor %}
+      ],
+      type: 'scatter',
+      label: {
+          show: true,
+          position: 'top', // top / botom / left / right / inside
+          formatter: '{b}', // pulls name property
+          color: '#333',
+          fontSize: 12,
+      },
+    }
+  ],
+    tooltip: {
+        formatter: function (params) {
+          return `Val: ${params.data.value[0]}, ${params.data.value[1]}<br>Click to visit: ${params.data.url}`;
+        }
+    }
+};
+
+option && myChart.setOption(option);
+
+// 3. Add the Click Listener
+myChart.on('click', function(params) {
+  // Console log to see what data is available
+  console.log(params);
+
+  // params.data contains the array for that point: [x, y, url]
+  // So the URL is at index 2
+  var url = params.data.url;
+
+  if (url) {
+    // Open in new tab
+    //window.open(url, '_blank');
+
+    // OR open in same tab:
+    window.location.href = url;
+  }
+});
+
+
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+</script>
+</section>
+</div>
+
+{% include "post-main.html" %}
