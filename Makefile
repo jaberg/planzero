@@ -43,5 +43,11 @@ local: .build
 		-it --rm $(target) \
 		fastapi dev --port=8012 --host=0.0.0.0
 
+prodlike: .build
+	docker run \
+		-p 127.0.0.1:8012:8012 \
+		-it --rm $(target) \
+		fastapi run --port=8012 --host=0.0.0.0
+
 clean:
 	rm .build

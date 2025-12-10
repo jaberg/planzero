@@ -25,4 +25,6 @@ RUN pip install --no-cache-dir networkx
 RUN pip install --no-cache-dir fastapi[standard]
 
 
+COPY . /content
+WORKDIR /content
 CMD ["fastapi", "run"]
