@@ -49,5 +49,8 @@ prodlike: .build
 		-it --rm $(target) \
 		fastapi run --port=8012 --host=0.0.0.0
 
+deploy:
+	fly deploy
+
 clean:
 	rm .build
