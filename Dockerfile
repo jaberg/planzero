@@ -25,8 +25,4 @@ RUN pip install --no-cache-dir networkx
 RUN pip install --no-cache-dir fastapi[standard]
 
 
-# Expose Jupyter port
-#EXPOSE 8888
-
-# Default command to start Jupyter
-#CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+CMD ["fastapi", "run"]

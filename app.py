@@ -24,27 +24,29 @@ u = base.u
 peval = base.ProjectEvaluation(
     projects={prj.idea.name: prj for prj in [
         base.NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
+        base.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
     ]},
     common_projects=[
         base.GeometricBovinePopulationForecast(),
+        base.PacificLogBargeForecast(),
         base.AtmosphericChemistry(),
     ],
 )
 peval.run_until(2225 * u.years)
 
 
-@app.get("/strategies/{eval_name}/", response_class=HTMLResponse)
-async def get_strategy_eval(request: Request, eval_name:str):
+@app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)
+async def get_strategy_eval(request: Request, strategy_name:str):
     return templates.TemplateResponse(
         request=request,
-        name="strategy-eval.html",
+        name=f"strategies/{strategy_name}.html",
         context=dict(
             default_context,
             active_tab='strategies',
-            eval_name=eval_name,
-            comparison=peval.comparisons[eval_name],
-            project=peval.comparisons[eval_name].project,
-            state_A=peval.comparisons[eval_name].state_A,
+            strategy_name=strategy_name,
+            comparison=peval.comparisons[strategy_name],
+            project=peval.comparisons[strategy_name].project,
+            state_A=peval.comparisons[strategy_name].state_A,
             ),
     )
 
@@ -129,14 +131,27 @@ async def get_strategies(request: Request):
             ),
     )
 
+@app.get("/blog/{post_name}", response_class=HTMLResponse)
+async def get_strategies(request: Request, post_name:str):
+    return templates.TemplateResponse(
+        request=request,
+        name=f"/blog/{post_name}.html",
+        context=dict(
+            default_context,
+            active_tab='blog',
+            ),
+    )
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     return templates.TemplateResponse(
         request=request,
-        name="index.html",
+        name="blog.html",
+        #name="index.html",
         context=dict(
             default_context,
+            fade_in_intro=True,
             active_tab='blog',
             ),
     )
@@ -146,7 +161,9 @@ default_context = dict(
     float=float,
     min=min,
     max=max,
+    sorted=sorted,
     peval=peval,
+    u=u,
     have_page_for_catpath=have_page_for_catpath,
     url_for_catpath=url_for_catpath,
     json=json,

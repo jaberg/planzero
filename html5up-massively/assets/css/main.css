@@ -3234,12 +3234,19 @@ input, select, textarea {
 			width: 100%;
 			height: 100%;
 			background-color: #212931;
-			background-image: url("../../images/overlay.png"), linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url("../../images/bg.jpg");
+			/*background-image: url("/images/overlay.png"), linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url("/images/bg.jpg");*/
+			/*background-image: url("/images/overlay.png"), linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url("https://www.canada.ca/content/canadasite/en/services/environment/climatechange/_jcr_content/par/mwscolumns_copy/colpar-2/mwsadaptiveimage/image.img.jpg/1727451374079.jpg");*/
+			background-image: url("/images/overlay.png"), linear-gradient(0deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), url("https://www.cer-rec.gc.ca/en/data-analysis/energy-commodities/electricity/report/archive/2016-canadian-renewable-power/images/mg42.jpg");
 			background-size: auto,								auto,														100% auto;
 			background-position: center,								center,														top center;
 			background-repeat: repeat,								no-repeat,													no-repeat;
 			background-attachment: scroll,								scroll,														scroll;
 			z-index: -1;
+            -webkit-filter: blur(3px);
+            -moz-filter: blur(3px);
+            -o-filter: blur(3px);
+            -ms-filter: blur(3px);
+            filter: blur(3px);
 		}
 
 			#wrapper > .bg.fixed {

@@ -32,19 +32,30 @@ class Stakeholder_Sets(object):
 
     # may be in product competition with another set of stakeholders
     # may be in land use competition with another set of stakeholders
+    # TODO: consider also a type system of "Products" which
+    #       have a set relationship: some stakeholder groups are the unique
+    #       producers of certain products "e.g. beef"
+    #       and simultaneously the non-unique producers of other products e.g. "food"
+    # The purpose would be to
+    # * enable graph algorithms for managing stakeholder maps
+    # * align the types in this sytem with whatever StatsCan tracks in terms of e.g.
+    #   amounts of things being produced, bought, sold, etc.
+    # * detect competitive pressures in the building of stakeholder maps (e.g.
+    #   if we reduce the number of X, it will increase the numbers of competing
+    #   things in those product areas)
 
 class Stakeholders(object):
-
-    newco_counter = 1
 
     def __init__(self, *,
                  name=None,
                  descr=None,
                  notable_members=None,
                  full_name=None,
+                 #unique_product=None, # a product produced only by members of this group
                  ipcc_catpaths=(),
                  customers=(),
                  suppliers=(),
+                 urls=(),
                 ):
         self.name = name
         self._full_name = full_name
@@ -55,6 +66,8 @@ class Stakeholders(object):
             assert catpath in ipcc_canada.catpaths, catpath
         self.customers = customers
         self.suppliers = suppliers
+        self.urls = urls
+        self.newco_counter = 1
 
     @property
     def full_name(self):
@@ -67,9 +80,10 @@ class Stakeholders(object):
             assert self.name == name
 
     def new_org_name(self):
-        name = f'{self.name}_(NewCo #{Stakeholders.newco_counter})'
-        assert name not in orgs._orgs
-        Stakeholders.newco_counter += 1
+        name = f'{self.name}_NewCo'
+        while name in orgs._orgs:
+            self.newco_counter += 1
+            name = f'{self.name}_NewCo#{self.newco_counter}'
         return name
 
     def new_org(self, *, name=None, org=None, **kwargs):
@@ -121,8 +135,9 @@ class Organizations(object):
             yield item
 
 
+# class Organization
 class Org(object):
-    def __init__(self, *, name=None, full_name=None, ipcc_catpaths=(), org_type=None, descr=None):
+    def __init__(self, *, name=None, full_name=None, ipcc_catpaths=(), org_type=None, descr=None, url=None):
         self.name = name
         self._full_name = full_name
         self.ipcc_catpaths = set(ipcc_catpaths )
@@ -130,6 +145,7 @@ class Org(object):
         for catpath in self.ipcc_catpaths:
             assert catpath in ipcc_canada.catpaths
         self.org_type = org_type
+        self.url = url
 
     @property
     def full_name(self):
@@ -143,7 +159,7 @@ class Org(object):
 
 
 orgs = Organizations()
-orgs.gov_of_canada = Org(
+orgs.Canada = Org(
     full_name="Government of Canada",
     ipcc_catpaths=ipcc_canada.catpaths
     )
@@ -155,6 +171,11 @@ orgs.FSM_Firmenich = Org(descr="Maker of Bovaer")
 
 
 ss = Stakeholder_Sets()
+ss.Regulators = Stakeholders(
+    ipcc_catpaths=ipcc_canada.catpaths,
+    notable_members=[
+        orgs.Canada,
+    ])
 
 ss.Makers_of_Beef_Substitutes = Stakeholders(
     ipcc_catpaths=['Enteric_Fermentation'],
@@ -184,18 +205,23 @@ ss.Feed_Additive_Companies = Stakeholders(
 
 ss.Feed_Growing_Farmers = Stakeholders(
     customers=[ss.Beef_Farmers, ss.Dairy_Farmers],
+    ipcc_catpaths=['Enteric_Fermentation'],
     )
 ss.Butchers_Meat_Packers = Stakeholders(
     suppliers=[ss.Beef_Farmers],
+    ipcc_catpaths=['Enteric_Fermentation'],
     )
 ss.Dairies = Stakeholders(
     suppliers=[ss.Dairy_Farmers],
+    ipcc_catpaths=['Enteric_Fermentation'],
     )
 ss.Beef_Consumers = Stakeholders(
     suppliers=[ss.Butchers_Meat_Packers],
+    ipcc_catpaths=['Enteric_Fermentation'],
     )
 ss.Milk_Consumers = Stakeholders(
     suppliers=[ss.Dairies],
+    ipcc_catpaths=['Enteric_Fermentation'],
     )
 
 
@@ -278,23 +304,6 @@ ac.Dairy_Cattle = DairyCattle()
 
 
 
-class DieselDryBulkFreighters(AssetClass):
-    pass
-
-
-ac.Diesel_Dry_Bulk_Freighters = DieselDryBulkFreighters()
-
-
-orgs.CanadaSteamshipLines = Org()
-orgs.AlgomaCentral = Org()
-
-
-ss.GreatLakesDryBulkShippingCompanies = Stakeholders(
-    notable_members=[
-        orgs.CanadaSteamshipLines,
-        orgs.AlgomaCentral])
-
-
 class Ideas(object):
     def __init__(self):
         self._ideas = {}
@@ -325,7 +334,7 @@ class Ideas(object):
 ideas = Ideas()
 
 class Idea(object):
-    def __init__(self, *, who=None, descr:str=None, for_whom=(), ipcc_catpaths=(), urls=()):
+    def __init__(self, *, who=None, descr:str=None, for_whom=(), ipcc_catpaths=(), urls=(), full_name=None):
         self.who = who
         if isinstance(for_whom, Stakeholders):
             self.for_whom = [for_whom]
@@ -337,7 +346,7 @@ class Idea(object):
             assert catpath in ipcc_canada.catpaths
         self.urls = urls
         self.name = None
-        self._full_name = None
+        self._full_name = full_name
 
     def on_assign(self, name):
         if self.name is None:
@@ -379,15 +388,19 @@ class ResearchIdea(Idea):
 
 ss.People_Desiring_Net_Zero = Stakeholders()
 
+ss.Voters = Stakeholders(
+    ipcc_catpaths=ipcc_canada.catpaths,
+    )
+
 ideas.national_bovaer_mandate = RegulationIdea(
-    who=orgs.gov_of_canada,
+    who=orgs.Canada,
     for_whom=ss.People_Desiring_Net_Zero,
-    descr="Force cattle farmers to administer Bovaer",
+    descr="Compel cattle farmers to administer Bovaer",
     ipcc_catpaths=['Enteric_Fermentation'],
     )
 
 ideas.credit_bovaer = RegulationIdea(
-    who=orgs.gov_of_canada,
+    who=orgs.Canada,
     for_whom=[ss.Beef_Farmers, ss.Dairy_Farmers],
     descr="Recognize Bovaer usage with carbon credits",
     ipcc_catpaths=['Enteric_Fermentation'],
@@ -395,6 +408,11 @@ ideas.credit_bovaer = RegulationIdea(
 
 ss.Organizations_discouraging_beef_and_milk_consumption = Stakeholders(
     descr="Organizations discouraging people from consuming beef and milk",
+    ipcc_catpaths=['Enteric_Fermentation'],
+    )
+
+ss.Organizations_encouraging_beef_and_milk_consumption = Stakeholders(
+    descr="Organizations encouraging people from consuming beef and milk",
     ipcc_catpaths=['Enteric_Fermentation'],
     )
 
@@ -473,3 +491,320 @@ def ideas_by_catpath(catpath):
         print(name, idea, catpath, idea.ipcc_catpaths)
         if catpath in idea.ipcc_catpaths:
             yield idea
+
+
+orgs.CanadaSteamshipLines = Org(
+    full_name="Canada Steamship Lines (CSL)",
+    url="https://cslships.com/")
+orgs.AlgomaCentral = Org(
+    full_name="Algoma Central Corporation",
+    url="https://www.algonet.com/")
+orgs.Fednav = Org(
+    url="https://www.fednav.com/")
+orgs.McKeil = Org(
+    full_name="McKeil Marine",
+    url="https://mckeil.com/")
+orgs.Norvic = Org(
+    full_name="Norvic Shipping",
+    url="https://norvicshipping.com/company/")
+
+
+ss.Great_Lakes_Dry_Bulk_Shipping_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+        orgs.CanadaSteamshipLines,
+        orgs.AlgomaCentral,
+        orgs.McKeil,
+    ])
+"""
+<ul>
+    <li>Transport large amounts of bulk cargo picked up at ports, and delivered to ports, at predictable times, moved at low price per ton mile?</li>
+    <li>Sometimes customers want steady movement (e.g. from mines)</li>
+    <li>Sometimes customers want seasonal movement (e.g. grain)</li>
+    <li>Sometimes customers want irregular movement? </li>
+    <li>Buy fuel from oil companies, refuel at ports</li>
+    <li>Subcontract ship construction, delivery, repair</li>
+    <li>May Subcontract ship operation</li>
+    <li>May have to perform or subcontract cargo hold cleaning</li>
+</ul>
+<p>
+What are their main concerns?
+<ul>
+    <li>Price of fuel?</li>
+    <li>Price of labour?</li>
+    <li>Price of ship mortgage financing?</li>
+    <li>Canals close for winter, can't compete with rail and truck?</li>
+</ul>
+</p>
+"""
+
+ss.Great_Lakes_Liquid_Bulk_Shipping_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+        orgs.McKeil,
+    ])
+
+ss.Tug_and_Tow_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Great_Lakes_Tug_and_Tow_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Pacific_Tug_and_Tow_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Atlantic_Tug_and_Tow_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+orgs.Esso = Org()
+orgs.Petro_Can = Org()
+
+ss.Marine_Diesel_Vendors = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+        orgs.Esso,
+        orgs.Petro_Can,
+    ])
+
+ss.International_Dry_Bulk_Shipping = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.International_Liquid_Bulk_Shipping = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.International_Container_Shipping = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+orgs.Port_of_Vancouver = Org()
+orgs.Port_of_Montreal = Org()
+orgs.Port_of_Hamilton = Org()
+orgs.Port_of_Thunder_Bay = Org()
+orgs.Port_of_Halifax = Org()
+orgs.Port_of_St_Johns = Org()
+orgs.Port_of_Toronto = Org()
+orgs.Port_of_Quebec_City = Org()
+
+ss.Ports = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+        orgs.Port_of_Vancouver,
+        orgs.Port_of_Montreal,
+        orgs.Port_of_Hamilton,
+        orgs.Port_of_Thunder_Bay,
+        orgs.Port_of_Halifax,
+        orgs.Port_of_St_Johns,
+        orgs.Port_of_Toronto,
+        orgs.Port_of_Quebec_City,
+    ])
+
+orgs.Great_Lakes_Grain = Org(url="https://www.greatlakesgrain.com/About-Us")
+orgs.PnH_Crop_Inputs_and_Grain = Org(
+    full_name="Parish and Heimbecker",
+    url="https://parrishandheimbecker-ag.com/")
+ss.Great_Lakes_Grain_Movers = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+        orgs.Great_Lakes_Grain,
+        orgs.PnH_Crop_Inputs_and_Grain,
+    ])
+
+orgs.Nutrien = Org()
+orgs.Mosaic_Company = Org()
+orgs.Compass_Minerals = Org()
+orgs.KpS_Potash_Canada = Org()
+
+ss.Potash_Mining_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    urls=["https://natural-resources.canada.ca/minerals-mining/mining-data-statistics-analysis/minerals-metals-facts/potash-facts",],
+    notable_members=[
+        orgs.Nutrien,
+        orgs.Mosaic_Company,
+        orgs.Compass_Minerals,
+        orgs.KpS_Potash_Canada])
+
+ss.Coal_Mining_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+orgs.Newfoundland = Org()
+orgs.New_Brunswick = Org()
+orgs.Prince_Edward_Island = Org()
+orgs.Nova_Scotia = Org()
+orgs.Quebec = Org()
+orgs.Ontario = Org()
+orgs.Manitoba = Org()
+orgs.Saskatchewan = Org()
+orgs.Alberta = Org()
+orgs.British_Columbia = Org()
+orgs.Nunavut = Org()
+orgs.NorthWestTerritories = Org()
+orgs.Yukon = Org()
+
+ss.Coal_Mining_Provinces = Stakeholders(
+    notable_members=[
+        orgs.Alberta,
+        orgs.Saskatchewan,
+        orgs.Nova_Scotia,
+        orgs.New_Brunswick,
+    ])
+
+orgs.BC_Ferries = Org()
+orgs.Canadian_Ferry_Association = Org(url="https://canadianferry.ca/")
+
+ss.Ferry_Operators = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[orgs.BC_Ferries, orgs.Canadian_Ferry_Association],
+    )
+
+ss.Pacific_Logging_Marine_Transport_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Northern_Supply_Marine_Transport_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[orgs.Fednav])
+
+orgs.Seaspan = Org(
+    url="https://www.seaspan.com/")
+orgs.Davie = Org()
+
+ss.Ship_Builders = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+        orgs.Seaspan,
+        orgs.Davie,
+    ]
+    )
+
+ss.Ship_Designers = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Ship_Maintenance_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Mariners = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Mariner_Training_Institutions = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Steel_Mills = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Dredging_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ss.Marine_Construction_Companies = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+orgs.International_Maritime_Organization = Org()
+orgs.Green_Marine = Org()
+
+ss.Marine_Policy_Advocacy_Groups = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+        orgs.International_Maritime_Organization,
+        orgs.Green_Marine,
+    ])
+
+ss.Harbour_Ferry_Customers = Stakeholders()
+ss.Newfoundland_Ferry_Customers = Stakeholders()
+ss.Victoria_Island_Ferry_Customers = Stakeholders()
+
+ideas.battery_water_taxis = NewcoIdea(
+    who=ss.Ferry_Operators.new_org(),
+    descr="Operate a battery-electric water-taxi service",
+    for_whom=[ss.Harbour_Ferry_Customers],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ideas.hydrofoil_ferry_service = NewcoIdea(
+    who=ss.Ferry_Operators.new_org(),
+    descr="Operate a hydrofoil ferry service",
+    for_whom=[ss.Newfoundland_Ferry_Customers, ss.Victoria_Island_Ferry_Customers],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ideas.replace_aging_ferries_with_battery_electric = RegulationIdea(
+    who=orgs.Canada,
+    descr="Prefer replacing aging ferries with battery-electric designs",
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    for_whom=[ss.People_Desiring_Net_Zero],
+    urls=["https://www.damen.com/vessels/ferries"],
+    )
+
+ideas.scrub_emissions_from_marine_exhaust = RegulationIdea(
+    who=orgs.Canada,
+    descr="Require GHG emission scrubbing from vessel exhaust",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+
+ideas.battery_tugs_w_aux_solar_barges = NewcoIdea(
+    full_name="Battery-powered tugboats with auxiliary solar barges",
+    who=ss.Tug_and_Tow_Companies.new_org(),
+    descr="Solar, wind, and/or battery-electric tugboats for large barges",
+    for_whom=[ss.Great_Lakes_Dry_Bulk_Shipping_Companies,
+              ss.Great_Lakes_Liquid_Bulk_Shipping_Companies,
+              ss.Pacific_Logging_Marine_Transport_Companies,
+             ],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    urls=["https://www.seaspan.com/stories/log-barging-101/"],
+    )
+# autonomous version of ^^ doesn't make very much financial difference, fuel savings is much larger
+
+
+ideas.autonomous_hopper_barges_for_dredging = NewcoIdea(
+    who=ss.Tug_and_Tow_Companies.new_org(),
+    descr="Autonomous battery-electric hopper barges for dredging operations",
+    for_whom=[ss.Marine_Construction_Companies, ss.Dredging_Companies, ss.Ports],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+class DieselDryBulkFreighters(AssetClass):
+    pass
+
+
+class PacificLogBarges(AssetClass):
+    # Gemini estimates there about 10 of these in operation
+    # made by Seaspan and Rivtow
+    # Gemini states they are moved by tug, they are not self-propelled
+    # Gemini states they are moved by tugs with 3000-6000 HP
+    # they currently move about 10-15k tons / ship
+    # they make about 50 trips a year
+    # they move about 7_000_000 tons annually
+    # the trips average 400 km
+    # the freight task is 7_000_000 x 400 = 2.8 billion tonne-km
+    # the associated emissions are 35-40 tonnes CO2e, including empty back-haul
+    # backhaul travel is typically done faster at a lower-efficiency speed, uses 60-70% fuel / km
+    # burn marine diesel oil or marine gas oil, not bunker
+    # future fleet burns LNG, and may be hybrid-electric
+
+    def __init__(self):
+        super().__init__(owners=ss.Pacific_Logging_Marine_Transport_Companies)
+        self.n_barges = 10
+
+ac.Pacific_Log_Barges = PacificLogBarges()
+
+class PassiveBarge3000DWT(AssetClass):
+    pass
+
+ac.Diesel_Dry_Bulk_Freighters = DieselDryBulkFreighters()
+ac.PassiveBarge3000DWT = PassiveBarge3000DWT()
+
+

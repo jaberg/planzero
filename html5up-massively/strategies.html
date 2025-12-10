@@ -46,7 +46,7 @@ option = {
               name: "{{evalname}}",
               value: [{{float(npv.to(npv_unit).magnitude)}}, {{float(nph.to(nph_unit).magnitude)}}],
               url: "/strategies/{{evalname}}",
-          }
+          } {% if not loop.last %},{% endif %}
           {% endfor %}
       ],
       type: 'scatter',

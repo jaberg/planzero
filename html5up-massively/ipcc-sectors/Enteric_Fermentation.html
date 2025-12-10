@@ -122,10 +122,21 @@ While cattle are the main event, the IPCC category covers all livestock. However
 </h3>
 
 <ul>
-    <li>the owners of herds do not want to reduce their herds</li>
-    <li>domestic and international demand for beef and milk products is high, and expected to rise with population</li>
-    <li>change in farming practices is typically very slow</li>
-    <li>the voting population likes cattle: they're cute, gentle, picturesque, iconic</li>
+    <li>Owners of herds do not want to reduce their herds, and neither do their customers or suppliers.</li>
+    <li>Domestic and international demand for beef and milk products is high, and expected to rise with population.</li>
+    <li>Change in farming practices can take decades.</li>
+    <li>The voting population likes cattle: they're cute, gentle, picturesque, iconic.</li>
+</ul>
+
+<h3>
+    Key Stakeholder Groups
+</h3>
+<ul>
+    {% for sg_name, sg in sorted(stakeholders.ss.items()) %}
+    {% if catpath in sg.ipcc_catpaths %}
+    <li>{{ sg.full_name }}</li>
+    {% endif %}
+    {% endfor %}
 </ul>
 
 <h3>
@@ -146,7 +157,13 @@ While cattle are the main event, the IPCC category covers all livestock. However
 {% for idea in stakeholders.ideas_by_catpath(catpath) %}
         <tr>
             <td>{{idea.who.full_name}}</td>
-            <td> {{idea.descr}}</td>
+            <td>
+                {% if idea.name in peval.comparisons %}
+                <a href="/strategies/{{idea.name}}/">{{idea.descr}}</a>
+                {% else %}
+                {{idea.descr}}
+                {% endif %}
+            </td>
             <td>
                 {% for sg in idea.for_whom %}
                 {{sg.full_name}}{% if not loop.last %},{% endif %}

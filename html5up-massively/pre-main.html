@@ -44,7 +44,19 @@
 	<body class="is-preload">
 
 		<!-- Wrapper -->
-			<div id="wrapper">
+        <div id="wrapper" {% if fade_in_intro %}class="fade-in"{% endif %}>
+            {% if fade_in_intro %}
+
+				<!-- Intro -->
+					<div id="intro">
+						<h1>Plan Zero </h1>
+						<p>An evolving plan for zero net emissions from Canada<br />
+						and a free, open source Python library for simple climate and project modelling.</p>
+						<ul class="actions">
+							<li><a href="#header" class="button icon solid solo fa-arrow-down scrolly">Continue</a></li>
+						</ul>
+					</div>
+            {% endif %}
 
 				<!-- Header -->
 					<header id="header">
@@ -59,7 +71,7 @@
                             <li {% if active_tab == "strategies" %}class="active" {% endif %}><a href="/strategies/">Strategies</a></li>
 						</ul>
 						<ul class="icons">
-							<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+							<li><a href="https://github.com/jaberg/planzero" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
 						</ul>
 					</nav>
 

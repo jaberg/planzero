@@ -33,6 +33,7 @@ u = ureg
 
 
 import stakeholders
+import ipcc_canada
 
 class SparseTimeSeries(object):
 
@@ -243,6 +244,42 @@ class Project(object):
     def step(self, state):
         return None # return t_next to be called again, None to be left alone
 
+    def project_graph_svg(self, config, state, comparison):
+        fig = plt.figure()
+        fig.set_layout_engine("constrained")
+        key = config['sts_key']
+        if config.get('figtype', 'plot') == 'plot':
+            sts = state.sts[key]
+            sts.plot(t_unit=config.get('t_unit'), label=self.name)
+        elif config.get('figtype') == 'plot vs baseline':
+            sts = state.sts[key]
+            sts.plot(t_unit=config.get('t_unit'), label=self.name)
+            comparison.state_B.sts[key].plot(
+                t_unit=config.get('t_unit'),
+                label='Baseline',
+                )
+            plt.legend(loc='lower left')
+        elif config.get('figtype') == 'plot delta':
+            years = comparison._years()
+            vals_A = comparison.state_A.sts[key].latest_vals(years, inclusive=True)
+            vals_B = comparison.state_B.sts[key].latest_vals(years, inclusive=True)
+            diff = vals_A - vals_B
+            plt.plot(
+                years.to(config['t_unit']).magnitude,
+                diff.magnitude)
+            plt.title(f'{key} Delta: Active - Inactive')
+            plt.xlabel(config['t_unit'])
+            plt.ylabel(diff.u)
+        else:
+            raise NotImplementedError(config.get('figtype'))
+        plt.grid()
+
+        svg_buffer = StringIO()
+        plt.savefig(svg_buffer, format="svg")
+        plt.close()
+        svg_string = svg_buffer.getvalue()
+        return svg_string
+
 
 class State(object):
     t_start = 2000 * u.years
@@ -252,8 +289,7 @@ class State(object):
         self._t_now = torch.tensor(t_start.to(u.seconds).magnitude) * u.seconds
         self.sts = {}
         self.sectoral_emissions_contributors = {
-            'Enteric Fermentation': {},
-        }
+            catpath: {} for catpath in sorted(ipcc_canada.catpaths)}
         self.projects = {}
         self.project_writes = {} # prj-> set of string names
         self.project_requires_current = {} # prj -> set of string names
@@ -625,7 +661,7 @@ class GeometricBovinePopulationForecast(Project):
                 state.t_now,
                 (state.sts['bovine_population'].latest_val(2000 * u.years, inclusive=True)
                  * self.methane_per_head_per_year))
-        state.register_emission('Enteric Fermentation', 'CH4', 'bovine_methane')
+        state.register_emission('Enteric_Fermentation', 'CH4', 'bovine_methane')
         return 2000 * u.years + self.stepsize
 
     def step(self, state, current):
@@ -664,7 +700,6 @@ class NationalBovaerMandate(Project):
         self.stepsize = 1.0 * u.years
 
     def on_add_project(self, state):
-        self.t_next = state.t_now
         with state.requiring_latest(self) as ctx:
             ctx.bovine_population_on_bovaer = SparseTimeSeries(
                 default_value=0 * u.cattle)
@@ -795,41 +830,6 @@ class NationalBovaerMandate(Project):
 
         return rval
 
-    def project_graph_svg(self, config, state, comparison):
-        fig = plt.figure()
-        fig.set_layout_engine("constrained")
-        key = config['sts_key']
-        if config.get('figtype', 'plot') == 'plot':
-            sts = state.sts[key]
-            sts.plot(t_unit=config.get('t_unit'), label=self.name)
-        elif config.get('figtype') == 'plot vs baseline':
-            sts = state.sts[key]
-            sts.plot(t_unit=config.get('t_unit'), label=self.name)
-            comparison.state_B.sts[key].plot(
-                t_unit=config.get('t_unit'),
-                label='Baseline',
-                )
-            plt.legend(loc='lower left')
-        elif config.get('figtype') == 'plot delta':
-            years = comparison._years()
-            vals_A = comparison.state_A.sts[key].latest_vals(years, inclusive=True)
-            vals_B = comparison.state_B.sts[key].latest_vals(years, inclusive=True)
-            diff = vals_A - vals_B
-            plt.plot(
-                years.to(config['t_unit']).magnitude,
-                diff.magnitude)
-            plt.title(f'{key} Delta: Active - Inactive')
-            plt.xlabel(config['t_unit'])
-            plt.ylabel(diff.u)
-        else:
-            raise NotImplementedError(config.get('figtype'))
-        plt.grid()
-
-        svg_buffer = StringIO()
-        plt.savefig(svg_buffer, format="svg")
-        plt.close()
-        svg_string = svg_buffer.getvalue()
-        return svg_string
 
 
 class ProjectComparison(object):
@@ -847,8 +847,12 @@ class ProjectComparison(object):
         years = torch.arange(start_year, stop_year) * u.years
         return years
 
+    @property
+    def _present_year_int(self):
+        return int(self.present.to('years').magnitude)
+
     def _net_present_envelope(self, years, base_rate):
-        present_year_int = int(self.present.to('years').magnitude)
+        present_year_int = self._present_year_int
         envelope = [0] * len(years)
         for ii, year in enumerate(years):
             year_int = int(year.to('years').magnitude)
@@ -1003,3 +1007,269 @@ class ProjectEvaluation(object):
 # what about India's cattle population!?
 # new process for hydrogen peroxide: https://interestingengineering.com/innovation/solar-hydrogen-peroxide-cornell-breakthrough
 
+class PacificLogBargeForecast(Project):
+    # somehow link/merge with stakeholders.PacificLogBarges
+
+    def __init__(self):
+        super().__init__()
+        self.stepsize = 1.0 * u.years
+
+    def on_add_project(self, state):
+        with state.requiring_current(self) as ctx:
+            ctx.n_pacific_log_tugs_ZEV_constructed = SparseTimeSeries(
+                default_value=0 * u.dimensionless)
+        with state.defining(self) as ctx:
+            ctx.n_pacific_log_tugs = SparseTimeSeries(
+                default_value=stakeholders.ac.Pacific_Log_Barges.n_barges * u.dimensionless)
+            ctx.n_pacific_log_tugs_diesel = SparseTimeSeries(
+                default_value=stakeholders.ac.Pacific_Log_Barges.n_barges * u.dimensionless)
+            ctx.n_pacific_log_tugs_ZEV = SparseTimeSeries(
+                default_value=0 * u.dimensionless)
+
+            ctx.pacific_log_barge_CO2 = SparseTimeSeries(
+                default_value=0 * u.kg)
+
+        state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2',
+                                'pacific_log_barge_CO2')
+        return state.t_now
+
+    def step(self, state, current):
+        current.n_pacific_log_tugs_ZEV = current.n_pacific_log_tugs_ZEV_constructed
+        current.n_pacific_log_tugs_diesel = (
+            current.n_pacific_log_tugs
+            - current.n_pacific_log_tugs_ZEV)
+        current.n_pacific_log_tugs = (
+            current.n_pacific_log_tugs_diesel
+            + current.n_pacific_log_tugs_ZEV)
+        current.pacific_log_barge_CO2 = (
+            2.68 * u.kg / u.liter
+            * 400 * u.liter / u.hour
+            * current.n_pacific_log_tugs_diesel
+            * (300 / 365) # working most days
+            * self.stepsize)
+
+        return state.t_now + self.stepsize
+
+
+class BatteryTugWithAuxSolarBarges(Project):
+    #after_tax_cashflow_name = f'BatteryTugWithAuxSolarBarges_AfterTaxCashflow'
+    vancouver_winter_solar_hours_per_day = 1.3 * u.kilowatt * u.hours / u.m ** 2 / u.day
+
+    def __init__(self, idea=None, year_0=2026 * u.years, autonomous=False):
+        super().__init__()
+        self.idea = idea
+        self.stepsize = 1.0 * u.years
+        self.autonomous = autonomous
+        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow{"_Autonomous" if autonomous else ""}'
+        self.year_0 = year_0
+        self.vessel_lifetime = 20 * u.years
+        self.r_and_d_duration = 5 * u.years if autonomous else 3 * u.years
+        self.autonomy_rate = 0.9 if autonomous else 0
+
+        tug_power_required = 2000 * u.horsepower
+        # guessing here:
+        # this web application: https://nrcan-rncan.maps.arcgis.com/apps/webappviewer/index.html?id=0de6c7c412ca4f6cbd399efedafa4af4&_gl=1*1096veb*_ga*MTg0MDQ2OTMxOS4xNzY0MDE3NDI0*_ga_C2N57Y7DX5*czE3NjUzMTYyMjQkbzMkZzEkdDE3NjUzMTYzMjIkajYwJGwwJGgw
+        # estimates north Vancouver Island gets just .7 kwh/m2/day in winter for horizontal panels
+        # but maybe 2kwh/m2/day for south-facing vertically-mounted ones
+        # if we use a double-sided PV sail, then it will get various amounts of light
+        # depending on which way the wind is blowing and which way the vessel is going
+        # so...
+
+        # suppose auxiliary ships 50m long with 50m sails, 20m wide
+        aux_vessel_length = 70 * u.m
+        aux_vessel_beam = 20 * u.m
+        pv_area_per_aux_vessel = aux_vessel_length * aux_vessel_beam
+
+        # suppose wind power is half of what the aux vessels can provide
+        wind_power_fraction = .5
+
+        pv_power_required = tug_power_required * wind_power_fraction
+
+        self.n_aux_vessels_required = int((
+            pv_power_required
+            / (pv_area_per_aux_vessel * self.vancouver_winter_solar_hours_per_day)
+        ).to('dimensionless') + 1)
+
+        battery_capacity_per_tug = tug_power_required * wind_power_fraction * 24 * u.hours
+
+        # guessing
+        battery_capacity_per_aux_vessel = 0.01 * battery_capacity_per_tug
+
+        # super-guess that the launched cost of pv & battery is half the cost of the vessel
+        self.cost_per_aux_vessel = 2 * (
+            pv_area_per_aux_vessel * self.PV_cost_per_area
+            + battery_capacity_per_aux_vessel * self.battery_cost_per_capacity
+        ).to(u.CAD)
+
+        # super-guess that the launched cost of the tug is 3x the cost of the battery
+        self.cost_per_tug = (
+            battery_capacity_per_tug * self.battery_cost_per_capacity
+            + 2 * battery_capacity_per_tug * self.battery_cost_per_capacity
+        ).to(u.CAD)
+
+        self.r_and_d_annual_cost = 1_000_000 * u.CAD / u.year
+
+    PV_cost_per_area = 70 * u.CAD / u.m ** 2
+    battery_cost_per_capacity = 200 * u.CAD / (1280 * u.watt * u.hour)
+
+    def on_add_project(self, state):
+        with state.defining(self) as ctx:
+            ctx.n_pacific_log_tugs_ZEV_constructed = SparseTimeSeries(
+                default_value=0 * u.dimensionless)
+            setattr(ctx, self.after_tax_cashflow_name, SparseTimeSeries(
+                default_value=0 * u.MCAD))
+        return state.t_now
+
+    def cost_per_tug_w_aux(self):
+        return (
+            self.cost_per_tug
+            + self.n_aux_vessels_required * self.cost_per_aux_vessel)
+
+    @property
+    def fuel_cost_rate(self):
+        price_of_diesel = 1.20  * u.CAD / u.liter
+        working_days_per_year = 300
+        diesel_tug_fuel_consumption = 400 * u.liter / u.hour
+        # suppose everything same but fuel, so revenue is fuel savings
+        fuel_cost_rate = (
+            price_of_diesel
+            * diesel_tug_fuel_consumption
+            * (working_days_per_year / 365)).to(u.CAD/u.year)
+        return fuel_cost_rate
+
+    @property
+    def tug_labour_rate(self):
+        crew_size = 9
+        avg_salary = 75_000 * u.CAD / u.year
+        cost_rate = crew_size * avg_salary
+        return cost_rate
+
+    def step(self, state, current):
+        manufacturing_costs = 0 * u.CAD
+        r_and_d_costs = 0 * u.CAD
+        if state.t_now >= self.year_0:
+            r_and_d_costs += self.r_and_d_annual_cost * self.stepsize
+
+        if state.t_now >= self.year_0 + self.r_and_d_duration:
+            n_tugs_built_per_step = (
+                state.latest.n_pacific_log_tugs
+                / self.vessel_lifetime) * self.stepsize
+            manufacturing_costs += n_tugs_built_per_step * (
+                self.cost_per_tug
+                + self.n_aux_vessels_required * self.cost_per_aux_vessel)
+            if state.latest.n_pacific_log_tugs_ZEV_constructed < state.latest.n_pacific_log_tugs:
+                current.n_pacific_log_tugs_ZEV_constructed += n_tugs_built_per_step
+            else:
+                # we don't model the explicit decomissioning and recommisioning every 20 years
+                pass
+
+        revenue = state.latest.n_pacific_log_tugs_ZEV * self.fuel_cost_rate * self.stepsize
+        if self.autonomous:
+            revenue += (
+                state.latest.n_pacific_log_tugs_ZEV
+                * self.tug_labour_rate
+                * self.stepsize
+                * self.autonomy_rate)
+        
+        # not included:
+        # salvage value, part-reuse between vessel generations
+        # maintenance
+        # insurance
+        # financing
+
+        setattr(
+            current,
+            self.after_tax_cashflow_name, 
+            - r_and_d_costs
+            - manufacturing_costs
+            + revenue
+            )
+        return state.t_now + self.stepsize
+
+    def project_page_vision(self): 
+        return f"""
+        The idea: develop a marine vessel
+        that is a mobile floating solar and/or wind power plant.
+        Solar panels are the cheapest sources of power in the world, why rely on shore power?
+        The financing and environmental impact models are based on a plan of simply replacing the fleet of diesel
+        tugs pulling log barges around Vancouver Island, and never expanding to other applications.
+        See Future Work at the bottom of this page for potential expansions of scope.
+        """
+
+    def project_page_graphs(self):
+        rval = []
+
+        descr = f"""
+        Suppose that the fleet size is constant.
+        """
+        rval.append(dict(
+            sts_key='n_pacific_log_tugs',
+            t_unit='years',
+            descr=descr))
+
+        descr = f"""
+        Suppose that the number of ZEV vessels increases linearly at a steady
+        rate sufficient to replace the fleet every 20 years.
+        """
+        rval.append(dict(
+            sts_key='n_pacific_log_tugs_ZEV',
+            t_unit='years',
+            descr=descr))
+
+        descr = """
+        The impact on CO2 emissions from the Pacific log tug fleet is expected to be significant.
+        """
+        rval.append(dict(
+            sts_key='pacific_log_barge_CO2',
+            t_unit='years',
+            figtype='plot vs baseline',
+            descr=descr))
+
+        descr = """
+        The impact on atmospheric CO2 concentration is expected to be very small.
+        That said, if the technology used in this solution were scaled globally,
+        the impact could be significant. (TODO: estimate how significant)
+        """
+        rval.append(dict(
+            sts_key='Atmospheric_CO2_conc',
+            t_unit='years',
+            figtype='plot vs baseline',
+            descr=descr))
+
+        descr = """
+        A visualization of the difference in global heat forcing reveals the shape of the impact over time.
+        The datapoints in this curve are used to compute the Net Present Heat for the project, by adding up the energy associated with each year (modulated by the future discount factor).
+        """
+        rval.append(dict(
+            sts_key='DeltaF_forcing',
+            t_unit='years',
+            figtype='plot delta',
+            descr=descr))
+
+        descr = """
+        In other terms, the difference in global heat forcing can be quantified as a small change in (upward) temperature trajectory for the top 200m of the world's oceans.
+        """
+        rval.append(dict(
+            sts_key='Ocean_Temperature_Anomaly',
+            t_unit='years',
+            figtype='plot delta',
+            descr=descr))
+
+        autonomous_earning = f"""
+        <li>earning {(self.tug_labour_rate * u.year * self.autonomy_rate).to(u.megaCAD)} annually per vessel [set] in labour savings from autonomous control</li>
+        """
+        descr = f"""
+        In terms of financial modelling, the project is modelled as
+        <ul>
+        <li>needing {self.r_and_d_annual_cost.to(u.megaCAD/u.year)} for research, development, and operations,</li>
+        <li>needing {self.cost_per_tug_w_aux().to(u.megaCAD)} per vessel [set] a rate sufficient to replace the fleet over vessel lifetime of {self.vessel_lifetime}
+        <li>earning {(self.fuel_cost_rate * u.year).to(u.megaCAD)} annually per vessel [set] in saved fuel</li>
+        {autonomous_earning if self.autonomous else ""}
+        </ul>
+        """
+        rval.append(dict(
+            sts_key=self.after_tax_cashflow_name,
+            t_unit='years',
+            figtype='plot',
+            descr=descr))
+        return rval
