@@ -143,79 +143,95 @@ When you see "Stationary Combustion" in that report, visualize these specific pi
 </table>
 
 <h2>
-    Stakeholders' Problems
+    How might Canada reduce oil and gas extraction emissions to zero?
 </h2>
-
-<h3>Government of Canada</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<p>
-The various branches of the Government of Canada set emissions targets nationally, collect data nationally, participate in the UN and IPCC, negotiate trade deals with other countries, and administer any carbon markets or pricing schemes nation-wide. The Government of Canada also collects various revenues from the activities of oil and gas extraction.
-</p>
-<h3>Government of Alberta</h3>
-<p>Emissions in this sector are primarily related to oil sands, and oil sands are primarily in Alberta.</p>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>Government of British Columbia</h3>
-<p>British Columbia's coast is one of the primary routes from Alberta oil sands to international markets.
-There are already pipelines crossing the Rocky Mountains.
-The question of whether to approve and/or build another pipeline is a hot political topic at the time of writing.
-</p>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>Municipal Governments</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>Oil and Gas Companies</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>Extraction Equipment Vendors</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>Oil and Gas Company Employees</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>Indigenous Groups</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>Environmental Groups</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<h3>International Oil and Gas Buyers</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<ul>
-    <li>TODO: Who are they? Who is buying oil and who is buying gas? What for?</li>
-    <li>They drive emissions in this sector by buying fuel from Oil and Gas extractors.</li>
-    <li>They may be bound to participate in carbon markets, or not.</li>
-    <li>They may be committed to buy certain quantities over certain amounts of time from certain suppliers.</li>
-</ul>
-<h3>Domestic Oil and Gas Buyers</h3>
-<p>To-do: What are this group's private problems relating to oil and gas extraction?<p>
-<ul>
-    <li>TODO: Who are they? Who is buying oil and who is buying gas? What for?</li>
-    <li>They drive emissions in this sector by buying fuel from Oil and Gas extractors.</li>
-    <li>They may be committed to buy certain quantities over certain amounts of time from certain suppliers.</li>
-</ul>
-
-<h2>
-    Strategies
-</h2>
-<p>How might we reduce oil and gas extraction emissions by 2050?
-</p>
 
 <h3>
     Critical Success Factors
 </h3>
 
 <ul>
-    <li>extract less oil and gas</li>
-    <li>use more-efficient extraction processes</li>
+    <li>extract less oil and gas, especially from oil sands</li>
+    <li>use more-efficient extraction equipment, processes</li>
 </ul>
 
 <h3>
-    Possible Strategies
+    Barriers
 </h3>
 
 <ul>
-    <li>Regulatory and legal blocks of oil sands exploitation</li>
-    <li>Use renewable electricity to drive equipment</li>
-    <li>Develop and scale technology to synthesize petroleum products without extracted oil</li>
+    <li>Oil sands extraction operations are high-capital long-duration projects (e.g. ballpark 40 years), for which considerable future extraction is required to pay back sunk-cost investments. Google Gemini estimates that existing extraction facilities can be operated profitably so long as the price of oil is above $25-$35 a barrel (WTI).</li>
+    <li>Global demand for oil and natural gas remains high.
+        Global oil consumption does not appear to have peaked (see e.g. <a href="https://ourworldindata.org/grapher/oil-consumption-by-country?tab=line&country=USA~AUS~GBR~CAN~ZAF~NOR~CHN~OWID_WRL">our world in data</a>).
+        As long as prices remain above about $60/barrel (WTI), it is potentially profitable
+        to create new oil sands mines and expand production. (Gemini estimate)
+    </li>
+    <li>
+        Alberta's oil sands operations leverage relatively cheap energy and already use it cleverly as well.
+        The heat required to melt bitumen to oil already sometimes comes from a co-generation process
+        in which gas turbines generate electricy and their heat exhaust melts the oil.
+        Not only does this power the site operation, such sites actually sell electricity via the provincial grid.
+    </li>
 </ul>
-<p>Ultimately, the most effective solution is likely to be a reduction in oil demand by e.g.
-transitioning oil customers to non-oil-based technologies. Such technology transitions appear
-as strategies in for other sectors.
-</li>
+
+<h3>
+    Key Stakeholder Groups
+</h3>
+<ul>
+    {% for sg_name, sg in sorted(stakeholders.ss.items()) %}
+    {% if catpath in sg.ipcc_catpaths %}
+    <li>{{ sg.full_name }}</li>
+    {% endif %}
+    {% endfor %}
+</ul>
+
+<h3>
+    Possible Strategies (feel free to help flesh these out, contribute more)
+</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>Who</td>
+            <th>What</td>
+            <th>For Whom</td>
+            <th>Cost / tonne CO2e</td>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+{% for idea in stakeholders.ideas_by_catpath(catpath) %}
+        <tr>
+            <td>{{idea.who.full_name}}</td>
+            <td>
+                {% if idea.name in peval.comparisons %}
+                <a href="/strategies/{{idea.name}}/">{{idea.descr}}</a>
+                {% else %}
+                {{idea.descr}}
+                {% endif %}
+            </td>
+            <td>
+                {% for sg in idea.for_whom %}
+                {{sg.full_name}}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            </td>
+            <td>
+                {% if idea.name in peval.comparisons %}
+                <a href="/strategies/{{idea.name}}/">{{ "{:.2f}".format(peval.comparisons[idea.name].cost_per_ton_CO2e(base_rate=1-discount_rate)) }}</a>
+                {% endif %}
+            </td>
+        </tr>
+{% endfor %}
+</table>
+
+<p>
+Note: I'm not including here ideas of the form "reduce domestic demand for fuel by doing X".
+It is not necessarily the case that reducing domestic demand will lead to a reduction in oil and gas extraction.
+Current federal policy seems open to elevating Canada's oil and natural gas exports (ostensibly to offset economic headwinds from reduced trade with the U.S.).
+Even with reductions in domestic demand, this sector may expand to serve the international market.
+I would be open to including ideas of the form "reduce both domestic and international demand for fuel by doing X",
+although such ideas would belong foremost as reducing emissions in other IPCC sectors.
+</p>
 
 </div>
 </section>

@@ -488,7 +488,6 @@ ideas.nitrogen_fixing_wheat = NewcoIdea(
 
 def ideas_by_catpath(catpath):
     for name, idea in ideas.items():
-        print(name, idea, catpath, idea.ipcc_catpaths)
         if catpath in idea.ipcc_catpaths:
             yield idea
 
@@ -560,14 +559,66 @@ ss.Atlantic_Tug_and_Tow_Companies = Stakeholders(
     ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
     )
 
-orgs.Esso = Org()
-orgs.Petro_Can = Org()
+orgs.Imperial_Oil = Org()
+# fully integrated oil company
+# owns Esso brand
+# operate the Kearl oil sands mind and Cold Lake in-situ (thermal) mining project
+# Canadian arm of ExxonMobil, which owns 69.6% of Imperial_Oil
+
+orgs.Suncor = Org()
+# fully integrated oil company
+# owns Petro Canada brand
+# also operates oil sands extraction e.g. "Base Plant" and "Fort Hills"
+# operate refineries in Edmonton, Sarnia, Montreal
+
+orgs.Cenovus_Energy = Org()
+# massive in-situ (thermal) operator, specializing in SAGD technology
+# operates Foster Creek, Christina Lake projects
+# now an integrated oil company with puchase of Husky brand (esp. for trucks)
+
+orgs.Canadian_Natural_Resources_Ltd_CNRL = Org()
+# largest oil and gas producer in Canada by volume
+# own Horizon mine and now Albian Sands mine (bought from Shell)
+# an "upstream" company, not a fully-integrated one
+# they sell crude oil domestically and internationally
+
+ss.Oil_and_Gas_Extraction_Companies = Stakeholders(
+    ipcc_catpaths=['Stationary_Combustion_Sources/Oil_and_Gas_Extraction'],
+    notable_members=[
+        orgs.Imperial_Oil,
+        orgs.Suncor,
+        orgs.Cenovus_Energy,
+        orgs.Canadian_Natural_Resources_Ltd_CNRL,
+    ])
+
+ss.Oil_Refinery_Operators = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # supplied from these operations
+    ],
+    notable_members=[
+        orgs.Imperial_Oil,
+        orgs.Suncor,
+        orgs.Cenovus_Energy,
+    ])
+
+ss.International_Oil_Refinery_Operators = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # supplied from these operations
+    ])
 
 ss.Marine_Diesel_Vendors = Stakeholders(
-    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    ipcc_catpaths=[
+        'Transport/Marine/Domestic_Navigation',
+    ],
     notable_members=[
-        orgs.Esso,
-        orgs.Petro_Can,
+        orgs.Imperial_Oil,
+        orgs.Suncor,
+    ])
+
+ss.Domestic_Fuel_Customers_Marine_Diesel = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Marine/Domestic_Navigation',
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # supplied from these operations
     ])
 
 ss.International_Dry_Bulk_Shipping = Stakeholders(
@@ -807,6 +858,126 @@ class PassiveBarge3000DWT(AssetClass):
 ac.Diesel_Dry_Bulk_Freighters = DieselDryBulkFreighters()
 ac.PassiveBarge3000DWT = PassiveBarge3000DWT()
 
+
+ss.Oil_and_Gas_Extraction_Industry_Employees = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # paid by these activities
+    ])
+
+ss.Domestic_Fuel_Customers_Diesel = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+    ])
+
+ss.Domestic_Fuel_Customers_Gasoline = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+    ])
+
+ss.Domestic_Fuel_Customers_Heating_Oil = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+    ])
+ss.Domestic_Fuel_Customers_Natural_Gas = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+    ])
+
+ss.International_Fuel_Customers = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+    ])
+
+ss.Equipment_Vendors_Gas_Turbines = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # use gas turbines for extraction
+    ])
+
+ss.Equipment_Vendors_Steam_Boilers = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # use gas turbines for extraction
+    ])
+
+ss.Equipment_Vendors_Process_Heaters = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # use gas turbines for extraction
+    ])
+
+ss.Equipment_Vendors_Glycol_Reboilers = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # use gas turbines for extraction
+    ])
+
+ideas.require_gas_turbine_exhaust_scrubbers = RegulationIdea(
+    who=ss.Regulators,
+    descr="Incentivize/require gas turbines to have exhaust scrubbers",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects
+    ])
+
+ss.Oil_and_Gas_Project_Developers = Stakeholders()
+
+ideas.extract_oil_with_renewable_electricity = NewcoIdea(
+    who=ss.Oil_and_Gas_Project_Developers.new_org(),
+    descr="Design and implement an oil sands project based on renewable process energy",
+    for_whom=[ss.Oil_and_Gas_Extraction_Companies],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects
+    ])
+
+ideas.ban_oil_sands_mining = RegulationIdea(
+    who=ss.Regulators,
+    descr="Forbid new oil sands projects and site expansion, find new jobs for industry staff",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects
+    ])
+
+ideas.limit_oil_and_gas_exports = RegulationIdea(
+    who=ss.Regulators,
+    descr="Limit and/or discourage (e.g. tax) Canada's energy exports",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects
+    ])
+
+
+ss.Heat_Pump_Installation_Companies = Stakeholders()
+
+ideas.heat_pumps_for_homes = NewcoIdea(
+    who=ss.Heat_Pump_Installation_Companies.new_org(),
+    descr="Reduce demand for furnace oil and natural gas by deploying heat pumps for homes",
+    for_whom=[
+        ss.Domestic_Fuel_Customers_Heating_Oil,
+        ss.Domestic_Fuel_Customers_Natural_Gas,
+    ],
+    ipcc_catpaths=[
+        #'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # reduce some domestic demand
+    ])
+
+ideas.heat_pumps_for_commercial = NewcoIdea(
+    who=ss.Heat_Pump_Installation_Companies.new_org(),
+    descr="Reduce demand for heating oil and natural gas by deploying heat pump technology for condominiums and commercial buildings",
+    for_whom=[
+        ss.Domestic_Fuel_Customers_Heating_Oil,
+        ss.Domestic_Fuel_Customers_Natural_Gas,
+    ],
+    ipcc_catpaths=[
+        #'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # reduce some domestic demand
+    ])
+
+ss.Chinese_Car_Companies = Stakeholders()
+
+ideas.sell_chinese_EVs = NewcoIdea(
+    who=ss.Chinese_Car_Companies.new_org(), # e.g. BYD Canada
+    descr="Reduce demand for gasoline by selling Chinese EVs (increasing supply of ZEVs)",
+    for_whom=[
+        ss.Domestic_Fuel_Customers_Gasoline,
+    ],
+    ipcc_catpaths=[
+        #'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # reduce some domestic demand
+    ])
 
 
 # TODO: idea small autonomous RoRo to ferry trucks
