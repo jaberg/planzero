@@ -93,6 +93,48 @@ window.addEventListener('resize', function() {
 
 
 </script>
+
+<p>
+Strategies that result in more planetary heat are higher, ones that generate less heat are lower.
+Strategies that are more costly are to the left, and ones that are more profitable are to the right.
+</p>
+
+<h2>Sortable Table</h2>
+
+<table id="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Name
+              </th>
+              <th>
+                  Net Present Heat @ 2% <br />(exaJoule)
+              </th>
+              <th>
+                  Net Present Value @ 2% <br />(Million CAD)
+              </th>
+              <th>
+                  Net Present CO2e @ 2% <br />(megatonne)
+              </th>
+              <th>
+                  Net Present Value @ 8% <br />(Million CAD)
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+          {% for npv, nph, evalname in peval.iter_npv_nph_evalname(discount_rate=discount_rate) %}
+          <tr>
+              <td>
+                  <a href="/strategies/{{evalname}}">{{evalname}}</a>
+              </td>
+              <td> {{ "{:.2f}".format(nph.to("exajoule").magnitude)}} </td>
+              <td> {{ "{:.2f}".format(npv.to("megaCAD").magnitude)}} </td>
+              <td> {{ "{:.2f}".format(peval.comparisons[evalname].net_present_CO2e(0.98).to("megatonne").magnitude)}} </td>
+              <td> {{ "{:.2f}".format(peval.comparisons[evalname].net_present_value(0.92).to("megaCAD").magnitude)}} </td>
+          </tr>
+          {% endfor %}
+    </tbody>
+</table>
 </section>
 </div>
 

@@ -808,3 +808,5 @@ ac.Diesel_Dry_Bulk_Freighters = DieselDryBulkFreighters()
 ac.PassiveBarge3000DWT = PassiveBarge3000DWT()
 
 
+
+# TODO: idea small autonomous RoRo to ferry trucks
