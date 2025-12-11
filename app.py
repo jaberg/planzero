@@ -140,6 +140,17 @@ async def get_strategies(request: Request, post_name:str):
             ),
     )
 
+@app.get("/about/", response_class=HTMLResponse)
+async def get_about(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="about.html",
+        context=dict(
+            default_context,
+            active_tab='about',
+            ),
+    )
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
