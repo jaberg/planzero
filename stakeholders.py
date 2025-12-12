@@ -804,6 +804,16 @@ ideas.hydrofoil_ferry_service = NewcoIdea(
     ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
     )
 
+# this may also be a good way to get between Montreal and QC?
+# maybe along 401 around Toronto?
+# maybe along  QC, Montreal, Toronto, Niagara, Detroit, Cleveland, Chicago?
+ideas.ferry_service_ground_effect = NewcoIdea(
+    who=ss.Ferry_Operators.new_org(),
+    descr="Operate a wing-in-ground-effect ferry service",
+    for_whom=[ss.Newfoundland_Ferry_Customers, ss.Victoria_Island_Ferry_Customers],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
 ideas.replace_aging_ferries_with_battery_electric = RegulationIdea(
     who=orgs.Canada,
     descr="Prefer replacing aging ferries with battery-electric designs",
