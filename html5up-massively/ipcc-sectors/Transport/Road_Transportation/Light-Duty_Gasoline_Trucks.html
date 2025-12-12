@@ -37,7 +37,7 @@ option = {
       nameGap: 40,
   },
   series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
   ],
   tooltip: {
     trigger: 'item',
@@ -160,7 +160,7 @@ What they do:
 <h2>
 </h2>
 <h3>
-    Possible Strategies
+    Possible Strategies (feel free to help flesh these out, contribute more)
 </h3>
 <ul>
     <li>

@@ -667,8 +667,9 @@ class GeometricBovinePopulationForecast(Project):
     def step(self, state, current):
         if state.t_now >= 2026 * u.years:
             current.bovine_population = (
+                # .995 kind of looks smoother, but constant is more defensible?
                 max(
-                    12_500_000 * .995 ** (state.t_now.to('years').magnitude - 2010),
+                    12_500_000 * .999 ** (state.t_now.to('years').magnitude - 2010),
                     2_000_000
                    ) * u.cattle)
 
@@ -738,7 +739,7 @@ class NationalBovaerMandate(Project):
         rval = []
 
         descr = f"""
-        This analysis uses the following place-holder projection of the national bovine herd size, based simply on the extrapolation of recent decline.
+        This analysis uses the following place-holder projection of the national bovine herd size, that extrapolates a very gradual decline from the current size.
         """
         rval.append(dict(
             sts_key='bovine_population',
@@ -755,7 +756,7 @@ class NationalBovaerMandate(Project):
 
 
         descr = """
-        Bovine methane is reduced through the use of Bovaer.
+        We therefore see a dropping annual emissions of bovine methane, partly through the adoption of Bovaer, and partly due to the gradual reduction in population.
         """
         rval.append(dict(
             sts_key='bovine_methane',

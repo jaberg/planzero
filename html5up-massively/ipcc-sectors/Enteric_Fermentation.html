@@ -5,10 +5,10 @@
     <header class="major">
         <h1>Enteric Fermentation</h1>
         <p>
-        Enteric fermentation produces methane in bovine digestive systems.
-        Canada's cattle on dairy and beef farms produce this emission.
-        A feed additive called Bovaer can reduce this emission per bovine head, but it is
-        naturally proportional to the size of the national herd.
+        Enteric fermentation is the production of methane by the digestive systems of beef and dairy cattle.
+        A feed additive called Bovaer can reduce this emission per bovine head,
+        but otherwise there appears to be no scalable emission reduction approach
+        other than reducing the size of the national herd.
         </p>
     </header>
 
@@ -34,7 +34,7 @@ option = {
       nameGap: 40,
   },
   series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
   ],
   tooltip: {
     trigger: 'item',
@@ -125,7 +125,7 @@ While cattle are the main event, the IPCC category covers all livestock. However
     <li>Owners of herds do not want to reduce their herds, and neither do their customers or suppliers.</li>
     <li>Domestic and international demand for beef and milk products is high, and expected to rise with population.</li>
     <li>Change in farming practices can take decades.</li>
-    <li>The voting population likes cattle: they're cute, gentle, picturesque, iconic.</li>
+    <li>The voting population likes cattle: they're picturesque, iconic, and widely considered to be tasty.</li>
 </ul>
 
 <h3>
@@ -140,7 +140,7 @@ While cattle are the main event, the IPCC category covers all livestock. However
 </ul>
 
 <h3>
-    Possible Strategies
+    Possible Strategies (feel free to help flesh these out, contribute more)
 </h3>
 
 <table>

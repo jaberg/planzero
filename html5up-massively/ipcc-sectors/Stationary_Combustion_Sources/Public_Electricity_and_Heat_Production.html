@@ -34,7 +34,7 @@ option = {
       nameGap: 40,
   },
   series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
   ],
   tooltip: {
     trigger: 'item',
@@ -240,7 +240,7 @@ The various branches of the Government of Canada set emissions targets nationall
 </ul>
 
 <h3>
-    Possible Strategies
+    Possible Strategies (feel free to help flesh these out, contribute more)
 </h3>
 
 <ul>

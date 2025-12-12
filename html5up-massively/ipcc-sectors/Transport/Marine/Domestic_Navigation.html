@@ -5,6 +5,12 @@
     <header class="major">
         <h1>Transport/<br />Marine/<br />Domestic Navigation</h1>
         <p>
+        Domestic navigation emissions are primarily from the diesel engines of
+        freight vessels and passenger ferries.
+        There are technologies at early readiness levels for operating
+        ships with reduced emissions, but none is mature.
+        Still, as one of the lowest-energy ways of moving things and people around, we should
+        perhaps be looking to make more use of shipping rather than less.
         </p>
     </header>
 
@@ -30,7 +36,7 @@ option = {
       nameGap: 40,
   },
   series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
   ],
   tooltip: {
     trigger: 'item',
@@ -169,7 +175,7 @@ The arithmetic of emissions in this sector is such that there are two ways to re
 </ul>
 
 <h3>
-    Possible Strategies
+    Possible Strategies (feel free to help flesh these out, contribute more)
 </h3>
 
 <table>

@@ -24,7 +24,7 @@ var option;
 option = {
   title: {
       text: 'Canadian Emissions by IPCC Sector',
-      subtext: 'Click on data points to explore sectors', // Optional subtitle
+      subtext: 'Click on data points to explore sectors, clicking regions would be nice but does not work yet', // Optional subtitle
       left: 'center', // Align: 'left', 'center', or 'right'
   },
   xAxis: {
@@ -51,7 +51,9 @@ option = {
         backgroundColor: '#6a7985'
       }
     },
-    formatter: '{a}',
+    formatter: params => {
+        return params.seriesName;
+    },
   },
 };
 
@@ -81,9 +83,18 @@ window.addEventListener('resize', function() {
 });
 
 
-
 </script>
+<p>
+The chart above shows the contributions from the 84 / 86 emissions sectors whose net emissions have been consistently positive.
+The two sectors that have at times been negative (CO2e sinks) are Cropland and Harvested Wood Products.
+Their contribution would shift the stack downward by about 50 Mt CO2e since about 2007.
+Data is from
+<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/A-IPCC-Sector?lang=en">
+    Canada's official Greenhouse Gas Inventory</a>, I believe it  is refreshed annually by Environment Canada.
+</p>
+<p>
 
+<h2>All IPCC Categories </h2>
     <div class="overflow-x-auto">
             <!-- IMPORTANT: We start with table-layout fixed applied in CSS, and override it temporarily in JS -->
             <table id="gemini-sort-data-table" class="w-full divide-y divide-gray-200 border border-gray-200">
@@ -91,20 +102,20 @@ window.addEventListener('resize', function() {
                     <tr>
                         <!-- Columns: 0, 1, 2, 3 -->
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Non-Aggregate Category
+                            Category
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Min (Mt)
+                            Min (Mt CO2e)
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Max (Mt)
+                            Max (Mt CO2e)
                         </th>
 
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Latest (Mt)
+                            Latest (Mt CO2e)
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Have Page
+                            Analysis Available
                         </th>
                     </tr>
                 </thead>

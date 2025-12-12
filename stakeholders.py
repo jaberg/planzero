@@ -419,7 +419,7 @@ ss.Organizations_encouraging_beef_and_milk_consumption = Stakeholders(
 ideas.education_to_discourage_beef_and_milk = EducationIdea(
     who=ss.Organizations_discouraging_beef_and_milk_consumption.new_org(org_type='charity'),
     for_whom=ss.People_Desiring_Net_Zero,
-    descr="Public education discouraging people from consuming beef and milk",
+    descr="Public education / PR discouraging people from consuming beef and milk",
     ipcc_catpaths=['Enteric_Fermentation'],
     )
 
@@ -459,6 +459,15 @@ ideas.better_bovaer = NewcoIdea(
     who=ss.Feed_Additive_Companies.new_org(),
     descr="Develop a more financially-efficient alternative to Bovaer",
     for_whom=[ss.Beef_Farmers, ss.Dairy_Farmers],
+    ipcc_catpaths=['Enteric_Fermentation'],
+    )
+
+# has the likely effect of shifting the emissions to other countries?
+# as well as being unpopular with, say, dairy farmers?
+ideas.dismantle_dairy_supply_management = RegulationIdea(
+    who=orgs.Canada,
+    for_whom=ss.People_Desiring_Net_Zero,
+    descr="Remove supply management for dairy, collapse domestric dairy farming industry",
     ipcc_catpaths=['Enteric_Fermentation'],
     )
 
@@ -726,6 +735,11 @@ orgs.Seaspan = Org(
     url="https://www.seaspan.com/")
 orgs.Davie = Org()
 
+ss.Ship_Component_Builders = Stakeholders(
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    notable_members=[
+    ])
+
 ss.Ship_Builders = Stakeholders(
     ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
     notable_members=[
@@ -826,6 +840,37 @@ ideas.autonomous_hopper_barges_for_dredging = NewcoIdea(
     for_whom=[ss.Marine_Construction_Companies, ss.Dredging_Companies, ss.Ports],
     ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
     )
+
+ideas.retrofit_wingsails_on_freighters = NewcoIdea(
+    who=ss.Ship_Component_Builders.new_org(),
+    descr="Retrofit wingsails on Great Lakes freighters",
+    for_whom=ss.Great_Lakes_Dry_Bulk_Shipping_Companies,
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+# replace the chichimaun with battery ferry (who, for whom?)
+# upgrade the chichimaun to use battery? (who, for whom?)
+
+ideas.power_ships_by_LNG_and_pyrolysis = NewcoIdea(
+    who=ss.Ship_Component_Builders.new_org(),
+    descr="Power zero-emissions ships with LNG via methane pyrolysis and a hydrogen fuel cell",
+    for_whom=[
+        ss.Ship_Designers, ss.Ship_Builders,
+    ],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+ideas.power_ships_with_eMethanol = NewcoIdea(
+    #who=ss.Ship_Component_Builders.new_org(),
+    descr="Something about e-Methanol",
+    #for_whom=[ ss.Ship_Designers, ss.Ship_Builders, ],
+    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+    )
+
+# something about e-Methanol for shipping
+# what's the status of e-Methanol production, can a vessel fuel
+# at both ends of a journey, or carry enough fuel to return to home port?
+
 
 class DieselDryBulkFreighters(AssetClass):
     pass

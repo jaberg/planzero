@@ -5,10 +5,13 @@
     <header class="major">
         <h1>Stationary Combustion/<br />Oil and Gas Extraction</h1>
         <p>
-        Emissions from the processes and equipment that extract oil from the ground.
-        It is Canada's largest sectoral emissions, and it is one of the very few that is rising.
-        This sector is tragic from an environmental perspective, because the process of extraction from the oil
-        sands especially is devastating to the surface ecology, enormously demanding of energy, and the result of this extraction is oil which is itself ultimately combusted into greenhouse gases.
+        Emissions from the processes and equipment that extract oil from the ground
+        is Canada's largest emissions sector, and it is one of the few that is rising.
+        This sector is tragic from an environmental perspective, because the extraction of bitumen from oil
+        sands is devastating to the surface ecology, demanding of energy,
+        and the result of the extraction is oil destined to be combusted into greenhouse gases.
+        Emissions could potentially be reduced by scrubbing exhaust from gas turbines,
+        I'm not sure if is done already.
         </p>
     </header>
 
@@ -34,7 +37,7 @@ option = {
       nameGap: 40,
   },
   series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath.replace('_', ' '))) | safe }},
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
   ],
   tooltip: {
     trigger: 'item',
