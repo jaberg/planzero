@@ -23,15 +23,23 @@ def echart_years():
 def echart_series_Mt(catpath, name=None):
     datalen = len(echart_years())
     assert ('kt',) == inv['Unit'].unique()
-    data = [float(x) / 1000 for x in non_agg[non_agg['CategoryPathWithWhitespace'] == catpaths[catpath]]['CO2eq'].values]
+    catpath_data = non_agg[non_agg['CategoryPathWithWhitespace'] == catpaths[catpath]]
+    data = [(int(year), float(co2eq) / 1000)
+            for year, co2eq in catpath_data[['Year', 'CO2eq']].values]
+    data.sort()
     assert len(data) == datalen, (catpath, len(data), datalen)
-    return  dict(
+    rval = dict(
         name=name or catpath,
         type='line',
         stack='Total',
         areaStyle={},
         emphasis={'focus': 'series'},
-        data=[{'value': datum, 'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')} for datum in data])
+        encode={'x': 'year', 'y': 'value'},
+        data=[{'year': year,
+               'value': co2eq,
+               'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')}
+              for year, co2eq in data])
+    return rval
 
 def echart_series_all_Mt(only_positive=False):
     datalen = len(echart_years())

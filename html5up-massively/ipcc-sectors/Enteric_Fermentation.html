@@ -26,16 +26,29 @@ option = {
       name: 'Year', // The label text
       nameLocation: 'middle', // Places it in the center (default is 'end')
       nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ ipcc_canada.echart_years() }},
+      data: {{ peval.comparisons.combo_a.years_as_list() }},
+      type: 'category',
   },
   yAxis: {
       name: 'Emissions (Mt CO2e)', // The label text
       nameLocation: 'middle',
       nameGap: 40,
+      type: 'value',
   },
   series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath, name="Historical")) | safe }},
+      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("A", catpath, name="With Projects")) | safe }},
+      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
   ],
+  legend: {
+      show: true,
+      data: ['Historical', "Baseline", "With Projects"],
+      top: 30,
+      //left: 'center',
+  },
+  grid: {
+      top: 60,
+    },
   tooltip: {
     trigger: 'item',
     axisPointer: {

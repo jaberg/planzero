@@ -286,7 +286,7 @@ class Project(object):
 
 
 class State(object):
-    t_start = 2000 * u.years
+    t_start = 1990 * u.years
 
     def __init__(self, t_start=t_start, name=None):
         self.t_start = t_start
@@ -640,10 +640,10 @@ class GeometricHumanPopulationForecast(Project):
         self.stepsize = 1.0 * u.years
 
     def on_add_project(self, state):
-        assert state.t_now == 2000 * u.years
+        assert state.t_now == 1990 * u.years
 
         with state.defining(self) as ctx:
-            ctx.human_population = SparseTimeSeries(state.t_now, 30_685_730 * u.people)
+            ctx.human_population = SparseTimeSeries(state.t_now, 27_685_730 * u.people)
 
         return state.t_now + self.stepsize
 
@@ -660,7 +660,7 @@ class GeometricBovinePopulationForecast(Project):
     # TODO: dairy cattle average is .7
     # TODO: beef cattle reduction is greater, multiplier should be .55
 
-    methane_per_head_per_year = 220 * u.pounds / u.cattle
+    methane_per_head_per_year = 175 * u.pounds / u.cattle
     # https://www.ucdavis.edu/food/news/making-cattle-more-sustainable
 
     def __init__(self):
@@ -690,6 +690,7 @@ class GeometricBovinePopulationForecast(Project):
 
     def step(self, state, current):
         if state.t_now >= 2026 * u.years:
+            # we've run out of data at this point, start guessing
             current.bovine_population = (
                 # .995 kind of looks smoother, but constant is more defensible?
                 max(
@@ -943,7 +944,6 @@ class ProjectComparison(object):
             data=data)
         if stack:
             rval['stack'] = stack
-        print(rval)
         return rval
 
 
