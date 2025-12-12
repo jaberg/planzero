@@ -226,6 +226,10 @@ class Project(object):
 
     def __init__(self):
         self._name = None
+        self._sub_projects = []
+
+    def init_add_subprojects(self, sub_projects):
+        self._sub_projects.extend(sub_projects)
 
     @property
     def name(self):
@@ -239,7 +243,7 @@ class Project(object):
         return f'Project(name={self.name})'
 
     def on_add_project(self, state):
-        return state.t_now # return the first time to run
+        pass
 
     def step(self, state):
         return None # return t_next to be called again, None to be left alone
@@ -377,6 +381,9 @@ class State(object):
         self.project_t_next[project] = project.on_add_project(self)
         self._depgraph = None
 
+        for sub_project in project._sub_projects:
+            self.add_project(sub_project)
+
     def add_projects(self, projects):
         for project in projects:
             self.add_project(project)
@@ -502,9 +509,14 @@ class AtmosphericChemistry(Project):
                     ctx.will_read_current(sts_key)
 
         with state.defining(self) as ctx:
-            ctx.Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kiloton)
+            for catpath, _ in state.sectoral_emissions_contributors.items():
+                setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+
+            ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kiloton)
 
             ctx.Atmospheric_CO2_conc = SparseTimeSeries(unit=u.ppm, default_value=400.0 * u.ppm)
             ctx.Atmospheric_CH4_conc = SparseTimeSeries(unit=u.ppb, default_value=1775.0 * u.ppb)
@@ -526,15 +538,27 @@ class AtmosphericChemistry(Project):
         annual_CO2_mass = ureg.Quantity("0 kiloton")
         annual_CH4_mass = ureg.Quantity("0 kiloton")
         for catpath, contributors in state.sectoral_emissions_contributors.items():
+            catpath_CO2_mass = 0 * u.kiloton
+
             for sts_key in contributors.get('CO2', []):
-                annual_CO2_mass += getattr(current, sts_key)
+                catpath_CO2_mass += getattr(current, sts_key)
 
+            catpath_CH4_mass = 0 * u.kiloton
             for sts_key in contributors.get('CH4', []):
-                annual_CH4_mass += getattr(current, sts_key)
+                catpath_CH4_mass += getattr(current, sts_key)
 
-        current.Annual_Emitted_CO2_mass = annual_CO2_mass
-        current.Annual_Emitted_CH4_mass = annual_CH4_mass
-        current.Annual_Emitted_CO2e_mass = annual_CO2_mass + self.methane_GWP * annual_CH4_mass
+            setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
+            setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
+            setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}',
+                catpath_CO2_mass
+                + catpath_CH4_mass * self.methane_GWP)
+
+            annual_CO2_mass += catpath_CO2_mass
+            annual_CH4_mass += catpath_CH4_mass
+
+        current.Predicted_Annual_Emitted_CO2_mass = annual_CO2_mass
+        current.Predicted_Annual_Emitted_CH4_mass = annual_CH4_mass
+        current.Predicted_Annual_Emitted_CO2e_mass = annual_CO2_mass + self.methane_GWP * annual_CH4_mass
 
         # apply an atmospheric climate model
         annual_CO2_mass_atmospheric = annual_CO2_mass * .45 # Gemini claimed a lot gets absorbed by sinks, keep this much
@@ -776,7 +800,7 @@ class NationalBovaerMandate(Project):
         The impact on national methane emissions from so-called enteric fermentation is expected to be significant.
         """
         rval.append(dict(
-            sts_key='Annual_Emitted_CH4_mass',
+            sts_key='Predicted_Annual_Emitted_CH4_mass',
             t_unit='years',
             figtype='plot vs baseline',
             descr=descr))
@@ -848,6 +872,9 @@ class ProjectComparison(object):
         years = torch.arange(start_year, stop_year) * u.years
         return years
 
+    def years_as_list(self):
+        return [int(year.to('years').magnitude) for year in self._years()]
+
     @property
     def _present_year_int(self):
         return int(self.present.to('years').magnitude)
@@ -872,7 +899,7 @@ class ProjectComparison(object):
     def net_present_CO2e(self, base_rate):
         return self.net_present_discounted_sum(
             base_rate,
-            key='Annual_Emitted_CO2e_mass')
+            key='Predicted_Annual_Emitted_CO2e_mass')
 
     def net_present_heat(self, base_rate):
         return self.net_present_discounted_sum(
@@ -894,6 +921,30 @@ class ProjectComparison(object):
         if npc >= 0:
             return float('nan') * u.CAD / u.tonne
         return (npv / npc).to(u.CAD / u.tonne)
+
+    def echart_series_Mt(self, A_or_B, catpath, stack=None, name=None):
+        years = self._years()
+        if A_or_B == "A":
+            state = self.state_A
+        elif A_or_B == "B":
+            state = self.state_B
+        else:
+            raise NotImplementedError(A_or_B)
+        predictions = state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'].latest_vals(
+            years, inclusive=True)
+        data = [{'value': float(datum.to(u.megatonne).magnitude),
+                 'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')}
+                for datum in predictions]
+        rval = dict(
+            name=name or catpath,
+            type='line',
+            #areaStyle={},
+            #emphasis={'focus': 'series'},
+            data=data)
+        if stack:
+            rval['stack'] = stack
+        print(rval)
+        return rval
 
 
 class ProjectEvaluation(object):
@@ -1007,6 +1058,71 @@ class ProjectEvaluation(object):
 # tethered balloon heat sinks, wind turbines, and solar farms, and transportation medium
 # what about India's cattle population!?
 # new process for hydrogen peroxide: https://interestingengineering.com/innovation/solar-hydrogen-peroxide-cornell-breakthrough
+
+class ComboA(Project):
+    def __init__(self, idea):
+        super().__init__()
+        self.idea = idea
+        self.init_add_subprojects([
+            NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
+            BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
+        ])
+        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
+        self.stepsize = 1.0 * u.years
+
+    def project_page_vision(self):
+        return ""
+
+    def project_page_intro(self):
+        rval = "<p>Projects included:"
+        rval += "<ul>"
+        for proj in self._sub_projects:
+            rval += f"<li><a href='/strategies/{proj.idea.name}/'>{proj.idea.full_name}</a></li>"
+        rval += "</ul>"
+        rval += "</p>"
+        return rval
+
+    def project_page_graphs(self):
+        return []
+
+    def on_add_project(self, state):
+        with state.requiring_current(self) as ctx:
+            for proj in self._sub_projects:
+                setattr(ctx, proj.after_tax_cashflow_name, SparseTimeSeries(
+                    default_value=0 * u.MCAD))
+        with state.defining(self) as ctx:
+            setattr(ctx, self.after_tax_cashflow_name, SparseTimeSeries(
+                default_value=0 * u.MCAD))
+        return state.t_now
+
+    def step(self, state, current):
+        cashflow = 0 * u.MCAD
+        for proj in self._sub_projects:
+            cashflow += getattr(current, proj.after_tax_cashflow_name)
+        setattr(current, self.after_tax_cashflow_name, cashflow)
+        return state.t_now + self.stepsize
+
+class IPCC_Transport_Marine_DomesticNavigation_Model(Project):
+    def __init__(self):
+        super().__init__()
+        self.stepsize = 1.0 * u.years
+
+    def on_add_project(self, state):
+        with state.requiring_current(self) as ctx:
+
+            # PacificLogBargeForecast
+            ctx.pacific_log_barge_CO2 = SparseTimeSeries(
+                default_value=0 * u.kg)
+
+            ctx.Lakers_CO2 = SparseTimeSeries(
+                default_value=0 * u.kg)
+
+            ctx.Other_Domestic_Navigation_CO2 = SparseTimeSeries(
+                default_value=3.4 * u.Mt)
+
+        state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Lakers_CO2')
+        state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Other_Domestic_Navigation_CO2')
+
 
 class PacificLogBargeForecast(Project):
     # somehow link/merge with stakeholders.PacificLogBarges

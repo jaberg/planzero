@@ -20,13 +20,13 @@ non_agg = inv[ (inv['Region'].isin(['Canada', 'canada'])) & (inv['Total'] != 'y'
 def echart_years():
     return [float(x) for x in sorted(non_agg['Year'].unique())]
 
-def echart_series_Mt(catpath):
+def echart_series_Mt(catpath, name=None):
     datalen = len(echart_years())
     assert ('kt',) == inv['Unit'].unique()
     data = [float(x) / 1000 for x in non_agg[non_agg['CategoryPathWithWhitespace'] == catpaths[catpath]]['CO2eq'].values]
     assert len(data) == datalen, (catpath, len(data), datalen)
     return  dict(
-        name=catpath,
+        name=name or catpath,
         type='line',
         stack='Total',
         areaStyle={},

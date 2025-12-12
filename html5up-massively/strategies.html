@@ -125,7 +125,7 @@ Strategies that are more costly are to the left, and ones that are more profitab
           {% for npv, nph, evalname in peval.iter_npv_nph_evalname(discount_rate=discount_rate) %}
           <tr>
               <td>
-                  <a href="/strategies/{{evalname}}">{{evalname}}</a>
+                  <a href="/strategies/{{evalname}}">{{peval.projects[evalname].idea.descr}}</a>
               </td>
               <td> {{ "{:.2f}".format(nph.to("exajoule").magnitude)}} </td>
               <td> {{ "{:.2f}".format(npv.to("megaCAD").magnitude)}} </td>

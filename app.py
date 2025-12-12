@@ -23,16 +23,18 @@ import base
 u = base.u
 peval = base.ProjectEvaluation(
     projects={prj.idea.name: prj for prj in [
+        base.ComboA(idea=stakeholders.ideas.combo_a),
         base.NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
         base.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
     ]},
     common_projects=[
         base.GeometricBovinePopulationForecast(),
+        base.IPCC_Transport_Marine_DomesticNavigation_Model(),
         base.PacificLogBargeForecast(),
         base.AtmosphericChemistry(),
     ],
 )
-peval.run_until(2225 * u.years)
+peval.run_until(2125 * u.years)
 
 
 @app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)

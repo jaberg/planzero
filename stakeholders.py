@@ -1024,5 +1024,8 @@ ideas.sell_chinese_EVs = NewcoIdea(
         #'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # reduce some domestic demand
     ])
 
+ideas.combo_a = Idea(
+    descr="Combo A: a set of promising projects.")
+
 
 # TODO: idea small autonomous RoRo to ferry trucks
