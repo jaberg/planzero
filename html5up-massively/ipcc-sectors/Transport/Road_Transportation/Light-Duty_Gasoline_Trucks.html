@@ -5,13 +5,13 @@
     <header class="major">
         <h1>Transport/<br />Road Transportation<br />Light Duty Gasoline Trucks</h1>
         <p>
-        Emissions from the operation of light-duty gasoline trucks is Canada's third-largest
+        The operation of light-duty gasoline trucks is Canada's third-largest
         emissions sector.
         While engine efficiency continues to improve, Canada's population continues to grow,
         and larger vehicles such as SUVs have become more popular.
         Crossover SUVs, SUVs, and minivans are included in this emissions sector.
-        The technology of hybrid and EV alternatives to internal combustion engines seems to be superior,
-        and is currently crossing the chasm to mainstream adoption.
+        The technology of plug-in hybrid and EV alternatives to internal combustion engines offers a promising
+        pathway for emissions reduction.
         </p>
     </header>
 
@@ -29,7 +29,7 @@ option = {
       name: 'Year', // The label text
       nameLocation: 'middle', // Places it in the center (default is 'end')
       nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ ipcc_canada.echart_years() }},
+      data: {{ peval.comparisons.combo_a.years_as_list() }},
   },
   yAxis: {
       name: 'Emissions (Mt CO2e)', // The label text
@@ -37,8 +37,19 @@ option = {
       nameGap: 40,
   },
   series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
+      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath, name="Historical")) | safe }},
+      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("A", catpath, name="With Combo-A Strategies")) | safe }},
+      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
   ],
+  legend: {
+      show: true,
+      data: ['Historical', "Baseline", "With Combo-A Strategies"],
+      top: 30,
+      //left: 'center',
+  },
+  grid: {
+      top: 60,
+    },
   tooltip: {
     trigger: 'item',
     axisPointer: {
@@ -59,9 +70,16 @@ window.addEventListener('resize', function() {
 
 </script>
 <div>
+    <p>
+    In the chart,
+    the Historical values come from Environment Canada,
+    the Baseline projection is that emissions in this sector remain proportional to Canada's population (projected to grow geometrically), and the
+    Combo-A Strategies curve represents a prediction based on the adoption of all <a href="/strategies/combo_a/">Combo A strategies</a>, which may or may not include any with impact to this sector.
+    </p>
 
 <h2>Causes of Emissions</h2>
 
+<p>
 This sector measures emissions from the combustion of gasoline from vehicles such as
 <ul>
     <li>SUVs / Crossovers: (e.g., Ford Explorer, Toyota RAV4, Honda CR-V)</li>
@@ -74,102 +92,94 @@ Definition of this class of vehicles:
 Vehicles with a GVWR of less than 3,900 kg (8,500 lbs) that are designed for off-road operation,
 or have a certain cargo capacity that places them above light-duty gasoline <em>vehicles</em>,
 which is a separate IPCC emissions sector focused on sedans, hatchbacks, and coupes.
+</p>
+
+<p>
+The reasons for the utilization vehicles in this class are numerous (TODO:
+enumerate and quantify segments).
+</p>
+
 
 <h2>
-    Stakeholders' Problems
+    How might Canada reduce these emissions to zero?
 </h2>
 
-<h3>Individuals and Families</h3>
-<p>To-do: What are this group's private problems relating to this emission sector?<p>
-<p>
-What they do: 
-<ul>
-    <li>Buy/lease vehicles, choose vehicle type</li>
-    <li>Drive themselves</li>
-    <li>Pay for maintenance</li>
-    <li>Pay for insurance</li>
-</ul>
-</p>
+<h3>
+    Critical Success Factors
+</h3>
 
-<p>What they worry about:
-<ul>
-    <li>Purchase price/Lease price</li>
-    <li>Monthly / annual cost</li>
-    <li>Brand, appearance, style</li>
-    <li>Size</li>
-    <li>Safety</li>
-    <li>Range - will an EV leave me stranded?</li>
-</ul>
-</p>
+The arithmetic of emissions in this sector is such that there are two ways to reduce emissions:
+<ol>
+    <li>Reduce vehicle distance travelled</li>
+    <li>Reduce average emissions per vehicle distance travelled</li>
+</ol>
 
-<h3>Fleet Operators</h3>
-<p>To-do: What are this group's private problems relating to this emission sector?<p>
-<p>What they do:
-<ul>
-    <li>Buy vehicles, choose vehicle type</li>
-    <li>Sometimes employees drive vehicles, sometimes customers</li>
-</ul>
-</p>
-<p>What they worry about:
-<ul>
-    <li>Total cost of ownership</li>
-    <li>Role capability</li>
-    <li>Range - will an EV leave me stranded?</li>
-    <li>Scope 1-2-3 emissions, if the operator has committed to compliance frameworks</li>
-</ul>
-</p>
+<h3>
+    Barriers
+</h3>
 
-<h3>Gasoline Vendors</h3>
-<p>To-do: What are this group's private problems relating to this emission sector?<p>
 <ul>
-    <li>Operate fueling stations</li>
-    <li>Are also oil and gas extraction companies</li>
+    <li>People like to drive, and they like to drive at high speeds, in relative privacy inside spacious personal vehicles</li>
+    <li>Vehicle usage patterns have become an integral part of many people's work roles and domestic lifestyles. People struggle to trade convenience and habit for the sake of incremental cost reduction or environmental impact.</li>
+    <li>Vehicles are only replaced on average every 10 years (TODO: verify).</li>
+    <li>The total cost of ownership comparison for EVs and PHEVs vs. ICE vehicles depends on several factors, not all of which are top-of-mind for buyers, and the technology keeps improving (which discourages mainstream and late-adopters).</li>
+    <li>The sale price for EVs is higher than ICE vehicles, except for current possibly-illegally-subsidized Chinese EVs.</li>
+    <li>EVs are slower to charge, have less range than ICE vehicles, and can be charged at fewer places.</li>
 </ul>
 
-<h3>Car Companies</h3>
-<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<h3>
+    Key Stakeholder Groups
+</h3>
+
 <ul>
-    <li>Sell gasoline vehicles and service</li>
-    <li>Sell electric vehicles and service</li>
-    <li>Sell hybrid vehicles and service</li>
-    <li>Need to be pretty sure of market demand before designing scalable manufacturing systems for EVs</li>
+    {% for sg_name, sg in sorted(stakeholders.ss.items()) %}
+    {% if catpath in sg.ipcc_catpaths %}
+    <li>{{ sg.full_name }}</li>
+    {% endif %}
+    {% endfor %}
 </ul>
 
-<h3>Auto Mechanics</h3>
-<p>To-do: What are this group's private problems relating to this emission sector?<p>
+<h3>
+    Possible Strategies (feel free to help flesh these out, contribute more)
+</h3>
 
-
-<h3>Federal Government</h3>
-<p>To-do: What are this group's private problems relating to this emission sector?<p>
-<ul>
-    <li>Flip-flops on EV mandate</li>
-    <li>Sometimes offers EV incentives</li>
-    <li>Imposes huge tariffs on Chinese EVs to protect domestic manufacturing industry and American car brands</li>
-</ul>
-
-<h3>Provincial Government</h3>
-<p>To-do: What are this group's private problems relating to this emission sector?<p>
-<ul>
-    <li>Sometimes offers EV incentives</li>
-</ul>
+<table>
+    <thead>
+        <tr>
+            <th>Who</td>
+            <th>What</td>
+            <th>For Whom</td>
+            <th>Cost / tonne CO2e</td>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+{% for idea in stakeholders.ideas_by_catpath(catpath) %}
+        <tr>
+            <td>{{idea.who.full_name}}</td>
+            <td>
+                {% if idea.name in peval.comparisons %}
+                <a href="/strategies/{{idea.name}}/">{{idea.descr}}</a>
+                {% else %}
+                {{idea.descr}}
+                {% endif %}
+            </td>
+            <td>
+                {% for sg in idea.for_whom %}
+                {{sg.full_name}}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            </td>
+            <td>
+                {% if idea.name in peval.comparisons %}
+                <a href="/strategies/{{idea.name}}/">{{ "{:.2f}".format(peval.comparisons[idea.name].cost_per_ton_CO2e(base_rate=1-discount_rate)) }}</a>
+                {% endif %}
+            </td>
+        </tr>
+{% endfor %}
+</table>
 
 </div>
 </section>
 </div>
-
-<h2>
-</h2>
-<h3>
-    Possible Strategies (feel free to help flesh these out, contribute more)
-</h3>
-<ul>
-    <li>
-        <a href="https://www.purdue.edu/newsroom/2025/Q4/first-highway-segment-in-u-s-wirelessly-charges-electric-heavy-duty-truck-while-driving/">Provinces should embed wireless charging circuitry in roads, in a manner that is compatible with US wireless charging</a>
-    </li>
-    <li>purchase idea: municipalities should buy EVs</li>
-    <li>purchase idea: households should buy EVs or Plug-in Hybrids</li>
-    <li>regulatory idea: gov of canada should cover green premium, tapering off over N years</li>
-    <li>regulatory idea: gov of canada should reduce tariffs on Chinese EVs over some number of years</li>
-</ul>
 
 {% include "post-main.html" %}

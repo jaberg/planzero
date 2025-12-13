@@ -26,10 +26,13 @@ peval = base.ProjectEvaluation(
         base.ComboA(idea=stakeholders.ideas.combo_a),
         base.NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
         base.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
+        base.Force_Government_ZEVs(),
     ]},
     common_projects=[
         base.GeometricBovinePopulationForecast(),
+        base.GeometricHumanPopulationForecast(),
         base.IPCC_Transport_Marine_DomesticNavigation_Model(),
+        base.IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(),
         base.PacificLogBargeForecast(),
         base.AtmosphericChemistry(),
     ],

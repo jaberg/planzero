@@ -591,6 +591,9 @@ orgs.Canadian_Natural_Resources_Ltd_CNRL = Org()
 # an "upstream" company, not a fully-integrated one
 # they sell crude oil domestically and internationally
 
+orgs.Shell_Canada = Org()
+# Canadian arm of Royal Dutch Shell
+
 ss.Oil_and_Gas_Extraction_Companies = Stakeholders(
     ipcc_catpaths=['Stationary_Combustion_Sources/Oil_and_Gas_Extraction'],
     notable_members=[
@@ -598,6 +601,7 @@ ss.Oil_and_Gas_Extraction_Companies = Stakeholders(
         orgs.Suncor,
         orgs.Cenovus_Energy,
         orgs.Canadian_Natural_Resources_Ltd_CNRL,
+        orgs.Shell_Canada, # is it involved still?
     ])
 
 ss.Oil_Refinery_Operators = Stakeholders(
@@ -615,13 +619,14 @@ ss.International_Oil_Refinery_Operators = Stakeholders(
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # supplied from these operations
     ])
 
-ss.Marine_Diesel_Vendors = Stakeholders(
+ss.Domestic_Fuel_Vendors_Marine_Diesel = Stakeholders(
     ipcc_catpaths=[
         'Transport/Marine/Domestic_Navigation',
     ],
     notable_members=[
         orgs.Imperial_Oil,
         orgs.Suncor,
+        orgs.Shell_Canada,
     ])
 
 ss.Domestic_Fuel_Customers_Marine_Diesel = Stakeholders(
@@ -927,6 +932,7 @@ ss.Domestic_Fuel_Customers_Diesel = Stakeholders(
 ss.Domestic_Fuel_Customers_Gasoline = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
     ])
 
 ss.Domestic_Fuel_Customers_Heating_Oil = Stakeholders(
@@ -941,6 +947,17 @@ ss.Domestic_Fuel_Customers_Natural_Gas = Stakeholders(
 ss.International_Fuel_Customers = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+    ])
+
+ss.Domestic_Fuel_Vendors_Gasoline = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ],
+    notable_members=[
+        orgs.Imperial_Oil,
+        orgs.Suncor,
+        orgs.Cenovus_Energy,
+        orgs.Shell_Canada,
     ])
 
 ss.Equipment_Vendors_Gas_Turbines = Stakeholders(
@@ -1024,14 +1041,20 @@ ideas.heat_pumps_for_commercial = NewcoIdea(
 
 ss.Chinese_Car_Companies = Stakeholders()
 
+ss.Light_Duty_Vehicle_Owners = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
 ideas.sell_chinese_EVs = NewcoIdea(
     who=ss.Chinese_Car_Companies.new_org(), # e.g. BYD Canada
-    descr="Reduce demand for gasoline by selling Chinese EVs (increasing supply of ZEVs)",
+    descr="Sell some quota of Chinese EVs (increasing supply of ZEVs)",
     for_whom=[
-        ss.Domestic_Fuel_Customers_Gasoline,
+        ss.Light_Duty_Vehicle_Owners,
     ],
     ipcc_catpaths=[
-        #'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # reduce some domestic demand
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', # reduce some domestic demand
     ])
 
 ideas.combo_a = Idea(
@@ -1039,3 +1062,67 @@ ideas.combo_a = Idea(
 
 
 # TODO: idea small autonomous RoRo to ferry trucks
+
+
+## Light Duty Gasoline Trucks
+
+ss.Light_Duty_Gasoline_Truck_Vendors = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ss.Light_Duty_Gasoline_Truck_Mechanics = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+ss.Light_Duty_Gasoline_Truck_Insurers = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ss.Individuals_and_Families = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ss.Light_Duty_Truck_Fleet_Operators = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ss.Parking_Lot_Owners = Stakeholders(
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ideas.embed_wireless_chargers_in_roads = NewcoIdea(
+    descr="Embed wireless chargers in roads",
+    urls=["https://www.purdue.edu/newsroom/2025/Q4/first-highway-segment-in-u-s-wirelessly-charges-electric-heavy-duty-truck-while-driving/"],
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        # TODO: heavy vehicles, diesel, trucks, all road vehicles
+    ])
+
+ideas.incentivize_EVs_indefinitely = RegulationIdea(
+    who=orgs.Canada,
+    descr="Subsidize EV and EV-charger purchases indefinitely with a gasoline tax",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ideas.force_government_fleet_to_go_green = RegulationIdea(
+    who=orgs.Canada,
+    descr="Force civilian federal, provincial, and municipality-owned fleets to transition almost completely to EVs",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ideas.force_military_fleet_to_go_green = RegulationIdea(
+    who=orgs.Canada,
+    descr="Force military-owned fleets to transition to EVs",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])

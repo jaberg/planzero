@@ -640,7 +640,7 @@ class GeometricHumanPopulationForecast(Project):
         self.stepsize = 1.0 * u.years
 
     def on_add_project(self, state):
-        assert state.t_now == 1990 * u.years
+        assert 1989 * u.years <= state.t_now <= 1991 * u.years, state.t_now.to(u.years)
 
         with state.defining(self) as ctx:
             ctx.human_population = SparseTimeSeries(state.t_now, 27_685_730 * u.people)
@@ -1066,6 +1066,7 @@ class ComboA(Project):
         self.init_add_subprojects([
             NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
             BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
+            Force_Government_ZEVs(),
         ])
         self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
         self.stepsize = 1.0 * u.years
@@ -1102,6 +1103,7 @@ class ComboA(Project):
         setattr(current, self.after_tax_cashflow_name, cashflow)
         return state.t_now + self.stepsize
 
+
 class IPCC_Transport_Marine_DomesticNavigation_Model(Project):
     def __init__(self):
         super().__init__()
@@ -1123,6 +1125,112 @@ class IPCC_Transport_Marine_DomesticNavigation_Model(Project):
         state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Lakers_CO2')
         state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Other_Domestic_Navigation_CO2')
 
+
+class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(Project):
+    def __init__(self):
+        super().__init__()
+        self.stepsize = 1.0 * u.years
+
+    def on_add_project(self, state):
+        with state.requiring_current(self) as ctx:
+            ctx.human_population = SparseTimeSeries(state.t_now, 27_685_730 * u.people)
+            ctx.Government_LightDutyGasolineTrucks_ZEV_fraction = SparseTimeSeries(
+                default_value=0 * u.dimensionless)
+            ctx.Other_LightDutyGasolineTrucks_ZEV_fraction = SparseTimeSeries(
+                default_value=0 * u.dimensionless)
+
+        with state.defining(self) as ctx:
+            # https://www.canada.ca/en/treasury-board-secretariat/services/innovation/greening-government/government-canada-greenhouse-gas-emissions-inventory.html
+            # not exactly using ^^ but guessing based on that and Gemini estimation
+
+            # TODO: factor in CO2e footprint of manufacturing each type of vehicle
+
+            # TODO: factor in the emissions of electricity generation in each province
+            #       and the population of each province
+
+            ctx.Government_LightDutyGasolineTrucks_CO2 = SparseTimeSeries(
+                default_value=0 * u.Mt)
+            ctx.Other_LightDutyGasolineTrucks_CO2 = SparseTimeSeries(
+                default_value=0 * u.Mt)
+
+        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', 'CO2', 'Other_LightDutyGasolineTrucks_CO2')
+        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', 'CO2', 'Government_LightDutyGasolineTrucks_CO2')
+        return state.t_now + self.stepsize
+
+    def step(self, state, current):
+        coefficient = 1_200 * u.kg / u.people
+        current.Government_LightDutyGasolineTrucks_CO2 = (
+            current.human_population * coefficient * .025
+            * (1 * u.dimensionless - current.Government_LightDutyGasolineTrucks_ZEV_fraction))
+        current.Other_LightDutyGasolineTrucks_CO2 = (
+            current.human_population * coefficient * .975
+            * (1 * u.dimensionless - current.Other_LightDutyGasolineTrucks_ZEV_fraction))
+        return state.t_now + self.stepsize
+
+
+class Force_Government_ZEVs(Project):
+    idea = stakeholders.ideas.force_government_fleet_to_go_green
+
+    def __init__(self, start_time=2022 * u.years, end_time=2035 * u.years):
+        super().__init__()
+        self.stepsize = 1.0 * u.years
+        self.start_time = start_time
+        self.end_time = end_time
+        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
+
+    def on_add_project(self, state):
+        with state.defining(self) as ctx:
+            ctx.Government_LightDutyGasolineTrucks_ZEV_fraction = SparseTimeSeries(
+                default_value=0 * u.dimensionless)
+            setattr(ctx, self.after_tax_cashflow_name, SparseTimeSeries(
+                default_value=0 * u.MCAD))
+        return state.t_now
+
+    def step(self, state, current):
+        if state.t_now >= self.start_time:
+            ramp_duration = self.end_time - self.start_time
+            ramp_time = state.t_now - self.start_time
+            if ramp_time >= ramp_duration:
+                current.Government_LightDutyGasolineTrucks_ZEV_fraction = 1 * u.dimensionless
+            else:
+                current.Government_LightDutyGasolineTrucks_ZEV_fraction = (
+                    ramp_time / ramp_duration * u.dimensionless)
+        # assume that on average, the total cost of ownership nets out about 0
+        # which based on work with Roger Martin seems plausible
+        # do not assume batteries get cheaper, or vehicles get cheaper
+        setattr(
+            current,
+            self.after_tax_cashflow_name, 
+            0 * u.CAD)
+        return state.t_now + self.stepsize
+
+    def project_page_vision(self):
+        return """
+        The technology of ZEVs and PHEVs is maturing, the municipal and civil services of the country are 
+        already evaluating these vehicle types extensively, and with some success I believe.
+        It would be meaningful for our governments to push the transition to this new technology with their significant scale of operations.
+        """
+
+    def project_page_graphs(self):
+        rval = []
+
+        descr = f"""
+        Input assumption: the shape of the fraction of vehicle roles transitioning to ZEVs.
+        """
+        rval.append(dict(
+            sts_key='Government_LightDutyGasolineTrucks_ZEV_fraction',
+            t_unit='years',
+            descr=descr))
+
+        descr = f"""
+        Estimated CO2 emissions from government light-duty gasoline trucks (TODO: include grid emissions, and at least note [externalized] manufacturing emissions).
+        """
+        rval.append(dict(
+            sts_key='Government_LightDutyGasolineTrucks_CO2',
+            t_unit='years',
+            descr=descr))
+
+        return rval
 
 class PacificLogBargeForecast(Project):
     # somehow link/merge with stakeholders.PacificLogBarges
