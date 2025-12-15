@@ -685,6 +685,12 @@ orgs.Mosaic_Company = Org()
 orgs.Compass_Minerals = Org()
 orgs.KpS_Potash_Canada = Org()
 
+ # TODO: super-set of Potash and Coal
+ss.Mining_Companies = Stakeholders(
+    ipcc_catpaths=[
+        'Forest_Land',
+    ])
+
 ss.Potash_Mining_Companies = Stakeholders(
     ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
     urls=["https://natural-resources.canada.ca/minerals-mining/mining-data-statistics-analysis/minerals-metals-facts/potash-facts",],
@@ -1080,6 +1086,7 @@ ss.Light_Duty_Gasoline_Truck_Insurers = Stakeholders(
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
     ])
 
+ss.Home_Buyers = Stakeholders()
 ss.Individuals_and_Families = Stakeholders(
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
@@ -1125,4 +1132,56 @@ ideas.force_military_fleet_to_go_green = RegulationIdea(
     for_whom=[ss.People_Desiring_Net_Zero],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+
+ss.Timber_Harvesting_Companies = Stakeholders(
+    ipcc_catpaths=[
+        'Forest_Land',
+    ])
+ss.Commercial_Real_Estate_Developers = Stakeholders(
+    ipcc_catpaths=[
+        'Forest_Land',
+    ])
+ss.Construction_Companies = Stakeholders(
+    ipcc_catpaths=[
+        'Forest_Land', # they are a major user of the timber
+    ])
+
+ss.Farmers = Stakeholders(
+    ipcc_catpaths=[
+        'Forest_Land',
+        'Cropland',
+    ])
+
+
+ideas.vertically_integrated_mass_timber_construction_co = NewcoIdea(
+    descr="Vertically-integrated mass-timber construction company",
+    for_whom=[ss.Commercial_Real_Estate_Developers],
+    ipcc_catpaths=[
+        'Forest_Land',
+        'Harvested_Wood_Products',
+        'Stationary_Combustion_Sources/Construction',
+    ])
+
+ideas.enhanced_rock_weathering_for_managed_forests = NewcoIdea(
+    descr="Enhanced rock weathering product for managed forests, selling carbon credits",
+    for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
+    ipcc_catpaths=[
+        'Forest_Land',
+        'Liming,_Urea_Application_and_Other_Carbon-Containing_Fertilizers',
+    ])
+
+ideas.something_to_suppress_insect_infestations = NewcoIdea(
+    descr="Something to suppress insect infestations",
+    for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
+    ipcc_catpaths=[
+        'Forest_Land',
+    ])
+
+ideas.something_to_suppress_forest_fires = NewcoIdea(
+    descr="Something to suppress forest fires",
+    for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
+    ipcc_catpaths=[
+        'Forest_Land',
     ])

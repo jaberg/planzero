@@ -116,9 +116,10 @@ async def get_ipcc_sectors_category(
                 ),
         )
     else:
-        return get_ipcc_sectors(
+        rval = await get_ipcc_sectors(
             request, 
-            error_text="Sorry, we don't have that page yet")
+            error_text=f"Sorry, we don't have the analyis page for {catpath} yet")
+        return rval
 
 
 @app.get("/strategies/", response_class=HTMLResponse)
