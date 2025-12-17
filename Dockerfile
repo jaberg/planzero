@@ -24,6 +24,7 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 RUN pip install --no-cache-dir networkx
 RUN pip install --no-cache-dir fastapi[standard]
 RUN pip install --no-cache-dir pandas
+RUN pip install --no-cache-dir pytest
 
 
 COPY . /content
