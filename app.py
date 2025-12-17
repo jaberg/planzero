@@ -31,6 +31,7 @@ peval = base.ProjectEvaluation(
     common_projects=[
         base.GeometricBovinePopulationForecast(),
         base.GeometricHumanPopulationForecast(),
+        base.IPCC_Forest_Land_Model(),
         base.IPCC_Transport_Marine_DomesticNavigation_Model(),
         base.IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(),
         base.PacificLogBargeForecast(),

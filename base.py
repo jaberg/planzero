@@ -1104,6 +1104,20 @@ class ComboA(Project):
         return state.t_now + self.stepsize
 
 
+class IPCC_Forest_Land_Model(Project):
+    def __init__(self):
+        super().__init__()
+        self.stepsize = 1.0 * u.years
+
+    def on_add_project(self, state):
+        with state.requiring_current(self) as ctx:
+
+            ctx.Other_Forest_Land_CO2 = SparseTimeSeries(
+                default_value=40.0 * u.Mt)
+
+        state.register_emission('Forest_Land', 'CO2', 'Other_Forest_Land_CO2')
+
+
 class IPCC_Transport_Marine_DomesticNavigation_Model(Project):
     def __init__(self):
         super().__init__()
