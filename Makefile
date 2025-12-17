@@ -24,7 +24,7 @@ test: .build
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest .
+		pytest --maxfail=2 .
 
 
 stakeholders: .build
