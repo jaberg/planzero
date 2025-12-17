@@ -850,7 +850,9 @@ ideas.battery_tugs_w_aux_solar_barges = NewcoIdea(
               ss.Pacific_Logging_Marine_Transport_Companies,
              ],
     ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
-    urls=["https://www.seaspan.com/stories/log-barging-101/"],
+    urls=["https://www.seaspan.com/stories/log-barging-101/",
+          "http://inlandmariners.com/writing/atbs.pdf", # tug-barge on Great Lakes gets nod from US fleet
+         ],
     )
 # autonomous version of ^^ doesn't make very much financial difference, fuel savings is much larger
 
