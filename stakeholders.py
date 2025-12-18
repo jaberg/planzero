@@ -595,7 +595,9 @@ orgs.Shell_Canada = Org()
 # Canadian arm of Royal Dutch Shell
 
 ss.Oil_and_Gas_Extraction_Companies = Stakeholders(
-    ipcc_catpaths=['Stationary_Combustion_Sources/Oil_and_Gas_Extraction'],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction',
+    ],
     notable_members=[
         orgs.Imperial_Oil,
         orgs.Suncor,
@@ -946,10 +948,12 @@ ss.Domestic_Fuel_Customers_Gasoline = Stakeholders(
 ss.Domestic_Fuel_Customers_Heating_Oil = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
     ])
 ss.Domestic_Fuel_Customers_Natural_Gas = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
     ])
 
 ss.International_Fuel_Customers = Stakeholders(
@@ -967,15 +971,27 @@ ss.Domestic_Fuel_Vendors_Gasoline = Stakeholders(
         orgs.Cenovus_Energy,
         orgs.Shell_Canada,
     ])
+ss.Domestic_Fuel_Vendors_Heating_Oil = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+ss.Domestic_Fuel_Vendors_Natural_Gas = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
 
 ss.Equipment_Vendors_Gas_Turbines = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # use gas turbines for extraction
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
     ])
 
 ss.Equipment_Vendors_Steam_Boilers = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # use gas turbines for extraction
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
     ])
 
 ss.Equipment_Vendors_Process_Heaters = Stakeholders(
@@ -1154,7 +1170,26 @@ ss.Farmers = Stakeholders(
     ipcc_catpaths=[
         'Forest_Land',
         'Cropland',
+        #'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
     ])
+"""
+<p>To-do: What are this group's private problems relating to public electricity and heat?<p>
+<ul>
+    <li>They buy electricity, much like any other commercial customer, mostly for constant energy loads
+        <ul>
+            <li>Running a co-located home</li>
+            <li>Dairy: cooling milk, vacuum lines, water heating, ventilation</li>
+            <li>Greenhouses: lighting, ventilation, robotics</li>
+            <li>Poultry: lighting, ventilation, robotics</li>
+            <li>Pork: lighting, ventilation, robotics</li>
+            <li>Field: aeration, irrigation, robotics</li>
+        </ul>
+    </li>
+    <li>They are able to implement behind-the-meter wind and/or solar because they tend to own lots of land, and simple buildings with big roofs.
+        They can use photovoltaic power opportunistically with or without battery buffering, but loads tend to be constant rather than aligned to solar energy.</li>
+    <li>Grow crops. Don't like things that shade fields, or remove water from the soil.</li>
+</ul>
+"""
 
 
 ideas.vertically_integrated_mass_timber_construction_co = NewcoIdea(
@@ -1186,4 +1221,134 @@ ideas.something_to_suppress_forest_fires = NewcoIdea(
     for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
     ipcc_catpaths=[
         'Forest_Land',
+    ])
+
+ss.Building_Owners = Stakeholders()
+
+# geo-engineering TODO: how much heat could be vented this way? who could pay for it? who would benefit and how? Could it be built in Southern USA or Mexico?
+# "www.MEER.org",
+
+ideas.deploy_sky_windows = NewcoIdea(
+    descr='Cool buildings with so-called "sky windows" - heat bypasses greenhouse gases',
+    for_whom=[ss.Building_Owners],
+    urls=["https://www.skycoolsystems.com/technology/",
+          "https://advanced.onlinelibrary.wiley.com/doi/full/10.1002/adsu.202400948", # geo-engineering
+         ],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.deploy_highly_reflective_paint_on_flat_roofs = NewcoIdea(
+    descr='Roof buildings with highly-reflective ultra-white paint',
+    for_whom=[ss.Building_Owners],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.Public_Electricity_Customers = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.Public_Heat_Customers = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.deploy_wind_farms_in_cropland = NewcoIdea(
+    descr='Deploy wind farms in cropland',
+    for_whom=[ss.Public_Electricity_Customers],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.deploy_wind_farms_in_forests = NewcoIdea(
+    descr='Deploy wind farms in managed forests',
+    for_whom=[ss.Public_Electricity_Customers],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.deploy_wind_farms_on_waterways = NewcoIdea(
+    descr='Deploy wind farms in waterways',
+    for_whom=[ss.Public_Electricity_Customers],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+
+ideas.convert_forest_to_solar_farms = NewcoIdea(
+    descr='Convert managed forest to solar farms',
+    for_whom=[ss.Public_Electricity_Customers],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.convert_cropland_to_solar_farms = NewcoIdea(
+    descr='Convert cropland to solar farms',
+    for_whom=[ss.Public_Electricity_Customers],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.deploy_solar_farms_on_water = NewcoIdea(
+    descr='Convert water surfaces to solar farms',
+    for_whom=[ss.Public_Electricity_Customers],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.deploy_tidal_turbines = NewcoIdea(
+    descr='Convert tidal flows to electricity',
+    for_whom=[ss.Public_Electricity_Customers],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+
+ss.Public_Electricity_Utilities = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.Public_Heat_Utilities = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.Public_Electricity_Generators_Photovoltaic = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.Public_Electricity_Generators_Wind = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.Wind_Turbine_Equipment_Vendors = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.Photovoltaic_Equipment_Vendors = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ss.CCS_Equipment_Vendors = Stakeholders(
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
     ])
