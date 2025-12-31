@@ -1294,62 +1294,65 @@ class BatteryTugWithAuxSolarBarges(Project):
     #after_tax_cashflow_name = f'BatteryTugWithAuxSolarBarges_AfterTaxCashflow'
     vancouver_winter_solar_hours_per_day = 1.3 * u.kilowatt * u.hours / u.m ** 2 / u.day
 
-    def __init__(self, idea=None, year_0=2026 * u.years, autonomous=False):
+    PV_cost_per_area = 70 * u.CAD / u.m ** 2
+    battery_cost_per_capacity = 200 * u.CAD / (1280 * u.watt * u.hour)
+
+    def __init__(self, idea=None, year_0=2026 * u.years):
         super().__init__()
         self.idea = idea
         self.stepsize = 1.0 * u.years
-        self.autonomous = autonomous
-        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow{"_Autonomous" if autonomous else ""}'
+        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
         self.year_0 = year_0
         self.vessel_lifetime = 20 * u.years
-        self.r_and_d_duration = 5 * u.years if autonomous else 3 * u.years
-        self.autonomy_rate = 0.9 if autonomous else 0
+        self.r_and_d_duration = 5 * u.years
+        self.battery_range_time = 24 * u.hours * 1
 
         tug_power_required = 2000 * u.horsepower
-        # guessing here:
-        # this web application: https://nrcan-rncan.maps.arcgis.com/apps/webappviewer/index.html?id=0de6c7c412ca4f6cbd399efedafa4af4&_gl=1*1096veb*_ga*MTg0MDQ2OTMxOS4xNzY0MDE3NDI0*_ga_C2N57Y7DX5*czE3NjUzMTYyMjQkbzMkZzEkdDE3NjUzMTYzMjIkajYwJGwwJGgw
-        # estimates north Vancouver Island gets just .7 kwh/m2/day in winter for horizontal panels
-        # but maybe 2kwh/m2/day for south-facing vertically-mounted ones
-        # if we use a double-sided PV sail, then it will get various amounts of light
-        # depending on which way the wind is blowing and which way the vessel is going
-        # so...
+        if 0:
+            # guessing here:
+            # this web application: https://nrcan-rncan.maps.arcgis.com/apps/webappviewer/index.html?id=0de6c7c412ca4f6cbd399efedafa4af4&_gl=1*1096veb*_ga*MTg0MDQ2OTMxOS4xNzY0MDE3NDI0*_ga_C2N57Y7DX5*czE3NjUzMTYyMjQkbzMkZzEkdDE3NjUzMTYzMjIkajYwJGwwJGgw
+            # estimates north Vancouver Island gets just .7 kwh/m2/day in winter for horizontal panels
+            # but maybe 2kwh/m2/day for south-facing vertically-mounted ones
+            # if we use a double-sided PV sail, then it will get various amounts of light
+            # depending on which way the wind is blowing and which way the vessel is going
+            # so...
 
-        # suppose auxiliary ships 50m long with 50m sails, 20m wide
-        aux_vessel_length = 70 * u.m
-        aux_vessel_beam = 20 * u.m
-        pv_area_per_aux_vessel = aux_vessel_length * aux_vessel_beam
+            # suppose auxiliary ships 50m long with 50m sails, 20m wide
+            aux_vessel_length = 70 * u.m
+            aux_vessel_beam = 20 * u.m
+            pv_area_per_aux_vessel = aux_vessel_length * aux_vessel_beam
 
-        # suppose wind power is half of what the aux vessels can provide
-        wind_power_fraction = .5
+            # suppose wind provides no propulsion
+            wind_power_fraction = 0.5
 
-        pv_power_required = tug_power_required * wind_power_fraction
+            pv_power_required = tug_power_required * (1 - wind_power_fraction)
 
-        self.n_aux_vessels_required = int((
-            pv_power_required
-            / (pv_area_per_aux_vessel * self.vancouver_winter_solar_hours_per_day)
-        ).to('dimensionless') + 1)
+            self.n_aux_vessels_required = int((
+                pv_power_required
+                / (pv_area_per_aux_vessel * self.vancouver_winter_solar_hours_per_day)
+            ).to('dimensionless') + 1)
 
-        battery_capacity_per_tug = tug_power_required * wind_power_fraction * 24 * u.hours
+            # guessing
+            battery_capacity_per_aux_vessel = 0.01 * battery_capacity_per_tug
 
-        # guessing
-        battery_capacity_per_aux_vessel = 0.01 * battery_capacity_per_tug
+            # super-guess that the launched cost of pv & battery is half the cost of the vessel
+            self.cost_per_aux_vessel = 2 * (
+                pv_area_per_aux_vessel * self.PV_cost_per_area
+                + battery_capacity_per_aux_vessel * self.battery_cost_per_capacity
+            ).to(u.CAD)
 
-        # super-guess that the launched cost of pv & battery is half the cost of the vessel
-        self.cost_per_aux_vessel = 2 * (
-            pv_area_per_aux_vessel * self.PV_cost_per_area
-            + battery_capacity_per_aux_vessel * self.battery_cost_per_capacity
-        ).to(u.CAD)
+        else:
+            wind_power_fraction = 0.0
 
-        # super-guess that the launched cost of the tug is 3x the cost of the battery
-        self.cost_per_tug = (
-            battery_capacity_per_tug * self.battery_cost_per_capacity
-            + 2 * battery_capacity_per_tug * self.battery_cost_per_capacity
-        ).to(u.CAD)
+        self.battery_capacity_per_tug = tug_power_required * (1 - wind_power_fraction) * self.battery_range_time
+
+        self.battery_cost_per_tug = (self.battery_capacity_per_tug * self.battery_cost_per_capacity).to(u.CAD)
+        self.non_battery_cost_per_tug = 5_000_000 * u.CAD # guess
+
+        self.cost_per_tug = self.battery_cost_per_tug + self.non_battery_cost_per_tug
 
         self.r_and_d_annual_cost = 1_000_000 * u.CAD / u.year
 
-    PV_cost_per_area = 70 * u.CAD / u.m ** 2
-    battery_cost_per_capacity = 200 * u.CAD / (1280 * u.watt * u.hour)
 
     def on_add_project(self, state):
         with state.defining(self) as ctx:
@@ -1359,10 +1362,6 @@ class BatteryTugWithAuxSolarBarges(Project):
                 default_value=0 * u.MCAD))
         return state.t_now
 
-    def cost_per_tug_w_aux(self):
-        return (
-            self.cost_per_tug
-            + self.n_aux_vessels_required * self.cost_per_aux_vessel)
 
     @property
     def fuel_cost_rate(self):
@@ -1374,7 +1373,13 @@ class BatteryTugWithAuxSolarBarges(Project):
             price_of_diesel
             * diesel_tug_fuel_consumption
             * (working_days_per_year / 365)).to(u.CAD/u.year)
-        return fuel_cost_rate
+
+        price_of_electricity = 0.1 * u.CAD / (u.kilowatt * u.hour)
+        electricity_cost_rate = (
+            price_of_electricity
+            * self.battery_capacity_per_tug / u.day
+            * (working_days_per_year / 365)).to(u.CAD/u.year)
+        return fuel_cost_rate - electricity_cost_rate
 
     @property
     def tug_labour_rate(self):
@@ -1394,8 +1399,7 @@ class BatteryTugWithAuxSolarBarges(Project):
                 state.latest.n_pacific_log_tugs
                 / self.vessel_lifetime) * self.stepsize
             manufacturing_costs += n_tugs_built_per_step * (
-                self.cost_per_tug
-                + self.n_aux_vessels_required * self.cost_per_aux_vessel)
+                self.cost_per_tug)
             if state.latest.n_pacific_log_tugs_ZEV_constructed < state.latest.n_pacific_log_tugs:
                 current.n_pacific_log_tugs_ZEV_constructed += n_tugs_built_per_step
             else:
@@ -1403,12 +1407,6 @@ class BatteryTugWithAuxSolarBarges(Project):
                 pass
 
         revenue = state.latest.n_pacific_log_tugs_ZEV * self.fuel_cost_rate * self.stepsize
-        if self.autonomous:
-            revenue += (
-                state.latest.n_pacific_log_tugs_ZEV
-                * self.tug_labour_rate
-                * self.stepsize
-                * self.autonomy_rate)
         
         # not included:
         # salvage value, part-reuse between vessel generations
@@ -1427,12 +1425,11 @@ class BatteryTugWithAuxSolarBarges(Project):
 
     def project_page_vision(self): 
         return f"""
-        The idea: develop a marine vessel
-        that is a mobile floating solar and/or wind power plant.
-        Solar panels are the cheapest sources of power in the world, why rely on shore power?
-        The financing and environmental impact models are based on a plan of simply replacing the fleet of diesel
-        tugs pulling log barges around Vancouver Island, and never expanding to other applications.
-        See Future Work at the bottom of this page for potential expansions of scope.
+        The idea: use battery-powered tugs to move bulk cargo barges.
+        Provide range by using grid power, or by constructing solar-farm piers or floating arrays at which tugs can recharge or swap TEU-sized batteries.
+        The current financing and environmental impact model is based on a plan of
+        simply replacing the fleet of diesel
+        tugs pulling log barges around Vancouver Island, and not the Great Lakes or northern supply routes (although this could/should be done).
         """
 
     def project_page_graphs(self):
@@ -1494,16 +1491,12 @@ class BatteryTugWithAuxSolarBarges(Project):
             figtype='plot delta',
             descr=descr))
 
-        autonomous_earning = f"""
-        <li>earning {(self.tug_labour_rate * u.year * self.autonomy_rate).to(u.megaCAD)} annually per vessel [set] in labour savings from autonomous control</li>
-        """
         descr = f"""
         In terms of financial modelling, the project is modelled as
         <ul>
         <li>needing {self.r_and_d_annual_cost.to(u.megaCAD/u.year)} for research, development, and operations,</li>
-        <li>needing {self.cost_per_tug_w_aux().to(u.megaCAD)} per vessel [set] a rate sufficient to replace the fleet over vessel lifetime of {self.vessel_lifetime}
+        <li>needing {self.cost_per_tug.to(u.megaCAD)} per vessel at a rate sufficient to replace the fleet over vessel lifetime of {self.vessel_lifetime}
         <li>earning {(self.fuel_cost_rate * u.year).to(u.megaCAD)} annually per vessel [set] in saved fuel</li>
-        {autonomous_earning if self.autonomous else ""}
         </ul>
         """
         rval.append(dict(
