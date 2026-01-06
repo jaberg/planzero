@@ -5,7 +5,7 @@ import app
 
 client = TestClient(app.app)
 
-import ipcc_canada
+from planzero import ipcc_canada
 
 def test_home():
     response = client.get("/")

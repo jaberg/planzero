@@ -1,5 +1,5 @@
 # sets are generally partially overlapping, but sets can be subsets, disjoint
-from . import ipcc_canada
+from .. import ipcc_canada
 
 
 class Stakeholder_Sets(object):
@@ -225,82 +225,6 @@ ss.Milk_Consumers = Stakeholders(
     )
 
 
-class AssetClasses(object):
-    def __init__(self):
-        self._acs = {}
-
-    def __setattr__(self, name, ac):
-        if name.startswith('_'):
-            self.__dict__[name] = ac
-            return
-
-        if isinstance(ac, AssetClass) and name not in self._acs:
-            self._acs[name] = ac
-            ac.on_assign(name)
-        else:
-            raise NotImplementedError(ac)
-
-    def __getattr__(self, name):
-        try:
-            return self._acs[name]
-        except KeyError:
-            raise AttributeError(name)
-
-
-ac = AssetClasses()
-
-
-class AssetClass(object):
-    """A set of similar assets, owned collectively by a particular set of
-    Stakeholders.
-    """
-    def __init__(self, *, name=None, descr=None, owners=None, ipcc_catpath=None):
-        self.name = name
-        self.descr = descr
-        self.owners = owners
-
-        # to which ipcc sector category does this contribute emissions?
-        if ipcc_catpath is None or ipcc_catpath in ipcc_canada.catpaths:
-            self.ipcc_catpath = ipcc_catpath
-        else:
-            raise NotImplementedError(ipcc_catpath)
-
-    @property
-    def owners(self):
-        return self._owners
-
-    @owners.setter
-    def owners(self, owners):
-        assert owners is None or isinstance(owners, (Stakeholders, Org))
-        self._owners = owners
-
-    def on_assign(self, name):
-        if self.name is None:
-            self.name = name
-        else:
-            assert self.name == name
-
-    @property
-    def annual_emitted_CH4_name(self):
-        return f'annual_emitted_CH4_{self.name}'
-
-    @property
-    def annual_emitted_CO2_name(self):
-        return f'annual_emitted_CO2_{self.name}'
-
-
-class BeefCattle(AssetClass):
-    def __init__(self):
-        super().__init__(owners=ss.Beef_Farmers)
-
-ac.Beef_Cattle = BeefCattle()
-
-
-class DairyCattle(AssetClass):
-    def __init__(self):
-        super().__init__(owners=ss.Dairy_Farmers)
-
-ac.Dairy_Cattle = DairyCattle()
 
 
 
@@ -896,37 +820,6 @@ ideas.power_ships_with_eMethanol = NewcoIdea(
 # what's the status of e-Methanol production, can a vessel fuel
 # at both ends of a journey, or carry enough fuel to return to home port?
 
-
-class DieselDryBulkFreighters(AssetClass):
-    pass
-
-
-class PacificLogBarges(AssetClass):
-    # Gemini estimates there about 10 of these in operation
-    # made by Seaspan and Rivtow
-    # Gemini states they are moved by tug, they are not self-propelled
-    # Gemini states they are moved by tugs with 3000-6000 HP
-    # they currently move about 10-15k tons / ship
-    # they make about 50 trips a year
-    # they move about 7_000_000 tons annually
-    # the trips average 400 km
-    # the freight task is 7_000_000 x 400 = 2.8 billion tonne-km
-    # the associated emissions are 35-40 tonnes CO2e, including empty back-haul
-    # backhaul travel is typically done faster at a lower-efficiency speed, uses 60-70% fuel / km
-    # burn marine diesel oil or marine gas oil, not bunker
-    # future fleet burns LNG, and may be hybrid-electric
-
-    def __init__(self):
-        super().__init__(owners=ss.Pacific_Logging_Marine_Transport_Companies)
-        self.n_barges = 10
-
-ac.Pacific_Log_Barges = PacificLogBarges()
-
-class PassiveBarge3000DWT(AssetClass):
-    pass
-
-ac.Diesel_Dry_Bulk_Freighters = DieselDryBulkFreighters()
-ac.PassiveBarge3000DWT = PassiveBarge3000DWT()
 
 
 ss.Oil_and_Gas_Extraction_Industry_Employees = Stakeholders(

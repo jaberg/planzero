@@ -11,13 +11,13 @@
     <p>Key assumptions:
     <ul>
         <li>Price of Bovaer, per year:
-            {{base.NationalBovaerMandate.bovaer_price}}
+            {{planzero.strategies.NationalBovaerMandate.bovaer_price}}
         </li>
         <li>Methane per head, per year
-            {{base.GeometricBovinePopulationForecast.methane_per_head_per_year}}
+            {{planzero.base.GeometricBovinePopulationForecast.methane_per_head_per_year}}
         </li>
         <li>Methane reduction due to Bovaer:
-            {{ (1 - base.GeometricBovinePopulationForecast.bovaer_methane_reduction_fraction) }}
+            {{ (1 - planzero.base.GeometricBovinePopulationForecast.bovaer_methane_reduction_fraction) }}
         </li>
     </ul>
     </p>

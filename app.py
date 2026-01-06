@@ -16,26 +16,10 @@ app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images"
 
 templates = Jinja2Templates(directory=htmlroot)
 
-from planzero import ipcc_canada, stakeholders, base
-u = base.u
+import planzero
+u = planzero.ureg
 
-peval = base.ProjectEvaluation(
-    projects={prj.idea.name: prj for prj in [
-        base.ComboA(idea=stakeholders.ideas.combo_a),
-        base.NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
-        base.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
-        base.Force_Government_ZEVs(),
-    ]},
-    common_projects=[
-        base.GeometricBovinePopulationForecast(),
-        base.GeometricHumanPopulationForecast(),
-        base.IPCC_Forest_Land_Model(),
-        base.IPCC_Transport_Marine_DomesticNavigation_Model(),
-        base.IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(),
-        base.PacificLogBargeForecast(),
-        base.AtmosphericChemistry(),
-    ],
-)
+peval = planzero.standard_project_evaluation()
 peval.run_until(2125 * u.years)
 
 
@@ -110,7 +94,7 @@ async def get_ipcc_sectors_category(
             context=dict(
                 default_context,
                 active_tab='ipcc_sectors',
-                stakeholders=stakeholders,
+                stakeholders=planzero.strategies.stakeholders,
                 catpath=catpath,
                 ),
         )
@@ -182,9 +166,9 @@ default_context = dict(
     url_for_catpath=url_for_catpath,
     json=json,
     datetime=datetime,
-    ipcc_canada=ipcc_canada,
-    stakeholders=stakeholders,
-    base=base,
+    ipcc_canada=planzero.ipcc_canada,
+    stakeholders=planzero.strategies.stakeholders,
     discount_rate=.02,
+    planzero=planzero,
     )
 
