@@ -25,8 +25,10 @@ RUN pip install --no-cache-dir networkx
 RUN pip install --no-cache-dir fastapi[standard]
 RUN pip install --no-cache-dir pandas
 RUN pip install --no-cache-dir pytest
+RUN pip install --no-cache-dir jupyter
 
 
 COPY . /content
 WORKDIR /content
+ENV PLANZERO_DATA="/content/data"
 CMD ["fastapi", "run"]

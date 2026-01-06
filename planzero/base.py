@@ -7,13 +7,16 @@ import contextlib
 import heapq
 from io import StringIO
 import math
+import os
+import sys
+import time
+
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import pandas as pd
 import pint
 import torch
-import time
 torch.set_default_dtype(torch.float64)
 
 ureg = pint.UnitRegistry()
@@ -32,8 +35,8 @@ u = ureg
 #       Same for months, maybe weeks.
 
 
-import stakeholders
-import ipcc_canada
+from . import stakeholders
+from . import ipcc_canada
 
 class SparseTimeSeries(object):
 
@@ -665,7 +668,7 @@ class GeometricBovinePopulationForecast(Project):
 
     def __init__(self):
         super().__init__()
-        csv = pd.read_csv('number-of-cattle.csv')
+        csv = pd.read_csv(os.path.join(os.environ['PLANZERO_DATA'], 'number-of-cattle.csv'))
         self.jan1 = csv[(csv['Farm type'] == 'On all cattle operations') & (csv['Survey date'] == 'At January 1')]
         self.jul1 = csv[(csv['Farm type'] == 'On all cattle operations') & (csv['Survey date'] == 'At July 1')]
         self.stepsize = 1.0 * u.years

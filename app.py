@@ -16,11 +16,9 @@ app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images"
 
 templates = Jinja2Templates(directory=htmlroot)
 
-import ipcc_canada
-import stakeholders
-
-import base
+from planzero import ipcc_canada, stakeholders, base
 u = base.u
+
 peval = base.ProjectEvaluation(
     projects={prj.idea.name: prj for prj in [
         base.ComboA(idea=stakeholders.ideas.combo_a),

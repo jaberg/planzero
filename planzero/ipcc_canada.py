@@ -1,8 +1,10 @@
+import os
+import sys
 
 import pandas as pd
 # from https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/A-IPCC-Sector?lang=en
 
-inv = pd.read_csv('EN_GHG_IPCC_Can_Prov_Terr.csv')
+inv = pd.read_csv(os.path.join(os.environ['PLANZERO_DATA'], 'EN_GHG_IPCC_Can_Prov_Terr.csv'))
 
 inv['CategoryPathWithWhitespace'] = (
     inv['Category'].fillna('').astype(str) + '/' +
@@ -17,8 +19,10 @@ inv['Year'] = inv['Year'].astype(float)
 # non-aggregate rows relating to the entire country (remove subtotals)
 non_agg = inv[ (inv['Region'].isin(['Canada', 'canada'])) & (inv['Total'] != 'y')]
 
+
 def echart_years():
     return [float(x) for x in sorted(non_agg['Year'].unique())]
+
 
 def echart_series_Mt(catpath, name=None):
     datalen = len(echart_years())
@@ -40,6 +44,7 @@ def echart_series_Mt(catpath, name=None):
                'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')}
               for year, co2eq in data])
     return rval
+
 
 def echart_series_all_Mt(only_positive=False):
     datalen = len(echart_years())

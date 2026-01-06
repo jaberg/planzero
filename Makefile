@@ -37,6 +37,7 @@ stakeholders: .build
 
 local: .build
 	docker run \
+		-e PLANZERO_DATA=/mnt/data/ \
 		-v ${PWD}:/mnt/ \
 		-p 127.0.0.1:8012:8012 \
 		-w /mnt/ \

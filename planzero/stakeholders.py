@@ -1,5 +1,5 @@
 # sets are generally partially overlapping, but sets can be subsets, disjoint
-import ipcc_canada
+from . import ipcc_canada
 
 
 class Stakeholder_Sets(object):
@@ -1034,6 +1034,15 @@ ideas.limit_oil_and_gas_exports = RegulationIdea(
     who=ss.Regulators,
     descr="Limit and/or discourage (e.g. tax) Canada's energy exports",
     for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects
+    ])
+
+ss.Methane_Pyrolysis_Companies = Stakeholders() # is this actually a stakeholder group?
+ideas.power_oil_sands_extraction_via_methane_pyrolysis = NewcoIdea(
+    who=ss.Methane_Pyrolysis_Companies.new_org(),
+    descr="Generate heat and electricity via methane pyrolysis and hydrogen fuel cells",
+    for_whom=[ss.Oil_and_Gas_Extraction_Companies],
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects
     ])
