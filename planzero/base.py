@@ -77,7 +77,10 @@ class SparseTimeSeries(object):
             else:
                 self.values = [torch.tensor(default_value) * values.u]
         elif hasattr(default_value, 'magnitude'):
-            self.values = [torch.tensor(default_value.magnitude) * default_value.u]
+            if isinstance(default_value.magnitude, torch.Tensor):
+                self.values = [default_value.magnitude * default_value.u]
+            else:
+                self.values = [torch.tensor(default_value.magnitude) * default_value.u]
         else:
             raise NotImplementedError()
 
@@ -226,6 +229,9 @@ class SparseTimeSeries(object):
 
 class Project(object):
 
+    may_register_emissions = True
+    requires_emissions_registration_closed = False
+
     def __init__(self):
         self._name = None
         self._sub_projects = []
@@ -287,6 +293,25 @@ class Project(object):
         return svg_string
 
 
+class BaseScenarioProject(Project):
+    """Inherit from BaseScenarioProject to be included in the default base
+    scenario for project evaluation.
+    """
+
+    _subclasses = []
+
+    include_in_base_scenario_projects = True
+
+    @classmethod
+    def __init_subclass__(cls):
+        BaseScenarioProject._subclasses.append(cls)
+
+    @staticmethod
+    def base_scenario_projects():
+        return [cls() for cls in BaseScenarioProject._subclasses
+                if cls.include_in_base_scenario_projects]
+
+
 class State(object):
     t_start = 1990 * u.years
 
@@ -302,6 +327,7 @@ class State(object):
         self.project_t_next = {} # prj -> t_next
         self._depgraph = None
         self.name = name
+        self.emissions_registration_closed = False
 
     def dependency_digraph(self):
         graph = nx.DiGraph()
@@ -383,11 +409,20 @@ class State(object):
         self.project_t_next[project] = project.on_add_project(self)
         self._depgraph = None
 
-        for sub_project in project._sub_projects:
-            self.add_project(sub_project)
+        # we close registration at the request of the first project that
+        # requires it to be closed
+        self.emissions_registration_closed |= project.requires_emissions_registration_closed
+
+        self.add_projects(project._sub_projects)
 
     def add_projects(self, projects):
-        for project in projects:
+        # start with projects that may register emissions
+        # so we can schedule the ones that may require emissions registration
+        # to be closed at the end (i.e. AtmosphericChemistry)
+        order = [(0 if proj.may_register_emissions else 1, ii, proj)
+                     for ii, proj in enumerate(projects)]
+        order.sort()
+        for _, _, project in order:
             self.add_project(project)
 
     @property
@@ -400,6 +435,8 @@ class State(object):
         self._t_now = t_next
 
     def register_emission(self, category_path, ghg, sts_key):
+        if self.emissions_registration_closed:
+            raise RuntimeError()
         assert ghg in ('CO2', 'CH4', 'N2O')
         assert sts_key in self.sts
         self.sectoral_emissions_contributors[category_path].setdefault(ghg, []).append(sts_key)
@@ -412,6 +449,12 @@ class State(object):
         return Latest()
 
     def _current(self, readable_attrs, writeable_attrs):
+        """Return a view of certain state variables, supporting the standard
+        syntax of step(state, current).
+
+        The semantics of this object are such that
+        `current.foo` returns the self.t_now'th value of foo, when it is valid to do so.
+        """
         readable = set(readable_attrs)
         writeable = set(writeable_attrs)
 
@@ -421,10 +464,11 @@ class State(object):
                 if attr in readable or attr in writeable:
                     # TODO: it might catch errors to be strict about not reading
                     # before writing but current.foo += 1 is such natural syntax
+                    # and strict semantics would forbid it.
                     return self.sts[attr].latest_val(self.t_now, inclusive=True)
                 else:
                     if attr in self.sts:
-                        raise AttributeError(f'current value of attribute {attr} not available')
+                        raise AttributeError(f'state variable {attr} exists, but the calling Project class did not register to read it')
                     else:
                         raise AttributeError(attr)
 
@@ -472,7 +516,11 @@ class State(object):
             t_next, node_idx, prj = heapq.heappop(self._heap)
             assert t_next >= self.t_now
             self.t_now = t_next
-
+            if 0:
+                print("HEAP")
+                for foo in sorted(self._heap):
+                    print("    ", foo)
+                print('Stepping', t_next, prj)
             new_t_next = prj.step(
                 self,
                 current=self._current(
@@ -492,11 +540,14 @@ class GlobalHeatEnergy(SparseTimeSeries):
         #plt.text(self.times[0].to('years').magnitude, height, "Shallow Ocean 1C")
 
 
-class AtmosphericChemistry(Project):
+class AtmosphericChemistry(BaseScenarioProject):
     methane_decay_timescale = 10.0
     methane_GWP = 28.0 # global warming potential, for CO2e calculation
     molar_mass_CH4 = 16.0
     molar_mass_CO2 = 44.0
+
+    may_register_emissions = False
+    requires_emissions_registration_closed = True
 
     def __init__(self):
         super().__init__()
@@ -635,7 +686,7 @@ class AtmosphericChemistry(Project):
         return state.t_now + self.stepsize
 
 
-class GeometricHumanPopulationForecast(Project):
+class GeometricHumanPopulationForecast(BaseScenarioProject):
     def __init__(self, rate=1.014):
         super().__init__()
         self.rate = rate
@@ -654,7 +705,7 @@ class GeometricHumanPopulationForecast(Project):
         return state.t_now + self.stepsize
 
 
-class GeometricBovinePopulationForecast(Project):
+class GeometricBovinePopulationForecast(BaseScenarioProject):
 
     # 70% of emissions remain, according to https://www.helsinki.fi/en/news/climate-change/new-feed-additive-can-significantly-reduce-methane-emissions-generated-ruminants-already-dairy-farm
     # https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html
@@ -684,9 +735,9 @@ class GeometricBovinePopulationForecast(Project):
                 (.5 * self.jan1['VALUE'].values * 1000
                  + .5 * self.jul1['VALUE'].values * 1000) * u.cattle)
             ctx.bovine_methane = SparseTimeSeries(
-                state.t_now,
-                (state.sts['bovine_population'].latest_val(2000 * u.years, inclusive=True)
-                 * self.methane_per_head_per_year))
+                default_value=(
+                    state.sts['bovine_population'].latest_val(2000 * u.years, inclusive=True)
+                     * self.methane_per_head_per_year))
         state.register_emission('Enteric_Fermentation', 'CH4', 'bovine_methane')
         return 2000 * u.years + self.stepsize
 
@@ -902,7 +953,7 @@ class ProjectEvaluation(object):
             yield npv, nph, eval_name
 
 
-class IPCC_Forest_Land_Model(Project):
+class IPCC_Forest_Land_Model(BaseScenarioProject):
     def __init__(self):
         super().__init__()
         self.stepsize = 1.0 * u.years
@@ -916,29 +967,7 @@ class IPCC_Forest_Land_Model(Project):
         state.register_emission('Forest_Land', 'CO2', 'Other_Forest_Land_CO2')
 
 
-class IPCC_Transport_Marine_DomesticNavigation_Model(Project):
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
-
-    def on_add_project(self, state):
-        with state.requiring_current(self) as ctx:
-
-            # PacificLogBargeForecast
-            ctx.pacific_log_barge_CO2 = SparseTimeSeries(
-                default_value=0 * u.kg)
-
-            ctx.Lakers_CO2 = SparseTimeSeries(
-                default_value=0 * u.kg)
-
-            ctx.Other_Domestic_Navigation_CO2 = SparseTimeSeries(
-                default_value=3.4 * u.Mt)
-
-        state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Lakers_CO2')
-        state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Other_Domestic_Navigation_CO2')
-
-
-class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(Project):
+class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProject):
     def __init__(self):
         super().__init__()
         self.stepsize = 1.0 * u.years
@@ -979,48 +1008,3 @@ class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(Project):
             * (1 * u.dimensionless - current.Other_LightDutyGasolineTrucks_ZEV_fraction))
         return state.t_now + self.stepsize
 
-
-
-class PacificLogBargeForecast(Project):
-    # somehow link/merge with stakeholders.PacificLogBarges
-
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
-
-    def on_add_project(self, state):
-        with state.requiring_current(self) as ctx:
-            ctx.n_pacific_log_tugs_ZEV_constructed = SparseTimeSeries(
-                default_value=0 * u.dimensionless)
-        with state.defining(self) as ctx:
-            ctx.n_pacific_log_tugs = SparseTimeSeries(
-                default_value=10 * u.dimensionless)
-            # Gemini's best guess was there are about 10 tugs pulling logs down the BC Coast
-            ctx.n_pacific_log_tugs_diesel = SparseTimeSeries(
-                default_value=10 * u.dimensionless)
-            ctx.n_pacific_log_tugs_ZEV = SparseTimeSeries(
-                default_value=0 * u.dimensionless)
-
-            ctx.pacific_log_barge_CO2 = SparseTimeSeries(
-                default_value=0 * u.kg)
-
-        state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2',
-                                'pacific_log_barge_CO2')
-        return state.t_now
-
-    def step(self, state, current):
-        current.n_pacific_log_tugs_ZEV = current.n_pacific_log_tugs_ZEV_constructed
-        current.n_pacific_log_tugs_diesel = (
-            current.n_pacific_log_tugs
-            - current.n_pacific_log_tugs_ZEV)
-        current.n_pacific_log_tugs = (
-            current.n_pacific_log_tugs_diesel
-            + current.n_pacific_log_tugs_ZEV)
-        current.pacific_log_barge_CO2 = (
-            2.68 * u.kg / u.liter
-            * 400 * u.liter / u.hour
-            * current.n_pacific_log_tugs_diesel
-            * (300 / 365) # working most days
-            * self.stepsize)
-
-        return state.t_now + self.stepsize

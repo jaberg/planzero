@@ -6,6 +6,10 @@ from . import battery_tug
 from .. import Project, SparseTimeSeries
 from .. import ureg as u
 
+class Strategy(Project):
+
+    may_register_emissions = False # strategies are not physical processes, they should not produce emissions
+
 # carbon capture
 # negative-carbon cement
 # enhanced rock weathering (e.g. UNDO, Carbon Run)
@@ -21,7 +25,7 @@ from .. import ureg as u
 # what about India's cattle population!?
 # new process for hydrogen peroxide: https://interestingengineering.com/innovation/solar-hydrogen-peroxide-cornell-breakthrough
 
-class ComboA(Project):
+class ComboA(Strategy):
     def __init__(self, idea):
         super().__init__()
         self.idea = idea
@@ -66,7 +70,7 @@ class ComboA(Project):
         return state.t_now + self.stepsize
 
 
-class Force_Government_ZEVs(Project):
+class Force_Government_ZEVs(Strategy):
     idea = stakeholders.ideas.force_government_fleet_to_go_green
 
     def __init__(self, start_time=2022 * u.years, end_time=2035 * u.years):
@@ -131,7 +135,7 @@ class Force_Government_ZEVs(Project):
         return rval
 
 
-class NationalBovaerMandate(Project):
+class NationalBovaerMandate(Strategy):
     after_tax_cashflow_name = f'NationalBovaerMandate_AfterTaxCashflow'
 
     bovaer_price = 150 * u.CAD / u.cattle / u.year
