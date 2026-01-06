@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
-htmlroot = 'html5up-massively'
+htmlroot = 'html'
 
 app.mount("/assets", StaticFiles(directory=f"{htmlroot}/assets/"), name="assets")
 app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images")
