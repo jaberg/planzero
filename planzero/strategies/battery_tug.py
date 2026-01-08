@@ -3,6 +3,10 @@ from .. import ureg as u
 
 
 class BatteryTugWithAuxSolarBarges(Project):
+    """
+    Battery Tug strategy is to develop a tug as a replacement for BC Log Barge-towing tugs.
+
+    """
     vancouver_winter_solar_hours_per_day = 1.3 * u.kilowatt * u.hours / u.m ** 2 / u.day
 
     PV_cost_per_area = 70 * u.CAD / u.m ** 2
@@ -140,7 +144,16 @@ class BatteryTugWithAuxSolarBarges(Project):
         Provide range by using grid power, or by constructing solar-farm piers or floating arrays at which tugs can recharge or swap TEU-sized batteries.
         The current financing and environmental impact model is based on a plan of
         simply replacing the fleet of diesel
-        tugs pulling log barges around Vancouver Island, and not the Great Lakes or northern supply routes (although this could/should be done).
+        tugs pulling log barges around Vancouver Island, and not the Great Lakes or northern supply routes.
+        I believe that this vessel should not be assessed for either the Great Lakes or northern supply routes, but for different reasons.
+        The Great Lakes routes are connected by many locks, and are currently served by larger self-propelled vessels rather than tug-barge combinations;
+        I believe the need to design and deploy barges as well as tugs as well as the larger size of the freight application motivates the design of custom vessels, although similar battery-powered logic probably applies.
+        In the case of Northern resupply, I believe there is insufficient
+        charging infrastructure along the routes, and the trips themselves are
+        not frequent enough to motivate installing charging infrastructure. In
+        both cases, a different vessel design is likely necessary.
+
+
         """
 
     def project_page_graphs(self):

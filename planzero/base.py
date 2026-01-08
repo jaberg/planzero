@@ -478,7 +478,7 @@ class State(object):
                     readable.add(attr)
                     writeable.remove(attr)
                 else:
-                    assert 0
+                    assert 0, ('Setting non-writeable attr', attr)
 
         return Current()
 

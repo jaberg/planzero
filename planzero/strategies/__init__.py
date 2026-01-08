@@ -2,6 +2,7 @@ import torch
 
 from . import stakeholders
 from . import battery_tug
+from . import battery_freighter
 
 from .. import Project, SparseTimeSeries
 from .. import ureg as u
@@ -285,4 +286,5 @@ def standard_strategies():
             NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
             battery_tug.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
             Force_Government_ZEVs(),
+            battery_freighter.BatteryFreighter(),
         ]

@@ -34,11 +34,12 @@ class PacificLogBarges(BaseScenarioProject):
     """
     This class represents the combined activities of e.g.
     * Seaspan
-    * others
+    * Harken
+    * West Coast Tug & Barge
 
-    who own and operate barges and tugs that move logs from remote sites along
-    the BC coast to lumber mills on Vancouver Island, and on the mainland near
-    e.g. the mouth of the Fraser river.
+    These companies own / operate barges and tugs that move logs from remote
+    sites along the BC coast to lumber mills on Vancouver Island, and on the
+    mainland near e.g. the mouth of the Fraser river.
     """
 
     def __init__(self):
@@ -103,7 +104,7 @@ class GreatLakesFreight(BaseScenarioProject):
     assigned to the various available vessel types.
     * 1970s-era diesel laker freighter
     * new diesel laker freighter (e.g. equinox-class from Algoma)
-    * a hypothesized battery-electric vessel
+    * a hypothesized battery-electric tug designed primarily for use pulling BC Log barges
 
     This class includes assumptions about the fuel efficiency and crew costs
     of each vessel type, so it calculates the following outputs:
@@ -120,37 +121,32 @@ class GreatLakesFreight(BaseScenarioProject):
 
         with state.requiring_current(self) as ctx:
 
-            ctx.n_great_lakes_available_freight_tugs = SparseTimeSeries(
+            ctx.n_great_lakes_available_battery_freighters = SparseTimeSeries(
                 default_value=0 * u.dimensionless)
 
-            ctx.n_great_lakes_available_battery_freight_tugs = SparseTimeSeries(
-                default_value=0 * u.dimensionless)
+            ctx.average_battery_freighter_capacity = SparseTimeSeries(
+                default_value=0 * u.tonne)
 
             # assume plenty of capacity in this vessel class
             # it doesn't hurt to have extra here, because we're not modelling
             # how these ships are financed.
-            ctx.n_great_lakes_available_freighters_dry_bulk = SparseTimeSeries(
+            ctx.n_great_lakes_available_freighters = SparseTimeSeries(
                 default_value=100 * u.dimensionless)
 
         with state.defining(self) as ctx:
 
             # freight ton miles are considered an input to the model, based
             # on economic demand.
-            # This class accesses their historical values and projects future
-            # ones.
-            ctx.great_lakes_freight_dry_bulk_ton_miles = SparseTimeSeries(
+            # This class is responsible for matching their historical values
+            # and projects future, but all it does is just default to an
+            # approximate constant value.
+            ctx.great_lakes_freight_ton_miles = SparseTimeSeries(
                 default_value=100_000_000_000 * u.tonne * u.nautical_mile)
 
-            # The model calculates how many (including fractional) active vessels
-            # there are of each type, based on how many vessels are available.
-            # The logic is that available battery freight tugs are used first,
-            # then diesel tugs are utilized until the available barges are all
-            # used, then dedicated freighters meet the the remainder of demand.
-
-            ctx.n_great_lakes_active_battery_freight_tugs = SparseTimeSeries(
+            ctx.n_great_lakes_active_battery_freighters = SparseTimeSeries(
                 default_value=0 * u.dimensionless)
 
-            ctx.n_great_lakes_active_freighters_dry_bulk = SparseTimeSeries(
+            ctx.n_great_lakes_active_freighters = SparseTimeSeries(
                 default_value=0 * u.dimensionless)
 
             ctx.great_lakes_freight_CO2 = SparseTimeSeries(
@@ -164,23 +160,43 @@ class GreatLakesFreight(BaseScenarioProject):
         return state.t_now
 
     def step(self, state, current):
-        average_dry_bulk_backhaul_efficiency = .7
-        average_freighter_duty_cycle_efficiency = (1.0 + average_dry_bulk_backhaul_efficiency) / 2.0
+
+        average_backhaul_efficiency = .7
+        average_freighter_duty_cycle_efficiency = (1.0 + average_backhaul_efficiency) / 2.0
         average_freighter_capacity = 30_000 * u.tonne
         freighter_average_speed = 6 * u.knots # average over 12 month period
 
-        current.n_great_lakes_active_freighters_dry_bulk = (
-            current.great_lakes_freight_dry_bulk_ton_miles
+        # work available to electric freight fleet
+        remaining_ton_miles = current.great_lakes_freight_ton_miles
+
+        # use all available battery vessels
+        current.n_great_lakes_active_battery_freighters = current.n_great_lakes_available_battery_freighters
+        battery_vessel_work_done = (
+            current.average_battery_freighter_capacity * current.n_great_lakes_active_battery_freighters
+            * freighter_average_speed * self.stepsize
+            * average_freighter_duty_cycle_efficiency)
+
+        battery_CO2 = 0 * u.kg # TODO: price in e.g. Ontario grid efficiency or pull the value
+        # from a timeseries defined by BatteryFreighter
+
+        # do the rest with freighters
+        remaining_ton_miles -= battery_vessel_work_done
+        n_active_freighters = (
+            remaining_ton_miles
             / (
                 average_freighter_capacity * average_freighter_duty_cycle_efficiency
-                * freighter_average_speed * u.year)
+                * freighter_average_speed * self.stepsize)
         ).to(u.dimensionless)
+        current.n_great_lakes_active_freighters = n_active_freighters
+        assert n_active_freighters < current.n_great_lakes_available_freighters
 
-        current.great_lakes_freight_CO2 = (
-            current.n_great_lakes_active_freighters_dry_bulk
+        freighter_CO2 = (
+            current.n_great_lakes_active_freighters
             * (26 * u.tonnes / u.day) # diesel consumption
             * (3) # tonnes CO2e / tonne diesel
             * (300 / 365) # working most days
             * self.stepsize)
+
+        current.great_lakes_freight_CO2 = battery_CO2 + freighter_CO2
 
         return state.t_now + self.stepsize

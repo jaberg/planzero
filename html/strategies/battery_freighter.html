@@ -14,27 +14,23 @@
     </p>
 
     <h2>Summary</h2>
-    <p>Background assumptions:
+    <p>Vessel assumptions:
     <ul>
-        <li>Log barges typically carry between 10_000 and 15_000 tons of logs, and self-unload</li>
-        <li>Pacific log tugs pull barges of logs between 200 and 600 km, and return empty.</li>
-        <li>Such tugs typically burn 400 l/hr while underway.</li>
-        <li>Tugs typically cruise with 2000 hp, can provide up to 5000 hp.</li>
-        <li>Log destinations are mainly Squamish, Nanaimo, and sites along the Fraser near Vancouver.</li>
-        <li>Log sources are infrastructure-less sites around Vancouver Island, Haida Gwaii, and along the mainland BC coast.</li>
-    </ul>
-    <p>Battery tug vessel assumptions:
-    <ul>
-        <li>Vessel requires a 300km range under load (about 24h), and and can charge / battery-swap at most once per day for 1-2 hours.</li>
-        <li>Budget per battery-powered tug (including battery): {{ project.cost_per_tug.to(u.megaCAD) }}</li>
-        <li>Vessel accommodates 8 crew.</li>
+        <li>Vessel can charge / battery-swap at most once per day for 1-2 hours.</li>
+        <li>Vessel requires a sustained {{ project.power_required_per_working_day }} under steady steaming, which can usually maintain 12 knots</li>
+        <li>Battery capacity: {{project.battery_capacity.to('megawatt hours')}}</li>
+        <li>Manufacturing budget for battery: {{ project.battery_cost.to(u.megaCAD) }}</li>
+        <li>Manufacturing budget for remainder of vessel: {{ project.non_battery_cost.to(u.megaCAD) }}</li>
+        <li>Vessel accommodates 18 crew.</li>
         <li>Vessel can be remote-operated to develop piloting AI, unlock future lower-cost tugs without crew quarters.</li>
+        <li>Vessel capacity is {{ project.deadweight }} (up to {{ project.pre_battery_deadweight }}, except battery weight {{project.battery_mass.to('tonne')}})</li>
     </ul>
     </p>
     <p>Charging assumptions:
     <ul>
         <li>The vessels can be charged for an amortized cost of $0.10/kwh, with negligible emissions.</li>
-        <li>The electricity for charging can be obtained by grid power, wind turbine, or solar arrays on piers or barges.</li>
+        <li>Electricity for charging to be obtained by grid power, wind turbine, or solar arrays on piers or barges, with diesel genset backup.</li>
+        <li>Unclear whether battery would be swapped mechanically or recharged via cable.</li>
     </ul>
     <p>Key predictions:
     <ul>
@@ -76,10 +72,11 @@
     <h2>Future Work</h2>
     <p>
     <ul>
-        <li>Factor in locations for charging tugs, and how exactly electricity would be generated / procured at the target price.</li>
+        <li>Factor in locations for charging, and how exactly electricity would be generated / procured at the target price.</li>
+        <li>Extend to model the use of vessels for Great Lakes freight (tow "Lakers")</li>
         <li>Formalize product, estimate pricing, refine manufacturing and operating costs.</li>
         <li>Factor in a transition to autonomous tugboat vessels.</li>
-        <li>Harness wind power with a retrofit to the barges? A suction sail or rotor sail could be worthwhile. Same for the tug if it is large enough.</li>
+        <li>Harness wind power with a suction sail, rotor sail, or rigid solar sail.</li>
     </ul>
     </p>
     <h2>Links and References</h2>
