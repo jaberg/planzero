@@ -34,6 +34,7 @@ class ComboA(Strategy):
             NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
             battery_tug.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
             Force_Government_ZEVs(),
+            battery_freighter.BatteryFreighter(),
         ])
         self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
         self.stepsize = 1.0 * u.years

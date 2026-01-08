@@ -37,7 +37,6 @@ class BatteryFreighter(Project):
 
         self.battery_cost = (self.battery_capacity * self.battery_cost_per_capacity).to(u.CAD)
         self.battery_mass = self.battery_capacity / self.battery_energy_density
-        print(self.battery_cost, self.battery_mass.to(u.tonne))
         self.non_battery_cost = 20_000_000 * u.CAD # guess
 
         self.cost = self.battery_cost + self.non_battery_cost
