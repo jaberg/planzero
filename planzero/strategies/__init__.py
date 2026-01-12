@@ -32,7 +32,7 @@ class ComboA(Strategy):
         self.idea = idea
         self.init_add_subprojects([
             NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
-            battery_tug.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
+            battery_tug.BatteryTug(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
             Force_Government_ZEVs(),
             battery_freighter.BatteryFreighter(),
         ])
@@ -285,7 +285,7 @@ def standard_strategies():
     return [
             ComboA(idea=stakeholders.ideas.combo_a),
             NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
-            battery_tug.BatteryTugWithAuxSolarBarges(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
+            battery_tug.BatteryTug(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
             Force_Government_ZEVs(),
             battery_freighter.BatteryFreighter(),
         ]

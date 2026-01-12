@@ -5,6 +5,7 @@ from .base import SparseTimeSeries
 from .base import ureg
 
 from . import base
+from . import battery_tech
 
 from .ipcc__transport__marine__domestic_navigation import IPCC_Transport_Marine_DomesticNavigation_Model
 

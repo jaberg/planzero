@@ -21,6 +21,8 @@ torch.set_default_dtype(torch.float64)
 
 ureg = pint.UnitRegistry()
 ureg.define('CAD = [currency]')
+ureg.define('USD = 1.35 CAD')
+
 ureg.define('people = [human_population]')
 ureg.define('cattle = [bovine_population]')
 

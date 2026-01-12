@@ -26,7 +26,7 @@
     <p>Battery tug vessel assumptions:
     <ul>
         <li>Vessel requires a 300km range under load (about 24h), and and can charge / battery-swap at most once per day for 1-2 hours.</li>
-        <li>Budget per battery-powered tug (including battery): {{ project.cost_per_tug.to(u.megaCAD) }}</li>
+        <li>Battery capacity required: {{ project.battery_capacity_per_tug.to('kilowatt hours') }}</li>
         <li>Vessel accommodates 8 crew.</li>
         <li>Vessel can be remote-operated to develop piloting AI, unlock future lower-cost tugs without crew quarters.</li>
     </ul>
