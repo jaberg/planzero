@@ -29,7 +29,7 @@ option = {
       name: 'Year', // The label text
       nameLocation: 'middle', // Places it in the center (default is 'end')
       nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ peval.comparisons.combo_a.years_as_list() }},
+      data: {{ peval.comparisons.ComboA.years_as_list() }},
   },
   yAxis: {
       name: 'Emissions (Mt CO2e)', // The label text
@@ -38,8 +38,8 @@ option = {
   },
   series: [
       {{ json.dumps(ipcc_canada.echart_series_Mt(catpath, name="Historical")) | safe }},
-      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("A", catpath, name="With Combo-A Strategies")) | safe }},
-      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
+      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("A", catpath, name="With Combo-A Strategies")) | safe }},
+      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
   ],
   legend: {
       show: true,
@@ -74,7 +74,7 @@ window.addEventListener('resize', function() {
     In the chart,
     the Historical values come from Environment Canada,
     the Baseline projection is that emissions in this sector remain proportional to Canada's population (projected to grow geometrically), and the
-    Combo-A Strategies curve represents a prediction based on the adoption of all <a href="/strategies/combo_a/">Combo A strategies</a>, which may or may not include any with impact to this sector.
+    Combo-A Strategies curve represents a prediction based on the adoption of all <a href="/strategies/ComboA/">Combo A strategies</a>, which may or may not include any with impact to this sector.
     </p>
 
 <h2>Causes of Emissions</h2>

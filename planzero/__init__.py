@@ -13,7 +13,7 @@ from . import strategies
 
 def standard_project_evaluation():
     rval = base.ProjectEvaluation(
-        projects={prj.idea.name: prj for prj in strategies.standard_strategies()},
+        projects={strat.identifier: strat for strat in strategies.standard_strategies()},
         common_projects=BaseScenarioProject.base_scenario_projects(),
     )
     return rval

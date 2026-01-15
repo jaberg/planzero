@@ -1,0 +1,43 @@
+{% include "pre-main.html" %}
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Strategy: {{ strategy.title }}</h1>
+        <p>{{ strategy.description }}</p>
+    </header>
+    {{ strategy.project_graph_svg(dict(sts_key='Predicted_Annual_Emitted_CO2e_mass', t_unit='years', figtype='plot vs baseline'), comparison.state_A, comparison) | safe }}
+    <ul>
+        <li>
+            Cost per removed/avoided tonne CO2e: {{ "{:.2f}".format(comparison.cost_per_ton_CO2e(base_rate=(1 - discount_rate))) }}
+        </li>
+        <li>
+            Net Present CO2e @ {{discount_rate * 100}}%: {{ "{:.3f}".format(comparison.net_present_CO2e(base_rate=(1 - discount_rate))) }} (negative means reduction)
+        </li>
+        <li>
+            Net Present Heat @ {{discount_rate * 100}}%: {{ "{:.3f}".format(comparison.net_present_heat(base_rate=(1 - discount_rate))) }} (negative means reduction)
+        </li>
+        <li>
+            Net Present Value @ {{discount_rate * 100}}%: {{ "{:.3f}".format(comparison.net_present_value(base_rate=(1 - discount_rate))) }} (negative means non-profitable)
+        </li>
+    </ul>
+    <!-- TODO: enable sidebar, put ToC there -->
+    {% if strategy_page.sections %}
+    {% if strategy_page.show_table_of_contents %}
+    <p>Table of Contents:
+    <ol>
+    {% for section in strategy_page.sections %}
+    <li><a href="#{{section.identifier}}">{{section.title}}</a></li>
+    {% endfor %}
+    </ol>
+    </p>
+    {% endif %}
+    {% for section in strategy_page.sections %}
+    {{section.as_html() | safe }}
+    {% endfor %}
+    {% endif %}
+</section>
+</div>
+
+
+{% include "post-main.html" %}

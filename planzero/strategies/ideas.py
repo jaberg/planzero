@@ -90,19 +90,6 @@ ss.Voters = Stakeholders(
     ipcc_catpaths=ipcc_canada.catpaths,
     )
 
-ideas.national_bovaer_mandate = RegulationIdea(
-    who=orgs.Canada,
-    for_whom=ss.People_Desiring_Net_Zero,
-    descr="Compel cattle farmers to administer Bovaer",
-    ipcc_catpaths=['Enteric_Fermentation'],
-    )
-
-ideas.credit_bovaer = RegulationIdea(
-    who=orgs.Canada,
-    for_whom=[ss.Beef_Farmers, ss.Dairy_Farmers],
-    descr="Recognize Bovaer usage with carbon credits",
-    ipcc_catpaths=['Enteric_Fermentation'],
-    )
 
 ss.Organizations_discouraging_beef_and_milk_consumption = Stakeholders(
     descr="Organizations discouraging people from consuming beef and milk",
@@ -539,34 +526,6 @@ ideas.scrub_emissions_from_marine_exhaust = RegulationIdea(
     for_whom=[ss.People_Desiring_Net_Zero],
     ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
     )
-
-
-ideas.battery_tugs_w_aux_solar_barges = NewcoIdea(
-    full_name="Battery-powered tugboats with auxiliary solar barges",
-    who=ss.Tug_and_Tow_Companies.new_org(),
-    descr="Solar, wind, and/or battery-electric tugboats for large barges",
-    for_whom=[
-        ss.Pacific_Logging_Marine_Transport_Companies,
-    ],
-    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
-    urls=["https://www.seaspan.com/stories/log-barging-101/",
-          "http://inlandmariners.com/writing/atbs.pdf", # tug-barge on Great Lakes gets nod from US fleet
-         ],
-    )
-
-ideas.battery_freighter = NewcoIdea(
-    full_name="Battery-powered freighters",
-    who=ss.Great_Lakes_Dry_Bulk_Shipping_Companies.new_org(),
-    descr="Battery-electric freighters replacing diesel ones for dry bulk freight on Great Lakes",
-    for_whom=[ss.Great_Lakes_Dry_Bulk_Shipping_Companies,
-              ss.Great_Lakes_Liquid_Bulk_Shipping_Companies,
-             ],
-    ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
-    urls=["https://www.seaspan.com/stories/log-barging-101/",
-          "http://inlandmariners.com/writing/atbs.pdf", # tug-barge on Great Lakes gets nod from US fleet
-         ],
-    )
-# autonomous version of ^^ doesn't make very much financial difference, fuel savings is much larger
 
 
 ideas.autonomous_hopper_barges_for_dredging = NewcoIdea(
@@ -1040,3 +999,9 @@ ss.CCS_Equipment_Vendors = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
     ])
+
+
+# Tidal power:
+# https://www.orbitalmarine.com/
+# They have installations planned / installed in Nova Scotia already.
+# Heard through email from Guillermo around Jan 11, 2026

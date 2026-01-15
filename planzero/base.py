@@ -228,29 +228,23 @@ class SparseTimeSeries(object):
         """Called once per variable name in comparison plots"""
         pass
 
+from pydantic import BaseModel
 
-class Project(object):
+class Project(BaseModel):
 
-    may_register_emissions = True
-    requires_emissions_registration_closed = False
+    identifier: str
+    _sub_projects: 'list[Project]' = []
 
-    def __init__(self):
-        self._name = None
-        self._sub_projects = []
+    may_register_emissions:bool = True
+    requires_emissions_registration_closed:bool = False
+
+    def __init__(self, **kwargs):
+        if 'identifier' not in kwargs:
+            kwargs = dict(kwargs, identifier=self.__class__.__name__)
+        super().__init__(**kwargs)
 
     def init_add_subprojects(self, sub_projects):
         self._sub_projects.extend(sub_projects)
-
-    @property
-    def name(self):
-        return self._name or self.__class__.__name__
-
-    @name.setter
-    def name(self, name):
-        self._name = name
-
-    def __string__(self):
-        return f'Project(name={self.name})'
 
     def on_add_project(self, state):
         pass
@@ -264,10 +258,10 @@ class Project(object):
         key = config['sts_key']
         if config.get('figtype', 'plot') == 'plot':
             sts = state.sts[key]
-            sts.plot(t_unit=config.get('t_unit'), label=self.name)
+            sts.plot(t_unit=config.get('t_unit'), label=self.title)
         elif config.get('figtype') == 'plot vs baseline':
             sts = state.sts[key]
-            sts.plot(t_unit=config.get('t_unit'), label=self.name)
+            sts.plot(t_unit=config.get('t_unit'), label=self.title)
             comparison.state_B.sts[key].plot(
                 t_unit=config.get('t_unit'),
                 label='Baseline',
@@ -295,23 +289,21 @@ class Project(object):
         return svg_string
 
 
+BaseScenario_subclasses = []
+
 class BaseScenarioProject(Project):
     """Inherit from BaseScenarioProject to be included in the default base
     scenario for project evaluation.
     """
 
-    _subclasses = []
-
-    include_in_base_scenario_projects = True
-
     @classmethod
     def __init_subclass__(cls):
-        BaseScenarioProject._subclasses.append(cls)
+        super().__init_subclass__()
+        BaseScenario_subclasses.append(cls)
 
     @staticmethod
     def base_scenario_projects():
-        return [cls() for cls in BaseScenarioProject._subclasses
-                if cls.include_in_base_scenario_projects]
+        return [cls() for cls in BaseScenario_subclasses]
 
 
 class State(object):
@@ -324,9 +316,9 @@ class State(object):
         self.sectoral_emissions_contributors = {
             catpath: {} for catpath in sorted(ipcc_canada.catpaths)}
         self.projects = {}
-        self.project_writes = {} # prj-> set of string names
-        self.project_requires_current = {} # prj -> set of string names
-        self.project_t_next = {} # prj -> t_next
+        self.project_writes = {} # prj.identifier -> set of string names
+        self.project_requires_current = {} # prj.identifier -> set of string names
+        self.project_t_next = {} # prj.identifier -> t_next
         self._depgraph = None
         self.name = name
         self.emissions_registration_closed = False
@@ -336,11 +328,11 @@ class State(object):
         for sts in self.sts.values():
             graph.add_node(sts)
             if sts._writer:
-                graph.add_edge(sts._writer, sts)
+                graph.add_edge(sts._writer.identifier, sts)
             for prj in sts._current_readers:
-                graph.add_edge(sts, prj)
+                graph.add_edge(sts, prj.identifier)
         for prj in self.projects.values():
-            graph.add_node(prj)
+            graph.add_node(prj.identifier)
         return graph
 
     @contextlib.contextmanager
@@ -366,7 +358,7 @@ class State(object):
 
             def will_read_current(_, name):
                 self.sts[name]._current_readers.append(project)
-                self.project_requires_current[project.name].add(name)
+                self.project_requires_current[project.identifier].add(name)
                 self._depgraph = None
 
             def __setattr__(_, name, sts):
@@ -395,7 +387,7 @@ class State(object):
                     sts.name = name
                 assert self.sts[name]._writer is None
                 self.sts[name]._writer = project
-                self.project_writes[project.name].add(name)
+                self.project_writes[project.identifier].add(name)
                 self._depgraph = None
                 return self.sts[name]
         try:
@@ -404,11 +396,11 @@ class State(object):
             pass
 
     def add_project(self, project):
-        assert project.name not in self.projects
-        self.projects[project.name] = project
-        self.project_writes[project.name] = set() # of strings
-        self.project_requires_current[project.name] = set() # of strings
-        self.project_t_next[project] = project.on_add_project(self)
+        assert project.identifier not in self.projects
+        self.projects[project.identifier] = project
+        self.project_writes[project.identifier] = set() # of strings
+        self.project_requires_current[project.identifier] = set() # of strings
+        self.project_t_next[project.identifier] = project.on_add_project(self)
         self._depgraph = None
 
         # we close registration at the request of the first project that
@@ -509,29 +501,30 @@ class State(object):
         if self._depgraph is None:
             self._depgraph = self.dependency_digraph()
             self._heap = [
-                (self.project_t_next[prj], ii, prj)
-                for (ii, prj) in enumerate(nx.topological_sort(self._depgraph))
-                if isinstance(prj, Project) and self.project_t_next[prj] is not None]
+                (self.project_t_next[prj_identifier], ii, prj_identifier)
+                for (ii, prj_identifier) in enumerate(nx.topological_sort(self._depgraph))
+                if self.project_t_next.get(prj_identifier) is not None]
             heapq.heapify(self._heap)
 
         while self.t_now <= t_stop and self._heap:
-            t_next, node_idx, prj = heapq.heappop(self._heap)
+            t_next, node_idx, prj_identifier = heapq.heappop(self._heap)
             assert t_next >= self.t_now
             self.t_now = t_next
             if 0:
                 print("HEAP")
                 for foo in sorted(self._heap):
                     print("    ", foo)
-                print('Stepping', t_next, prj)
-            new_t_next = prj.step(
+                print('Stepping', t_next, prj_identifier)
+
+            new_t_next = self.projects[prj_identifier].step(
                 self,
                 current=self._current(
-                    readable_attrs=self.project_requires_current[prj.name],
-                    writeable_attrs=self.project_writes[prj.name]))
-            self.project_t_next[prj] = new_t_next
+                    readable_attrs=self.project_requires_current[prj_identifier],
+                    writeable_attrs=self.project_writes[prj_identifier]))
+            self.project_t_next[prj_identifier] = new_t_next
             if new_t_next is not None:
                 assert new_t_next > self.t_now
-                heapq.heappush(self._heap, (new_t_next, node_idx, prj))
+                heapq.heappush(self._heap, (new_t_next, node_idx, prj_identifier))
 
 class GlobalHeatEnergy(SparseTimeSeries):
     pass
@@ -543,17 +536,15 @@ class GlobalHeatEnergy(SparseTimeSeries):
 
 
 class AtmosphericChemistry(BaseScenarioProject):
-    methane_decay_timescale = 10.0
-    methane_GWP = 28.0 # global warming potential, for CO2e calculation
-    molar_mass_CH4 = 16.0
-    molar_mass_CO2 = 44.0
+    methane_decay_timescale:float = 10.0
+    methane_GWP:float = 28.0 # global warming potential, for CO2e calculation
+    molar_mass_CH4:float = 16.0
+    molar_mass_CO2:float = 44.0
 
-    may_register_emissions = False
-    requires_emissions_registration_closed = True
+    may_register_emissions:bool = False
+    requires_emissions_registration_closed:bool = True
 
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
+    stepsize:object = 1.0 * u.years
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
@@ -689,10 +680,8 @@ class AtmosphericChemistry(BaseScenarioProject):
 
 
 class GeometricHumanPopulationForecast(BaseScenarioProject):
-    def __init__(self, rate=1.014):
-        super().__init__()
-        self.rate = rate
-        self.stepsize = 1.0 * u.years
+    rate:float = 1.014
+    stepsize:object = 1.0 * u.years
 
     def on_add_project(self, state):
         assert 1989 * u.years <= state.t_now <= 1991 * u.years, state.t_now.to(u.years)
@@ -709,21 +698,24 @@ class GeometricHumanPopulationForecast(BaseScenarioProject):
 
 class GeometricBovinePopulationForecast(BaseScenarioProject):
 
+    # https://www.ucdavis.edu/food/news/making-cattle-more-sustainable
     # 70% of emissions remain, according to https://www.helsinki.fi/en/news/climate-change/new-feed-additive-can-significantly-reduce-methane-emissions-generated-ruminants-already-dairy-farm
     # https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html
-    bovaer_methane_reduction_fraction = .625
+    bovaer_methane_reduction_fraction:float = .625
     # TODO: dairy cattle average is .7
     # TODO: beef cattle reduction is greater, multiplier should be .55
 
-    methane_per_head_per_year = 175 * u.pounds / u.cattle
-    # https://www.ucdavis.edu/food/news/making-cattle-more-sustainable
+    stepsize:object = 1.0 * u.years
+    methane_per_head_per_year:object = 175 * u.pounds / u.cattle
+
+    jan1:object = None
+    jul1:object = None
 
     def __init__(self):
         super().__init__()
         csv = pd.read_csv(os.path.join(os.environ['PLANZERO_DATA'], 'number-of-cattle.csv'))
         self.jan1 = csv[(csv['Farm type'] == 'On all cattle operations') & (csv['Survey date'] == 'At January 1')]
         self.jul1 = csv[(csv['Farm type'] == 'On all cattle operations') & (csv['Survey date'] == 'At July 1')]
-        self.stepsize = 1.0 * u.years
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
@@ -956,9 +948,7 @@ class ProjectEvaluation(object):
 
 
 class IPCC_Forest_Land_Model(BaseScenarioProject):
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
+    stepsize:object = 1.0 * u.years
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
@@ -970,9 +960,7 @@ class IPCC_Forest_Land_Model(BaseScenarioProject):
 
 
 class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProject):
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
+    stepsize:object = 1.0 * u.years
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:

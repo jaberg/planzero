@@ -25,16 +25,19 @@ peval.run_until(2125 * u.years)
 
 @app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)
 async def get_strategy_eval(request: Request, strategy_name:str):
+
+    strategy = peval.comparisons[strategy_name].project
+    comparison = peval.comparisons[strategy_name]
+    strategy_page = strategy.strategy_page(comparison)
     return templates.TemplateResponse(
         request=request,
-        name=f"strategies/{strategy_name}.html",
+        name=f"strategy_page.html",
         context=dict(
             default_context,
             active_tab='strategies',
-            strategy_name=strategy_name,
-            comparison=peval.comparisons[strategy_name],
-            project=peval.comparisons[strategy_name].project,
-            state_A=peval.comparisons[strategy_name].state_A,
+            strategy=strategy,
+            comparison=comparison,
+            strategy_page=strategy_page,
             ),
     )
 

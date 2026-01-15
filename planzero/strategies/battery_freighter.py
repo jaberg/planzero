@@ -3,7 +3,8 @@ from .. import ureg as u
 from .ideas import ideas
 
 
-class BatteryFreighter(Project):
+# TODO: bring this back
+class BatteryFreighter(object):
     """
     A Battery Freighter is contemplated for operation on the Great Lakes, which
     is a battery version of modern Equinox-class vessels developed by Algoma.
@@ -17,19 +18,24 @@ class BatteryFreighter(Project):
 
     """
 
-    battery_cost_per_capacity = 200 * u.CAD / (1280 * u.watt * u.hour)
-    battery_energy_density = 150 * u.watt * u.hour / u.kg
 
     def __init__(self, year_0=2026 * u.years):
-        super().__init__()
+        super().__init__(
+            title="Battery-powered Lakers",
+            description="Battery-electric freighters replacing diesel ones for dry bulk freight on Great Lakes",
+            ipcc_catpaths=['Transport/Marine/Domestic_Navigation'],
+            )
         self.idea = ideas.battery_freighter
         self.stepsize = 1.0 * u.years
-        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
         self.year_0 = year_0
         self.vessel_lifetime = 20 * u.years
         self.r_and_d_duration = 5 * u.years
         self.battery_range_time = 24 * u.hours * 1
         self.target_fleet_size = 30
+        # TODO: use battery model curves (battery_tech.py)
+        # see battery_tug.py
+        self.battery_cost_per_capacity = 200 * u.CAD / (1280 * u.watt * u.hour)
+        self.battery_energy_density = 150 * u.watt * u.hour / u.kg
 
         self.power_required_per_working_day = 5000 * u.horsepower  # average power over worst-case working day
 
@@ -208,3 +214,4 @@ class BatteryFreighter(Project):
             descr=descr))
         return rval
 
+"http://inlandmariners.com/writing/atbs.pdf", # tug-barge on Great Lakes gets nod from US fleet

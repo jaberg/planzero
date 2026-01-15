@@ -18,10 +18,6 @@ class LithiumIonBatteryTechnology(BaseScenarioProject):
     is more important.
     """
 
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
-
     def on_add_project(self, state):
 
         with state.defining(self) as ctx:
@@ -65,9 +61,6 @@ class SodiumIonBatteryTechnology(BaseScenarioProject):
     Sodium-Ion batteries are expected to track similar performance to
     lithium-ion batteries, but with lower density and lower cost.
     """
-
-    def __init__(self):
-        super().__init__()
 
     def on_add_project(self, state):
 
@@ -114,8 +107,6 @@ class SodiumIonBatteryTechnology(BaseScenarioProject):
 
 class MarineBatteryTechnology(BaseScenarioProject):
 
-    def __init__(self):
-        super().__init__()
 
     def on_add_project(self, state):
         with state.defining(self) as ctx:

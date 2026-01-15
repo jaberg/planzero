@@ -22,7 +22,7 @@ option = {
       name: 'Year', // The label text
       nameLocation: 'middle', // Places it in the center (default is 'end')
       nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ peval.comparisons.combo_a.years_as_list() }},
+      data: {{ peval.comparisons.ComboA.years_as_list() }},
       type: 'category',
   },
   yAxis: {
@@ -33,8 +33,8 @@ option = {
   },
   series: [
       {{ json.dumps(ipcc_canada.echart_series_Mt(catpath, name="Historical")) | safe }},
-      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("A", catpath, name="With Projects")) | safe }},
-      {{ json.dumps(peval.comparisons.combo_a.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
+      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("A", catpath, name="With Projects")) | safe }},
+      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
   ],
   legend: {
       show: true,

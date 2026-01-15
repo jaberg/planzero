@@ -3,9 +3,7 @@ from . import SparseTimeSeries
 from . import ureg as u
 
 class IPCC_Transport_Marine_DomesticNavigation_Model(BaseScenarioProject):
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
+    stepsize:object = 1.0 * u.years
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
@@ -41,10 +39,7 @@ class PacificLogBarges(BaseScenarioProject):
     sites along the BC coast to lumber mills on Vancouver Island, and on the
     mainland near e.g. the mouth of the Fraser river.
     """
-
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
+    stepsize:object = 1.0 * u.years
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
@@ -113,9 +108,7 @@ class GreatLakesFreight(BaseScenarioProject):
     * CO2 emissions produced
     """
 
-    def __init__(self):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
+    stepsize:object = 1.0 * u.years
 
     def on_add_project(self, state):
 

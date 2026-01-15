@@ -1,5 +1,6 @@
 import torch
 
+from . import strategy
 from . import stakeholders
 from . import battery_tug
 from . import battery_freighter
@@ -7,9 +8,8 @@ from . import battery_freighter
 from .. import Project, SparseTimeSeries
 from .. import ureg as u
 
-class Strategy(Project):
+from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw
 
-    may_register_emissions = False # strategies are not physical processes, they should not produce emissions
 
 # carbon capture
 # negative-carbon cement
@@ -27,32 +27,24 @@ class Strategy(Project):
 # new process for hydrogen peroxide: https://interestingengineering.com/innovation/solar-hydrogen-peroxide-cornell-breakthrough
 
 class ComboA(Strategy):
-    def __init__(self, idea):
-        super().__init__()
-        self.idea = idea
+    """
+    A set of recommended strategies for which forecasts are available.
+    """
+
+    stepsize:object = 1.0 * u.years
+
+    def __init__(self):
+        super().__init__(
+            title='Combo A',
+            ipcc_catpaths=[],
+            )
         self.init_add_subprojects([
-            NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
-            battery_tug.BatteryTug(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
+            NationalBovaerMandate(),
+            battery_tug.BC_BatteryTug(),
             Force_Government_ZEVs(),
-            battery_freighter.BatteryFreighter(),
+            #battery_freighter.BatteryFreighter(),
         ])
-        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
-        self.stepsize = 1.0 * u.years
 
-    def project_page_vision(self):
-        return ""
-
-    def project_page_intro(self):
-        rval = "<p>Projects included:"
-        rval += "<ul>"
-        for proj in self._sub_projects:
-            rval += f"<li><a href='/strategies/{proj.idea.name}/'>{proj.idea.full_name}</a></li>"
-        rval += "</ul>"
-        rval += "</p>"
-        return rval
-
-    def project_page_graphs(self):
-        return []
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
@@ -71,16 +63,48 @@ class ComboA(Strategy):
         setattr(current, self.after_tax_cashflow_name, cashflow)
         return state.t_now + self.stepsize
 
+    def strategy_page_section_members(self):
+        from .strategy import HTML_P, HTML_UL, HTML_raw
+        # TODO: make a table like on the strategies page so you can sort by significance
+        return strategy.StrategyPageSection(
+            identifier='elems',
+            title='Strategies making up Combo A',
+            elements=[
+                HTML_P(
+                    elements=[
+                        HTML_UL(
+                            lis=[HTML_raw(raw=f'<a href="{proj.url_path}">{proj.title}</a>: {proj.description}')
+                                 for proj in self._sub_projects])]),
+            ])
+
+    def strategy_page(self, project_comparison):
+        return strategy.StrategyPage(
+            show_table_of_contents=True,
+            sections=[
+                self.strategy_page_section_members(),
+                self.strategy_page_section_environmental_model(project_comparison),
+            ])
+
+
 
 class Force_Government_ZEVs(Strategy):
-    idea = stakeholders.ideas.force_government_fleet_to_go_green
 
-    def __init__(self, start_time=2022 * u.years, end_time=2035 * u.years):
-        super().__init__()
-        self.stepsize = 1.0 * u.years
-        self.start_time = start_time
-        self.end_time = end_time
-        self.after_tax_cashflow_name = f'{self.__class__.__name__}_AfterTaxCashFlow'
+    """
+    The technology of ZEVs and PHEVs is maturing, the municipal and civil services of the country are 
+    already evaluating these vehicle types extensively, and with some success I believe.
+    It would be meaningful for our governments to push the transition to this new technology with their significant scale of operations.
+    """
+
+    start_time:object = 2022 * u.years
+    end_time:object = 2035 * u.years
+    stepsize:object = 1.0 * u.years
+
+    def __init__(self):
+        super().__init__(
+            title="Government ZEV mandate",
+            description="Force civilian federal, provincial, and municipality-owned fleets to transition almost completely to EVs",
+            ipcc_catpaths= ['Transport/Road_Transportation/Light-Duty_Gasoline_Trucks'],
+            )
 
     def on_add_project(self, state):
         with state.defining(self) as ctx:
@@ -108,46 +132,69 @@ class Force_Government_ZEVs(Strategy):
             0 * u.CAD)
         return state.t_now + self.stepsize
 
-    def project_page_vision(self):
-        return """
-        The technology of ZEVs and PHEVs is maturing, the municipal and civil services of the country are 
-        already evaluating these vehicle types extensively, and with some success I believe.
-        It would be meaningful for our governments to push the transition to this new technology with their significant scale of operations.
-        """
+    def strategy_page(self, project_comparison):
+        return StrategyPage(
+            show_table_of_contents=True,
+            sections=[
+                self.section_rollout(project_comparison),
+                self.strategy_page_section_environmental_model(project_comparison),
+            ])
 
-    def project_page_graphs(self):
-        rval = []
+    def section_rollout(self, project_comparison):
+        rval = StrategyPageSection(
+            identifier='rollout',
+            title='Expected Policy Rollout',
+            elements=[])
 
-        descr = f"""
+        rval.append_str_as_paragraph(f"""
         Input assumption: the shape of the fraction of vehicle roles transitioning to ZEVs.
-        """
-        rval.append(dict(
-            sts_key='Government_LightDutyGasolineTrucks_ZEV_fraction',
-            t_unit='years',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='Government_LightDutyGasolineTrucks_ZEV_fraction',
+                        t_unit='years'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = f"""
+        rval.append_str_as_paragraph(f"""
         Estimated CO2 emissions from government light-duty gasoline trucks (TODO: include grid emissions, and at least note [externalized] manufacturing emissions).
-        """
-        rval.append(dict(
-            sts_key='Government_LightDutyGasolineTrucks_CO2',
-            t_unit='years',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='Government_LightDutyGasolineTrucks_CO2',
+                        t_unit='years'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
         return rval
 
 
 class NationalBovaerMandate(Strategy):
-    after_tax_cashflow_name = f'NationalBovaerMandate_AfterTaxCashflow'
 
-    bovaer_price = 150 * u.CAD / u.cattle / u.year
+    """
+    Bovaer
+    <a href="https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html">Bovaer</a>
+    is a feed supplement that reduces the methane produced by bovine digestion.
+    A national Bovaer mandate would phase in the use of Bovaer nation-wide for all cattle.
+    There is no obvious economic benefit (or harm) to farmers for using Bovaer, so
+    it would be appropriate for a governing body to pay for the additive and drive adoption through regulation.
+    """
 
-    def __init__(self, idea=None, peak_year=2035 * u.year, shoulder_years=5 * u.years):
-        super().__init__()
-        self.idea = idea
-        self.peak_year = peak_year
-        self.shoulder_years = shoulder_years
-        self.stepsize = 1.0 * u.years
+    peak_year: object = 2035 * u.year
+    shoulder_years: object = 5 * u.years
+    stepsize: object = 1.0 * u.years
+    bovaer_price: object = 150 * u.CAD / u.cattle / u.year
+
+    def __init__(self):
+        super().__init__(
+            title="National Bovaer Mandate",
+            description="Compel cattle farmers to administer Bovaer with regulation and subsidies",
+            ipcc_catpaths=['Enteric_Fermentation'],
+            )
 
     def on_add_project(self, state):
         with state.requiring_latest(self) as ctx:
@@ -175,117 +222,158 @@ class NationalBovaerMandate(Strategy):
 
         return state.t_now + self.stepsize
 
-    def project_page_vision(self): 
-        return f"""
-        <a href="https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html">Bovaer</a>
-        is a feed supplement that reduces the methane produced by bovine digestion.
-        A national Bovaer mandate would phase in the use of Bovaer nation-wide for all cattle.
-        There is no obvious economic benefit (or harm) to farmers for using Bovaer, so
-        it would be appropriate for a governing body to pay for the additive and drive adoption through regulation.
-        """
+    def strategy_page(self, project_comparison):
+        return StrategyPage(
+            show_table_of_contents=True,
+            sections=[
+                self.section_rollout(project_comparison),
+                self.strategy_page_section_environmental_model(project_comparison),
+            ])
 
-    def project_page_graphs(self):
-        rval = []
+    def section_rollout(self, project_comparison):
+        rval = StrategyPageSection(
+            identifier='rollout',
+            title='Expected Policy Rollout',
+            elements=[])
 
-        descr = f"""
+        rval.append_str_as_paragraph(f"""
         This analysis uses the following place-holder projection of the national bovine herd size, that extrapolates a very gradual decline from the current size.
-        """
-        rval.append(dict(
-            sts_key='bovine_population',
-            t_unit='years',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='bovine_population',
+                        t_unit='years'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = f"""
+        rval.append_str_as_paragraph(f"""
         This project supposes a sigmoidal adoption curve of Bovaer, centered at year {self.peak_year.to('years').magnitude}.
-        """
-        rval.append(dict(
-            sts_key='bovine_population_fraction_on_bovaer',
-            t_unit='years',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='bovine_population_fraction_on_bovaer',
+                        t_unit='years'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-
-        descr = """
+        rval.append_str_as_paragraph(f"""
         We therefore see a dropping annual emissions of bovine methane, partly through the adoption of Bovaer, and partly due to the gradual reduction in population.
-        """
-        rval.append(dict(
-            sts_key='bovine_methane',
-            t_unit='years',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='bovine_methane',
+                        t_unit='years'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = """
+        rval.append_str_as_paragraph(f"""
         As Bovaer is adopted, the impact on Canada's emissions is modulated by the number of cattle.
         The size of Canada's national herd has declined over the last decade, the future is not known.
-        """
-        rval.append(dict(
-            sts_key='bovine_population_on_bovaer',
-            t_unit='years',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='bovine_population_on_bovaer',
+                        t_unit='years'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = """
+        rval.append_str_as_paragraph(f"""
         The impact on national methane emissions from so-called enteric fermentation is expected to be significant.
-        """
-        rval.append(dict(
-            sts_key='Predicted_Annual_Emitted_CH4_mass',
-            t_unit='years',
-            figtype='plot vs baseline',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='Predicted_Annual_Emitted_CH4_mass',
+                        t_unit='years',
+                        figtype='plot vs baseline'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = """
+        rval.append_str_as_paragraph(f"""
         The impact on global atmospheric methane concentration is expected to be noticeable.
-        """
-        rval.append(dict(
-            sts_key='Atmospheric_CH4_conc',
-            t_unit='years',
-            figtype='plot vs baseline',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='Atmospheric_CH4_conc',
+                        t_unit='years',
+                        figtype='plot vs baseline'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = """
+        rval.append_str_as_paragraph(f"""
         The impact on global heat forcing is too small to see on a graph of that phenomenon.
-        """
-        rval.append(dict(
-            sts_key='DeltaF_forcing',
-            t_unit='years',
-            figtype='plot vs baseline',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='DeltaF_forcing',
+                        t_unit='years',
+                        figtype='plot vs baseline'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = """
+        rval.append_str_as_paragraph(f"""
         Still, a visualization of the difference in global heat forcing reveals the shape of the impact over time.
         The datapoints in this curve are used to compute the Net Present Heat for the project, by adding up the energy associated with each year (modulated by the future discount factor).
-        """
-        rval.append(dict(
-            sts_key='DeltaF_forcing',
-            t_unit='years',
-            figtype='plot delta',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='DeltaF_forcing',
+                        t_unit='years',
+                        figtype='plot delta'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = """
+        rval.append_str_as_paragraph(f"""
         In other terms, the difference in global heat forcing due to a national Bovaer mandate can be quantified as a small change in (upward) temperature trajectory for the top 200m of the world's oceans.
-        """
-        rval.append(dict(
-            sts_key='Ocean_Temperature_Anomaly',
-            t_unit='years',
-            figtype='plot delta',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key='Ocean_Temperature_Anomaly',
+                        t_unit='years',
+                        figtype='plot delta'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
-        descr = f"""
-        In terms of financial modelling, the project assumes a price of Bovaer ( {NationalBovaerMandate.bovaer_price} ) that remains constant for the next 200 years. At the scale of production associated with national adoption in Canada and in other countries, this is arguably an over-estimate.
+        rval.append_str_as_paragraph(f"""
+        In terms of financial modelling, the project assumes a price of Bovaer ( {self.bovaer_price} ) that remains constant for the next 200 years. At the scale of production associated with national adoption in Canada and in other countries, this is arguably an over-estimate.
         The curve is simply the product of the population on Bovaer with the price per head.
         The datapoints in this curve are used to compute the Net Present Value for the project.
-        """
-        rval.append(dict(
-            sts_key='NationalBovaerMandate_AfterTaxCashflow',
-            t_unit='years',
-            figtype='plot',
-            descr=descr))
+        """)
+        rval.elements.append(
+            HTML_raw(
+                raw=self.project_graph_svg(
+                    dict(
+                        sts_key=self.after_tax_cashflow_name,
+                        t_unit='years',
+                        figtype='plot'),
+                    project_comparison.state_A,
+                    project_comparison)))
 
         return rval
 
 
 def standard_strategies():
     return [
-            ComboA(idea=stakeholders.ideas.combo_a),
-            NationalBovaerMandate(idea=stakeholders.ideas.national_bovaer_mandate),
-            battery_tug.BatteryTug(idea=stakeholders.ideas.battery_tugs_w_aux_solar_barges),
+            ComboA(),
+            NationalBovaerMandate(),
+            battery_tug.BC_BatteryTug(),
             Force_Government_ZEVs(),
-            battery_freighter.BatteryFreighter(),
+            #battery_freighter.BatteryFreighter(),
         ]
