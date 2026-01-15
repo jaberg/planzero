@@ -1,7 +1,8 @@
 from .. import SparseTimeSeries
 from .. import ureg as u
+from .. import mapml
 
-from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw
+from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw, HTML_Markdown
 
 
 class BC_BatteryTug(Strategy):
@@ -25,6 +26,23 @@ class BC_BatteryTug(Strategy):
     diesel_tug_fuel_consumption:object = 400 * u.liter / u.hour
     price_of_electricity:object = 0.1 * u.CAD / (u.kilowatt * u.hour)
     working_days_per_year:object = 300
+
+    promising_tidal_charging_locs:list[object] = [
+        (49.77, -123.95), # Skookumchuck Narrows
+        (50.12, -125.35), # Discovery Passage north of Campbell River
+        (49.83, -127.02), # Queens Cove, central west side Vancouver Island
+        (50.46, -127.96), # Mahatta River, north west Vancouver Island
+        (50.9, -127.9),
+        (51.75, -127.97),
+        (52.25, -128.41),
+        (52.42, -128.50),
+        (52.99, -129.25),
+        (53.19, -129.56),
+        (53.61, -130.34),
+        (53.86, -130.08),
+        (54.66, -130.45),
+        (54.46, -130.80),
+    ]
 
     def __init__(self):
         super().__init__(
@@ -121,6 +139,7 @@ class BC_BatteryTug(Strategy):
             show_table_of_contents=True,
             sections=[
                 self.section_financial_model(project_comparison),
+                self.section_tidal_power(),
                 self.strategy_page_section_environmental_model(project_comparison),
             ])
 
@@ -209,6 +228,96 @@ class BC_BatteryTug(Strategy):
                     project_comparison.state_A,
                     project_comparison)))
         return rval
+
+    def section_tidal_power(self):
+        rval = StrategyPageSection(
+            identifier='tidal_charging_section',
+            title='Tidal Power for Coastal Recharging',
+            elements=[])
+        rval.elements.append(HTML_Markdown(content=tidal_power_markdown0))
+        rval.elements.append(self.tidal_prospect_locations_viewer())
+        rval.elements.append(HTML_Markdown(content=tidal_power_markdown1))
+        return rval
+
+    def tidal_prospect_locations_viewer(self):
+        viewer = mapml.MapML_Viewer(
+            zoom=4,
+            lon=-129.0,
+            lat=54.7,
+            width=600,
+            height=400,
+            controls=True,
+            layers=[
+                mapml.OpenStreetMap(),
+                mapml.FeatureLayer(
+                    features=[
+                        mapml.Point(lat=lat, lon=lon, label="")
+                        for lat, lon in self.promising_tidal_charging_locs]),
+                ])
+        return viewer
+
+
+tidal_power_markdown0 = """
+
+British Columbia has significant tidal energy potential, estimated at
+over 2,000 MW of development opportunities due to its extensive
+coastline and narrow channels. [Citation TODO]
+While the province was an early pioneer
+in the technology, many projects remain at the demonstration or
+feasibility stage rather than full-scale commercial operation.
+
+### Notable Tidal Power Projects
+
+* [Blind Channel Tidal Energy Demonstration Centre](https://onlineacademiccommunity.uvic.ca/primed/blind-channel/):
+  Located on West Thurlow
+  Island, this project is a "real-life laboratory" led by the University of
+  Victoria’s Pacific Regional Institute for Marine Energy Discovery (PRIMED). It
+  features a 25 kW tidal energy converter (TEC) integrated into a hybrid system
+  with solar and diesel power to help remote coastal communities transition away
+  from fossil fuels.
+* Kamdis Tidal Power Project (Haida Gwaii): An active project involving
+  [Yourbrook Energy Systems Ltd.](https://www.yourbrookenergy.com/) to develop a 500 kW tidal energy generation
+  system. It combines tidal power with pumped hydroelectric storage to provide
+  firm, reliable clean power to the north grid of Haida Gwaii.
+* Dent Island Tidal Power Generation Project: A project developed by [Water
+  Wall Turbine Inc.](https://wwturbine.com/) for the Dent Island Lodge. It utilized a floating 500 kW
+  tidal turbine and battery storage system designed for shallow, narrow tidal
+  areas typical of B.C.'s west coast.
+* Race Rocks Tidal Energy Project: Historically significant as Canada's first
+  in-stream tidal current generator, installed in 2006. The 65 kW prototype at
+  the Race Rocks Ecological Reserve was used to replace diesel generators for
+  several years before being decommissioned in 2011 for analysis and historical
+  preservation.
+* Fundy Ocean Research Centre (FORCE): a partnership of Eauclaire Tidal and
+  [Orbital Marine](https://www.orbitalmarine.com/) has secured [12.5MW of marine energy licenses](https://www.orbitalmarine.com/canadian-tidal-stream-expansion/) from the Province
+  of Nova Scotia for tidal stream energy deployments, which could inform larger
+  scale projects in British Columbia.
+
+### Key Locations for Tidal Resources
+
+* Discovery Passage: Areas near Campbell River are frequently studied due to
+  fast currents that offer easy access to the BC Hydro power grid.
+* Skookumchuck Narrows (Sechelt Rapids): Known for some of the world's fastest
+  tidal currents, reaching speeds up to 17.6 knots.
+* Haida Gwaii & Vancouver Island: These regions host numerous off-grid
+  communities where tidal power is viewed as a critical alternative to diesel
+  dependency.
+
+Simply looking along aerial photography of the BC coast suggests a number of
+narrow-mouthed inlets which might be candidates for further study of power generation
+potential.
+"""
+
+tidal_power_markdown1 = """
+### Regulatory and Development Context
+
+The B.C. government manages Ocean Energy Tenures on Crown land through
+investigative and general area licenses. While the province has vast
+resources, recent development has faced challenges due to the high cost of
+technology compared to B.C.'s established hydroelectric system and a difficult
+regulatory climate for nascent marine renewables.
+"""
+
 
 
 

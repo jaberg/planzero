@@ -179,6 +179,15 @@ class StrategyPageSection(HTML_element):
     def append_str_as_paragraph(self, para_text):
         self.elements.append(HTML_P(elements=[HTML_raw(raw=para_text)]))
 
+import markdown
+
+class HTML_Markdown(HTML_element):
+    content: str
+
+    def as_html(self):
+        html_output = markdown.markdown(self.content)
+        return html_output
+
 
 class StrategyPage(BaseModel):
     show_table_of_contents:bool = True

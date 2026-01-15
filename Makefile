@@ -26,6 +26,13 @@ test: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 .
 
+test_mapml: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_mapml.py
+
 
 stakeholders: .build
 	docker run \

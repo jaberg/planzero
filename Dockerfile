@@ -26,6 +26,7 @@ RUN pip install --no-cache-dir fastapi[standard]
 RUN pip install --no-cache-dir pandas
 RUN pip install --no-cache-dir pytest
 RUN pip install --no-cache-dir jupyter
+RUN pip install --no-cache-dir markdown
 
 
 COPY . /content
