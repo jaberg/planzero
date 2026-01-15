@@ -8,7 +8,7 @@ from . import battery_freighter
 from .. import Project, SparseTimeSeries
 from .. import ureg as u
 
-from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw
+from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw, HTML_Markdown
 from .ideas import Idea
 
 
@@ -88,6 +88,13 @@ class ComboA(Strategy):
             ])
 
 
+assumptions_markdown = """
+### Modelling assumptions
+
+* Government vehicle fleet produces about 2.5% of all Light-Duty Gasoline emissions
+* National vehicle fleet size scales with national population
+* Vehicles don't get cheaper, average vehicle TCO is equal for ICE and ZEV (conservative).
+"""
 
 class Force_Government_ZEVs(Strategy):
 
@@ -148,6 +155,8 @@ class Force_Government_ZEVs(Strategy):
             title='Expected Policy Rollout',
             elements=[])
 
+        rval.elements.append(HTML_Markdown(content=assumptions_markdown.format(**locals())))
+
         rval.append_str_as_paragraph(f"""
         Input assumption: the shape of the fraction of vehicle roles transitioning to ZEVs.
         """)
@@ -174,6 +183,15 @@ class Force_Government_ZEVs(Strategy):
 
         return rval
 
+from ..base import GeometricBovinePopulationForecast
+bovaer_assumptions_markdown = """
+### Modelling assumptions
+
+* Price of Bovaer, per year: {self.bovaer_price}
+* Methane per head, per year: {foo.methane_per_head_per_year}
+* Methane reduction due to Bovaer: {methred}
+"""
+# Yowsers... surely there's better syntax to look up these constants?
 
 class NationalBovaerMandate(Strategy):
 
@@ -237,6 +255,11 @@ class NationalBovaerMandate(Strategy):
             identifier='rollout',
             title='Expected Policy Rollout',
             elements=[])
+
+        foo = project_comparison.state_A.projects['GeometricBovinePopulationForecast']
+        methred = 1 - foo.bovaer_methane_reduction_fraction
+
+        rval.elements.append(HTML_Markdown(content=bovaer_assumptions_markdown.format(**locals())))
 
         rval.append_str_as_paragraph(f"""
         This analysis uses the following place-holder projection of the national bovine herd size, that extrapolates a very gradual decline from the current size.

@@ -141,6 +141,10 @@ class BC_BatteryTug(Strategy):
                 self.section_financial_model(project_comparison),
                 self.section_tidal_power(),
                 self.strategy_page_section_environmental_model(project_comparison),
+                StrategyPageSection(
+                    identifier='links_section',
+                    title='Links',
+                    elements=[HTML_Markdown(content=links_and_references_md)]),
             ])
 
     def section_financial_model(self, project_comparison):
@@ -319,6 +323,11 @@ regulatory climate for nascent marine renewables.
 """
 
 
+links_and_references_md = """
 
-
-"https://www.seaspan.com/stories/log-barging-101/",
+* 2020: [BC Log Barging 101](https://www.seaspan.com/stories/log-barging-101/)
+* 2025: CATL, a major Chinese battery manufacturer, [expects ocean-going battery vessels by 2029](https://maritime-executive.com/article/catl-expects-oceangoing-battery-electric-vessels-within-three-years)
+* 2024: [Robert Allan puts electric harbour tugs in service in Vancouver](https://ral.ca/2024/04/22/vancouver-proudly-welcomes-its-first-resident-battery-electric-tugs/), housing 3.6 Mwh of batteries
+* [2023: Commissioning of battery-electric 700 TEU container ships](https://ral.ca/2024/04/22/vancouver-proudly-welcomes-its-first-resident-battery-electric-tugs/) for 600-mile route along Yangtze river
+* [2025: Wartsila swappable batteries for inland waterway vessels](https://www.wartsila.com/marine/products/ship-electrification-solutions/full-electric-vessels)
+"""
