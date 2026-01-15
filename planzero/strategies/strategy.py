@@ -41,6 +41,8 @@ class Stakeholder(BaseModel):
 
 from .. import Project
 
+Strategy_subclasses = []
+
 class Strategy(Project):
 
     # short description, typically nota full sentence
@@ -83,6 +85,15 @@ class Strategy(Project):
     may_register_emissions:bool = False
 
     after_tax_cashflow_name: str
+
+    # True for Strategies that develop ideas
+    # False for e.g. ComboA
+    is_idea:bool = True
+
+    @classmethod
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        Strategy_subclasses.append(cls)
 
     def __init__(self, **kwargs):
         if 'after_tax_cashflow_name' not in kwargs:

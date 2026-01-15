@@ -185,45 +185,7 @@ The arithmetic of emissions in this sector is such that there are two ways to re
     {% endfor %}
 </ul>
 
-<h3>
-    Possible Strategies (feel free to help flesh these out, contribute more)
-</h3>
-
-<table>
-    <thead>
-        <tr>
-            <th>Who</td>
-            <th>What</td>
-            <th>For Whom</td>
-            <th>Cost / tonne CO2e</td>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-{% for idea in stakeholders.ideas_by_catpath(catpath) %}
-        <tr>
-            <td>{{idea.who.full_name}}</td>
-            <td>
-                {% if idea.name in peval.comparisons %}
-                <a href="/strategies/{{idea.name}}/">{{idea.descr}}</a>
-                {% else %}
-                {{idea.descr}}
-                {% endif %}
-            </td>
-            <td>
-                {% for sg in idea.for_whom %}
-                {{sg.full_name}}{% if not loop.last %},{% endif %}
-                {% endfor %}
-            </td>
-            <td>
-                {% if idea.name in peval.comparisons %}
-                <a href="/strategies/{{idea.name}}/">{{ "{:.2f}".format(peval.comparisons[idea.name].cost_per_ton_CO2e(base_rate=1-discount_rate)) }}</a>
-                {% endif %}
-            </td>
-        </tr>
-{% endfor %}
-</table>
-
+{% include "ipcc-sectors-strategy-ideas-table.html" %}
 
 </div>
 </section>

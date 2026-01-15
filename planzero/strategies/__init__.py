@@ -9,6 +9,7 @@ from .. import Project, SparseTimeSeries
 from .. import ureg as u
 
 from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw
+from .ideas import Idea
 
 
 # carbon capture
@@ -37,6 +38,7 @@ class ComboA(Strategy):
         super().__init__(
             title='Combo A',
             ipcc_catpaths=[],
+            is_idea=False,
             )
         self.init_add_subprojects([
             NationalBovaerMandate(),
@@ -377,3 +379,14 @@ def standard_strategies():
             Force_Government_ZEVs(),
             #battery_freighter.BatteryFreighter(),
         ]
+
+def _add_strategies_as_ideas():
+    for cls in strategy.Strategy_subclasses:
+        obj = cls()
+        if obj.is_idea:
+            idea = Idea(
+                descr=obj.description,
+                ipcc_catpaths=obj.ipcc_catpaths,
+                full_name=obj.title)
+            setattr(stakeholders.ideas, obj.identifier, idea)
+_add_strategies_as_ideas()
