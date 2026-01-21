@@ -157,6 +157,16 @@ async def get_index(request: Request):
             ),
     )
 
+if 0:
+    @app.get("/foo/", response_class=HTMLResponse)
+    async def get_about(request: Request):
+        return templates.TemplateResponse(
+            request=request,
+            name="foo.html",
+            context=dict(
+                ),
+        )
+
 default_context = dict(
     int=int,
     float=float,

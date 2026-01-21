@@ -997,4 +997,3 @@ class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProj
             current.human_population * coefficient * .975
             * (1 * u.dimensionless - current.Other_LightDutyGasolineTrucks_ZEV_fraction))
         return state.t_now + self.stepsize
-
