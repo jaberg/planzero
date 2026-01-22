@@ -33,6 +33,20 @@ test_mapml: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 -vv planzero/test_mapml.py
 
+test_co2e: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_co2e.py
+
+profile_co2e: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		scalene --help # planzero/test_co2e.py
+
 
 stakeholders: .build
 	docker run \

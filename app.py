@@ -17,6 +17,9 @@ app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images"
 templates = Jinja2Templates(directory=htmlroot)
 
 import planzero
+import planzero.blog
+
+planzero.blog.init_blogs_by_url_filename()
 u = planzero.ureg
 
 peval = planzero.standard_project_evaluation()
@@ -121,16 +124,31 @@ async def get_strategies(request: Request):
             ),
     )
 
+
 @app.get("/blog/{post_name}", response_class=HTMLResponse)
-async def get_strategies(request: Request, post_name:str):
-    return templates.TemplateResponse(
-        request=request,
-        name=f"/blog/{post_name}.html",
-        context=dict(
-            default_context,
-            active_tab='blog',
-            ),
-    )
+async def get_blog(request: Request, post_name:str):
+    blog = planzero.blog._blogs_by_url_filename.get(post_name)
+    try:
+        return templates.TemplateResponse(
+            request=request,
+            name=f"/blog/{post_name}.html",
+            context=dict(
+                default_context,
+                active_tab='blog',
+                blog=blog,
+                ),
+        )
+    except IOError:
+        return templates.TemplateResponse(
+            request=request,
+            name=f"/blog/blog_template.html",
+            context=dict(
+                default_context,
+                active_tab='blog',
+                blog=blog,
+                ),
+        )
+
 
 @app.get("/about/", response_class=HTMLResponse)
 async def get_about(request: Request):

@@ -38,12 +38,19 @@ u = ureg
 
 
 from . import ipcc_canada
+GHGs = ('CO2', 'CH4', 'NO2', 'HFC', 'PFC', 'SF6', 'NF3')
 
 class SparseTimeSeries(object):
 
     t_unit = getattr(u, 'seconds')
 
     nan_is_poison = True
+
+    def max(self, _i_start=None):
+        if _i_start is None:
+            return max(self.values)
+        else:
+            return max(self.values[_i_start:])
 
     @property
     def v_unit(self):
@@ -89,7 +96,9 @@ class SparseTimeSeries(object):
         if times is None and values is None:
             pass
         else:
-            if isinstance(times.magnitude, (int, float)):
+            if isinstance(times, list):
+                self.times = [tt.to(self.t_unit) for tt in times]
+            elif isinstance(times.magnitude, (int, float)):
                 self.times = [(torch.tensor(times.magnitude) * times.u).to(self.t_unit)]
             elif isinstance(times.magnitude, np.ndarray):
                 self.times = [(torch.tensor(tt) * times.u).to(self.t_unit) for tt in times.magnitude]
@@ -101,7 +110,12 @@ class SparseTimeSeries(object):
             else:
                 raise NotImplementedError(times.magnitude)
 
-            if isinstance(values.magnitude, (int, float)):
+            if isinstance(values, list):
+                # assume list of pint-typed values
+                self.values = [(torch.tensor(default_value.magnitude) * default_value.u)]
+                self.values.extend(
+                    [vv.to(default_value.u) for vv in values])
+            elif isinstance(values.magnitude, (int, float)):
                 self.values = [
                     (torch.tensor(default_value) * values.u),
                     (torch.tensor(values.magnitude) * values.u),
@@ -306,6 +320,34 @@ class BaseScenarioProject(Project):
         return [cls() for cls in BaseScenario_subclasses]
 
 
+class StateCurrent(object):
+    def __init__(self, state, readable, writeable):
+        self.__dict__.update(
+            state=state,
+            readable=readable,
+            writeable=writeable)
+
+    def __getattr__(self, attr):
+        if attr in self.readable or attr in self.writeable:
+            # TODO: it might catch errors to be strict about not reading
+            # before writing but current.foo += 1 is such natural syntax
+            # and strict semantics would forbid it.
+            return self.state.sts[attr].latest_val(self.state.t_now, inclusive=True)
+        else:
+            if attr in self.state.sts:
+                raise AttributeError(f'state variable {attr} exists, but the calling Project class did not register to read it')
+            else:
+                raise AttributeError(attr)
+
+    def __setattr__(self, attr, val):
+        if attr in self.writeable:
+            self.state.sts[attr].append(self.state.t_now, val)
+            self.readable.add(attr)
+            self.writeable.remove(attr)
+        else:
+            assert 0, ('Setting non-writeable attr', attr)
+
+
 class State(object):
     t_start = 1990 * u.years
 
@@ -431,7 +473,7 @@ class State(object):
     def register_emission(self, category_path, ghg, sts_key):
         if self.emissions_registration_closed:
             raise RuntimeError()
-        assert ghg in ('CO2', 'CH4', 'N2O')
+        assert ghg in GHGs
         assert sts_key in self.sts
         self.sectoral_emissions_contributors[category_path].setdefault(ghg, []).append(sts_key)
 
@@ -451,30 +493,7 @@ class State(object):
         """
         readable = set(readable_attrs)
         writeable = set(writeable_attrs)
-
-        class Current(object):
-
-            def __getattr__(_, attr):
-                if attr in readable or attr in writeable:
-                    # TODO: it might catch errors to be strict about not reading
-                    # before writing but current.foo += 1 is such natural syntax
-                    # and strict semantics would forbid it.
-                    return self.sts[attr].latest_val(self.t_now, inclusive=True)
-                else:
-                    if attr in self.sts:
-                        raise AttributeError(f'state variable {attr} exists, but the calling Project class did not register to read it')
-                    else:
-                        raise AttributeError(attr)
-
-            def __setattr__(_, attr, val):
-                if attr in writeable:
-                    self.sts[attr].append(self.t_now, val)
-                    readable.add(attr)
-                    writeable.remove(attr)
-                else:
-                    assert 0, ('Setting non-writeable attr', attr)
-
-        return Current()
+        return StateCurrent(self, readable, writeable)
 
     def plot(self, t_unit='years', **kwargs):
         if len(self.sts) <= 1:
@@ -526,6 +545,7 @@ class State(object):
                 assert new_t_next > self.t_now
                 heapq.heappush(self._heap, (new_t_next, node_idx, prj_identifier))
 
+
 class GlobalHeatEnergy(SparseTimeSeries):
     pass
 
@@ -537,9 +557,15 @@ class GlobalHeatEnergy(SparseTimeSeries):
 
 class AtmosphericChemistry(BaseScenarioProject):
     methane_decay_timescale:float = 10.0
-    methane_GWP:float = 28.0 # global warming potential, for CO2e calculation
     molar_mass_CH4:float = 16.0
     molar_mass_CO2:float = 44.0
+
+    CH4_GWP_100:float = 28.0 # global warming potential, for CO2e calculation
+    NO2_GWP_100:float = 265.0 # global warming potential, for CO2e calculation
+    HFC_GWP_100:float = 1_430
+    PFC_GWP_100:float = 6_630
+    SF6_GWP_100:float = 23_500
+    NF3_GWP_100:float = 17_200
 
     may_register_emissions:bool = False
     requires_emissions_registration_closed:bool = True
@@ -553,22 +579,50 @@ class AtmosphericChemistry(BaseScenarioProject):
                     ctx.will_read_current(sts_key)
                 for sts_key in contributors.get('CH4', []):
                     ctx.will_read_current(sts_key)
+                for sts_key in contributors.get('NO2', []):
+                    ctx.will_read_current(sts_key)
+                for sts_key in contributors.get('HFC', []):
+                    ctx.will_read_current(sts_key)
+                for sts_key in contributors.get('PFC', []):
+                    ctx.will_read_current(sts_key)
+                for sts_key in contributors.get('SF6', []):
+                    ctx.will_read_current(sts_key)
+                for sts_key in contributors.get('NF3', []):
+                    ctx.will_read_current(sts_key)
 
         with state.defining(self) as ctx:
             for catpath, _ in state.sectoral_emissions_contributors.items():
                 setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
                 setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_NO2_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
                 setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
 
             ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kiloton)
             ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_NO2_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_HFC_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_PFC_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_SF6_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_NF3_mass = SparseTimeSeries(unit=u.kiloton)
             ctx.Predicted_Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kiloton)
 
+            # XXX : what year do these numbers represent? How can this be a default value
+            # when the simulated years are a parameter of the state?
             ctx.Atmospheric_CO2_conc = SparseTimeSeries(unit=u.ppm, default_value=400.0 * u.ppm)
             ctx.Atmospheric_CH4_conc = SparseTimeSeries(unit=u.ppb, default_value=1775.0 * u.ppb)
+            ctx.Atmospheric_NO2_conc = SparseTimeSeries(unit=u.ppb, default_value=336.0 * u.ppb)
 
             ctx.DeltaF_CO2 = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_CH4 = SparseTimeSeries(unit=u.petawatt)
+            ctx.DeltaF_NO2 = SparseTimeSeries(unit=u.petawatt)
+            ctx.DeltaF_HFC = SparseTimeSeries(unit=u.petawatt)
+            ctx.DeltaF_PFC = SparseTimeSeries(unit=u.petawatt)
+            ctx.DeltaF_SF6 = SparseTimeSeries(unit=u.petawatt)
+            ctx.DeltaF_NF3 = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_forcing = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_feedback = SparseTimeSeries(unit=u.petawatt)
 
@@ -581,11 +635,16 @@ class AtmosphericChemistry(BaseScenarioProject):
 
     def step(self, state, current):
         # add up annual emissions from registry
-        annual_CO2_mass = ureg.Quantity("0 kiloton")
-        annual_CH4_mass = ureg.Quantity("0 kiloton")
+        annual_CO2_mass = 0 * u.kiloton
+        annual_CH4_mass = 0 * u.kiloton
+        annual_NO2_mass = 0 * u.kiloton
+        annual_HFC_mass = 0 * u.kiloton
+        annual_PFC_mass = 0 * u.kiloton
+        annual_SF6_mass = 0 * u.kiloton
+        annual_NF3_mass = 0 * u.kiloton
+
         for catpath, contributors in state.sectoral_emissions_contributors.items():
             catpath_CO2_mass = 0 * u.kiloton
-
             for sts_key in contributors.get('CO2', []):
                 catpath_CO2_mass += getattr(current, sts_key)
 
@@ -593,21 +652,74 @@ class AtmosphericChemistry(BaseScenarioProject):
             for sts_key in contributors.get('CH4', []):
                 catpath_CH4_mass += getattr(current, sts_key)
 
+            catpath_NO2_mass = 0 * u.kiloton
+            for sts_key in contributors.get('NO2', []):
+                catpath_NO2_mass += getattr(current, sts_key)
+
+            catpath_HFC_mass = 0 * u.kiloton
+            for sts_key in contributors.get('HFC', []):
+                catpath_HFC_mass += getattr(current, sts_key)
+
+            catpath_PFC_mass = 0 * u.kiloton
+            for sts_key in contributors.get('PFC', []):
+                catpath_PFC_mass += getattr(current, sts_key)
+
+            catpath_SF6_mass = 0 * u.kiloton
+            for sts_key in contributors.get('SF6', []):
+                catpath_SF6_mass += getattr(current, sts_key)
+
+            catpath_NF3_mass = 0 * u.kiloton
+            for sts_key in contributors.get('NF3', []):
+                catpath_NF3_mass += getattr(current, sts_key)
+
             setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
             setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
+            setattr(current, f'Predicted_Annual_Emitted_NO2_mass_{catpath}', catpath_NO2_mass)
+            setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
+            setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
+            setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
+            setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
             setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}',
                 catpath_CO2_mass
-                + catpath_CH4_mass * self.methane_GWP)
+                + catpath_CH4_mass * self.CH4_GWP_100
+                + catpath_NO2_mass * self.NO2_GWP_100
+                + catpath_HFC_mass * self.HFC_GWP_100
+                + catpath_PFC_mass * self.PFC_GWP_100
+                + catpath_SF6_mass * self.SF6_GWP_100
+                + catpath_NF3_mass * self.NF3_GWP_100
+            )
 
             annual_CO2_mass += catpath_CO2_mass
             annual_CH4_mass += catpath_CH4_mass
+            annual_NO2_mass += catpath_NO2_mass
+            annual_HFC_mass += catpath_HFC_mass
+            annual_PFC_mass += catpath_PFC_mass
+            annual_SF6_mass += catpath_SF6_mass
+            annual_NF3_mass += catpath_NF3_mass
 
         current.Predicted_Annual_Emitted_CO2_mass = annual_CO2_mass
         current.Predicted_Annual_Emitted_CH4_mass = annual_CH4_mass
-        current.Predicted_Annual_Emitted_CO2e_mass = annual_CO2_mass + self.methane_GWP * annual_CH4_mass
+        current.Predicted_Annual_Emitted_NO2_mass = annual_NO2_mass
+        current.Predicted_Annual_Emitted_HFC_mass = annual_HFC_mass
+        current.Predicted_Annual_Emitted_PFC_mass = annual_PFC_mass
+        current.Predicted_Annual_Emitted_SF6_mass = annual_SF6_mass
+        current.Predicted_Annual_Emitted_NF3_mass = annual_NF3_mass
+        current.Predicted_Annual_Emitted_CO2e_mass = (
+            annual_CO2_mass
+            + self.CH4_GWP_100 * annual_CH4_mass
+            + self.NO2_GWP_100 * annual_NO2_mass
+            + self.HFC_GWP_100 * annual_HFC_mass
+            + self.PFC_GWP_100 * annual_PFC_mass
+            + self.SF6_GWP_100 * annual_SF6_mass
+            + self.NF3_GWP_100 * annual_NF3_mass
+        )
+
+        fraction_of_emitted_CO2_that_becomes_atmospheric = .45
 
         # apply an atmospheric climate model
-        annual_CO2_mass_atmospheric = annual_CO2_mass * .45 # Gemini claimed a lot gets absorbed by sinks, keep this much
+        annual_CO2_mass_atmospheric = (
+            annual_CO2_mass
+            * fraction_of_emitted_CO2_that_becomes_atmospheric)
         annual_CH4_mass_atmospheric = annual_CH4_mass * 1.0 # no such discounting of CH4
 
         annual_emitted_CO2_in_atmosphere_as_concentration = (
@@ -618,7 +730,9 @@ class AtmosphericChemistry(BaseScenarioProject):
             annual_CH4_mass_atmospheric
             / (2.78 * u.megatonne / u.ppb))
 
-        tau_ch4 = 10.0 # about 10 years
+        # TODO this should be multiplied by stepsize, not 1 year implicitly,
+        #      and this process should be tested for robustness to step size
+        tau_ch4 = 12.0 # years
         annual_ch4_to_co2_decay = (
             state.latest.Atmospheric_CH4_conc
             / tau_ch4)
@@ -628,11 +742,12 @@ class AtmosphericChemistry(BaseScenarioProject):
             + 180 * u.ppb # baseline from other sources
             - annual_ch4_to_co2_decay)
 
+        # no decay is assumed for CO2
         current.Atmospheric_CO2_conc += (
             annual_emitted_CO2_in_atmosphere_as_concentration
             + 2 * u.ppm # baseline from other sources
-            + annual_ch4_to_co2_decay
-            - (current.Atmospheric_CO2_conc / 200) # decay timescale for CO2?
+            + (annual_ch4_to_co2_decay
+               * fraction_of_emitted_CO2_that_becomes_atmospheric)
         )
 
         surface_area_of_earth = 5.1e14 * u.m * u.m
@@ -650,11 +765,19 @@ class AtmosphericChemistry(BaseScenarioProject):
             * surface_area_of_earth
             * (torch.sqrt(current.Atmospheric_CH4_conc.to(u.ppb).magnitude)
                - torch.sqrt(reference_CH4_conc.to(u.ppb).magnitude)))
-        # TODO: include NO2 overlap correction term
+
+        reference_NO2_conc = torch.tensor(270.0) * u.ppb
+        current.DeltaF_NO2 = (
+            0.12 * u.watt / (u.m * u.m)
+            * surface_area_of_earth
+            * (torch.sqrt(current.Atmospheric_NO2_conc.to(u.ppb).magnitude)
+               - torch.sqrt(reference_NO2_conc.to(u.ppb).magnitude)))
 
         current.DeltaF_forcing = (
             current.DeltaF_CO2
-            + current.DeltaF_CH4)
+            + current.DeltaF_CH4
+            + current.DeltaF_NO2
+        )
 
         current.DeltaF_feedback = (
             -1.3 * u.watt / (u.m * u.m) / u.kelvin

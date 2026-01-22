@@ -188,6 +188,14 @@ class HTML_Markdown(HTML_element):
         html_output = markdown.markdown(self.content)
         return html_output
 
+import sympy
+
+class HTML_Math(HTML_element):
+    sympy:object = sympy
+
+    def as_html(self):
+        raise NotImplementedError() # override-me
+
 
 class StrategyPage(BaseModel):
     show_table_of_contents:bool = True

@@ -3,6 +3,7 @@ from .base import BaseScenarioProject
 from .base import ProjectEvaluation
 from .base import SparseTimeSeries
 from .base import ureg
+from .base import AtmosphericChemistry
 
 from . import base
 from . import battery_tech

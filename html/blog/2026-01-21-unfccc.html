@@ -1,0 +1,353 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+I was asked recently “why are you making Plan Zero, isn’t someone else already
+doing this?” The quick answer is “probably, and in many ways yes” but I wanted
+to be able to articulate what those other plans were in more detail, and who
+was developing them, and where might there be gaps that could be addressed by
+scientific research and tech entrepreneurship. As I began to review the
+history of Canada’s climate commitments and actions, and the breadth of
+responses across (a) many government agencies at all levels of Canadian
+government and (b) the NGO and private sector, it became clear that no
+reasonably-long blog post was going to provide a survey. Indeed one of the
+reasons I wanted to make planzero is that iterative software development is
+a good way to build and document complex systems. Planzero is meant to reflect
+all of those different kinds of plans and responses, and be built
+incrementally over time. So instead of one big survey, I hope this post will
+be the first of a <i>series</i> about (1) what is being done in Canada to set and
+achieve climate objectives and (2) how those actions are reflected in
+planzero, at least as a software library, and possibly on this website.
+</p>
+
+<p>
+For this first post, I’ll start with something that’s actually beyond Canada.
+One of the things that the Canadian government has done, and continues to do,
+is participate in the United Nations Framework Convention on Climate Change
+(UNFCCC). The UNFCCC [secretariat] is the UN entity tasked with supporting the
+global response to the threat of climate change. The UNFCCC has universal
+membership (198 Countries) and is the parent treaty of the 2015 Paris
+Agreement. The UNFCCC is also the parent treaty of the 1997 Kyoto Protocol.
+The objective of the agreements under the UNFCCC is to “stabilize greenhouse
+gas concentrations in the atmosphere at a level that will prevent dangerous
+human interference with the climate system, in a time frame which allows
+ecosystems to adapt naturally and enables sustainable development.”
+(<a href="https:///unfccc.int">UNFCCC website</a>)
+</p>
+
+<h2>Greenhouse Gases</h2>
+
+<p>
+One thing that the UNFCCC provides is a standard definition for what
+“Greenhouse Gases” are. So-called greenhouse gases are gases in the atmosphere
+that can absorb heat energy radiated by the earth’s surface (like the heat you
+feel when your hand is close to something warm, like maybe a teapot) that
+might otherwise be radiated into outer space. When these gases are present in
+the atmosphere at elevated concentrations, their effect is to absorb more of
+the radiated heat, which traps the heat within the earth’s atmosphere. Glass
+has a similar effect when used as the roof of a greenhouse: sunlight radiates
+in, but heat accumulates instead of radiating out (up until a new equilibrium).
+This effect on a greenhouse is to warm it
+up inside. The effect of greenhouse gases on the planet is complex in some
+ways, but also does involve warming up (except that continued emissions keep making the roof a better and better insulator!)
+</p>
+
+<p>
+Before we get into the effects of greenhouse gases, let’s repeat here that the official UNFCCC greenhouse gases are:
+<ul>
+    <li><b>Carbon Dioxide (CO2)</b>: naturally occurring, but concentrations have
+    been trending upward since industrial revolution due to increasing fossil
+    fuel combustion</li>
+    <li><b>Methane (CH4)</b>: naturally occurring, but also about 80% of what’s
+    marketed as “natural gas” fuel and often leaked during oil
+    extraction.</li>
+    <li><b>Nitrous Oxide (NO2)</b>: largely associated with fertilizer use</li>
+    <li><b>“F-gases”</b> associated with industrial processes and manufacturing:
+        <ul>
+            <li>Hydrofluorocarbons (HFCs)</li>
+            <li>Perfluorocarbons (PFCs)</li>
+            <li>Sulfur Hexafluoride (SF6)</li>
+            <li>Nitrogen Trifluoride (NF3)</li>
+        </ul>
+    </li>
+</ul>
+</p>
+
+<p>
+A note on plan zero software:
+Plan Zero models emissions over time of these gases. Each is
+a SparseTimeSeries object contained within the State object representing
+a temporal simulation. The state contains a lot of SparseTimeSeries objects
+but they all have unique names. The annual GHG emissions of carbon dioxide are
+stored (at time of writing) in the one called
+“Predicted_Annual_Emitted_CO2_mass”. The `AtmosphericChemistry` class defines
+each of these SparseTimeSeries objects as the sum of annual sectoral emitted
+CO2 masses, which are themselves defined as the temporal integral of sources
+registered for each sector.
+</p>
+
+<h2>Planetary Heating Model</h2>
+<p>
+The Planzero software includes a simple model of the relationship between greenhouse gas emissions and planetary heat and temperature.
+Planzero doesn't model the atmosphere, or oceans, or land, except in an extremely simplified way.
+It models how average gas concentrations in the atmosphere change over time (e.g. years),
+and it models how excess trapped heat (relative to pre-industrial revolution trapped heat) raises the average shallow ocean temperature.
+In slightly more detail:
+<ul>
+    <li>The ocean is modelled as a giant heat battery with a single uniform temperature, which is called the ocean temperature anomaly.</li>
+    <li>The ocean is modelled as uniformly 200m deep, and therefore with heat capacity 1.5e23 Joules / Kelvin.</li>
+    <li>Heat is assumed to be radiated at a rate that is proportional to the ocean temperature anomaly.</li>
+    <li>The [global] atmosphere is modelled as being at all times uniformly mixed.</li>
+    <li>The atmosphere is assumed to have no heat capacity, temperature, or internal dynamics.</li>
+    <li>The land surface is not modelled at all in any physical sense.</li>
+</ul>
+</p>
+
+<h3>Carbon Dioxide</h3>
+
+<p>
+Carbon dioxide
+(<math display="inline">{{blog.equations["CO2"] | safe}}</math>)
+is  modelled as a stable atmospheric mass and an emitted mass.
+The atmospheric mass is considered indefinitely stable, with no assumption of a natural decay mechanism.
+The emitted mass is considered to be partly absorbed into e.g. vegetation and shallow waters at a rate of 55%, with the remaining 45% taken up into the indefinitely stable atmospheric mass.
+The 55% term models e.g. average surface alkalinity, and the amount of carbon dioxide required to change surface water concentration to match the changes in atmospheric concentration.
+</p>
+<p>
+The remaining 45% of emissions of 
+<math display="inline">{{blog.equations["CO2"] | safe}}</math>
+are converted to an atmospheric concentration, and then converted to a partial radiative forcing contribution of
+<math display="inline">{{blog.equations["CO2_df"] | safe}}</math>
+<math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
+in which 
+<math display="inline">{{blog.equations["C"] | safe}}</math> is the current
+concentration of 
+<math display="inline">{{blog.equations["CO2"] | safe}}</math>
+in the atmosphere, and
+<math display="inline">{{blog.equations["C0"] | safe}}</math> is the pre-industrial level
+of 280 ppm.
+This number of watts per unit area is multiplied by the surface area of the earth, and integrated over time to get a partial energy imbalance due to
+<math display="inline">{{blog.equations["CO2"] | safe}}</math>.
+That energy is modelled as being absorbed into the upper ocean, raising its temperature.
+</p>
+
+
+<h3>Methane</h3>
+<p>
+Methane is a naturally occurring gas in the atmosphere at low concentration,
+but it also about 80% of what’s marketed as “natural gas” fuel and often
+leaked during oil
+extraction.
+It is also produced in signifant quantity by
+the digestive process of bovines, such as dairy and beef cattle.
+</p>
+<p>
+Methane
+(<math display="inline">{{blog.equations["CH4"] | safe}}</math>)
+is modelled differently from carbon dioxide.
+Methane emissions are modelled as completely mixing with the atmosphere
+as soon as they are emitted,
+and atmospheric methane is modelled as being continuously broken down into
+carbon dioxide and hydrogen
+at a rate proportional to the amount of methane currently present:
+<math display="inline">{{blog.equations["delta_C_left"] | safe}}</math>
+=
+<math display="inline">{{blog.equations["CH4_delta_C_right"] | safe}}</math>.
+This gives our atmospheric methane a half-life of about 8.5 years.
+When a molecule of modelled methane breaks down,
+it yields a molecule of carbon dioxide, which is counted as a carbon dioxide emission.
+</p>
+
+<p>
+The radiative forcing math for methane is different from carbon dioxide as well.
+Methane is modelled as contributing
+<math display="inline">{{blog.equations["CH4_df"] | safe}}</math>
+<math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
+where
+<math display="inline">{{blog.equations["C"] | safe}}</math> is the current
+and
+<math display="inline">{{blog.equations["C0"] | safe}}</math>
+are the current and pre-industrial atmospheric concentrations of methane respectively,
+in units of parts-per-billion
+(<math display="inline">{{blog.equations["C0"] | safe}}</math>
+= 722 ppb).
+As with the partial radiative forcing contributed from our modelled carbon dioxide,
+this quantity is multiplied by the surface of the earth, integrated over time,
+and used to heat the shallow water of our simulated ocean.
+</p>
+
+<h3>Nitrous Oxide</h3>
+<p>
+Nitrous oxide
+(<math display="inline">{{blog.equations["NO2"] | safe}}</math>), largely associated with fertilizer use,
+is modelled similarly to methane, but with a slower decay,
+and a larger radiative forcing coefficient.
+In reality, atmospheric nitrous oxide is broken down by UV light, but only once it reaches very high levels of the atmosphere. When that happens, it decays into
+either (a) nitrogen and oxygen, 90% of the time or else (b) nitric oxide, 10% of the time.
+Nitric oxide is notable because it breaks down ozone, but anyway planzero does not model that.
+In the planzero simulation, nitrous oxide is modelled as simply disappearing,
+at a rate proportional to the amount of it currently present:
+<math display="inline">{{blog.equations["delta_C_left"] | safe}}</math>
+=
+<math display="inline">{{blog.equations["NO2_delta_C_right"] | safe}}</math>.
+This gives our atmospheric nitrous oxide a half-life of about 80 years.
+</p>
+
+<p>
+Radiative forcing due to nitrous oxide is similar to methane.
+Nitrous oxide is modelled as contributing
+<math display="inline">{{blog.equations["NO2_df"] | safe}}</math>
+<math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
+where
+<math display="inline">{{blog.equations["C"] | safe}}</math> is the current
+and
+<math display="inline">{{blog.equations["C0"] | safe}}</math>
+are the current and pre-industrial atmospheric concentrations of nitrous oxide respectively,
+in units of parts-per-billion
+(<math display="inline">{{blog.equations["C0"] | safe}}</math>
+= 270 ppb).
+As for the other gases, this quantity is multiplied by the surface of the earth, integrated over time,
+and used to heat the shallow water of our simulated ocean.
+</p>
+
+<h3>F-gases</h3>
+
+<h4>Hydrofluorocarbons (HFCs)</h4>
+
+<p>
+Hydrofluorocarbons (HFCs) are synthetic chemicals used primarily as alternatives to ozone-depleting substances in refrigeration, air conditioning, and insulating foams.
+According to the Montreal Protocol, there is a global phase-down of production
+of these chemicals, as they can become potent greenhouse gases.
+The only IPCC sector with which they are associated is called
+"Production and consumption of Halocarbons, SF6, and NF3", but Canada has reported
+non-zero emissions quantities in this area.
+</p>
+<p>
+HFCs are modelled in planzero as having a pre-industrial reference concentration of 0.
+They are modelled as simply disappearing according to linear process with a 14-year time constant.
+<math display="inline">{{blog.equations["delta_C_left"] | safe}}</math>
+=
+<math display="inline">{{blog.equations["HFC_delta_C_right"] | safe}}</math>.
+In terms of radiative forcing, they are modeled as  contributing
+<math display="inline">{{blog.equations["HFC_df"] | safe}}</math>
+<math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
+where
+<math display="inline">{{blog.equations["C"] | safe}}</math> is the current concentration in parts-per-billion.
+
+</p>
+
+<h4>Perfluorocarbons (PFCs)</h4>
+<p>
+Perfluorocarbons (PFCs), like HFCs, are strictly man-made (mostly from
+aluminum smelting and semiconductor manufacturing) and exist in the atmosphere
+at very low concentrations (parts per trillion).
+However, they differ from the gases above in one important way: they have
+almost no natural sinks,
+so their atmospheric lifetimes are estimated in the range of thousands of years.
+They are also relatively potent greenhouse gases.
+</p>
+
+<p>
+PFCs are modelled in planzero as having a pre-industrial reference concentration of 0.
+They are modelled as never disappearing or decaying, but simply accumulating.
+In terms of radiative forcing, they are modeled as  contributing
+<math display="inline">{{blog.equations["PFC_df"] | safe}}</math>
+<math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
+where
+<math display="inline">{{blog.equations["C"] | safe}}</math> is the current concentration in parts-per-billion.
+</p>
+
+<h4>Sulfur Hexafluoride (SF6)</h4>
+<p>
+Sulfur Hexafluoride (SF6) is used primarily as an electrical insulator in
+high-voltage switchgear. It is modelled similarly to PFCs:
+its decay time constant is estimate to be on the order of thousands of years,
+and it is even more potent as a greenhouse gas than PFCs or HFCs.
+</p>
+
+<p>
+Sulfur hexafluoride is modelled in planzero as having a pre-industrial reference concentration of 0.
+It is modelled as never disappearing or decaying, but simply accumulating.
+In terms of radiative forcing, it is modeled as  contributing
+<math display="inline">{{blog.equations["SF6_df"] | safe}}</math>
+<math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
+where
+<math display="inline">{{blog.equations["C"] | safe}}</math> is the current concentration in parts-per-billion.
+</p>
+
+
+
+<h4>Nitrogen Trifluoride (NF3)</h4>
+<p>
+Nitrogen Trifluoride (NF3) is the last of the "major" synthetic
+greenhouse gases named by the UNFCCC, whose emissions member countries are required to track.
+It is primarily used
+in the manufacturing of liquid crystal displays (LCDs), solar panels, and
+semiconductors.In terms of modeling, it behaves almost exactly like SF6
+and PFCs: it is a man-made, long-lived, and extremely potent gas
+that operates in the linear radiative forcing regime.
+</p>
+
+<p>
+Nitrogen hexafluoride is modelled in planzero as having a pre-industrial reference concentration of 0.
+It is modelled as never disappearing or decaying, but simply accumulating.
+In terms of radiative forcing, it is modeled as  contributing
+<math display="inline">{{blog.equations["NF3_df"] | safe}}</math>
+<math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
+where
+<math display="inline">{{blog.equations["C"] | safe}}</math> is the current concentration in parts-per-billion.
+</p>
+
+<h2>CO2e and GWP 100</h2>
+
+<p>
+In policy and reporting, it is awkward to continuously reason about time-trajectories of future heating, which are different for different emissions.
+The concept of CO2-equivalence (CO2e) is a simplification that turns the emissions of all of the greenhouse gases into a single number, such that bigger the number is, the more heat is expected to be trapped.
+A CO2e value is nominally in kilograms, but it isn't really a thing with mass.
+It is a mathematical shorthand computed by weighting
+the sum of masses of different greenhouse gases,
+by a so-called Greenhouse Warming Potential (GWP) coefficient representing how much a common mass of each gas has the potential to warm the planet over a 100-year period, relative to carbon dioxide.
+</p>
+<p>
+Planzero estimates the total CO2e for a set of GHG emissions over a certain amount of time (e.g. a year) as
+<ul>
+    <li>1 x the mass of carbon dioxide emissions</li>
+    <li>28 x the mass of methane emissions </li>
+    <li>265 x the mass of nitrous oxide emissions </li>
+    <li>1,430 x the mass of HFCs </li>
+    <li>6,630 x the mass of PFCs </li>
+    <li>23,500 x the mass of SF6 </li>
+    <li>17,200 x the mass of NF3 </li>
+</ul>
+</p>
+
+<h3>How closely do the Planetary Heat model and CO2e estimates match?</h3>
+
+
+<h2>Conclusion</h2>
+
+<p>
+This concludes the first post about what Canada is doing toward net-zero emissions,
+namely, participating in the UNFCCC, and using standard definitions of
+greenhouse gases.
+The next post, will be about something the federal government has done in legislation, namely,
+in 2021, committing Canada to net-zero emissions targets by year 2050.
+</p>
+
+<p>
+Until then,
+<p>
+
+<p>
+- {{blog.author}}
+</p>
+
+</section>
+</div>
+{% include "post-main.html" %}
