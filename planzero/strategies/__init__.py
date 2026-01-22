@@ -1,4 +1,4 @@
-import torch
+import math
 
 from . import strategy
 from . import stakeholders
@@ -209,6 +209,10 @@ class NationalBovaerMandate(Strategy):
     stepsize: object = 1.0 * u.years
     bovaer_price: object = 150 * u.CAD / u.cattle / u.year
 
+    @staticmethod
+    def sigmoid(x):
+        return 1.0 / (1.0 + math.exp(-x))
+
     def __init__(self):
         super().__init__(
             title="National Bovaer Mandate",
@@ -231,7 +235,7 @@ class NationalBovaerMandate(Strategy):
         zval = (
             (state.t_now - self.peak_year)
             / self.shoulder_years)
-        current.bovine_population_fraction_on_bovaer = torch.sigmoid(
+        current.bovine_population_fraction_on_bovaer = self.sigmoid(
             zval.to('dimensionless').magnitude) * u.dimensionless
             
         setattr(

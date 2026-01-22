@@ -19,7 +19,6 @@ inv['Year'] = inv['Year'].astype(float)
 # non-aggregate rows relating to the entire country (remove subtotals)
 non_agg = inv[ (inv['Region'].isin(['Canada', 'canada'])) & (inv['Total'] != 'y')]
 
-
 def echart_years():
     return [float(x) for x in sorted(non_agg['Year'].unique())]
 

@@ -2,6 +2,7 @@
 # For more accurate climate simulation, check out
 # https://climate-assessment.readthedocs.io/en/latest/index.html
 
+import array
 import bisect
 import contextlib
 import heapq
@@ -16,8 +17,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pint
-import torch
-torch.set_default_dtype(torch.float64)
+from pydantic import BaseModel
 
 ureg = pint.UnitRegistry()
 ureg.define('CAD = [currency]')
@@ -31,6 +31,8 @@ ureg.define('ppm = 1e-6 fraction')
 ureg.define('ppb = 1e-9 fraction')
 u = ureg
 
+_seconds_per_year = (1 * u.year).to(u.second).magnitude
+
 # TODO: a global table of official floating-point values of year-start times,
 #       for use by annual step functions, accounting math etc.
 #       to avoid floating point rounding errors where years are supposed to line up
@@ -40,201 +42,131 @@ u = ureg
 from . import ipcc_canada
 GHGs = ('CO2', 'CH4', 'NO2', 'HFC', 'PFC', 'SF6', 'NF3')
 
-class SparseTimeSeries(object):
+class SparseTimeSeries(BaseModel):
+    """A data structure of (time, value) pairs (stored separately) representing
+    a timeseries. It may or not have a default value.
+    """
 
-    t_unit = getattr(u, 'seconds')
+    t_unit:object
+    v_unit:object
 
-    nan_is_poison = True
+    times:object # will be a float array
+    values:object # will be a float array
+
+    current_readers:list[str]
+    writer:str|None
+
+    identifier: str | None # shouldn't be None after construction
 
     def max(self, _i_start=None):
         if _i_start is None:
-            return max(self.values)
+            rval = max(self.values)
         else:
-            return max(self.values[_i_start:])
-
-    @property
-    def v_unit(self):
-        return self.values[0].u
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, name):
-        if not hasattr(self, '_name'):
-            self._name = name
-        else:
-            assert self._name == name, 'to really change the name, access `_name`'
-
-    def __string__(self):
-        return f'STS(name={self.name})'
-
-    def __init__(self, times=None, values=None, unit=None, name=None, t_unit=None, default_value=float('nan')):
-        self.times = []
-        self._current_readers = []
-        self._writer = None
-        t_unit = t_unit or self.t_unit
-        self.t_unit = t_unit
-
-        if isinstance(unit, str):
-            unit = getattr(u, unit)
-
-        if isinstance(default_value, (int, float)):
-            if unit is not None:
-                self.values = [torch.tensor(default_value) * unit]
-            else:
-                self.values = [torch.tensor(default_value) * values.u]
-        elif hasattr(default_value, 'magnitude'):
-            if isinstance(default_value.magnitude, torch.Tensor):
-                self.values = [default_value.magnitude * default_value.u]
-            else:
-                self.values = [torch.tensor(default_value.magnitude) * default_value.u]
-        else:
-            raise NotImplementedError()
-
-        if times is None and values is None:
-            pass
-        else:
-            if isinstance(times, list):
-                self.times = [tt.to(self.t_unit) for tt in times]
-            elif isinstance(times.magnitude, (int, float)):
-                self.times = [(torch.tensor(times.magnitude) * times.u).to(self.t_unit)]
-            elif isinstance(times.magnitude, np.ndarray):
-                self.times = [(torch.tensor(tt) * times.u).to(self.t_unit) for tt in times.magnitude]
-            elif isinstance(times.magnitude, torch.Tensor):
-                if times.magnitude.ndim == 0:
-                    self.times = [times.to(self.t_unit)]
-                else:
-                    raise NotImplementedError(times.magnitude)
-            else:
-                raise NotImplementedError(times.magnitude)
-
-            if isinstance(values, list):
-                # assume list of pint-typed values
-                self.values = [(torch.tensor(default_value.magnitude) * default_value.u)]
-                self.values.extend(
-                    [vv.to(default_value.u) for vv in values])
-            elif isinstance(values.magnitude, (int, float)):
-                self.values = [
-                    (torch.tensor(default_value) * values.u),
-                    (torch.tensor(values.magnitude) * values.u),
-                ]
-            elif isinstance(values.magnitude, np.ndarray):
-                if values.magnitude.ndim == 0:
-                    self.values = [
-                        (torch.tensor(default_value) * values.u),
-                        (torch.tensor(values.magnitude) * values.u),
-                    ]
-                elif values.magnitude.ndim == 1:
-                    self.values = [(torch.tensor(default_value) * values.u)]
-                    self.values.extend([torch.tensor(vv) * values.u for vv in values.magnitude])
-                else:
-                    raise NotImplementedError(values.magnitude)
-            elif isinstance(values.magnitude, torch.Tensor):
-                if values.magnitude.ndim == 0:
-                    self.values = [
-                        (torch.tensor(default_value) * values.u),
-                        (values.to(self.v_unit)),
-                    ]
-                else:
-                    raise NotImplementedError()
-            else:
-                raise NotImplementedError(values.magnitude)
-
-        assert len(self.times) + 1 == len(self.values)
-        if name is not None:
-            self._name = name
-        self.default_value = default_value
-
-    @property
-    def _times_pint_array(self):
-        return torch.stack([tt.magnitude for tt in self.times]) * self.t_unit
-
-    @property
-    def _values_pint_array(self):
-        return torch.stack([vv.magnitude for vv in self.values]) * self.v_unit
-
-    def latest_val(self, t_query, inclusive):
-        index = None
-        if self.times:
-            if t_query > self.times[-1]:
-                index = len(self.values) - 1
-            elif t_query == self.times[-1] and inclusive:
-                index = len(self.values) - 1
-            elif t_query == self.times[-1] and not inclusive:
-                index = len(self.values) - 2
-            else:
-                assert t_query < self.times[-1]
-                if inclusive:
-                    index = bisect.bisect_right(self.times, t_query)
-                else:
-                    index = bisect.bisect_left(self.times, t_query)
-        else:
-            index = 0
-        return self.values[index]
-
-    def latest_vals(self, t_query, inclusive=True):
-
-        times = self.times
-        values = self.values
-
-        if len(times) == 0:
-            indices = torch.tensor([0] * len(t_query))
-        else:
-            times_array = torch.stack([tt.magnitude for tt in times])
-            indices = torch.searchsorted(times_array, t_query.to(self.t_unit).magnitude, side='right')
-
-        rval = torch.stack([values[ii].magnitude for ii in indices])
-        if self.nan_is_poison and rval.isnan().any():
-            if self.times:
-                raise IndexError(f'Series is undefined before time t={self.times[0]}')
-            else:
-                raise IndexError(f'Series is undefined')
+            rval = max(self.values[_i_start:])
         return rval * self.v_unit
 
+    def __string__(self):
+        return f'STS(id={self.identifier})'
+
+    def _init_v_unit(self, values, unit, default_value):
+        # specify unit if you want no default value and you don't know any values yet
+        # provide default_value if you do want a default value to apply prior to the first (time, value) pair, then no unit
+        if default_value is None:
+            # without a default_unit, it's required to either
+            # (a) set the unit, or
+            # (b) provide initial values and times
+            # and it is okay to do both, but then `unit` takes precedence.
+            if unit is None:
+                return values[0].u
+            else:
+                if isinstance(unit, str):
+                    unit = getattr(u, unit)
+                return unit
+        else:
+            return default_value.u
+
+
+    def __init__(self, *, times=None, values=None, unit=None, identifier=None, t_unit=u.seconds, default_value=None):
+        super().__init__(
+            t_unit=t_unit,
+            v_unit=self._init_v_unit(values, unit, default_value),
+            times=array.array('d'),
+            values=array.array('d'),
+            current_readers=[],
+            writer=None,
+            identifier=identifier)
+        if default_value is None:
+            self.values.append(float('nan'))
+        else:
+            self.values.append(default_value.to(self.v_unit).magnitude)
+        if times is not None:
+            self.extend(times, values)
+
+    def __len__(self):
+        return len(self.times)
+
+    def _idx_of_time(self, t_query, inclusive):
+        """Return the index into the `values` array corresponding to time t_query.
+        inclusive=False means the most recent value up to but including t_query
+
+        N.B. that this function can return different values after appending or
+        extending the timeseries.
+        """
+        ts = t_query.to(self.t_unit).magnitude
+        if self.times:
+            if ts > self.times[-1]:
+                index = len(self.values) - 1
+            elif ts == self.times[-1] and inclusive:
+                index = len(self.values) - 1
+            elif ts == self.times[-1] and not inclusive:
+                index = len(self.values) - 2
+            else:
+                if inclusive:
+                    index = bisect.bisect_right(self.times, ts)
+                else:
+                    index = bisect.bisect_left(self.times, ts)
+        else:
+            index = 0
+        return index
+
+    def query(self, t_query, inclusive):
+        try:
+            n_queries = len(t_query)
+        except:
+            n_queries = 1
+        if n_queries > 1:
+            numbers = [self.values[self._idx_of_time(tqi, inclusive)]
+                       for tqi in t_query]
+            return np.asarray(numbers) * self.v_unit
+        else:
+            return self.values[self._idx_of_time(t_query, inclusive)] * self.v_unit
+
     def append(self, t, v):
+        if t.u == self.t_unit:
+            tt = t.magnitude
+        elif t.u == u.year and self.t_unit == u.second:
+            tt = t.magnitude * _seconds_per_year
+        else:
+            tt = t.to(self.t_unit).magnitude
         if len(self.times):
-            assert t > self.times[-1]
-
-        if isinstance(t.magnitude, (float, int)):
-            tt = torch.tensor(t.to(self.t_unit).magnitude) * self.t_unit
-        elif isinstance(t.magnitude, torch.Tensor):
-            assert t.magnitude.ndim == 0
-            tt = t
-        else:
-            raise NotImplementedError(t)
-
-        if isinstance(v.magnitude, torch.Tensor):
-            vv = v.to(self.v_unit)
-        elif isinstance(v.magnitude, (float, int)):
-            vv = torch.tensor(v.to(self.v_unit).magnitude) * self.v_unit
-        else:
-            raise NotImplementedError()
-        assert tt.u == self.t_unit
+            assert tt > self.times[-1]
         self.times.append(tt)
-        self.values.append(vv)
+        self.values.append(v.to(self.v_unit).magnitude)
 
     def extend(self, times, values):
         assert len(times) == len(values)
-        if len(times) == 0:
-            return
-
-        if self.times:
-            assert times[0] > self.times[-1]
-        self.times.extend(t.to(self.t_unit))
-        self.values.extend(v.to(self.v_unit))
+        for t, v in zip(times, values):
+            self.append(t, v)
 
     def plot(self, t_unit=None, annotate=True, **kwargs):
         t_unit = t_unit or self.t_unit
         plt.scatter(
-            [t.to(t_unit).magnitude for t in self.times],
-            [v.magnitude for v in self.values[1:]],
+            self.times,
+            self.values[1:],
             **kwargs)
         plt.xlabel(t_unit)
         plt.ylabel(self.v_unit)
-        if self.name:
-            plt.title(self.name)
+        plt.title(self.identifier)
         if annotate:
             self.annotate_plot(t_unit=t_unit, **kwargs)
 
@@ -242,7 +174,6 @@ class SparseTimeSeries(object):
         """Called once per variable name in comparison plots"""
         pass
 
-from pydantic import BaseModel
 
 class Project(BaseModel):
 
@@ -283,8 +214,8 @@ class Project(BaseModel):
             plt.legend(loc='lower left')
         elif config.get('figtype') == 'plot delta':
             years = comparison._years()
-            vals_A = comparison.state_A.sts[key].latest_vals(years, inclusive=True)
-            vals_B = comparison.state_B.sts[key].latest_vals(years, inclusive=True)
+            vals_A = comparison.state_A.sts[key].query(years, inclusive=True)
+            vals_B = comparison.state_B.sts[key].query(years, inclusive=True)
             diff = vals_A - vals_B
             plt.plot(
                 years.to(config['t_unit']).magnitude,
@@ -332,7 +263,7 @@ class StateCurrent(object):
             # TODO: it might catch errors to be strict about not reading
             # before writing but current.foo += 1 is such natural syntax
             # and strict semantics would forbid it.
-            return self.state.sts[attr].latest_val(self.state.t_now, inclusive=True)
+            return self.state.sts[attr].query(self.state.t_now, inclusive=True)
         else:
             if attr in self.state.sts:
                 raise AttributeError(f'state variable {attr} exists, but the calling Project class did not register to read it')
@@ -353,7 +284,7 @@ class State(object):
 
     def __init__(self, t_start=t_start, name=None):
         self.t_start = t_start
-        self._t_now = torch.tensor(t_start.to(u.seconds).magnitude) * u.seconds
+        self._t_now = t_start
         self.sts = {}
         self.sectoral_emissions_contributors = {
             catpath: {} for catpath in sorted(ipcc_canada.catpaths)}
@@ -367,12 +298,16 @@ class State(object):
 
     def dependency_digraph(self):
         graph = nx.DiGraph()
+        things = set()
+        things.update(sts.identifier for sts in self.sts.values())
+        things.update(prj.identifier for prj in self.projects.values())
+        assert len(things) == len(self.sts) + len(self.projects)
         for sts in self.sts.values():
-            graph.add_node(sts)
-            if sts._writer:
-                graph.add_edge(sts._writer.identifier, sts)
-            for prj in sts._current_readers:
-                graph.add_edge(sts, prj.identifier)
+            graph.add_node(sts.identifier)
+            if sts.writer:
+                graph.add_edge(sts.writer.identifier, sts.identifier)
+            for prj in sts.current_readers:
+                graph.add_edge(sts.identifier, prj.identifier)
         for prj in self.projects.values():
             graph.add_node(prj.identifier)
         return graph
@@ -384,7 +319,7 @@ class State(object):
                 if name not in self.sts:
                     self.sts[name] = sts
                     self._depgraph = None
-                    sts.name = name
+                    sts.identifier = name
                 else:
                     # TODO type-check for compatible existing sts
                     pass
@@ -399,14 +334,14 @@ class State(object):
         class Context(object):
 
             def will_read_current(_, name):
-                self.sts[name]._current_readers.append(project)
+                self.sts[name].current_readers.append(project)
                 self.project_requires_current[project.identifier].add(name)
                 self._depgraph = None
 
             def __setattr__(_, name, sts):
                 if name not in self.sts:
                     self.sts[name] = sts
-                    sts.name = name
+                    sts.identifier = name
                 else:
                     # TODO type-check for compatible existing sts
                     pass
@@ -426,9 +361,9 @@ class State(object):
                     pass
                 else:
                     self.sts[name] = sts
-                    sts.name = name
-                assert self.sts[name]._writer is None
-                self.sts[name]._writer = project
+                    sts.identifier = name
+                assert self.sts[name].writer is None
+                self.sts[name].writer = project
                 self.project_writes[project.identifier].add(name)
                 self._depgraph = None
                 return self.sts[name]
@@ -481,7 +416,7 @@ class State(object):
     def latest(self):
         class Latest(object):
             def __getattr__(_, attr):
-                return self.sts[attr].latest_val(self.t_now, inclusive=False)
+                return self.sts[attr].query(self.t_now, inclusive=False)
         return Latest()
 
     def _current(self, readable_attrs, writeable_attrs):
@@ -535,11 +470,10 @@ class State(object):
                     print("    ", foo)
                 print('Stepping', t_next, prj_identifier)
 
-            new_t_next = self.projects[prj_identifier].step(
-                self,
-                current=self._current(
+            current = self._current(
                     readable_attrs=self.project_requires_current[prj_identifier],
-                    writeable_attrs=self.project_writes[prj_identifier]))
+                    writeable_attrs=self.project_writes[prj_identifier])
+            new_t_next = self.projects[prj_identifier].step(self, current=current)
             self.project_t_next[prj_identifier] = new_t_next
             if new_t_next is not None:
                 assert new_t_next > self.t_now
@@ -644,58 +578,59 @@ class AtmosphericChemistry(BaseScenarioProject):
         annual_NF3_mass = 0 * u.kiloton
 
         for catpath, contributors in state.sectoral_emissions_contributors.items():
-            catpath_CO2_mass = 0 * u.kiloton
-            for sts_key in contributors.get('CO2', []):
-                catpath_CO2_mass += getattr(current, sts_key)
+            catpath_CO2e_mass = 0 * u.kg
 
-            catpath_CH4_mass = 0 * u.kiloton
-            for sts_key in contributors.get('CH4', []):
-                catpath_CH4_mass += getattr(current, sts_key)
+            catpath_CO2_contributors = contributors.get('CO2', [])
+            if catpath_CO2_contributors:
+                catpath_CO2_mass = sum(getattr(current, sts_key) for sts_key in catpath_CO2_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
+                catpath_CO2e_mass += catpath_CO2_mass
+                annual_CO2_mass += catpath_CO2_mass
 
-            catpath_NO2_mass = 0 * u.kiloton
-            for sts_key in contributors.get('NO2', []):
-                catpath_NO2_mass += getattr(current, sts_key)
+            catpath_CH4_contributors = contributors.get('CH4', [])
+            if catpath_CH4_contributors:
+                catpath_CH4_mass = sum(getattr(current, sts_key) for sts_key in catpath_CH4_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
+                catpath_CO2e_mass += catpath_CH4_mass * self.CH4_GWP_100
+                annual_CH4_mass += catpath_CH4_mass
 
-            catpath_HFC_mass = 0 * u.kiloton
-            for sts_key in contributors.get('HFC', []):
-                catpath_HFC_mass += getattr(current, sts_key)
+            catpath_NO2_contributors = contributors.get('NO2', [])
+            if catpath_NO2_contributors:
+                catpath_NO2_mass = sum(getattr(current, sts_key) for sts_key in catpath_NO2_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_NO2_mass_{catpath}', catpath_NO2_mass)
+                catpath_CO2e_mass += catpath_NO2_mass * self.NO2_GWP_100
+                annual_NO2_mass += catpath_NO2_mass
 
-            catpath_PFC_mass = 0 * u.kiloton
-            for sts_key in contributors.get('PFC', []):
-                catpath_PFC_mass += getattr(current, sts_key)
+            catpath_HFC_contributors = contributors.get('HFC', [])
+            if catpath_HFC_contributors:
+                catpath_HFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_HFC_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
+                catpath_CO2e_mass += catpath_HFC_mass * self.HFC_GWP_100
+                annual_HFC_mass += catpath_HFC_mass
 
-            catpath_SF6_mass = 0 * u.kiloton
-            for sts_key in contributors.get('SF6', []):
-                catpath_SF6_mass += getattr(current, sts_key)
+            catpath_PFC_contributors = contributors.get('PFC', [])
+            if catpath_PFC_contributors:
+                catpath_PFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_PFC_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
+                catpath_CO2e_mass += catpath_PFC_mass * self.PFC_GWP_100
+                annual_PFC_mass += catpath_PFC_mass
 
-            catpath_NF3_mass = 0 * u.kiloton
-            for sts_key in contributors.get('NF3', []):
-                catpath_NF3_mass += getattr(current, sts_key)
+            catpath_SF6_contributors = contributors.get('SF6', [])
+            if catpath_SF6_contributors:
+                catpath_SF6_mass = sum(getattr(current, sts_key) for sts_key in catpath_SF6_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
+                catpath_CO2e_mass += catpath_SF6_mass * self.SF6_GWP_100
+                annual_SF6_mass += catpath_SF6_mass
 
-            setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
-            setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
-            setattr(current, f'Predicted_Annual_Emitted_NO2_mass_{catpath}', catpath_NO2_mass)
-            setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
-            setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
-            setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
-            setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
-            setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}',
-                catpath_CO2_mass
-                + catpath_CH4_mass * self.CH4_GWP_100
-                + catpath_NO2_mass * self.NO2_GWP_100
-                + catpath_HFC_mass * self.HFC_GWP_100
-                + catpath_PFC_mass * self.PFC_GWP_100
-                + catpath_SF6_mass * self.SF6_GWP_100
-                + catpath_NF3_mass * self.NF3_GWP_100
-            )
+            catpath_NF3_contributors = contributors.get('NF3', [])
+            if catpath_NF3_contributors:
+                catpath_NF3_mass = sum(getattr(current, sts_key) for sts_key in catpath_NF3_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
+                catpath_CO2e_mass += catpath_NF3_mass * self.NF3_GWP_100
+                annual_NF3_mass += catpath_NF3_mass
 
-            annual_CO2_mass += catpath_CO2_mass
-            annual_CH4_mass += catpath_CH4_mass
-            annual_NO2_mass += catpath_NO2_mass
-            annual_HFC_mass += catpath_HFC_mass
-            annual_PFC_mass += catpath_PFC_mass
-            annual_SF6_mass += catpath_SF6_mass
-            annual_NF3_mass += catpath_NF3_mass
+            setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', catpath_CO2e_mass)
+
 
         current.Predicted_Annual_Emitted_CO2_mass = annual_CO2_mass
         current.Predicted_Annual_Emitted_CH4_mass = annual_CH4_mass
@@ -752,26 +687,26 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         surface_area_of_earth = 5.1e14 * u.m * u.m
 
-        reference_CO2_conc = torch.tensor(280.0) * u.ppm
+        reference_CO2_conc = 280.0 * u.ppm
         current.DeltaF_CO2 = (
             5.35 * u.watt / (u.m * u.m)
             * surface_area_of_earth
-            * torch.log(current.Atmospheric_CO2_conc.to(u.ppm).magnitude
-                        / reference_CO2_conc.to(u.ppm).magnitude))
+            * np.log(current.Atmospheric_CO2_conc.to(u.ppm).magnitude
+                     / reference_CO2_conc.to(u.ppm).magnitude))
 
-        reference_CH4_conc = torch.tensor(722.0) * u.ppb
+        reference_CH4_conc = 722.0 * u.ppb
         current.DeltaF_CH4 = (
             0.036 * u.watt / (u.m * u.m)
             * surface_area_of_earth
-            * (torch.sqrt(current.Atmospheric_CH4_conc.to(u.ppb).magnitude)
-               - torch.sqrt(reference_CH4_conc.to(u.ppb).magnitude)))
+            * (np.sqrt(current.Atmospheric_CH4_conc.to(u.ppb).magnitude)
+               - np.sqrt(reference_CH4_conc.to(u.ppb).magnitude)))
 
-        reference_NO2_conc = torch.tensor(270.0) * u.ppb
+        reference_NO2_conc = 270.0 * u.ppb
         current.DeltaF_NO2 = (
             0.12 * u.watt / (u.m * u.m)
             * surface_area_of_earth
-            * (torch.sqrt(current.Atmospheric_NO2_conc.to(u.ppb).magnitude)
-               - torch.sqrt(reference_NO2_conc.to(u.ppb).magnitude)))
+            * (np.sqrt(current.Atmospheric_NO2_conc.to(u.ppb).magnitude)
+               - np.sqrt(reference_NO2_conc.to(u.ppb).magnitude)))
 
         current.DeltaF_forcing = (
             current.DeltaF_CO2
@@ -799,6 +734,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         current.Cumulative_Heat_Energy += current.Heat_Energy_imbalance
 
+
         return state.t_now + self.stepsize
 
 
@@ -810,7 +746,9 @@ class GeometricHumanPopulationForecast(BaseScenarioProject):
         assert 1989 * u.years <= state.t_now <= 1991 * u.years, state.t_now.to(u.years)
 
         with state.defining(self) as ctx:
-            ctx.human_population = SparseTimeSeries(state.t_now, 27_685_730 * u.people)
+            ctx.human_population = SparseTimeSeries(
+                times=[state.t_now],
+                values=[27_685_730 * u.people])
 
         return state.t_now + self.stepsize
 
@@ -848,12 +786,12 @@ class GeometricBovinePopulationForecast(BaseScenarioProject):
             ctx.bovine_population_on_bovaer = SparseTimeSeries(
                 default_value=0 * u.cattle)
             ctx.bovine_population = SparseTimeSeries(
-                self.jan1['REF_DATE'].values * u.years,
-                (.5 * self.jan1['VALUE'].values * 1000
-                 + .5 * self.jul1['VALUE'].values * 1000) * u.cattle)
+                times=self.jan1['REF_DATE'].values * u.years,
+                values=(.5 * self.jan1['VALUE'].values * 1000
+                         + .5 * self.jul1['VALUE'].values * 1000) * u.cattle)
             ctx.bovine_methane = SparseTimeSeries(
                 default_value=(
-                    state.sts['bovine_population'].latest_val(2000 * u.years, inclusive=True)
+                    state.sts['bovine_population'].query(2000 * u.years, inclusive=True)
                      * self.methane_per_head_per_year))
         state.register_emission('Enteric_Fermentation', 'CH4', 'bovine_methane')
         return 2000 * u.years + self.stepsize
@@ -896,7 +834,7 @@ class ProjectComparison(object):
         t_stop = max(self.state_A.t_now, self.state_B.t_now)
         start_year = int(t_start.to('years').magnitude)
         stop_year = int(t_stop.to('years').magnitude) + 1
-        years = torch.arange(start_year, stop_year) * u.years
+        years = np.arange(start_year, stop_year) * u.years
         return years
 
     def years_as_list(self):
@@ -913,15 +851,15 @@ class ProjectComparison(object):
             year_int = int(year.to('years').magnitude)
             if year_int >= present_year_int:
                 envelope[ii] = base_rate ** (year_int - present_year_int)
-        return torch.tensor(envelope)
+        return np.asarray(envelope)
 
     def net_present_discounted_sum(self, base_rate, key, inclusive=True):
         years = self._years()
-        vals_A = self.state_A.sts[key].latest_vals(years, inclusive=inclusive)
-        vals_B = self.state_B.sts[key].latest_vals(years, inclusive=inclusive)
+        vals_A = self.state_A.sts[key].query(years, inclusive=inclusive)
+        vals_B = self.state_B.sts[key].query(years, inclusive=inclusive)
         diff = vals_A - vals_B
         envelope = self._net_present_envelope(years, base_rate)
-        return torch.cumsum(diff.magnitude * envelope, dim=0)[-1] * diff.u
+        return np.cumsum(diff.magnitude * envelope)[-1] * diff.u
 
     def net_present_CO2e(self, base_rate):
         return self.net_present_discounted_sum(
@@ -938,9 +876,9 @@ class ProjectComparison(object):
             raise NotImplementedError()
         years = self._years()
         envelope = self._net_present_envelope(years, base_rate)
-        cashflow = self.state_A.sts[self.project.after_tax_cashflow_name].latest_vals(
+        cashflow = self.state_A.sts[self.project.after_tax_cashflow_name].query(
             years, inclusive=True)
-        return torch.cumsum(cashflow.magnitude * envelope, dim=0)[-1] * cashflow.u
+        return np.cumsum(cashflow.magnitude * envelope)[-1] * cashflow.u
 
     def cost_per_ton_CO2e(self, base_rate):
         npv = self.net_present_value(base_rate=base_rate)
@@ -957,7 +895,7 @@ class ProjectComparison(object):
             state = self.state_B
         else:
             raise NotImplementedError(A_or_B)
-        predictions = state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'].latest_vals(
+        predictions = state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'].query(
             years, inclusive=True)
         data = [{'value': float(datum.to(u.megatonne).magnitude),
                  'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')}
@@ -1087,7 +1025,9 @@ class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProj
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
-            ctx.human_population = SparseTimeSeries(state.t_now, 27_685_730 * u.people)
+            ctx.human_population = SparseTimeSeries(
+                times=[state.t_now],
+                values=[27_685_730 * u.people])
             ctx.Government_LightDutyGasolineTrucks_ZEV_fraction = SparseTimeSeries(
                 default_value=0 * u.dimensionless)
             ctx.Other_LightDutyGasolineTrucks_ZEV_fraction = SparseTimeSeries(

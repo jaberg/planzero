@@ -20,13 +20,13 @@ RUN pip install --no-cache-dir numpy
 #RUN pip install --no-cache-dir plotly
 RUN pip install --no-cache-dir matplotlib
 RUN pip install --no-cache-dir pint
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir networkx
 RUN pip install --no-cache-dir fastapi[standard]
 RUN pip install --no-cache-dir pandas
 RUN pip install --no-cache-dir pytest
 RUN pip install --no-cache-dir jupyter
 RUN pip install --no-cache-dir markdown
+RUN pip install --no-cache-dir sympy # for mathml output -> todo latex2mathml is a thing
 
 
 COPY . /content

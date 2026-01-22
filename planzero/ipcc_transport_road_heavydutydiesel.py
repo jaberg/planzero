@@ -6,7 +6,9 @@ class IPCC_Transport_RoadTransportation_HeavyDutyDieselVehicles(BaseScenarioProj
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
-            ctx.human_population = SparseTimeSeries(state.t_now, 27_685_730 * u.people)
+            ctx.human_population = SparseTimeSeries(
+                times=[state.t_now],
+                values=[27_685_730 * u.people])
             ctx.Other_HeavyDutyDieselVehicles_ZEV_fraction = SparseTimeSeries(
                 default_value=0 * u.dimensionless)
 
