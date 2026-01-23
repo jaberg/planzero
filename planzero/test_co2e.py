@@ -1,70 +1,44 @@
-import time
-
 import numpy as np
 
-from . import (
-    Project,
-    ProjectEvaluation,
-    AtmosphericChemistry,
-    SparseTimeSeries,
-    ureg as u,
-    )
-
-dummy_catpath = 'Enteric_Fermentation'
-impulse_mass = 1000 * u.kg
-
-class EmissionsImpulseResponse(Project):
-    ghg: str
-
-    def on_add_project(self, state):
-
-        with state.defining(self) as ctx:
-            ctx.impulse_response = SparseTimeSeries(
-                times=[state.t_now, state.t_now + 1 * u.years],
-                values=[impulse_mass, 0.0 * u.kg],
-                default_value=0.0 * u.kg)
-
-        # any catpath will do
-        state.register_emission(dummy_catpath, self.ghg, 'impulse_response')
-
-
-GWP_100 = dict(
-    CO2=1.0,
-    CH4=28.0,
-    NO2=265.0,
-    HFC=1_430,
-    PFC=6_630,
-    SF6=23_500,
-    NF3=17_200,
+from .planet_model import (
+    emissions_impulse_response_project_evaluation,
+    GWP_100,
+    GHGs,
+    u,
     )
 
 
 def test_co2e(assert_value=0, years=100):
-    t0 = time.time()
-    GHGs = ['CO2', 'CH4', 'NO2', 'HFC', 'PFC', 'SF6', 'NF3']
-    peval = ProjectEvaluation(
-        projects={ghg: EmissionsImpulseResponse(ghg=ghg) for ghg in GHGs},
-        common_projects=[AtmosphericChemistry()],
-        present=2000 * u.years,
-    )
-    t1 = time.time()
-    print(t1 - t0, 'peval construction')
-    peval.run_until((2000 + years) * u.years)
-    t2 = time.time()
-    print(t2 - t1, 'run_until')
-    return
+    impulse_mass = 1_000_000 * u.kg
+    peval = emissions_impulse_response_project_evaluation(impulse_co2e=impulse_mass, years=years)
+    catpath = peval.projects['CO2'].catpath
     for ghg in GHGs:
         comp = peval.comparisons[ghg]
-        assert comp.state_A.sts['impulse_response'].max() == impulse_mass
-        co2e_key = f'Predicted_Annual_Emitted_CO2e_mass_{dummy_catpath}'
+        assert comp.state_A.sts['impulse_response'].max() == impulse_mass / GWP_100[ghg]
+        co2e_key = f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'
         assert np.allclose(
             comp.state_A.sts[co2e_key].max(_i_start=1),
-            GWP_100[ghg] * impulse_mass)
+            impulse_mass)
         assert comp.state_B.sts[co2e_key].max(_i_start=1) == 0 * u.kg
-        
-        print(ghg,
+        t_end = comp.state_A.t_now
+
+        energy_A = comp.state_A.sts['Cumulative_Heat_Energy'].query(t_end, inclusive=False)
+        energy_B = comp.state_B.sts['Cumulative_Heat_Energy'].query(t_end, inclusive=False)
+
+        forcing_energy_A = comp.state_A.sts['Cumulative_Heat_Energy_forcing'].query(t_end, inclusive=False)
+        forcing_energy_B = comp.state_B.sts['Cumulative_Heat_Energy_forcing'].query(t_end, inclusive=False)
+
+        forcing_delta = forcing_energy_A - forcing_energy_B
+
+        print(
+            ghg,
             comp.state_A.sts[co2e_key].max(_i_start=1).to(u.kilotonne),
             comp.state_B.sts[co2e_key].max(_i_start=1).to(u.kilotonne),
-             )
-    print(t1 - t0)
-    assert assert_value
+            'remaining', (energy_A - energy_B).to('terajoule'),
+            'forcing', forcing_delta.to('terajoule'),
+            )
+        assert 1000 * u.terajoule < forcing_delta < 2300 * u.terajoule
+        # see blog post on unfccc / greenhouse gases for discussion of the remaining discrepancy
+        # * model does not account for overlap in absorption by N2O and CH4, whereas GWP does.
+        # * model is using start-with-a-guess-y initial atmospheric concentrations for all gases, which will lead to
+        #   discrepancies here, especially in the case of N2O

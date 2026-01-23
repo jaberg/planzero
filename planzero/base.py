@@ -40,7 +40,7 @@ _seconds_per_year = (1 * u.year).to(u.second).magnitude
 
 
 from . import ipcc_canada
-GHGs = ('CO2', 'CH4', 'NO2', 'HFC', 'PFC', 'SF6', 'NF3')
+GHGs = ('CO2', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3')
 
 class SparseTimeSeries(BaseModel):
     """A data structure of (time, value) pairs (stored separately) representing
@@ -489,22 +489,58 @@ class GlobalHeatEnergy(SparseTimeSeries):
         #plt.text(self.times[0].to('years').magnitude, height, "Shallow Ocean 1C")
 
 
+surface_area_of_earth = 5.1e14 * u.m * u.m
+
+molar_mass_CH4 = 16.0 * u.g / u.mol
+molar_mass_CO2 = 44.0 * u.g / u.mol
+molar_mass_N2O = 44.01 * u.g / u.mol
+
+atmospheric_conc_per_mass_CO2 = (1 * u.ppm) / (7.8 * u.gigatonne)
+atmospheric_conc_per_mass_CH4 = atmospheric_conc_per_mass_CO2 * molar_mass_CO2 / molar_mass_CH4
+atmospheric_conc_per_mass_N2O = atmospheric_conc_per_mass_CO2 * molar_mass_CO2 / molar_mass_N2O
+atmospheric_conc_per_mass_HFC = (1 * u.ppb) / (18.0 * u.megatonne) # HFC-134a (most common HFC)
+atmospheric_conc_per_mass_PFC = (1 * u.ppb) / (15.6 * u.megatonne) # CF4 (most common PFC)
+atmospheric_conc_per_mass_SF6 = (1 * u.ppb) / (25.9 * u.megatonne)
+atmospheric_conc_per_mass_NF3 = (1 * u.ppb) / (12.6 * u.megatonne)
+
+
+deltaF_coef_N2O = 0.12 * u.watt / (u.m * u.m) * surface_area_of_earth
+deltaF_coef_HFC = 0.16 * u.watt / (u.m * u.m) * surface_area_of_earth
+deltaF_coef_PFC = 0.08 * u.watt / (u.m * u.m) * surface_area_of_earth
+deltaF_coef_SF6 = 0.57 * u.watt / (u.m * u.m) * surface_area_of_earth
+deltaF_coef_NF3 = 0.21 * u.watt / (u.m * u.m) * surface_area_of_earth
+
+CH4_GWP_100 = 28.0 # global warming potential, for CO2e calculation
+N2O_GWP_100 = 265.0 # global warming potential, for CO2e calculation
+HFC_GWP_100 = 1_430
+PFC_GWP_100 = 6_630
+SF6_GWP_100 = 23_500
+NF3_GWP_100 = 17_200
+
+
+
 class AtmosphericChemistry(BaseScenarioProject):
     methane_decay_timescale:float = 10.0
-    molar_mass_CH4:float = 16.0
-    molar_mass_CO2:float = 44.0
-
-    CH4_GWP_100:float = 28.0 # global warming potential, for CO2e calculation
-    NO2_GWP_100:float = 265.0 # global warming potential, for CO2e calculation
-    HFC_GWP_100:float = 1_430
-    PFC_GWP_100:float = 6_630
-    SF6_GWP_100:float = 23_500
-    NF3_GWP_100:float = 17_200
 
     may_register_emissions:bool = False
     requires_emissions_registration_closed:bool = True
 
-    stepsize:object = 1.0 * u.years
+    stepsize:object
+    decay_N2O:object
+    decay_HFC:object
+    decay_PFC:object
+    decay_SF6:object
+    decay_NF3:object
+
+    def __init__(self, stepsize=1.0 * u.years):
+        super().__init__(
+            stepsize=stepsize,
+            decay_N2O=(1 - stepsize / (114 * u.years)),
+            decay_HFC=(1 - stepsize / (14 * u.years)),
+            decay_PFC=1.0,
+            decay_SF6=1.0,
+            decay_NF3=1.0,
+            )
 
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
@@ -513,7 +549,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                     ctx.will_read_current(sts_key)
                 for sts_key in contributors.get('CH4', []):
                     ctx.will_read_current(sts_key)
-                for sts_key in contributors.get('NO2', []):
+                for sts_key in contributors.get('N2O', []):
                     ctx.will_read_current(sts_key)
                 for sts_key in contributors.get('HFC', []):
                     ctx.will_read_current(sts_key)
@@ -528,7 +564,7 @@ class AtmosphericChemistry(BaseScenarioProject):
             for catpath, _ in state.sectoral_emissions_contributors.items():
                 setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
                 setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_NO2_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
                 setattr(ctx, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
                 setattr(ctx, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
                 setattr(ctx, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
@@ -537,7 +573,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
             ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kiloton)
             ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_NO2_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_N2O_mass = SparseTimeSeries(unit=u.kiloton)
             ctx.Predicted_Annual_Emitted_HFC_mass = SparseTimeSeries(unit=u.kiloton)
             ctx.Predicted_Annual_Emitted_PFC_mass = SparseTimeSeries(unit=u.kiloton)
             ctx.Predicted_Annual_Emitted_SF6_mass = SparseTimeSeries(unit=u.kiloton)
@@ -548,11 +584,17 @@ class AtmosphericChemistry(BaseScenarioProject):
             # when the simulated years are a parameter of the state?
             ctx.Atmospheric_CO2_conc = SparseTimeSeries(unit=u.ppm, default_value=400.0 * u.ppm)
             ctx.Atmospheric_CH4_conc = SparseTimeSeries(unit=u.ppb, default_value=1775.0 * u.ppb)
-            ctx.Atmospheric_NO2_conc = SparseTimeSeries(unit=u.ppb, default_value=336.0 * u.ppb)
+            ctx.Atmospheric_N2O_conc = SparseTimeSeries(unit=u.ppb, default_value=336.0 * u.ppb)
+
+            # Gemini says these data are from NOAA and are accurate for January 2026
+            ctx.Atmospheric_HFC_conc = SparseTimeSeries(unit=u.ppb, default_value=0.1345 * u.ppb)
+            ctx.Atmospheric_PFC_conc = SparseTimeSeries(unit=u.ppb, default_value=0.0902 * u.ppb)
+            ctx.Atmospheric_SF6_conc = SparseTimeSeries(unit=u.ppb, default_value=0.0124 * u.ppb)
+            ctx.Atmospheric_NF3_conc = SparseTimeSeries(unit=u.ppb, default_value=0.0036 * u.ppb)
 
             ctx.DeltaF_CO2 = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_CH4 = SparseTimeSeries(unit=u.petawatt)
-            ctx.DeltaF_NO2 = SparseTimeSeries(unit=u.petawatt)
+            ctx.DeltaF_N2O = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_HFC = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_PFC = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_SF6 = SparseTimeSeries(unit=u.petawatt)
@@ -560,7 +602,9 @@ class AtmosphericChemistry(BaseScenarioProject):
             ctx.DeltaF_forcing = SparseTimeSeries(unit=u.petawatt)
             ctx.DeltaF_feedback = SparseTimeSeries(unit=u.petawatt)
 
-            ctx.Heat_Energy_forcing = SparseTimeSeries(unit=u.exajoule)
+            # Heat Energy forcing is the heat equivalent to net annual cashflow, an annual integral
+            ctx.Annual_Heat_Energy_forcing = SparseTimeSeries(default_value=0 * u.exajoule)
+            ctx.Cumulative_Heat_Energy_forcing = SparseTimeSeries(default_value=0 * u.exajoule)
             ctx.Heat_Energy_imbalance = SparseTimeSeries(unit=u.exajoule)
             ctx.Cumulative_Heat_Energy = GlobalHeatEnergy(default_value=0.0 * u.exajoule)
             ctx.Ocean_Temperature_Anomaly = SparseTimeSeries(default_value=1.3 * u.kelvin)
@@ -571,7 +615,7 @@ class AtmosphericChemistry(BaseScenarioProject):
         # add up annual emissions from registry
         annual_CO2_mass = 0 * u.kiloton
         annual_CH4_mass = 0 * u.kiloton
-        annual_NO2_mass = 0 * u.kiloton
+        annual_N2O_mass = 0 * u.kiloton
         annual_HFC_mass = 0 * u.kiloton
         annual_PFC_mass = 0 * u.kiloton
         annual_SF6_mass = 0 * u.kiloton
@@ -591,42 +635,42 @@ class AtmosphericChemistry(BaseScenarioProject):
             if catpath_CH4_contributors:
                 catpath_CH4_mass = sum(getattr(current, sts_key) for sts_key in catpath_CH4_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
-                catpath_CO2e_mass += catpath_CH4_mass * self.CH4_GWP_100
+                catpath_CO2e_mass += catpath_CH4_mass * CH4_GWP_100
                 annual_CH4_mass += catpath_CH4_mass
 
-            catpath_NO2_contributors = contributors.get('NO2', [])
-            if catpath_NO2_contributors:
-                catpath_NO2_mass = sum(getattr(current, sts_key) for sts_key in catpath_NO2_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_NO2_mass_{catpath}', catpath_NO2_mass)
-                catpath_CO2e_mass += catpath_NO2_mass * self.NO2_GWP_100
-                annual_NO2_mass += catpath_NO2_mass
+            catpath_N2O_contributors = contributors.get('N2O', [])
+            if catpath_N2O_contributors:
+                catpath_N2O_mass = sum(getattr(current, sts_key) for sts_key in catpath_N2O_contributors)
+                setattr(current, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', catpath_N2O_mass)
+                catpath_CO2e_mass += catpath_N2O_mass * N2O_GWP_100
+                annual_N2O_mass += catpath_N2O_mass
 
             catpath_HFC_contributors = contributors.get('HFC', [])
             if catpath_HFC_contributors:
                 catpath_HFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_HFC_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
-                catpath_CO2e_mass += catpath_HFC_mass * self.HFC_GWP_100
+                catpath_CO2e_mass += catpath_HFC_mass * HFC_GWP_100
                 annual_HFC_mass += catpath_HFC_mass
 
             catpath_PFC_contributors = contributors.get('PFC', [])
             if catpath_PFC_contributors:
                 catpath_PFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_PFC_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
-                catpath_CO2e_mass += catpath_PFC_mass * self.PFC_GWP_100
+                catpath_CO2e_mass += catpath_PFC_mass * PFC_GWP_100
                 annual_PFC_mass += catpath_PFC_mass
 
             catpath_SF6_contributors = contributors.get('SF6', [])
             if catpath_SF6_contributors:
                 catpath_SF6_mass = sum(getattr(current, sts_key) for sts_key in catpath_SF6_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
-                catpath_CO2e_mass += catpath_SF6_mass * self.SF6_GWP_100
+                catpath_CO2e_mass += catpath_SF6_mass * SF6_GWP_100
                 annual_SF6_mass += catpath_SF6_mass
 
             catpath_NF3_contributors = contributors.get('NF3', [])
             if catpath_NF3_contributors:
                 catpath_NF3_mass = sum(getattr(current, sts_key) for sts_key in catpath_NF3_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
-                catpath_CO2e_mass += catpath_NF3_mass * self.NF3_GWP_100
+                catpath_CO2e_mass += catpath_NF3_mass * NF3_GWP_100
                 annual_NF3_mass += catpath_NF3_mass
 
             setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', catpath_CO2e_mass)
@@ -634,19 +678,19 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         current.Predicted_Annual_Emitted_CO2_mass = annual_CO2_mass
         current.Predicted_Annual_Emitted_CH4_mass = annual_CH4_mass
-        current.Predicted_Annual_Emitted_NO2_mass = annual_NO2_mass
+        current.Predicted_Annual_Emitted_N2O_mass = annual_N2O_mass
         current.Predicted_Annual_Emitted_HFC_mass = annual_HFC_mass
         current.Predicted_Annual_Emitted_PFC_mass = annual_PFC_mass
         current.Predicted_Annual_Emitted_SF6_mass = annual_SF6_mass
         current.Predicted_Annual_Emitted_NF3_mass = annual_NF3_mass
         current.Predicted_Annual_Emitted_CO2e_mass = (
             annual_CO2_mass
-            + self.CH4_GWP_100 * annual_CH4_mass
-            + self.NO2_GWP_100 * annual_NO2_mass
-            + self.HFC_GWP_100 * annual_HFC_mass
-            + self.PFC_GWP_100 * annual_PFC_mass
-            + self.SF6_GWP_100 * annual_SF6_mass
-            + self.NF3_GWP_100 * annual_NF3_mass
+            + CH4_GWP_100 * annual_CH4_mass
+            + N2O_GWP_100 * annual_N2O_mass
+            + HFC_GWP_100 * annual_HFC_mass
+            + PFC_GWP_100 * annual_PFC_mass
+            + SF6_GWP_100 * annual_SF6_mass
+            + NF3_GWP_100 * annual_NF3_mass
         )
 
         fraction_of_emitted_CO2_that_becomes_atmospheric = .45
@@ -659,7 +703,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         annual_emitted_CO2_in_atmosphere_as_concentration = (
             annual_CO2_mass_atmospheric
-            / (7.8 * u.gigatonne / u.ppm)) # amount required to raise concentration by 1 ppm
+            * atmospheric_conc_per_mass_CO2)
 
         annual_emitted_CH4_in_atmosphere_as_concentration = (
             annual_CH4_mass_atmospheric
@@ -685,8 +729,6 @@ class AtmosphericChemistry(BaseScenarioProject):
                * fraction_of_emitted_CO2_that_becomes_atmospheric)
         )
 
-        surface_area_of_earth = 5.1e14 * u.m * u.m
-
         reference_CO2_conc = 280.0 * u.ppm
         current.DeltaF_CO2 = (
             5.35 * u.watt / (u.m * u.m)
@@ -701,17 +743,20 @@ class AtmosphericChemistry(BaseScenarioProject):
             * (np.sqrt(current.Atmospheric_CH4_conc.to(u.ppb).magnitude)
                - np.sqrt(reference_CH4_conc.to(u.ppb).magnitude)))
 
-        reference_NO2_conc = 270.0 * u.ppb
-        current.DeltaF_NO2 = (
-            0.12 * u.watt / (u.m * u.m)
-            * surface_area_of_earth
-            * (np.sqrt(current.Atmospheric_NO2_conc.to(u.ppb).magnitude)
-               - np.sqrt(reference_NO2_conc.to(u.ppb).magnitude)))
+        self.step_N2O(state, current, annual_N2O_mass)
+        self.step_HFC(state, current, annual_HFC_mass)
+        self.step_PFC(state, current, annual_PFC_mass)
+        self.step_SF6(state, current, annual_SF6_mass)
+        self.step_NF3(state, current, annual_NF3_mass)
 
         current.DeltaF_forcing = (
             current.DeltaF_CO2
             + current.DeltaF_CH4
-            + current.DeltaF_NO2
+            + current.DeltaF_N2O
+            + current.DeltaF_HFC
+            + current.DeltaF_PFC
+            + current.DeltaF_SF6
+            + current.DeltaF_NF3
         )
 
         current.DeltaF_feedback = (
@@ -719,7 +764,11 @@ class AtmosphericChemistry(BaseScenarioProject):
             * surface_area_of_earth
             * current.Ocean_Temperature_Anomaly) # will be stale value
 
-        current.Heat_Energy_forcing = (
+        current.Annual_Heat_Energy_forcing = (
+            self.stepsize # integrate over duration of stepsize aka 1 year
+            * current.DeltaF_forcing)
+
+        current.Cumulative_Heat_Energy_forcing += (
             self.stepsize # integrate over duration of stepsize aka 1 year
             * current.DeltaF_forcing)
 
@@ -734,9 +783,57 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         current.Cumulative_Heat_Energy += current.Heat_Energy_imbalance
 
-
         return state.t_now + self.stepsize
 
+    def step_N2O(self, state, current, annual_N2O_mass):
+        conc = current.Atmospheric_N2O_conc
+
+        conc += atmospheric_conc_per_mass_N2O * annual_N2O_mass
+        conc *= self.decay_N2O
+        current.Atmospheric_N2O_conc = conc
+
+        reference_N2O_conc = 270.0 * u.ppb
+
+        current.DeltaF_N2O = (
+            deltaF_coef_N2O
+            * (np.sqrt(conc.to(u.ppb).magnitude)
+               - np.sqrt(reference_N2O_conc.to(u.ppb).magnitude)))
+
+    def step_HFC(self, state, current, annual_HFC_mass):
+        conc = current.Atmospheric_HFC_conc
+
+        conc += atmospheric_conc_per_mass_HFC * annual_HFC_mass
+        conc *= self.decay_HFC
+        current.Atmospheric_HFC_conc = conc
+
+        current.DeltaF_HFC = deltaF_coef_HFC * conc.to(u.ppb).magnitude
+
+    def step_PFC(self, state, current, annual_PFC_mass):
+        conc = current.Atmospheric_PFC_conc
+
+        conc += atmospheric_conc_per_mass_PFC * annual_PFC_mass
+        conc *= self.decay_PFC
+        current.Atmospheric_PFC_conc = conc
+
+        current.DeltaF_PFC = deltaF_coef_PFC * conc.to(u.ppb).magnitude
+
+    def step_SF6(self, state, current, annual_SF6_mass):
+        conc = current.Atmospheric_SF6_conc
+
+        conc += atmospheric_conc_per_mass_SF6 * annual_SF6_mass
+        conc *= self.decay_SF6
+        current.Atmospheric_SF6_conc = conc
+
+        current.DeltaF_SF6 = deltaF_coef_SF6 * conc.to(u.ppb).magnitude
+
+    def step_NF3(self, state, current, annual_NF3_mass):
+        conc = current.Atmospheric_NF3_conc
+
+        conc += atmospheric_conc_per_mass_NF3 * annual_NF3_mass
+        conc *= self.decay_NF3
+        current.Atmospheric_NF3_conc = conc
+
+        current.DeltaF_NF3 = deltaF_coef_NF3 * conc.to(u.ppb).magnitude
 
 class GeometricHumanPopulationForecast(BaseScenarioProject):
     rate:float = 1.014
@@ -869,7 +966,7 @@ class ProjectComparison(object):
     def net_present_heat(self, base_rate):
         return self.net_present_discounted_sum(
             base_rate,
-            key='Heat_Energy_forcing')
+            key='Annual_Heat_Energy_forcing')
 
     def net_present_value(self, base_rate):
         if self.project.after_tax_cashflow_name in self.state_B.sts:

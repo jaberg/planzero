@@ -41,7 +41,7 @@ class GHG_Emissions(BlogPost):
     def __init__(self):
         CO2 = sympy.symbols("CO_2")
         CH4 = sympy.symbols("CH_4")
-        NO2 = sympy.symbols("NO_2")
+        N2O = sympy.symbols("N2O") # TODO: use latex2mathml and put the subscript in the middle
         CO2e = sympy.symbols("CO2e")
         N = sympy.symbols("N")
         N0 = sympy.symbols("N0")
@@ -61,7 +61,7 @@ class GHG_Emissions(BlogPost):
                 CO2=pres(CO2),
                 CO2e=pres(CO2e),
                 CH4=pres(CH4),
-                NO2=pres(NO2),
+                N2O=pres(N2O),
                 C=pres(C),
                 C0=pres(C0),
                 W_m2=pres(W / m ** 2),
@@ -69,8 +69,8 @@ class GHG_Emissions(BlogPost):
                 delta_C_left=delta_C_left,
                 CH4_delta_C_right=pres(-C / (12 * years)),
                 CH4_df=pres(0.036 * (sympy.sqrt(C) - sympy.sqrt(C0))), # W/m^2
-                NO2_df=pres(0.12 * (sympy.sqrt(C) - sympy.sqrt(C0))), # W/m^2
-                NO2_delta_C_right=pres(-C / (114 * years)),
+                N2O_df=pres(0.12 * (sympy.sqrt(C) - sympy.sqrt(C0))), # W/m^2
+                N2O_delta_C_right=pres(-C / (114 * years)),
                 GWP_100=pres(GWP_100),
                 HFC_delta_C_right=pres(-C / (14 * years)),
                 HFC_df=pres(0.16 * C),

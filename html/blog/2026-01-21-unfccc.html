@@ -67,7 +67,7 @@ Before we get into the effects of greenhouse gases, let’s repeat here that the
     <li><b>Methane (CH4)</b>: naturally occurring, but also about 80% of what’s
     marketed as “natural gas” fuel and often leaked during oil
     extraction.</li>
-    <li><b>Nitrous Oxide (NO2)</b>: largely associated with fertilizer use</li>
+    <li><b>Nitrous Oxide (N2O)</b>: largely associated with fertilizer use</li>
     <li><b>“F-gases”</b> associated with industrial processes and manufacturing:
         <ul>
             <li>Hydrofluorocarbons (HFCs)</li>
@@ -185,7 +185,7 @@ and used to heat the shallow water of our simulated ocean.
 <h3>Nitrous Oxide</h3>
 <p>
 Nitrous oxide
-(<math display="inline">{{blog.equations["NO2"] | safe}}</math>), largely associated with fertilizer use,
+(<math display="inline">{{blog.equations["N2O"] | safe}}</math>), largely associated with fertilizer use,
 is modelled similarly to methane, but with a slower decay,
 and a larger radiative forcing coefficient.
 In reality, atmospheric nitrous oxide is broken down by UV light, but only once it reaches very high levels of the atmosphere. When that happens, it decays into
@@ -195,14 +195,14 @@ In the planzero simulation, nitrous oxide is modelled as simply disappearing,
 at a rate proportional to the amount of it currently present:
 <math display="inline">{{blog.equations["delta_C_left"] | safe}}</math>
 =
-<math display="inline">{{blog.equations["NO2_delta_C_right"] | safe}}</math>.
+<math display="inline">{{blog.equations["N2O_delta_C_right"] | safe}}</math>.
 This gives our atmospheric nitrous oxide a half-life of about 80 years.
 </p>
 
 <p>
 Radiative forcing due to nitrous oxide is similar to methane.
 Nitrous oxide is modelled as contributing
-<math display="inline">{{blog.equations["NO2_df"] | safe}}</math>
+<math display="inline">{{blog.equations["N2O_df"] | safe}}</math>
 <math display="inline">{{blog.equations["W_m2"] | safe}}</math>,
 where
 <math display="inline">{{blog.equations["C"] | safe}}</math> is the current
