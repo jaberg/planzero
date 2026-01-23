@@ -5,6 +5,7 @@ import sympy
 _classes = []
 _blogs_by_url_filename = {}
 
+
 class BlogPost(BaseModel):
 
     date: datetime.datetime
@@ -27,6 +28,60 @@ from sympy.printing.mathml import mathml
 from functools import partial
 pres = partial(mathml, printer='presentation')
 
+from .planet_model import emissions_impulse_response_project_evaluation, u, GHGs
+
+from io import StringIO
+from .html import HTML_element
+import matplotlib.pyplot as plt
+
+class HTML_Matplotlib_Figure(HTML_element):
+
+    def as_html(self):
+        self.build_figure()
+        svg_buffer = StringIO()
+        plt.savefig(svg_buffer, format="svg")
+        plt.close()
+        svg_string = svg_buffer.getvalue()
+        return svg_string
+
+
+class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
+    peval:object
+    sts_key:str
+    title:str
+    legend_loc:str = 'upper right'
+    add_circle:bool = False
+
+    def build_figure(self):
+        fig, ax = plt.subplots()
+        plt.title(self.title)
+        years = [year for year in range(2000, 2101)]
+        for ghg in GHGs:
+            comp = self.peval.comparisons[ghg]
+            years_pint = [year * u.year for year in years]
+            energy_A = comp.state_A.sts[self.sts_key].query(years_pint, inclusive=False)
+            energy_B = comp.state_B.sts[self.sts_key].query(years_pint, inclusive=False)
+            plt.plot(years,
+                     (energy_A - energy_B).to('terajoules').magnitude,
+                     label=ghg)
+        plt.legend(loc=self.legend_loc)
+        if self.add_circle:
+            import matplotlib.patches
+            circle = matplotlib.patches.Ellipse((2100, 1600), width=10, height=1300, color='blue', alpha=.2)
+            ax.add_patch(circle)
+            plt.annotate('These emissions are supposed\n'
+                         'to trap similar amounts of heat\n'
+                         'after 100 years. The simulation\n'
+                         'does this to within factor of 2.1x\n'
+                         'which I think is okay.',
+                         xytext=(2049, 150),
+                         xy=(2100, 1000),
+                         arrowprops=dict(width=1))
+        #plt.grid()
+        plt.xlabel(f'Time (years)')
+        plt.ylabel(f'Heat (terajoules)')
+
+
 class GHG_Emissions(BlogPost):
     """
     What are greenhouse gases and what do they have to do with
@@ -37,12 +92,13 @@ class GHG_Emissions(BlogPost):
     """
     equations: dict[str, str]
     a: str
+    figure_svgs: dict[str, str]
 
     def __init__(self):
         CO2 = sympy.symbols("CO_2")
         CH4 = sympy.symbols("CH_4")
-        N2O = sympy.symbols("N2O") # TODO: use latex2mathml and put the subscript in the middle
-        CO2e = sympy.symbols("CO2e")
+        N2O = sympy.symbols("N_2_O") # TODO: use latex2mathml and put the subscript in the middle
+        CO2e = sympy.symbols("CO_2_e")
         N = sympy.symbols("N")
         N0 = sympy.symbols("N0")
         C = sympy.symbols("C")
@@ -78,6 +134,9 @@ class GHG_Emissions(BlogPost):
                 SF6_df=pres(0.57 * C),
                 NF3_df=pres(0.21 * C),
                 )
+        peval = emissions_impulse_response_project_evaluation(
+            impulse_co2e=1_000_000 * u.kg,
+            years=100)
 
         super().__init__(
             date=datetime.datetime(2026, 1, 21),
@@ -85,7 +144,20 @@ class GHG_Emissions(BlogPost):
             url_filename="2026-01-21-unfccc",
             author="James Bergstra",
             a="bar",
-            equations=equations)
+            equations=equations,
+            figure_svgs=dict(
+                co2e_v_heat_remaining=GHG_Emissions_CO2e_v_Heat(
+                    peval=peval,
+                    sts_key='Cumulative_Heat_Energy',
+                    title="Heat Remaining After Simulated Emissions Pulses",
+                    legend_loc='upper right').as_html(),
+                co2e_v_heat_forcing=GHG_Emissions_CO2e_v_Heat(
+                    peval=peval,
+                    sts_key='Cumulative_Heat_Energy_forcing',
+                    title="Cumulative GHG-Trapped Heat",
+                    add_circle=True,
+                    legend_loc='upper left').as_html(),
+            ))
 
 
 def init_blogs_by_url_filename():

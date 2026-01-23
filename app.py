@@ -22,13 +22,18 @@ import planzero.blog
 planzero.blog.init_blogs_by_url_filename()
 u = planzero.ureg
 
-peval = planzero.standard_project_evaluation()
-peval.run_until(2125 * u.years)
+_peval = None
+def get_peval():
+    global _peval
+    if _peval is None:
+        _peval = planzero.standard_project_evaluation()
+        _peval.run_until(2125 * u.years)
+    return _peval
 
 
 @app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)
 async def get_strategy_eval(request: Request, strategy_name:str):
-
+    peval = get_peval()
     strategy = peval.comparisons[strategy_name].project
     comparison = peval.comparisons[strategy_name]
     strategy_page = strategy.strategy_page(comparison)
@@ -37,6 +42,7 @@ async def get_strategy_eval(request: Request, strategy_name:str):
         name=f"strategy_page.html",
         context=dict(
             default_context,
+            peval=peval,
             active_tab='strategies',
             strategy=strategy,
             comparison=comparison,
@@ -100,6 +106,7 @@ async def get_ipcc_sectors_category(
             context=dict(
                 default_context,
                 active_tab='ipcc_sectors',
+                peval=get_peval(),
                 stakeholders=planzero.strategies.stakeholders,
                 catpath=catpath,
                 ),
@@ -118,6 +125,7 @@ async def get_strategies(request: Request):
         name="strategies.html",
         context=dict(
             default_context,
+            peval=get_peval(),
             active_tab='strategies',
             npv_unit='MCAD',
             nph_unit='exajoule',
@@ -157,6 +165,7 @@ async def get_about(request: Request):
         name="about.html",
         context=dict(
             default_context,
+            peval=get_peval(),
             active_tab='about',
             ),
     )
@@ -172,6 +181,7 @@ async def get_index(request: Request):
             default_context,
             fade_in_intro=True,
             active_tab='blog',
+            peval=get_peval(),
             ),
     )
 
@@ -191,7 +201,6 @@ default_context = dict(
     min=min,
     max=max,
     sorted=sorted,
-    peval=peval,
     u=u,
     have_page_for_catpath=have_page_for_catpath,
     url_for_catpath=url_for_catpath,

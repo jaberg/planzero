@@ -1005,3 +1005,16 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 # https://www.orbitalmarine.com/
 # They have installations planned / installed in Nova Scotia already.
 # Heard through email from Guillermo around Jan 11, 2026
+
+
+
+# Heat buffering better than clay
+# https://interestingengineering.com/innovation/thermal-battery-for-buildings
+
+# AtmosZero heat pump steam boiler
+# https://interestingengineering.com/energy/atmoszero-electrifies-centuries-old-steam-boiler
+
+# High-power THz-range microwave heating for plasma ... helpful for Methane Pyrolysis?
+# https://interestingengineering.com/energy/uk-firm-microwave-fusion-energy
+
+

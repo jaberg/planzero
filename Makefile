@@ -26,6 +26,13 @@ test: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 .
 
+test_blogs: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv -k test_each_blog test_200.py
+
 test_mapml: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

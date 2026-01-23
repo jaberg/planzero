@@ -2,10 +2,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app
+peval = app.get_peval()
 
 client = TestClient(app.app)
 
 from planzero import ipcc_canada
+import planzero.blog
 
 def test_home():
     response = client.get("/")
@@ -34,10 +36,17 @@ def test_each_ipcc_sector(catpath):
     response = client.get(url)
     assert response.status_code == 200
 
-@pytest.mark.parametrize("idea_name", app.peval.projects)
+@pytest.mark.parametrize("idea_name", peval.projects)
 def test_each_strategy(idea_name):
-    assert len(app.peval.projects) > 3
+    assert len(peval.projects) > 3
     url = f"/strategies/{idea_name}/"
     response = client.get(url)
     assert response.status_code == 200
 
+
+@pytest.mark.parametrize("url_filename", planzero.blog._blogs_by_url_filename)
+def test_each_blog(url_filename):
+    assert len(planzero.blog._blogs_by_url_filename) == 1
+    url = f"/blog/{url_filename}/"
+    response = client.get(url)
+    assert response.status_code == 200

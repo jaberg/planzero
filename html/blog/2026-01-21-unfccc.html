@@ -8,6 +8,19 @@
     </header>
 
 <p>
+Table of Contents:
+<ul>
+    <li><a href="#h2_intro">Introduction</a></li>
+    <li><a href="#h2_ghg">Greenhouse gases</a></li>
+    <li><a href="#h2_model">Planetary Heating Model</a></li>
+    <li><a href="#h2_co2e">CO2e and Model Validation</a></li>
+    <li><a href="#h2_conclusion">Conclusion</a></li>
+</ul>
+</p>
+
+<h2 id="h2_intro">Introduction</h2>
+
+<p>
 I was asked recently “why are you making Plan Zero, isn’t someone else already
 doing this?” The quick answer is “probably, and in many ways yes” but I wanted
 to be able to articulate what those other plans were in more detail, and who
@@ -41,7 +54,7 @@ ecosystems to adapt naturally and enables sustainable development.”
 (<a href="https:///unfccc.int">UNFCCC website</a>)
 </p>
 
-<h2>Greenhouse Gases</h2>
+<h2 id="h2_ghg">Greenhouse Gases</h2>
 
 <p>
 One thing that the UNFCCC provides is a standard definition for what
@@ -92,7 +105,7 @@ CO2 masses, which are themselves defined as the temporal integral of sources
 registered for each sector.
 </p>
 
-<h2>Planetary Heating Model</h2>
+<h2 id="h2_model">Planetary Heating Model</h2>
 <p>
 The Planzero software includes a simple model of the relationship between greenhouse gas emissions and planetary heat and temperature.
 Planzero doesn't model the atmosphere, or oceans, or land, except in an extremely simplified way.
@@ -304,7 +317,7 @@ where
 <math display="inline">{{blog.equations["C"] | safe}}</math> is the current concentration in parts-per-billion.
 </p>
 
-<h2>CO2e and GWP 100</h2>
+<h2 id="#h2_co2e">CO2e and Model Validation</h2>
 
 <p>
 In policy and reporting, it is awkward to continuously reason about time-trajectories of future heating, which are different for different emissions.
@@ -312,22 +325,84 @@ The concept of CO2-equivalence (CO2e) is a simplification that turns the emissio
 A CO2e value is nominally in kilograms, but it isn't really a thing with mass.
 It is a mathematical shorthand computed by weighting
 the sum of masses of different greenhouse gases,
-by a so-called Greenhouse Warming Potential (GWP) coefficient representing how much a common mass of each gas has the potential to warm the planet over a 100-year period, relative to carbon dioxide.
+by a so-called Greenhouse Warming Potential
+(<math display="inline">{{blog.equations["GWP_100"] | safe}}</math>)
+coefficient representing how much a certain mass of each gas has the potential to warm the planet over a 100-year period, relative to carbon dioxide.
 </p>
 <p>
-Planzero estimates the total CO2e for a set of GHG emissions over a certain amount of time (e.g. a year) as
+Planzero uses standard UNFCCC-defined
+<math display="inline">{{blog.equations["GWP_100"] | safe}}</math>
+coefficients for greenhouse gases and computes CO2e
+for a set of GHG emissions as the following weighted sum:
 <ul>
-    <li>1 x the mass of carbon dioxide emissions</li>
-    <li>28 x the mass of methane emissions </li>
-    <li>265 x the mass of nitrous oxide emissions </li>
-    <li>1,430 x the mass of HFCs </li>
-    <li>6,630 x the mass of PFCs </li>
-    <li>23,500 x the mass of SF6 </li>
-    <li>17,200 x the mass of NF3 </li>
+    <li>the mass of carbon dioxide emissions</li>
+    <li>+ 28 times the mass of methane emissions </li>
+    <li>+ 265 times the mass of nitrous oxide emissions </li>
+    <li>+ 1,430 times the mass of HFCs </li>
+    <li>+ 6,630 times the mass of PFCs </li>
+    <li>+ 23,500 times the mass of SF6 </li>
+    <li>+ 17,200 times the mass of NF3 </li>
 </ul>
 </p>
 
-<h3>How closely do the Planetary Heat model and CO2e estimates match?</h3>
+<h3>Validating the Modelling of Trapped Heat</h3>
+
+<p>
+The definition of CO2e provides an important perspective on the validity of the radiative-forcing-based heating model described above.
+It should be the case that IF we simulate adding each gas as an emission in the simulation,
+such that the amount of CO2e is the same (e.g. 1Mt) and the duration is the same, and short (e.g. 1 year),
+THEN we should see from the simulation that the same amount of heat has been trapped over the following 100 year period.
+The following figure shows what happens when this simulation is performed.
+</p>
+{{ blog.figure_svgs["co2e_v_heat_forcing"] | safe }}
+
+<p>
+In the figure above, we see that although different amounts of heat are trapped over the 100 year period,
+they are within a relatively small range of 2.1x, which is much smaller than the
+<math display="inline">{{blog.equations["GWP_100"] | safe}}</math> range which extends from from 1x to 23,500x.
+As expected, we see
+(a) that most of the heat from short-lived gases (CH4 and HFCs) is accumulated within the first few years
+before those emissions are broken down in the atmosphere, and
+(b) conversely, the longer-lived gases lead to steady heat accumulation over the simulated century.
+</p>
+<p>
+It's worth asking why the range is still as large as 2.1x when the ideal would have been an even tighter match.
+One reason why the 
+<math display="inline">{{blog.equations["N2O"] | safe}}</math>
+curve in particular is higher than the rest is because its
+<math display="inline">{{blog.equations["GWP_100"] | safe}}</math> coefficient is defined deliberately low to compensate for
+an overlap in the absorption spectrum with methane, which planzero's simulation does not include.
+Also, the simulation is sensitive to the estimate of the current atmospheric concentration of nitrous oxide,
+which continues to change from year to year.
+Given these two factors, and the simplicity of the radiative forcing model
+(ignoring e.g. where gases are in the atmosphere, and how sunlight interacts with the atmosphere and various planetary surfaces)
+I am reassured by the tightness of fit in the 100-year simulation.
+</p>
+
+<h3>The Limitations of CO2e</h3>
+
+<p>
+As helpful as CO2e may be for streamlining communication about emissions, there is a risk that it is misleading.
+There may be several reasons why this is so, but at least one reason,
+is that when heat is trapped within earth's planetary system, it causes the temperatures of some things to rise
+(especially, the surface water of the ocean) and those things then radiate more heat.
+When the ocean radiates more heat, its temperature does not rise as much as
+the trapped-heat curves in the figure above would suggest.
+For every degree-Celcius that the water warms, it radiates an additional 1.3 watts per square metre to resist further warming.
+When we account for this effect, of the ocean's resistence to ever-rising temperature, we get a different
+view of the heat trapped <i>and kept</i> within the earth's planetary systems.
+</p>
+
+{{ blog.figure_svgs["co2e_v_heat_remaining"] | safe }}
+<p>
+In this view, we see that on the scale of 100 years,
+short-lived gases methane and HFCs trap lots of heat in the first few years after a 1-year emissions pulse, but it does not last.
+That heat accumulated by a standard amount of CO2e in the form of short-lived gases radiates into outer space,
+and the overall planetary heat is back to about where it started after about 80 years.
+The other gases have much longer atmospheric lifetimes, and
+so even though they are emitted at the same magnitude in terms of of CO2e, their impact in terms of heat (proportional to ocean temperature)
+is different: these emissions pulses of long-lived greenhouse gases heat the ocean about half as much, but slower, and the ocean remains at an elevated temperature (proportional to heat) even after 100 years.
+</p>
 
 
 <h2>Conclusion</h2>
@@ -336,8 +411,10 @@ Planzero estimates the total CO2e for a set of GHG emissions over a certain amou
 This concludes the first post about what Canada is doing toward net-zero emissions,
 namely, participating in the UNFCCC, and using standard definitions of
 greenhouse gases.
+We validated a simple atmospheric heating model of the earth based on
+radiative forcing and accumulating energy in the ocean by showing that it approximately reproduces the equivalence between GHG impacts that justifies the definition of CO2e, but it also shows some of the limitations in the use of CO2e to reason about the impacts of GHG emissions as if the gases were all the same.
 The next post, will be about something the federal government has done in legislation, namely,
-in 2021, committing Canada to net-zero emissions targets by year 2050.
+in 2021, committing Canada to net-zero emissions targets by year 2050, and organizing many institutions of the country to hit those targets.
 </p>
 
 <p>
