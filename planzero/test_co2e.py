@@ -12,6 +12,7 @@ def test_co2e(assert_value=0, years=100):
     impulse_mass = 1_000_000 * u.kg
     peval = emissions_impulse_response_project_evaluation(impulse_co2e=impulse_mass, years=years)
     catpath = peval.projects['CO2'].catpath
+    forcings = []
     for ghg in GHGs:
         comp = peval.comparisons[ghg]
         assert comp.state_A.sts['impulse_response'].max() == impulse_mass / GWP_100[ghg]
@@ -37,8 +38,13 @@ def test_co2e(assert_value=0, years=100):
             'remaining', (energy_A - energy_B).to('terajoule'),
             'forcing', forcing_delta.to('terajoule'),
             )
-        assert 1000 * u.terajoule < forcing_delta < 2300 * u.terajoule
+        assert 900 * u.terajoule < forcing_delta < 2200 * u.terajoule
         # see blog post on unfccc / greenhouse gases for discussion of the remaining discrepancy
         # * model does not account for overlap in absorption by N2O and CH4, whereas GWP does.
         # * model is using start-with-a-guess-y initial atmospheric concentrations for all gases, which will lead to
         #   discrepancies here, especially in the case of N2O
+        forcings.append(forcing_delta)
+    min_forcing = min(forcings)
+    max_forcing = max(forcings)
+    ratio = (max_forcing / min_forcing).to('dimensionless').magnitude
+    assert 2.15 <= ratio <= 2.25

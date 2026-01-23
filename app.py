@@ -180,6 +180,7 @@ async def get_index(request: Request):
         context=dict(
             default_context,
             fade_in_intro=True,
+            blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
             peval=get_peval(),
             ),

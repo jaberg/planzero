@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 import datetime
-import sympy
 
 _classes = []
 _blogs_by_url_filename = {}
+_blogs_sorted_by_date = []
 
 
 class BlogPost(BaseModel):
@@ -24,15 +24,17 @@ class BlogPost(BaseModel):
         super().__init_subclass__()
         _classes.append(cls)
 
-from sympy.printing.mathml import mathml
-from functools import partial
-pres = partial(mathml, printer='presentation')
-
 from .planet_model import emissions_impulse_response_project_evaluation, u, GHGs
 
 from io import StringIO
 from .html import HTML_element
+from .html import HTML_Math_Latex
 import matplotlib.pyplot as plt
+
+
+def latex(latex, display='inline'):
+    return HTML_Math_Latex(latex=latex, display=display).as_html()
+
 
 class HTML_Matplotlib_Figure(HTML_element):
 
@@ -56,6 +58,7 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
         fig, ax = plt.subplots()
         plt.title(self.title)
         years = [year for year in range(2000, 2101)]
+        #years = [year for year in range(1990, 2101)]
         for ghg in GHGs:
             comp = self.peval.comparisons[ghg]
             years_pint = [year * u.year for year in years]
@@ -67,15 +70,15 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
         plt.legend(loc=self.legend_loc)
         if self.add_circle:
             import matplotlib.patches
-            circle = matplotlib.patches.Ellipse((2100, 1600), width=10, height=1300, color='blue', alpha=.2)
+            circle = matplotlib.patches.Ellipse((2100, 1550), width=10, height=1300, color='blue', alpha=.2)
             ax.add_patch(circle)
             plt.annotate('These emissions are supposed\n'
                          'to trap similar amounts of heat\n'
                          'after 100 years. The simulation\n'
-                         'does this to within factor of 2.1x\n'
+                         'does this to within factor of 2.2x\n'
                          'which I think is okay.',
-                         xytext=(2049, 150),
-                         xy=(2100, 1000),
+                         xytext=(2049, 25),
+                         xy=(2100, 900),
                          arrowprops=dict(width=1))
         #plt.grid()
         plt.xlabel(f'Time (years)')
@@ -95,52 +98,36 @@ class GHG_Emissions(BlogPost):
     figure_svgs: dict[str, str]
 
     def __init__(self):
-        CO2 = sympy.symbols("CO_2")
-        CH4 = sympy.symbols("CH_4")
-        N2O = sympy.symbols("N_2_O") # TODO: use latex2mathml and put the subscript in the middle
-        CO2e = sympy.symbols("CO_2_e")
-        N = sympy.symbols("N")
-        N0 = sympy.symbols("N0")
-        C = sympy.symbols("C")
-        C0 = sympy.symbols("C0")
-        W = sympy.symbols("W")
-        m = sympy.symbols("m")
-        t = sympy.symbols("t")
-        Cf = sympy.Function("C")(t)
-        years = sympy.symbols("years")
-        GWP_100 = sympy.symbols("GWP_100")
-        delta_C_left = pres(sympy.Derivative(C, t))
-
-        with sympy.evaluate(False):
-
-            equations = dict(
-                CO2=pres(CO2),
-                CO2e=pres(CO2e),
-                CH4=pres(CH4),
-                N2O=pres(N2O),
-                C=pres(C),
-                C0=pres(C0),
-                W_m2=pres(W / m ** 2),
-                CO2_df=pres(5.35 * sympy.ln(C / C0)), # W/m^2
-                delta_C_left=delta_C_left,
-                CH4_delta_C_right=pres(-C / (12 * years)),
-                CH4_df=pres(0.036 * (sympy.sqrt(C) - sympy.sqrt(C0))), # W/m^2
-                N2O_df=pres(0.12 * (sympy.sqrt(C) - sympy.sqrt(C0))), # W/m^2
-                N2O_delta_C_right=pres(-C / (114 * years)),
-                GWP_100=pres(GWP_100),
-                HFC_delta_C_right=pres(-C / (14 * years)),
-                HFC_df=pres(0.16 * C),
-                PFC_df=pres(0.08 * C),
-                SF6_df=pres(0.57 * C),
-                NF3_df=pres(0.21 * C),
-                )
+        equations = dict(
+            CO2=latex(r'\mathrm{CO}_2'),
+            CO2e=latex(r'\mathrm{CO}_2\mathrm e '),
+            CH4=latex("\mathrm{CH}_4"),
+            N2O=latex("\mathrm N_2 \mathrm O"),
+            SF6=latex("\mathrm{SF}_6"),
+            NF3=latex("\mathrm{NF}_3"),
+            C=latex("C"),
+            C0=latex("C_0"),
+            W_m2=latex("W / m^2"),
+            CO2_df=latex(r"5.35 \ln(C / C_0))"), # W/m^2
+            delta_C_left=latex(r"\frac{\Delta C}{dt}"),
+            CH4_delta_C_right=latex("-C / (12~\mathrm{years})"),
+            CH4_df=latex(r"0.036 (\sqrt{C} - \sqrt{C0})"), # W/m^2
+            N2O_df=latex(r"0.12 (\sqrt{C} - \sqrt{C0})"), # W/m^2
+            N2O_delta_C_right=latex(r"-C / (114~\mathrm{years})"),
+            GWP_100=latex("\mathrm{GWP}_{100}"),
+            HFC_delta_C_right=latex(r"-C / (14~\mathrm{years})"),
+            HFC_df=latex(r"0.16 C"),
+            PFC_df=latex(r"0.08 C"),
+            SF6_df=latex(r"0.57 C"),
+            NF3_df=latex(r"0.21 C"),
+            )
         peval = emissions_impulse_response_project_evaluation(
             impulse_co2e=1_000_000 * u.kg,
             years=100)
 
         super().__init__(
             date=datetime.datetime(2026, 1, 21),
-            title="A Simple Model of Greenhouse Gas Emissions",
+            title="A Model of Greenhouse Gas Emissions",
             url_filename="2026-01-21-unfccc",
             author="James Bergstra",
             a="bar",
@@ -149,7 +136,7 @@ class GHG_Emissions(BlogPost):
                 co2e_v_heat_remaining=GHG_Emissions_CO2e_v_Heat(
                     peval=peval,
                     sts_key='Cumulative_Heat_Energy',
-                    title="Heat Remaining After Simulated Emissions Pulses",
+                    title="Heat Remaining After 1-year CO2e-equivalent Emissions",
                     legend_loc='upper right').as_html(),
                 co2e_v_heat_forcing=GHG_Emissions_CO2e_v_Heat(
                     peval=peval,
@@ -164,3 +151,5 @@ def init_blogs_by_url_filename():
     for cls in _classes:
         obj = cls()
         _blogs_by_url_filename[obj.url_filename] = obj
+        _blogs_sorted_by_date.append(obj)
+    _blogs_sorted_by_date.sort(key=lambda x: x.date)

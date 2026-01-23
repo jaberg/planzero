@@ -28,7 +28,7 @@ class EmissionsImpulseResponse(Project):
 
         with state.defining(self) as ctx:
             ctx.impulse_response = SparseTimeSeries(
-                times=[state.t_now, state.t_now + 1 * u.years],
+                times=[2000 * u.years, 2001 * u.years],
                 values=[self.impulse_co2e / GWP_100[self.ghg], 0.0 * u.kg],
                 default_value=0.0 * u.kg)
 

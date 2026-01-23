@@ -23,27 +23,21 @@
 
 						<!-- Posts -->
 							<section class="posts">
+                                {% for blog in blogs_sorted_by_date %}
 								<article>
 									<header>
-										<span class="date">Jan 21, 2026</span>
-										<h2><a href="/blog/2026-01-21-unfccc">
-                                                A simple model of Greenhouse Gas Emissions
-                                            </a></h2>
+                                        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+                                        <h2><a href="/blog/{{blog.url_filename}}">{{blog.title}}</a></h2>
 									</header>
                                     <!--
 									<a href="#" class="image fit"><img src="images/pic02.jpg" alt="" /></a>
                                     -->
-									<p>
-
-        What are greenhouse gases and what do they have to do with climate?
-        This is, I hope, the first post in a series developing various plans to achieve
-        a net-zero economy in Canada. It outlines the terms
-        in which net-zero is defined, and documents planzero's simple climate model.
-                                    </p>
+                                    <p>{{blog.about}} </p>
 									<ul class="actions special">
-										<li><a href="/blog/2026-01-21-unfccc" class="button">Full Post</a></li>
+                                        <li><a href="/blog/{{blog.url_filename}}" class="button">Full Post</a></li>
 									</ul>
 								</article>
+                                {% endfor %}
 								<article>
 									<header>
 										<span class="date">Jan 6, 2026</span>

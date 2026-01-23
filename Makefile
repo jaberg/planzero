@@ -47,6 +47,13 @@ test_co2e: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 -vv planzero/test_co2e.py
 
+test_html: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_html.py
+
 stakeholders: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

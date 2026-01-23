@@ -26,3 +26,23 @@ class HTML_UL(HTML_element):
     def as_html(self):
         lis = ''.join(f'<li>{li.as_html()}</li>' for li in self.lis)
         return f'<ul>{lis}</ul>'
+
+import markdown
+
+class HTML_Markdown(HTML_element):
+    content: str
+
+    def as_html(self):
+        html_output = markdown.markdown(self.content)
+        return html_output
+
+
+import latex2mathml.converter
+class HTML_Math_Latex(HTML_element):
+
+    latex:str
+    display:str = 'inline'  # 'inline' or 'block'
+
+    def as_html(self):
+        mathml = latex2mathml.converter.convert(self.latex, display=self.display)
+        return mathml

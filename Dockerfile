@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir pandas
 RUN pip install --no-cache-dir pytest
 RUN pip install --no-cache-dir jupyter
 RUN pip install --no-cache-dir markdown
-RUN pip install --no-cache-dir sympy # for mathml output -> todo latex2mathml is a thing
+RUN pip install --no-cache-dir latex2mathml
 
 
 COPY . /content

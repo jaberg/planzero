@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 import datetime
 
-from ..html import HTML_element, HTML_raw, HTML_P, HTML_UL
+from ..html import HTML_element, HTML_raw, HTML_P, HTML_UL, HTML_Markdown
 
 class ActionStep(BaseModel):
     descr: str
@@ -153,23 +153,6 @@ class StrategyPageSection(HTML_element):
 
     def append_str_as_paragraph(self, para_text):
         self.elements.append(HTML_P(elements=[HTML_raw(raw=para_text)]))
-
-import markdown
-
-class HTML_Markdown(HTML_element):
-    content: str
-
-    def as_html(self):
-        html_output = markdown.markdown(self.content)
-        return html_output
-
-import sympy
-
-class HTML_Math(HTML_element):
-    sympy:object = sympy
-
-    def as_html(self):
-        raise NotImplementedError() # override-me
 
 
 class StrategyPage(BaseModel):
