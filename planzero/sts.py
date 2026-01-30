@@ -1,8 +1,10 @@
 import array
 import bisect
+import builtins
 from enum import Enum
 
 import numpy as np
+import pint
 from pydantic import BaseModel
 
 from .ureg import ureg as u
@@ -179,10 +181,17 @@ class SparseTimeSeries(BaseModel):
             self.append(t, v)
 
     def plot(self, t_unit=None, annotate=True, **kwargs):
-        # XXX This is buggy re: T_unit
-        # also re: interpolation
-        t_unit = t_unit or self.t_unit
         import matplotlib.pyplot as plt
+        # also re: interpolation
+        if isinstance(t_unit, str):
+            t_unit = getattr(u, t_unit)
+        elif t_unit is None:
+            t_unit = self.t_unit
+        if t_unit != self.t_unit:
+            t_scalar = (1.0 * self.t_unit / t_unit).to('dimensionless').magnitude
+            times = [tt * t_scalar for tt in self.times]
+        else:
+            times = self.times
         plt.scatter(
             self.times,
             self.values[1:],
@@ -193,6 +202,24 @@ class SparseTimeSeries(BaseModel):
         if annotate:
             self.annotate_plot(t_unit=t_unit, **kwargs)
 
+    def to(self, v_unit):
+        if isinstance(v_unit, str):
+            v_unit = getattr(u, v_unit)
+        scalar = (1.0 * self.v_unit / v_unit).to('dimensionless').magnitude
+        default_value = (
+            None
+            if self.interpolation == InterpolationMode.no_interpolation
+            else self.values[0] * scalar * self.v_unit)
+        rval = SparseTimeSeries(
+            times=[tt * self.t_unit for tt in self.times],
+            values=[v * scalar * v_unit for v in self.values[1:]],
+            default_value=default_value,
+            t_unit=self.t_unit,
+            unit=v_unit,
+            identifier=None,
+            interpolation=self.interpolation)
+        return rval
+
     def annotate_plot(self, t_unit=None, **kwargs):
         """Called once per variable name in comparison plots"""
         pass
@@ -200,7 +227,7 @@ class SparseTimeSeries(BaseModel):
     def __truediv__(self, other):
         default_value = (
             None
-            if self.interpolation is InterpolationMode.no_interpolation
+            if self.interpolation == InterpolationMode.no_interpolation
             else self.values[0] * self.v_unit / other)
         rval = SparseTimeSeries(
             times=[tt * self.t_unit for tt in self.times],
@@ -218,9 +245,14 @@ class SparseTimeSeries(BaseModel):
     def __mul__(self, other):
         if isinstance(other, SparseTimeSeries):
             return mul_sts_sts(self, other)
+        elif isinstance(other, (int, float)):
+            return scale(self, other)
+        elif isinstance(other, pint.Quantity) and isinstance(other.magnitude, (int, float)):
+            return scale_convert(self, other)
+
         raise NotImplementedError()
 
-def annual_summary(**kwargs):
+def annual_report(**kwargs):
     return SparseTimeSeries(
         t_unit=u.years,
         interpolation='no_interpolation',
@@ -258,3 +290,85 @@ def mul_sts_sts(self, other):
     if self.interpolation == other.interpolation == 'no_interpolation':
         return mul_sts_sts_no_interp(self, other)
     raise NotImplementedError()
+
+
+def usum(args):
+    """Sum a set of no_interpolation STSs, but assuming 0 instead of NaN where
+    they're undefined, so that it's kind of a "union-sum": the union of times,
+    and the sum of values at those times.
+
+    None is a valid argument, it's a signal that isn't defined anywhere, and
+    will be ignored.
+    """
+    args = [arg for arg in args if arg is not None]
+    if not args:
+        return None
+    if len(args) == 1:
+        return args[0]
+    assert None not in args
+    interpolations = set(arg.interpolation for arg in args)
+    if len(interpolations) > 1:
+        # This can probably be defined, but it isn't yet.
+        raise NotImplementedError(interpolations)
+
+    t_units = set(arg.t_unit for arg in args)
+    v_units = set(arg.v_unit for arg in args)
+    if len(t_units) != 1:
+        raise NotImplementedError()
+    if len(v_units) != 1:
+        raise NotImplementedError()
+    t_unit = args[0].t_unit
+    v_unit = args[0].v_unit
+    vals_by_time = {}
+    for arg in args:
+        for tt, vv in zip(arg.times, arg.values[1:]):
+            vals_by_time.setdefault(tt, []).append(vv)
+    times = []
+    values = []
+    for tt, vvs in sorted(vals_by_time.items()):
+        times.append(tt)
+        values.append(builtins.sum(vvs))
+
+    rval = SparseTimeSeries(
+        times=[tt * t_unit for tt in times],
+        values=[vv * v_unit for vv in values],
+        default_value=None,
+        t_unit=t_unit,
+        unit=v_unit,
+        identifier=None,
+        interpolation='no_interpolation')
+    return rval
+
+def scale(self, amount):
+    assert isinstance(amount, (float, int))
+    if self.interpolation == InterpolationMode.no_interpolation:
+        default_value = None
+        interpolation = InterpolationMode.no_interpolation
+    else:
+        raise NotImplementedError()
+    rval = SparseTimeSeries(
+        times=[tt * self.t_unit for tt in self.times],
+        values=[vv * amount * self.v_unit for vv in self.values[1:]],
+        default_value=default_value,
+        t_unit=self.t_unit,
+        unit=self.v_unit,
+        identifier=None,
+        interpolation=interpolation)
+    return rval
+
+def scale_convert(self, amount):
+    if self.interpolation == InterpolationMode.no_interpolation:
+        default_value = None
+        interpolation = InterpolationMode.no_interpolation
+    else:
+        raise NotImplementedError()
+    v_coef = amount * self.v_unit
+    rval = SparseTimeSeries(
+        times=[tt * self.t_unit for tt in self.times],
+        values=[vv * v_coef for vv in self.values[1:]],
+        default_value=default_value,
+        t_unit=self.t_unit,
+        unit=v_coef.u,
+        identifier=None,
+        interpolation=interpolation)
+    return rval

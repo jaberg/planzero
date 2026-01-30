@@ -8,7 +8,7 @@ import pandas as pd
 
 from .ureg import u, Geo
 from .ureg import ElectricityGenerationTech
-from .sts import annual_summary
+from .sts import annual_report
 
 
 def sc_metadata_by_product_id(productId):
@@ -168,7 +168,7 @@ class Electric_Power_Annual_Generation_by_Class_of_Producer(StatsCanProduct):
             rval.setdefault(gen_tech, {})
             foo = geo_df.REF_DATE.values * u.years
             bar = geo_df.VALUE.values * u.Quantity(f'1 {uom.lower()}')
-            rval[gen_tech][geo] = annual_summary(
+            rval[gen_tech][geo] = annual_report(
                 times=geo_df.REF_DATE.values * u.years,
                 values=geo_df.VALUE.values * u.Quantity(f'1 {uom.lower()}'))
         return rval

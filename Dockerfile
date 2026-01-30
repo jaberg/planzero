@@ -23,6 +23,7 @@ RUN pip install --no-cache-dir jupyter
 RUN pip install --no-cache-dir markdown
 RUN pip install --no-cache-dir latex2mathml
 RUN pip install --no-cache-dir stats-can
+RUN pip install --no-cache-dir openpyxl xlrd
 
 
 COPY . /content

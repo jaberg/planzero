@@ -61,6 +61,13 @@ test_sc_nir: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 -vv planzero/test_sc_nir.py
 
+test_sts: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_sts.py
+
 test_html: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
