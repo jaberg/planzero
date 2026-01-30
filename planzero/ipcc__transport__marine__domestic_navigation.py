@@ -10,19 +10,19 @@ class IPCC_Transport_Marine_DomesticNavigation_Model(BaseScenarioProject):
 
             # PacificLogBargeForecast
             ctx.pacific_log_barge_CO2 = SparseTimeSeries(
-                default_value=0 * u.kg)
+                default_value=0 * u.kg_CO2)
 
             # TODO: Lakers_CO2_Forecast
             # TODO: Lakes_Tug_Barge_CO2_Forecast
             ctx.Lakers_CO2 = SparseTimeSeries(
-                default_value=0 * u.kg)
+                default_value=0 * u.kg_CO2)
 
             # TODO: BC Ferries
             # TODO: Atlantic Ferries
             # TODO: Northern Resupply
 
             ctx.Other_Domestic_Navigation_CO2 = SparseTimeSeries(
-                default_value=1.5 * u.Mt)
+                default_value=1.5 * u.Mt_CO2)
 
         state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Lakers_CO2')
         state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2', 'Other_Domestic_Navigation_CO2')
@@ -59,7 +59,7 @@ class PacificLogBarges(BaseScenarioProject):
                 default_value=0 * u.dimensionless)
 
             ctx.pacific_log_barge_CO2 = SparseTimeSeries(
-                default_value=0 * u.kg)
+                default_value=0 * u.kg_CO2)
 
         state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2',
                                 'pacific_log_barge_CO2')
@@ -74,7 +74,7 @@ class PacificLogBarges(BaseScenarioProject):
             current.n_pacific_log_tugs_diesel
             + current.n_pacific_log_tugs_ZEV)
         current.pacific_log_barge_CO2 = (
-            2.68 * u.kg / u.liter
+            2.68 * u.kg_CO2 / u.liter
             * 400 * u.liter / u.hour
             * current.n_pacific_log_tugs_diesel
             * (300 / 365) # working most days
@@ -143,7 +143,7 @@ class GreatLakesFreight(BaseScenarioProject):
                 default_value=0 * u.dimensionless)
 
             ctx.great_lakes_freight_CO2 = SparseTimeSeries(
-                default_value=0 * u.kg)
+                default_value=0 * u.kg_CO2)
 
         state.register_emission('Transport/Marine/Domestic_Navigation', 'CO2',
                                 'great_lakes_freight_CO2')
@@ -169,7 +169,7 @@ class GreatLakesFreight(BaseScenarioProject):
             * freighter_average_speed * self.stepsize
             * average_freighter_duty_cycle_efficiency)
 
-        battery_CO2 = 0 * u.kg # TODO: price in e.g. Ontario grid efficiency or pull the value
+        battery_CO2 = 0 * u.kg_CO2 # TODO: price in e.g. Ontario grid efficiency or pull the value
         # from a timeseries defined by BatteryFreighter
 
         # do the rest with freighters
@@ -186,7 +186,7 @@ class GreatLakesFreight(BaseScenarioProject):
         freighter_CO2 = (
             current.n_great_lakes_active_freighters
             * (26 * u.tonnes / u.day) # diesel consumption
-            * (3) # tonnes CO2e / tonne diesel
+            * (3 * u.tonne_CO2 / u.tonne) # tonnes CO2e / tonne diesel
             * (300 / 365) # working most days
             * self.stepsize)
 

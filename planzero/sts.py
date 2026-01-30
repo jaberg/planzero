@@ -224,6 +224,37 @@ class SparseTimeSeries(BaseModel):
         """Called once per variable name in comparison plots"""
         pass
 
+    def __add__(self, other):
+        if self.interpolation != InterpolationMode.no_interpolation:
+            raise NotImplementedError()
+        if other.interpolation != InterpolationMode.no_interpolation:
+            raise NotImplementedError()
+        default_value = None
+        interpolation = InterpolationMode.no_interpolation
+        if self.t_unit != other.t_unit:
+            raise NotImplementedError()
+        t_unit = self.t_unit
+        other_as_dict = {tt:vv for tt, vv in zip(other.times, other.values[1:])}
+        times = []
+        values = []
+        for tt, vv in zip(self.times, self.values[1:]):
+            if tt in other_as_dict:
+                times.append(tt * t_unit)
+                values.append(vv * self.v_unit + other_as_dict[tt] * other.v_unit)
+        if values:
+            v_unit = values[0].u
+        else:
+            v_unit = self.v_unit
+        rval = SparseTimeSeries(
+            times=times,
+            values=values,
+            default_value=default_value,
+            t_unit=t_unit,
+            unit=v_unit,
+            identifier=None,
+            interpolation=InterpolationMode.no_interpolation)
+        return rval
+
     def __truediv__(self, other):
         default_value = (
             None

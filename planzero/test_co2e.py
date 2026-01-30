@@ -9,7 +9,7 @@ from .planet_model import (
 
 
 def test_co2e(assert_value=0, years=100):
-    impulse_mass = 1_000_000 * u.kg
+    impulse_mass = 1_000_000 * u.kg_CO2e
     peval = emissions_impulse_response_project_evaluation(impulse_co2e=impulse_mass, years=years)
     catpath = peval.projects['CO2'].catpath
     forcings = []
@@ -20,7 +20,7 @@ def test_co2e(assert_value=0, years=100):
         assert np.allclose(
             comp.state_A.sts[co2e_key].max(_i_start=1),
             impulse_mass)
-        assert comp.state_B.sts[co2e_key].max(_i_start=1) == 0 * u.kg
+        assert comp.state_B.sts[co2e_key].max(_i_start=1) == 0 * u.kg_CO2e
         t_end = comp.state_A.t_now
 
         energy_A = comp.state_A.sts['Cumulative_Heat_Energy'].query(t_end)
@@ -33,8 +33,8 @@ def test_co2e(assert_value=0, years=100):
 
         print(
             ghg,
-            comp.state_A.sts[co2e_key].max(_i_start=1).to(u.kilotonne),
-            comp.state_B.sts[co2e_key].max(_i_start=1).to(u.kilotonne),
+            comp.state_A.sts[co2e_key].max(_i_start=1).to(u.kilotonne_CO2e),
+            comp.state_B.sts[co2e_key].max(_i_start=1).to(u.kilotonne_CO2e),
             'remaining', (energy_A - energy_B).to('terajoule'),
             'forcing', forcing_delta.to('terajoule'),
             )

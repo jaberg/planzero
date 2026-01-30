@@ -22,7 +22,7 @@ class IPCC_Transport_RoadTransportation_HeavyDutyDieselVehicles(BaseScenarioProj
             #       and the population of each province
 
             ctx.Other_HeavyDutyDieselVehicles_CO2 = SparseTimeSeries(
-                default_value=0 * u.Mt)
+                default_value=0 * u.Mt_CO2)
 
         state.register_emission(
             'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles', 'CO2',
@@ -31,7 +31,7 @@ class IPCC_Transport_RoadTransportation_HeavyDutyDieselVehicles(BaseScenarioProj
         return state.t_now + self.stepsize
 
     def step(self, state, current):
-        coefficient = 900.0 * u.kg / u.people
+        coefficient = 900.0 * u.kg_CO2 / u.people
         current.Other_HeavyDutyDieselVehicles_CO2 = (
             current.human_population * coefficient
             * (1 * u.dimensionless - current.Other_HeavyDutyDieselVehicles_ZEV_fraction))

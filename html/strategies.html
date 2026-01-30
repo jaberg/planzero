@@ -129,7 +129,7 @@ Strategies that are more costly are to the left, and ones that are more profitab
               </td>
               <td> {{ "{:.2f}".format(nph.to("exajoule").magnitude)}} </td>
               <td> {{ "{:.2f}".format(npv.to("megaCAD").magnitude)}} </td>
-              <td> {{ "{:.2f}".format(peval.comparisons[evalname].net_present_CO2e(0.98).to("megatonne").magnitude)}} </td>
+              <td> {{ "{:.2f}".format(peval.comparisons[evalname].net_present_CO2e(0.98).to("megatonne_CO2e").magnitude)}} </td>
               <td> {{ "{:.2f}".format(peval.comparisons[evalname].net_present_value(0.92).to("megaCAD").magnitude)}} </td>
           </tr>
           {% endfor %}

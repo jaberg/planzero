@@ -352,13 +352,13 @@ molar_mass_CH4 = 16.0 * u.g / u.mol
 molar_mass_CO2 = 44.0 * u.g / u.mol
 molar_mass_N2O = 44.01 * u.g / u.mol
 
-atmospheric_conc_per_mass_CO2 = (1 * u.ppm) / (7.8 * u.gigatonne)
-atmospheric_conc_per_mass_CH4 = atmospheric_conc_per_mass_CO2 * molar_mass_CO2 / molar_mass_CH4
-atmospheric_conc_per_mass_N2O = atmospheric_conc_per_mass_CO2 * molar_mass_CO2 / molar_mass_N2O
-atmospheric_conc_per_mass_HFC = (1 * u.ppb) / (18.0 * u.megatonne) # HFC-134a (most common HFC)
-atmospheric_conc_per_mass_PFC = (1 * u.ppb) / (15.6 * u.megatonne) # CF4 (most common PFC)
-atmospheric_conc_per_mass_SF6 = (1 * u.ppb) / (25.9 * u.megatonne)
-atmospheric_conc_per_mass_NF3 = (1 * u.ppb) / (12.6 * u.megatonne)
+atmospheric_conc_per_mass_CO2 = (1 * u.ppm) / (7.8 * u.gigatonne_CO2)
+atmospheric_conc_per_mass_CH4 = (1 * u.ppm) / (7.8 * u.gigatonne_CH4) * molar_mass_CO2 / molar_mass_CH4
+atmospheric_conc_per_mass_N2O = (1 * u.ppm) / (7.8 * u.gigatonne_N2O) * molar_mass_CO2 / molar_mass_N2O
+atmospheric_conc_per_mass_HFC = (1 * u.ppb) / (18.0 * u.megatonne_HFC) # HFC-134a (most common HFC)
+atmospheric_conc_per_mass_PFC = (1 * u.ppb) / (15.6 * u.megatonne_PFC) # CF4 (most common PFC)
+atmospheric_conc_per_mass_SF6 = (1 * u.ppb) / (25.9 * u.megatonne_SF6)
+atmospheric_conc_per_mass_NF3 = (1 * u.ppb) / (12.6 * u.megatonne_NF3)
 
 
 deltaF_coef_N2O = 0.12 * u.watt / (u.m * u.m) * surface_area_of_earth
@@ -367,12 +367,13 @@ deltaF_coef_PFC = 0.08 * u.watt / (u.m * u.m) * surface_area_of_earth
 deltaF_coef_SF6 = 0.57 * u.watt / (u.m * u.m) * surface_area_of_earth
 deltaF_coef_NF3 = 0.21 * u.watt / (u.m * u.m) * surface_area_of_earth
 
-CH4_GWP_100 = 28.0 # global warming potential, for CO2e calculation
-N2O_GWP_100 = 265.0 # global warming potential, for CO2e calculation
-HFC_GWP_100 = 1_430
-PFC_GWP_100 = 6_630
-SF6_GWP_100 = 23_500
-NF3_GWP_100 = 17_200
+CO2_GWP_100 = 1.0 * u.kg_CO2e / u.kg_CO2
+CH4_GWP_100 = 28.0 * u.kg_CO2e / u.kg_CH4
+N2O_GWP_100 = 265.0 * u.kg_CO2e / u.kg_N2O
+HFC_GWP_100 = 1_430 * u.kg_CO2e / u.kg_HFC
+PFC_GWP_100 = 6_630 * u.kg_CO2e / u.kg_PFC
+SF6_GWP_100 = 23_500 * u.kg_CO2e / u.kg_SF6
+NF3_GWP_100 = 17_200 * u.kg_CO2e / u.kg_NF3
 
 
 
@@ -419,23 +420,23 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         with state.defining(self) as ctx:
             for catpath, _ in state.sectoral_emissions_contributors.items():
-                setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
-                setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', SparseTimeSeries(unit=u.kiloton))
+                setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', SparseTimeSeries(unit=u.kt_CO2))
+                setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', SparseTimeSeries(unit=u.kt_CH4))
+                setattr(ctx, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', SparseTimeSeries(unit=u.kt_N2O))
+                setattr(ctx, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', SparseTimeSeries(unit=u.kt_HFC))
+                setattr(ctx, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', SparseTimeSeries(unit=u.kt_PFC))
+                setattr(ctx, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', SparseTimeSeries(unit=u.kt_SF6))
+                setattr(ctx, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', SparseTimeSeries(unit=u.kt_NF3))
+                setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', SparseTimeSeries(unit=u.kt_CO2e))
 
-            ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_N2O_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_HFC_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_PFC_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_SF6_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_NF3_mass = SparseTimeSeries(unit=u.kiloton)
-            ctx.Predicted_Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kiloton)
+            ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kt_CO2)
+            ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kt_CH4)
+            ctx.Predicted_Annual_Emitted_N2O_mass = SparseTimeSeries(unit=u.kt_N2O)
+            ctx.Predicted_Annual_Emitted_HFC_mass = SparseTimeSeries(unit=u.kt_HFC)
+            ctx.Predicted_Annual_Emitted_PFC_mass = SparseTimeSeries(unit=u.kt_PFC)
+            ctx.Predicted_Annual_Emitted_SF6_mass = SparseTimeSeries(unit=u.kt_SF6)
+            ctx.Predicted_Annual_Emitted_NF3_mass = SparseTimeSeries(unit=u.kt_NF3)
+            ctx.Predicted_Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kt_CO2e)
 
             # XXX : what year do these numbers represent? How can this be a default value
             # when the simulated years are a parameter of the state?
@@ -470,35 +471,47 @@ class AtmosphericChemistry(BaseScenarioProject):
 
     def step(self, state, current):
         # add up annual emissions from registry
-        annual_CO2_mass = 0 * u.kiloton
-        annual_CH4_mass = 0 * u.kiloton
-        annual_N2O_mass = 0 * u.kiloton
-        annual_HFC_mass = 0 * u.kiloton
-        annual_PFC_mass = 0 * u.kiloton
-        annual_SF6_mass = 0 * u.kiloton
-        annual_NF3_mass = 0 * u.kiloton
+        annual_CO2_mass = 0 * u.kt_CO2
+        annual_CH4_mass = 0 * u.kt_CH4
+        annual_N2O_mass = 0 * u.kt_N2O
+        annual_HFC_mass = 0 * u.kt_HFC
+        annual_PFC_mass = 0 * u.kt_PFC
+        annual_SF6_mass = 0 * u.kt_SF6
+        annual_NF3_mass = 0 * u.kt_NF3
 
         for catpath, contributors in state.sectoral_emissions_contributors.items():
-            catpath_CO2e_mass = 0 * u.kg
+            catpath_CO2e_mass = 0 * u.kg_CO2e
 
             catpath_CO2_contributors = contributors.get('CO2', [])
             if catpath_CO2_contributors:
                 catpath_CO2_mass = sum(getattr(current, sts_key) for sts_key in catpath_CO2_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
-                catpath_CO2e_mass += catpath_CO2_mass
+                try:
+                    setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
+                except:
+                    print(catpath_CO2_contributors)
+                    raise
+                catpath_CO2e_mass += catpath_CO2_mass * CO2_GWP_100
                 annual_CO2_mass += catpath_CO2_mass
 
             catpath_CH4_contributors = contributors.get('CH4', [])
             if catpath_CH4_contributors:
                 catpath_CH4_mass = sum(getattr(current, sts_key) for sts_key in catpath_CH4_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
+                try:
+                    setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
+                except:
+                    print(catpath_CH4_contributors)
+                    raise
                 catpath_CO2e_mass += catpath_CH4_mass * CH4_GWP_100
                 annual_CH4_mass += catpath_CH4_mass
 
             catpath_N2O_contributors = contributors.get('N2O', [])
             if catpath_N2O_contributors:
                 catpath_N2O_mass = sum(getattr(current, sts_key) for sts_key in catpath_N2O_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', catpath_N2O_mass)
+                try:
+                    setattr(current, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', catpath_N2O_mass)
+                except:
+                    print(catpath_N2O_contributors)
+                    raise
                 catpath_CO2e_mass += catpath_N2O_mass * N2O_GWP_100
                 annual_N2O_mass += catpath_N2O_mass
 
@@ -541,7 +554,7 @@ class AtmosphericChemistry(BaseScenarioProject):
         current.Predicted_Annual_Emitted_SF6_mass = annual_SF6_mass
         current.Predicted_Annual_Emitted_NF3_mass = annual_NF3_mass
         current.Predicted_Annual_Emitted_CO2e_mass = (
-            annual_CO2_mass
+            CO2_GWP_100 * annual_CO2_mass
             + CH4_GWP_100 * annual_CH4_mass
             + N2O_GWP_100 * annual_N2O_mass
             + HFC_GWP_100 * annual_HFC_mass
@@ -564,7 +577,8 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         annual_emitted_CH4_in_atmosphere_as_concentration = (
             annual_CH4_mass_atmospheric
-            / (2.78 * u.megatonne / u.ppb))
+            / (2.78 * u.megatonne_CH4 / u.ppb)
+        ).to(u.ppb)
 
         # TODO this should be multiplied by stepsize, not 1 year implicitly,
         #      and this process should be tested for robustness to step size
@@ -721,7 +735,7 @@ class GeometricBovinePopulationForecast(BaseScenarioProject):
     # TODO: beef cattle reduction is greater, multiplier should be .55
 
     stepsize:object = 1.0 * u.years
-    methane_per_head_per_year:object = 175 * u.pounds / u.cattle
+    methane_per_head_per_year:object = 175 * u.pounds_CH4 / u.cattle
 
     jan1:object = None
     jul1:object = None
@@ -837,8 +851,8 @@ class ProjectComparison(object):
         npv = self.net_present_value(base_rate=base_rate)
         npc = self.net_present_CO2e(base_rate=base_rate)
         if npc >= 0:
-            return float('nan') * u.CAD / u.tonne
-        return (npv / npc).to(u.CAD / u.tonne)
+            return float('nan') * u.CAD / u.tonne_CO2e
+        return (npv / npc).to(u.CAD / u.tonne_CO2e)
 
     def echart_series_Mt(self, A_or_B, catpath, stack=None, name=None):
         years = self._years()
@@ -850,7 +864,7 @@ class ProjectComparison(object):
             raise NotImplementedError(A_or_B)
         predictions = state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'].query(
             years)
-        data = [{'value': float(datum.to(u.megatonne).magnitude),
+        data = [{'value': float(datum.to(u.megatonne_CO2e).magnitude),
                  'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')}
                 for datum in predictions]
         rval = dict(
@@ -968,7 +982,7 @@ class IPCC_Forest_Land_Model(BaseScenarioProject):
         with state.requiring_current(self) as ctx:
 
             ctx.Other_Forest_Land_CO2 = SparseTimeSeries(
-                default_value=40.0 * u.Mt)
+                default_value=40.0 * u.Mt_CO2)
 
         state.register_emission('Forest_Land', 'CO2', 'Other_Forest_Land_CO2')
 
@@ -996,16 +1010,16 @@ class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProj
             #       and the population of each province
 
             ctx.Government_LightDutyGasolineTrucks_CO2 = SparseTimeSeries(
-                default_value=0 * u.Mt)
+                default_value=0 * u.Mt_CO2)
             ctx.Other_LightDutyGasolineTrucks_CO2 = SparseTimeSeries(
-                default_value=0 * u.Mt)
+                default_value=0 * u.Mt_CO2)
 
         state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', 'CO2', 'Other_LightDutyGasolineTrucks_CO2')
         state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', 'CO2', 'Government_LightDutyGasolineTrucks_CO2')
         return state.t_now + self.stepsize
 
     def step(self, state, current):
-        coefficient = 1_200 * u.kg / u.people
+        coefficient = 1_200 * u.kg_CO2 / u.people
         current.Government_LightDutyGasolineTrucks_CO2 = (
             current.human_population * coefficient * .025
             * (1 * u.dimensionless - current.Government_LightDutyGasolineTrucks_ZEV_fraction))

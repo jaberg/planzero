@@ -122,7 +122,7 @@ class GHG_Emissions(BlogPost):
             NF3_df=latex(r"0.21 C"),
             )
         peval = emissions_impulse_response_project_evaluation(
-            impulse_co2e=1_000_000 * u.kg,
+            impulse_co2e=1_000_000 * u.kg_CO2e,
             years=100)
 
         super().__init__(
