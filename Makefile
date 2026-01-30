@@ -47,6 +47,20 @@ test_co2e: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 -vv planzero/test_co2e.py
 
+test_eccc_nir: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_eccc_nir.py
+
+test_sc_nir: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_sc_nir.py
+
 test_html: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

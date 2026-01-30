@@ -22,6 +22,7 @@ RUN pip install --no-cache-dir pytest
 RUN pip install --no-cache-dir jupyter
 RUN pip install --no-cache-dir markdown
 RUN pip install --no-cache-dir latex2mathml
+RUN pip install --no-cache-dir stats-can
 
 
 COPY . /content

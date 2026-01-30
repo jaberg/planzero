@@ -62,8 +62,8 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
         for ghg in GHGs:
             comp = self.peval.comparisons[ghg]
             years_pint = [year * u.year for year in years]
-            energy_A = comp.state_A.sts[self.sts_key].query(years_pint, inclusive=False)
-            energy_B = comp.state_B.sts[self.sts_key].query(years_pint, inclusive=False)
+            energy_A = comp.state_A.sts[self.sts_key].query(years_pint)
+            energy_B = comp.state_B.sts[self.sts_key].query(years_pint)
             plt.plot(years,
                      (energy_A - energy_B).to('terajoules').magnitude,
                      label=ghg)
@@ -101,20 +101,20 @@ class GHG_Emissions(BlogPost):
         equations = dict(
             CO2=latex(r'\mathrm{CO}_2'),
             CO2e=latex(r'\mathrm{CO}_2\mathrm e '),
-            CH4=latex("\mathrm{CH}_4"),
-            N2O=latex("\mathrm N_2 \mathrm O"),
-            SF6=latex("\mathrm{SF}_6"),
-            NF3=latex("\mathrm{NF}_3"),
+            CH4=latex(r"\mathrm{CH}_4"),
+            N2O=latex(r"\mathrm N_2 \mathrm O"),
+            SF6=latex(r"\mathrm{SF}_6"),
+            NF3=latex(r"\mathrm{NF}_3"),
             C=latex("C"),
             C0=latex("C_0"),
             W_m2=latex("W / m^2"),
             CO2_df=latex(r"5.35 \ln(C / C_0))"), # W/m^2
             delta_C_left=latex(r"\frac{\Delta C}{dt}"),
-            CH4_delta_C_right=latex("-C / (12~\mathrm{years})"),
+            CH4_delta_C_right=latex(r"-C / (12~\mathrm{years})"),
             CH4_df=latex(r"0.036 (\sqrt{C} - \sqrt{C0})"), # W/m^2
             N2O_df=latex(r"0.12 (\sqrt{C} - \sqrt{C0})"), # W/m^2
             N2O_delta_C_right=latex(r"-C / (114~\mathrm{years})"),
-            GWP_100=latex("\mathrm{GWP}_{100}"),
+            GWP_100=latex(r"\mathrm{GWP}_{100}"),
             HFC_delta_C_right=latex(r"-C / (14~\mathrm{years})"),
             HFC_df=latex(r"0.16 C"),
             PFC_df=latex(r"0.08 C"),

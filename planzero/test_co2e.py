@@ -23,11 +23,11 @@ def test_co2e(assert_value=0, years=100):
         assert comp.state_B.sts[co2e_key].max(_i_start=1) == 0 * u.kg
         t_end = comp.state_A.t_now
 
-        energy_A = comp.state_A.sts['Cumulative_Heat_Energy'].query(t_end, inclusive=False)
-        energy_B = comp.state_B.sts['Cumulative_Heat_Energy'].query(t_end, inclusive=False)
+        energy_A = comp.state_A.sts['Cumulative_Heat_Energy'].query(t_end)
+        energy_B = comp.state_B.sts['Cumulative_Heat_Energy'].query(t_end)
 
-        forcing_energy_A = comp.state_A.sts['Cumulative_Heat_Energy_forcing'].query(t_end, inclusive=False)
-        forcing_energy_B = comp.state_B.sts['Cumulative_Heat_Energy_forcing'].query(t_end, inclusive=False)
+        forcing_energy_A = comp.state_A.sts['Cumulative_Heat_Energy_forcing'].query(t_end)
+        forcing_energy_B = comp.state_B.sts['Cumulative_Heat_Energy_forcing'].query(t_end)
 
         forcing_delta = forcing_energy_A - forcing_energy_B
 

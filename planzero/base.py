@@ -2,8 +2,6 @@
 # For more accurate climate simulation, check out
 # https://climate-assessment.readthedocs.io/en/latest/index.html
 
-import array
-import bisect
 import contextlib
 import heapq
 from io import StringIO
@@ -18,20 +16,9 @@ import numpy as np
 import pandas as pd
 import pint
 from pydantic import BaseModel
-
-ureg = pint.UnitRegistry()
-ureg.define('CAD = [currency]')
-ureg.define('USD = 1.35 CAD')
-
-ureg.define('people = [human_population]')
-ureg.define('cattle = [bovine_population]')
-
-ureg.define('fraction = [] = frac')
-ureg.define('ppm = 1e-6 fraction')
-ureg.define('ppb = 1e-9 fraction')
+from .ureg import ureg
 u = ureg
 
-_seconds_per_year = (1 * u.year).to(u.second).magnitude
 
 # TODO: a global table of official floating-point values of year-start times,
 #       for use by annual step functions, accounting math etc.
@@ -42,137 +29,7 @@ _seconds_per_year = (1 * u.year).to(u.second).magnitude
 from . import ipcc_canada
 GHGs = ('CO2', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3')
 
-class SparseTimeSeries(BaseModel):
-    """A data structure of (time, value) pairs (stored separately) representing
-    a timeseries. It may or not have a default value.
-    """
-
-    t_unit:object
-    v_unit:object
-
-    times:object # will be a float array
-    values:object # will be a float array
-
-    current_readers:list[str]
-    writer:str|None
-
-    identifier: str | None # shouldn't be None after construction
-
-    def max(self, _i_start=None):
-        if _i_start is None:
-            rval = max(self.values)
-        else:
-            rval = max(self.values[_i_start:])
-        return rval * self.v_unit
-
-    def __string__(self):
-        return f'STS(id={self.identifier})'
-
-    def _init_v_unit(self, values, unit, default_value):
-        # specify unit if you want no default value and you don't know any values yet
-        # provide default_value if you do want a default value to apply prior to the first (time, value) pair, then no unit
-        if default_value is None:
-            # without a default_unit, it's required to either
-            # (a) set the unit, or
-            # (b) provide initial values and times
-            # and it is okay to do both, but then `unit` takes precedence.
-            if unit is None:
-                return values[0].u
-            else:
-                if isinstance(unit, str):
-                    unit = getattr(u, unit)
-                return unit
-        else:
-            return default_value.u
-
-
-    def __init__(self, *, times=None, values=None, unit=None, identifier=None, t_unit=u.seconds, default_value=None):
-        super().__init__(
-            t_unit=t_unit,
-            v_unit=self._init_v_unit(values, unit, default_value),
-            times=array.array('d'),
-            values=array.array('d'),
-            current_readers=[],
-            writer=None,
-            identifier=identifier)
-        if default_value is None:
-            self.values.append(float('nan'))
-        else:
-            self.values.append(default_value.to(self.v_unit).magnitude)
-        if times is not None:
-            self.extend(times, values)
-
-    def __len__(self):
-        return len(self.times)
-
-    def _idx_of_time(self, t_query, inclusive):
-        """Return the index into the `values` array corresponding to time t_query.
-        inclusive=False means the most recent value up to but including t_query
-
-        N.B. that this function can return different values after appending or
-        extending the timeseries.
-        """
-        ts = t_query.to(self.t_unit).magnitude
-        if self.times:
-            if ts > self.times[-1]:
-                index = len(self.values) - 1
-            elif ts == self.times[-1] and inclusive:
-                index = len(self.values) - 1
-            elif ts == self.times[-1] and not inclusive:
-                index = len(self.values) - 2
-            else:
-                if inclusive:
-                    index = bisect.bisect_right(self.times, ts)
-                else:
-                    index = bisect.bisect_left(self.times, ts)
-        else:
-            index = 0
-        return index
-
-    def query(self, t_query, inclusive):
-        try:
-            n_queries = len(t_query)
-        except:
-            n_queries = 1
-        if n_queries > 1:
-            numbers = [self.values[self._idx_of_time(tqi, inclusive)]
-                       for tqi in t_query]
-            return np.asarray(numbers) * self.v_unit
-        else:
-            return self.values[self._idx_of_time(t_query, inclusive)] * self.v_unit
-
-    def append(self, t, v):
-        if t.u == self.t_unit:
-            tt = t.magnitude
-        elif t.u == u.year and self.t_unit == u.second:
-            tt = t.magnitude * _seconds_per_year
-        else:
-            tt = t.to(self.t_unit).magnitude
-        if len(self.times):
-            assert tt > self.times[-1]
-        self.times.append(tt)
-        self.values.append(v.to(self.v_unit).magnitude)
-
-    def extend(self, times, values):
-        assert len(times) == len(values)
-        for t, v in zip(times, values):
-            self.append(t, v)
-
-    def plot(self, t_unit=None, annotate=True, **kwargs):
-        t_unit = t_unit or self.t_unit
-        plt.scatter(
-            self.times,
-            self.values[1:],
-            **kwargs)
-        plt.xlabel(t_unit)
-        plt.ylabel(self.v_unit)
-        plt.title(self.identifier)
-        if annotate:
-            self.annotate_plot(t_unit=t_unit, **kwargs)
-
-    def annotate_plot(self, t_unit=None, **kwargs):
-        """Called once per variable name in comparison plots"""
-        pass
+from .sts import SparseTimeSeries
 
 
 class Project(BaseModel):
@@ -214,8 +71,8 @@ class Project(BaseModel):
             plt.legend(loc='lower left')
         elif config.get('figtype') == 'plot delta':
             years = comparison._years()
-            vals_A = comparison.state_A.sts[key].query(years, inclusive=True)
-            vals_B = comparison.state_B.sts[key].query(years, inclusive=True)
+            vals_A = comparison.state_A.sts[key].query(years)
+            vals_B = comparison.state_B.sts[key].query(years)
             diff = vals_A - vals_B
             plt.plot(
                 years.to(config['t_unit']).magnitude,
@@ -263,7 +120,7 @@ class StateCurrent(object):
             # TODO: it might catch errors to be strict about not reading
             # before writing but current.foo += 1 is such natural syntax
             # and strict semantics would forbid it.
-            return self.state.sts[attr].query(self.state.t_now, inclusive=True)
+            return self.state.sts[attr].query(self.state.t_now)
         else:
             if attr in self.state.sts:
                 raise AttributeError(f'state variable {attr} exists, but the calling Project class did not register to read it')
@@ -416,7 +273,7 @@ class State(object):
     def latest(self):
         class Latest(object):
             def __getattr__(_, attr):
-                return self.sts[attr].query(self.t_now, inclusive=False)
+                return self.sts[attr].query(self.t_now - 1e-6 * u.seconds)
         return Latest()
 
     def _current(self, readable_attrs, writeable_attrs):
@@ -888,7 +745,7 @@ class GeometricBovinePopulationForecast(BaseScenarioProject):
                          + .5 * self.jul1['VALUE'].values * 1000) * u.cattle)
             ctx.bovine_methane = SparseTimeSeries(
                 default_value=(
-                    state.sts['bovine_population'].query(2000 * u.years, inclusive=True)
+                    state.sts['bovine_population'].query(2000 * u.years)
                      * self.methane_per_head_per_year))
         state.register_emission('Enteric_Fermentation', 'CH4', 'bovine_methane')
         return 2000 * u.years + self.stepsize
@@ -950,10 +807,10 @@ class ProjectComparison(object):
                 envelope[ii] = base_rate ** (year_int - present_year_int)
         return np.asarray(envelope)
 
-    def net_present_discounted_sum(self, base_rate, key, inclusive=True):
+    def net_present_discounted_sum(self, base_rate, key):
         years = self._years()
-        vals_A = self.state_A.sts[key].query(years, inclusive=inclusive)
-        vals_B = self.state_B.sts[key].query(years, inclusive=inclusive)
+        vals_A = self.state_A.sts[key].query(years)
+        vals_B = self.state_B.sts[key].query(years)
         diff = vals_A - vals_B
         envelope = self._net_present_envelope(years, base_rate)
         return np.cumsum(diff.magnitude * envelope)[-1] * diff.u
@@ -973,8 +830,7 @@ class ProjectComparison(object):
             raise NotImplementedError()
         years = self._years()
         envelope = self._net_present_envelope(years, base_rate)
-        cashflow = self.state_A.sts[self.project.after_tax_cashflow_name].query(
-            years, inclusive=True)
+        cashflow = self.state_A.sts[self.project.after_tax_cashflow_name].query(years)
         return np.cumsum(cashflow.magnitude * envelope)[-1] * cashflow.u
 
     def cost_per_ton_CO2e(self, base_rate):
@@ -993,7 +849,7 @@ class ProjectComparison(object):
         else:
             raise NotImplementedError(A_or_B)
         predictions = state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'].query(
-            years, inclusive=True)
+            years)
         data = [{'value': float(datum.to(u.megatonne).magnitude),
                  'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')}
                 for datum in predictions]
