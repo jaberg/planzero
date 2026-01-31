@@ -45,6 +45,7 @@ Natural_Gas_gross_heating_value_nonmarketable = 42 * u.MJ / u.m3_NG_nmk
 # This is a guess
 Natural_Gas_Peaker_thermal_efficiency = .31
 
+
 @maybecache
 def sts_a6_1_1(include_CA=True):
     """Dictionary mapping geographies to emissions factors of marketable natural gas by year
@@ -64,6 +65,15 @@ def sts_a6_1_1(include_CA=True):
                 values=_repeat_prev_for_omitted_years(
                     in_times,
                     df_marketable_ng.Canada.values * u.g_CO2 / u.m3_NG_mk))
+        elif geo == Geo.NU:
+            # skip over the undefined initial values
+            i_2000 = 10
+            rval[geo] = annual_report(
+                times=out_times[i_2000:],
+                values=_repeat_prev_for_omitted_years(
+                    in_times,
+                    getattr(df_marketable_ng, geo.code()).values * u.g_CO2 / u.m3_NG_mk)[i_2000:])
+            assert rval[geo].values[1] == 1900
         else:
             rval[geo] = annual_report(
                 times=out_times,
@@ -86,11 +96,12 @@ def sts_a6_1_2():
     for geo in Geo:
         if geo == Geo.CA: # not present
             continue
-        rval[geo] = annual_report(
-            times=out_times,
-            values=_repeat_prev_for_omitted_years(
+        values = _repeat_prev_for_omitted_years(
                 in_times,
-                getattr(df, geo.code()).values * u.g_CO2 / u.m3_NG_nmk))
+                getattr(df, geo.code()).values * u.g_CO2 / u.m3_NG_nmk)
+        rval[geo] = annual_report(times=out_times, values=values, skip_nan_values=True)
+        if len(rval[geo].times) == 0:
+            rval[geo] = None
     return rval
 
 
@@ -139,17 +150,17 @@ class Est_Natural_Gas_Used_by_Electricity_Utilities_2005_to_2013(PTValues):
     """ Geographies to volumes of marketable natural gas
     """
     def __init__(self, volume_unit='m3_NG_mk'):
-        utility_gen_by_tech_geo = sc_nir.Electric_Power_Annual_Generation_by_Class_of_Producer.utility_gen_by_tech_geo()
-        utility_gen_by_geo = utility_gen_by_tech_geo[ElectricityGenerationTech.CombustionTurbine]
+        gen_by_tech_geo = sc_nir.Electric_Power_Annual_Generation_by_Class_of_Producer.utility_gen_by_tech_geo()
+        gen_by_geo = gen_by_tech_geo[ElectricityGenerationTech.CombustionTurbine]
 
         rval = {}
         for pt in Geo.provinces_and_territories():
             if pt in (Geo.YT, Geo.NU):
-                assert pt not in utility_gen_by_geo
+                assert pt not in gen_by_geo
                 rval[pt] = None
                 continue
             # how much power did they produce
-            energy_out = utility_gen_by_geo[pt]
+            energy_out = gen_by_geo[pt]
 
             if pt == Geo.ON:
                 # there's a big jump in consumption in 2010 due to 3 plants coming online

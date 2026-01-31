@@ -166,11 +166,10 @@ class Electric_Power_Annual_Generation_by_Class_of_Producer(StatsCanProduct):
             gen_tech = ElectricityGenerationTech(gen_type)
             uom, = list(set(geo_df.UOM.values))
             rval.setdefault(gen_tech, {})
-            foo = geo_df.REF_DATE.values * u.years
-            bar = geo_df.VALUE.values * u.Quantity(f'1 {uom.lower()}')
             rval[gen_tech][geo] = annual_report(
                 times=geo_df.REF_DATE.values * u.years,
-                values=geo_df.VALUE.values * u.Quantity(f'1 {uom.lower()}'))
+                values=geo_df.VALUE.values * u.Quantity(f'1 {uom.lower()}'),
+                skip_nan_values=True)
         return rval
 
     @classmethod

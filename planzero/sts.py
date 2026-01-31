@@ -78,7 +78,7 @@ class SparseTimeSeries(BaseModel):
 
 
     def __init__(self, *, times=None, values=None, unit=None, identifier=None, t_unit=u.seconds, default_value=None,
-                 interpolation='current'):
+                 interpolation='current', skip_nan_values=False):
         super().__init__(
             t_unit=t_unit,
             v_unit=self._init_v_unit(values, unit, default_value),
@@ -97,7 +97,7 @@ class SparseTimeSeries(BaseModel):
         else:
             self.values.append(default_value.to(self.v_unit).magnitude)
         if times is not None:
-            self.extend(times, values)
+            self.extend(times, values, skip_nan_values=skip_nan_values)
 
     def __len__(self):
         return len(self.times)
@@ -128,7 +128,7 @@ class SparseTimeSeries(BaseModel):
             else:
                 if self.interpolation == InterpolationMode.no_interpolation:
                     index = bisect.bisect_right(self.times, ts)
-                    valid = self.times[index] == ts
+                    valid = self.times[index - 1] == ts
                 elif self.interpolation == InterpolationMode.current:
                     index = bisect.bisect_right(self.times, ts)
                     valid = True
@@ -175,9 +175,11 @@ class SparseTimeSeries(BaseModel):
         self.times.append(tt)
         self.values.append(v.to(self.v_unit).magnitude)
 
-    def extend(self, times, values):
+    def extend(self, times, values, skip_nan_values=False):
         assert len(times) == len(values)
         for t, v in zip(times, values):
+            if skip_nan_values and np.isnan(v.magnitude):
+                continue
             self.append(t, v)
 
     def plot(self, t_unit=None, annotate=True, **kwargs):
@@ -370,6 +372,7 @@ def usum(args):
         interpolation='no_interpolation')
     return rval
 
+
 def scale(self, amount):
     assert isinstance(amount, (float, int))
     if self.interpolation == InterpolationMode.no_interpolation:
@@ -386,6 +389,7 @@ def scale(self, amount):
         identifier=None,
         interpolation=interpolation)
     return rval
+
 
 def scale_convert(self, amount):
     if self.interpolation == InterpolationMode.no_interpolation:

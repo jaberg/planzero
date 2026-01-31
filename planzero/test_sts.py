@@ -37,3 +37,25 @@ def test_mul_scale_convert():
     print(u.metric_ton)
     assert a.v_unit == u.meter
     assert a.values[1] == 2000
+
+
+def test_usum():
+    a = annual_report(times=[10 * u.years], values=[1 * u.m])
+    b = annual_report(times=[20 * u.years], values=[2 * u.m])
+    c = annual_report(times=[10 * u.years], values=[3 * u.m])
+
+    s = usum([a, b, c, None])
+
+    assert s.times == array.array('d', [10, 20])
+    assert s.values[1:] == array.array('d', [4, 2])
+
+
+def test_idx_of_first_len_1():
+    a = annual_report(times=[10 * u.years], values=[1 * u.m])
+    assert a._idx_of_time(10 * u.years) == (1, True)
+
+
+def test_idx_of_first_len_2():
+    a = annual_report(times=[10 * u.years, 20 * u.years], values=[1 * u.m, 2 * u.m])
+    assert a._idx_of_time(10 * u.years) == (1, True)
+    assert a._idx_of_time(20 * u.years) == (2, True)
