@@ -2,12 +2,13 @@ from .my_functools import maybecache
 from enum import Enum
 
 import numpy as np
+import pint
 
 from .ureg import u, Geo
 from .ureg import ElectricityGenerationTech
 from . import eccc_nir_annex6
 from . import eccc_nir_annex13
-from .sts import annual_report
+from .sts import annual_report, SparseTimeSeries
 from . import sc_nir
 from . import sts
 from .ptvalues import PTValues
@@ -43,7 +44,7 @@ Natural_Gas_gross_heating_value_marketable = 38.32 * u.MJ / u.m3_NG_mk
 Natural_Gas_gross_heating_value_nonmarketable = 42 * u.MJ / u.m3_NG_nmk
 
 # This is a guess
-Natural_Gas_Peaker_thermal_efficiency = .31
+Natural_Gas_Peaker_thermal_efficiency = .30
 
 
 @maybecache
@@ -145,6 +146,43 @@ class A6_1_2(PTValues):
         plt.legend(loc='lower right')
 
 
+class A6_1_4_plus(PTValues):
+    # Producer Consumption CH4 coefficients for each province
+    # This is mostly table 1-4, but with scalars from table 1-3
+    def __init__(self):
+        df = eccc_nir_annex6.df_a6_1_4
+        times = df.Year.values * u.years
+        val_d = {}
+
+        # from Annex 6 table 1-4
+        val_d[Geo.BC] = annual_report(
+            times=times,
+            values=df['BC'].values * u.g_CH4 / u.m3_NG_nmk)
+        val_d[Geo.AB] = annual_report(
+            times=times,
+            values=df['AB'].values * u.g_CH4 / u.m3_NG_nmk)
+        val_d[Geo.SK] = annual_report(
+            times=times,
+            values=df['SK'].values * u.g_CH4 / u.m3_NG_nmk)
+
+        # from Annex 6 table 1-3
+        # other provinces just have scalars, not sparse timeseries
+        coefs_CH4, _ = nir_a6_1_3()
+        val_d[Geo.NL] = coefs_CH4['Producer Consumption - Newfoundland and Labrador']
+        for geo in Geo.provinces_and_territories():
+            val_d.setdefault(geo, coefs_CH4['Producer Consumption'])
+
+        super().__init__(val_d=val_d)
+
+    def scatter(self):
+        super().scatter()
+        plt.title('Non-Marketable Natural Gas CH4 Emission Factors')
+        plt.legend(loc='lower left')
+        eps = .1
+        plt.annotate('Newfoundland and Labrador', (2007, self.val_d[Geo.NL].magnitude + eps))
+        plt.annotate('Other provinces and territories',
+                     (2007, self.val_d[Geo.PE].magnitude + eps))
+
 
 class Est_Natural_Gas_Used_by_Electricity_Utilities_2005_to_2013(PTValues):
     """ Geographies to volumes of marketable natural gas
@@ -168,7 +206,7 @@ class Est_Natural_Gas_Used_by_Electricity_Utilities_2005_to_2013(PTValues):
                 # York Energy Centre, capacity 400MW
                 # Sarnia (St. Claire) Expansion, capacity ~540MW
                 # TODO: model these plants specifically, and others in Ontario
-                thermal_efficiency = .45
+                thermal_efficiency = .50
             else:
                 thermal_efficiency = Natural_Gas_Peaker_thermal_efficiency
             volume = energy_out / (thermal_efficiency * Natural_Gas_gross_heating_value_marketable)
@@ -218,7 +256,7 @@ class Est_Natural_Gas_Used_by_Industry_Electricity_Generation_2005_to_2013(PTVal
         # TODO: switch to a PTValues of coefs instead of raw scalars here
         # because there's a different Producer Consumption value for Newfoundland and Labrador
         CO2 = self * nonmarketable_NG_CO2_coefs
-        CH4 = self * CH4_coef_by_ng_user['Producer Consumption']
+        CH4 = self * A6_1_4_plus()
         N2O = self * N2O_coef_by_ng_user['Producer Consumption']
 
         CO2e = CO2e_from_emissions(CO2, CH4, N2O)
@@ -231,8 +269,10 @@ def plot_delta_natural_gas_for_electricity_generation():
     CO2e = industry.CO2e() + utility.CO2e()
 
     plt.figure()
-    CO2e.national_total().plot(label='Estimate')
+    est = CO2e.national_total()
+    est.plot(label='Estimate')
     a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['natural_gas']
     a13_ng.to(CO2e.v_unit).plot(label='Annex13 (Target)')
-    plt.title('Electricity from Natural Gas')
+    plt.title('Emissions: Electricity from Natural Gas')
     plt.legend(loc='upper left')
+    plt.xlim(2004, max(max(est.times), max(a13_ng.times)) + 1)

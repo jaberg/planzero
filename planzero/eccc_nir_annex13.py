@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 from .ureg import u
 from .sts import annual_report
+from .my_functools import maybecache
 
+@maybecache
 def national_electricity_CO2e_from_combustion():
 
     # Define the file path (use forward slashes or a raw string for Windows paths)
@@ -20,6 +22,9 @@ def national_electricity_CO2e_from_combustion():
     rval = dict(
         natural_gas=annual_report(
             times=np.asarray(years) * u.years,
-            values=df_A13_1_t['Natural Gas'].values * u.kt_CO2e)
+            values=df_A13_1_t['Natural Gas'].values * u.kt_CO2e),
+        coal=annual_report(
+            times=np.asarray(years) * u.years,
+            values=df_A13_1_t['Coal'].values * u.kt_CO2e),
         )
     return rval

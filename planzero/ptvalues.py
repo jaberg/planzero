@@ -1,4 +1,5 @@
 import numpy as np
+import pint
 from pydantic import BaseModel
 from .ureg import Geo
 import matplotlib.pyplot as plt
@@ -65,12 +66,28 @@ class PTValues(BaseModel):
 
     @property
     def t_unit(self):
-        t_unit, = set(val.t_unit for val in self.val_d.values() if val is not None)
+        t_units = set()
+        for val in self.val_d.values():
+            if val is None:
+                continue
+            elif isinstance(val, pint.Quantity):
+                continue
+            else:
+                t_units.add(val.t_unit)
+        t_unit, = t_units
         return t_unit
 
     @property
     def v_unit(self):
-        v_unit, = set(val.v_unit for val in self.val_d.values() if val is not None)
+        v_units = set()
+        for val in self.val_d.values():
+            if val is None:
+                continue
+            elif isinstance(val, pint.Quantity):
+                v_units.add(val.u)
+            else:
+                v_units.add(val.v_unit)
+        v_unit, = v_units
         return v_unit
 
     def national_total(self):
@@ -81,14 +98,17 @@ class PTValues(BaseModel):
         v_unit = self.v_unit
         for key, val in self.val_d.items():
             if val is None:
-                continue
-            plt.scatter(
-                val.times,
-                val.values[1:],
-                label=key,
-                **kwargs)
-            plt.xlabel(t_unit)
-            plt.ylabel(v_unit)
+                pass
+            elif isinstance(val, pint.Quantity):
+                plt.axhline(val.magnitude)
+            elif val.times:
+                plt.scatter(
+                    val.times,
+                    val.values[1:],
+                    label=key,
+                    **kwargs)
+        plt.xlabel(t_unit)
+        plt.ylabel(v_unit)
 
     def stacked_bar(self, **kwargs):
         t_unit = self.t_unit
@@ -97,15 +117,18 @@ class PTValues(BaseModel):
         for key, val in self.val_d.items():
             if val is None:
                 continue
-            plt.bar(
-                val.times,
-                val.values[1:],
-                label=key,
-                bottom=0 if bottom is None else bottom,
-                **kwargs)
-            plt.xlabel(t_unit)
-            plt.ylabel(v_unit)
+            elif isinstance(val, pint.Quantity):
+                raise NotImplementedError()
+            else:
+                plt.bar(
+                    val.times,
+                    val.values[1:],
+                    label=key,
+                    bottom=0 if bottom is None else bottom,
+                    **kwargs)
             if bottom is None:
                 bottom = np.asarray(val.values[1:])
             else:
                 bottom += np.asarray(val.values[1:])
+        plt.xlabel(t_unit)
+        plt.ylabel(v_unit)
