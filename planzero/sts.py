@@ -257,6 +257,9 @@ class SparseTimeSeries(BaseModel):
             interpolation=InterpolationMode.no_interpolation)
         return rval
 
+    def __sub__(self, other):
+        return (self + scale(other, -1))
+
     def __truediv__(self, other):
         default_value = (
             None
@@ -291,7 +294,7 @@ def annual_report(**kwargs):
         interpolation='no_interpolation',
         **kwargs)
 
-def mul_sts_sts_no_interp(a, b):
+def mul_no_interp_no_interp(a, b):
     if a.t_unit != b.t_unit:
         raise NotImplementedError()
     t_unit = a.t_unit
@@ -319,9 +322,41 @@ def mul_sts_sts_no_interp(a, b):
         interpolation='no_interpolation')
     return rval
 
+
+def mul_no_interp_sts(a, b):
+    if a.t_unit != b.t_unit:
+        raise NotImplementedError()
+    t_unit = a.t_unit
+    v_unit = a.v_unit * b.v_unit
+
+    # no interpolation means no default value
+    assert np.isnan(a.values[0])
+
+    c_times = []
+    c_values = []
+    for a_t, a_v_nounit in zip(a.times, a.values[1:]):
+        b_v = b.query(a_t * t_unit) # has b unit
+        c_times.append(a_t * t_unit)
+        c_values.append(a_v_nounit * b_v * a.v_unit)
+
+    rval = SparseTimeSeries(
+        times=c_times,
+        values=c_values,
+        default_value=None,
+        t_unit=t_unit,
+        unit=v_unit,
+        identifier=None,
+        interpolation='no_interpolation')
+    return rval
+
+
 def mul_sts_sts(self, other):
     if self.interpolation == other.interpolation == 'no_interpolation':
-        return mul_sts_sts_no_interp(self, other)
+        return mul_no_interp_no_interp(self, other)
+    elif self.interpolation == 'no_interpolation':
+        return mul_no_interp_sts(self, other)
+    elif other.interpolation == 'no_interpolation':
+        return mul_no_interp_sts(other, self)
     raise NotImplementedError()
 
 

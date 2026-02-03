@@ -21,16 +21,20 @@ class PTValues(BaseModel):
     def __add__(self, other):
         if isinstance(other, PTValues):
             val_d = {}
-            for key, val in self.val_d.items():
-                other_val = other.val_d[key]
-                if val is None and other_val is None:
+            my_keys = set(self.val_d.keys())
+            other_keys = set(other.val_d.keys())
+            result_keys = my_keys | other_keys
+            for key in result_keys:
+                my_val = self.val_d.get(key)
+                other_val = other.val_d.get(key)
+                if my_val is None and other_val is None:
                     val_d[key] = None
-                elif val is None:
+                elif my_val is None:
                     val_d[key] = other_val
                 elif other_val is None:
-                    val_d[key] = val
+                    val_d[key] = my_val
                 else:
-                    val_d[key] = val + other_val
+                    val_d[key] = my_val + other_val
             return PTValues(val_d=val_d)
         else:
             # too much ambiguity about when there are key=None entries
@@ -39,16 +43,20 @@ class PTValues(BaseModel):
     def __mul__(self, other):
         if isinstance(other, PTValues):
             val_d = {}
-            for key, val in self.val_d.items():
-                other_val = other.val_d[key]
-                if val is None and other_val is None:
+            my_keys = set(self.val_d.keys())
+            other_keys = set(other.val_d.keys())
+            result_keys = my_keys & other_keys
+            for key in result_keys:
+                my_val = self.val_d.get(key)
+                other_val = other.val_d.get(key)
+                if my_val is None and other_val is None:
                     val_d[key] = None
-                elif val is None:
+                elif my_val is None:
                     val_d[key] = None
                 elif other_val is None:
                     val_d[key] = None
                 else:
-                    val_d[key] = val * other_val
+                    val_d[key] = my_val * other_val
             return PTValues(val_d=val_d)
         else:
             val_d = {}
@@ -90,8 +98,32 @@ class PTValues(BaseModel):
         v_unit, = v_units
         return v_unit
 
+    def update_CA(self, overwrite=False):
+        if Geo.CA in self.val_d and not overwrite:
+            self.val_d[Geo.CA] = sts.usum(self.val_d.values())
+        elif Geo.CA in self.val_d:
+            assert 0, 'pass overwrite=True'
+
+    def replace_CA_with_PX(self, overwrite=False):
+        ca = self.val_d.get(Geo.CA)
+        assert ca is not None, 'cannot update PX from CA without CA'
+        px = self.val_d.get(Geo.PX)
+        assert px is None, 'cannot update PX from CA, PX already present'
+
+        pt_val_d = dict(self.val_d)
+        del pt_val_d[Geo.CA]
+        pt_usum = sts.usum(pt_val_d.values())
+
+        ca_val = self.val_d[Geo.CA]
+        px_val = ca_val - pt_usum
+        self.val_d[Geo.PX] = px_val
+        del self.val_d[Geo.CA]
+
     def national_total(self):
-        return sts.usum(self.val_d.values())
+        if Geo.CA in self.val_d:
+            return self.val_d[Geo.CA]
+        else:
+            return sts.usum(self.val_d.values())
 
     def scatter(self, **kwargs):
         t_unit = self.t_unit
@@ -111,6 +143,8 @@ class PTValues(BaseModel):
         plt.ylabel(v_unit)
 
     def stacked_bar(self, **kwargs):
+        if Geo.CA in self.val_d:
+            raise NotImplementedError()
         t_unit = self.t_unit
         v_unit = self.v_unit
         bottom = None

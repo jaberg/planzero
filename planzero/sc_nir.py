@@ -7,8 +7,12 @@ import markdown
 import pandas as pd
 
 from .ureg import u, Geo
-from .ureg import ElectricityGenerationTech
+from .enums import (
+    ElectricityGenerationTech,
+    CoalType,
+    )
 from .sts import annual_report
+from .ptvalues import PTValues
 
 
 def sc_metadata_by_product_id(productId):
@@ -135,6 +139,14 @@ class StatsCanProduct(object):
         assert 'int' in str(rval.REF_DATE.values.dtype)
         return rval
 
+    @classmethod
+    @functools.cache
+    def zip_monthly_table_to_dataframe(cls):
+        rval = zip_table_to_dataframe(cls.product_id)
+        rval['REF_DATE_YEAR'] = rval['REF_DATE'].apply(lambda y_m: int(y_m.split('-')[0]))
+        rval['REF_DATE_MONTH'] = rval['REF_DATE'].apply(lambda y_m: int(y_m.split('-')[1]))
+        return rval
+
 
 class Supply_and_Demand_of_Natural_Gas_Liquids(StatsCanProduct):
     product_id = "25-10-0026-01"
@@ -165,6 +177,8 @@ class Electric_Power_Annual_Generation_by_Class_of_Producer(StatsCanProduct):
             geo = Geo(geo_name)
             gen_tech = ElectricityGenerationTech(gen_type)
             uom, = list(set(geo_df.UOM.values))
+            factor, = list(set(geo_df.SCALAR_FACTOR.values))
+            assert factor == 'units'
             rval.setdefault(gen_tech, {})
             rval[gen_tech][geo] = annual_report(
                 times=geo_df.REF_DATE.values * u.years,
@@ -179,6 +193,54 @@ class Electric_Power_Annual_Generation_by_Class_of_Producer(StatsCanProduct):
     @classmethod
     def industry_gen_by_tech_geo(cls):
         return cls.build_sts('Electricity producer, industries')
+
+
+class Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility(StatsCanProduct):
+    product_id = "25-10-0017-01"
+    # Good 2005-2021 inclusive
+
+    def ptv_by_coal_type(self, coal_type):
+        coal_type = CoalType(coal_type)
+        df = self.zip_table_to_dataframe()
+        fuel_df = df[df['Fuel consumed for electric power generation'] == coal_type.value]
+        val_d = {}
+        unit_by_fuel_type = {
+            CoalType.CanadianBituminous: u.tonne_coal_bit,
+            CoalType.CanadianSubbituminous: u.tonne_coal_subbit,
+            CoalType.ImportedBituminous: u.tonne_coal_bit,
+            CoalType.ImportedSubbituminous: u.tonne_coal_subbit,
+            CoalType.Lignite: u.tonne_lignite,
+        }
+
+        for (geo_name,), geo_df in fuel_df.groupby(['GEO']):
+            geo = Geo(geo_name)
+            uom, = list(set(geo_df.UOM.values))
+            assert uom == 'Metric tonnes'
+            factor, = list(set(geo_df.SCALAR_FACTOR.values))
+            assert factor == 'units'
+            val_d[geo] = annual_report(
+                times=geo_df.REF_DATE.values * u.years,
+                values=geo_df.VALUE.values * unit_by_fuel_type[coal_type],
+                skip_nan_values=True)
+        return PTValues(val_d=val_d)
+
+    def ptv_natural_gas(self):
+        df = self.zip_table_to_dataframe()
+        fuel_df = df[df['Fuel consumed for electric power generation'] == 'Natural gas']
+        val_d = {}
+        for (geo_name,), geo_df in fuel_df.groupby(['GEO']):
+            geo = Geo(geo_name)
+            if geo == Geo.CA:
+                continue
+            uom, = list(set(geo_df.UOM.values))
+            factor, = list(set(geo_df.SCALAR_FACTOR.values))
+            assert factor == 'thousands'
+            assert uom == 'Cubic metres'
+            val_d[geo] = annual_report(
+                times=geo_df.REF_DATE.values * u.years,
+                values=geo_df.VALUE.values * u.m3_NG_mk * 1000,
+                skip_nan_values=True)
+        return PTValues(val_d=val_d)
 
 
 conversion_factors_CO2 = {

@@ -1,4 +1,3 @@
-import enum
 import pint
 
 ureg = pint.UnitRegistry()
@@ -13,7 +12,8 @@ ureg.define('fraction = [] = frac')
 ureg.define('ppm = 1e-6 fraction')
 ureg.define('ppb = 1e-9 fraction')
 
-for mass_substance in ['coal', 'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3']:
+for mass_substance in ['coal_bit', 'coal_subbit', 'lignite',
+                       'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3']:
     ureg.define(f"kg_{mass_substance} = [mass_{mass_substance}]")
     ureg.define(f"tonne_{mass_substance} = 1000 * kg_{mass_substance}")
     ureg.define(f"kilotonne_{mass_substance} = 1_000_000 * kg_{mass_substance} = kt_{mass_substance}")
@@ -24,8 +24,8 @@ for mass_substance in ['coal', 'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6',
 
     ureg.define(f"g_{mass_substance} = 0.001 * kg_{mass_substance}")
 
-    # TODO: move to test file
-    assert ureg.Quantity("1 Mt_coal").to('kg_coal').magnitude == 1_000_000_000
+# TODO: move to test file
+assert ureg.Quantity("1 Mt_CO2").to('kg_CO2').magnitude == 1_000_000_000
 
 for volume_substance in ['NG_mk', 'NG_nmk']:
     ureg.define(f"m3_{volume_substance} = [volume_{volume_substance}]")
@@ -35,47 +35,4 @@ u = ureg
 u.m3 = u.m ** 3
 
 
-class Geo(str, enum.Enum):
-    CA = 'Canada'
-    BC = 'British Columbia'
-    AB = 'Alberta'
-    SK = 'Saskatchewan'
-    MB = 'Manitoba'
-    ON = 'Ontario'
-    QC = 'Quebec'
-    NS = 'Nova Scotia'
-    NB = 'New Brunswick'
-    PE = 'Prince Edward Island'
-    NL = 'Newfoundland and Labrador'
-    YT = 'Yukon'
-    NT = 'Northwest Territories'
-    NU = 'Nunavut'
-
-    @classmethod
-    def codes(cls):
-        for thing in cls:
-            return str(thing)[4:]
-
-    def code(self):
-        rval = str(self)[4:]
-        assert len(rval) == 2
-        return rval
-
-    @classmethod
-    def provinces_and_territories(cls):
-        for thing in cls:
-            if thing != Geo.CA:
-                yield thing
-
-
-class ElectricityGenerationTech(str, enum.Enum):
-    Hydro = 'Hydraulic turbine'
-    Tidal = 'Tidal power turbine'
-    Wind = 'Wind power turbine'
-    ConventionalSteam = 'Conventional steam turbine'
-    Nuclear = 'Nuclear steam turbine'
-    InternalCombustion = 'Internal combustion turbine'
-    CombustionTurbine = 'Combustion turbine'
-    Solar = 'Solar'
-    Other = 'Other types of electricity generation'
-    Geothermal = 'Geothermal'
+from .enums import *
