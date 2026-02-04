@@ -27,32 +27,46 @@ def add_stsdict_stsdict(self, other):
         val_d=val_d,
         assume_None_is_zero=self.assume_None_is_zero and other.assume_None_is_zero)
 
+
+def mul_stsdict_stsdict(aa, bb):
+    val_d = {}
+    assert aa.dims == bb.dims
+    dims = aa.dims
+    broadcast = [bca and bcb for bca, bcb in zip(aa.broadcast, bb.broadcast)]
+
+    if aa.fallback is not None and bb.fallback is not None:
+        fallback = mul_stsdict_stsdict(aa.fallback, bb.fallback)
+    elif self.fallback is not None and len(other.val_d) == other.logical_size:
+        fallback = mul_stsdict_stsdict(aa.fallback, bb.fallback)
+    else:
+        fallback = None
+
+    my_keys = set(self.val_d.keys())
+    other_keys = set(other.val_d.keys())
+    result_keys = my_keys & other_keys
+    for key in result_keys:
+        my_val = self.val_d.get(key)
+        other_val = other.val_d.get(key)
+        if my_val is None and other_val is None:
+            val_d[key] = None
+        elif my_val is None:
+            if self.assume_None_is_zero:
+                val_d[key] = None
+            else:
+                raise KeyError(key)
+        elif other_val is None:
+            if other.assume_None_is_zero:
+                val_d[key] = None
+            else:
+                raise KeyError(key)
+        else:
+            val_d[key] = my_val * other_val
+    return self.__class__(
+        val_d=val_d,
+        assume_None_is_zero=self.assume_None_is_zero and other.assume_None_is_zero)
+
+
 def mul_stsdict_stsdict(self, other):
-        if isinstance(other, self.__class__):
-            val_d = {}
-            my_keys = set(self.val_d.keys())
-            other_keys = set(other.val_d.keys())
-            result_keys = my_keys & other_keys
-            for key in result_keys:
-                my_val = self.val_d.get(key)
-                other_val = other.val_d.get(key)
-                if my_val is None and other_val is None:
-                    val_d[key] = None
-                elif my_val is None:
-                    if self.assume_None_is_zero:
-                        val_d[key] = None
-                    else:
-                        raise KeyError(key)
-                elif other_val is None:
-                    if other.assume_None_is_zero:
-                        val_d[key] = None
-                    else:
-                        raise KeyError(key)
-                else:
-                    val_d[key] = my_val * other_val
-            return self.__class__(
-                val_d=val_d,
-                assume_None_is_zero=self.assume_None_is_zero and other.assume_None_is_zero)
         else:
             val_d = {}
             for key, val in self.val_d.items():
@@ -190,11 +204,11 @@ def matmul_stsdict_stsdict(self, other, self_dim=None, other_dim=None):
                     b_val = b_vals[inner_key]
                     if sumprod is None:
                         sumprod = a_val * b_val
-                        assert sumprod is not None
                     else:
-                        sumprod += a_val * b_val
-                        assert sumprod is not None
-                assert sumprod is not None
+                        try:
+                            sumprod += a_val * b_val
+                        except Exception as exc:
+                            raise RuntimeError(a_outer_key, b_outer_key, inner_key, sumprod, a_val, b_val) from exc
             elif isinstance(b_vals, dict):
                 block = 'b'
                 a_val = a_vals

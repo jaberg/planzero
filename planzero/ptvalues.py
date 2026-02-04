@@ -1,63 +1,82 @@
 import numpy as np
 import pint
 from pydantic import BaseModel
-from .ureg import Geo
+from .enums import PT
 import matplotlib.pyplot as plt
 from . import sts
 
-PTDim = tuple(Geo.provinces_and_territories())
-
-
-def PTValues(val_d, broadcast=(False,), **kwargs):
-    if Geo.CA in val_d:
-        ca = val_d.get(Geo.CA)
-        px = val_d.get(Geo.PX)
-        assert px is None, 'cannot update PX from CA, PX already present'
-
-        pt_val_d = dict(val_d)
-        del pt_val_d[Geo.CA]
-        pt_usum = sts.usum(pt_val_d.values())
-        ca_val = val_d[Geo.CA]
-        px_val = ca_val - pt_usum
-        pt_val_d[Geo.PX] = px_val
-    else:
-        pt_val_d = val_d
-    return sts.STSDict(
-        val_d=pt_val_d,
-        dims=[PTDim],
-        broadcast=broadcast,
-        **kwargs) # may include e.g. fallback
-
-
-def update_CA(self, overwrite=False):
-    if Geo.CA in self.val_d and not overwrite:
-        self.val_d[Geo.CA] = sts.usum(self.val_d.values())
-    elif Geo.CA in self.val_d:
-        assert 0, 'pass overwrite=True'
-
-
-def national_total(self):
-    return sts.usum(self.val_d.values())
-
-
-def scatter(self, **kwargs):
-    t_unit = self.t_unit
-    v_unit = self.v_unit
-    for key, val in self.val_d.items():
-        if val is None:
+def t_units_of_objtensor(ot):
+    t_units = set()
+    for obj in ot.ravel():
+        try:
+            t_units.add(obj.t_unit)
+        except (AttributeError, TypeError):
             pass
-        elif isinstance(val, pint.Quantity):
-            plt.axhline(val.magnitude)
-        elif val.times:
-            plt.scatter(
-                val.times,
-                val.values[1:],
-                label=key,
-                **kwargs)
-    plt.xlabel(t_unit)
-    plt.ylabel(v_unit)
+    return t_units
 
-def stacked_bar(self, **kwargs):
+
+def v_units_of_objtensor(ot):
+    v_units = set()
+    for obj in ot.ravel():
+        try:
+            v_units.add(obj.u)
+        except (AttributeError, TypeError):
+            try:
+                v_units.add(obj.v_unit)
+            except (AttributeError, TypeError):
+                pass
+    return v_units
+
+
+def scatter(ot, legend_loc=None, **kwargs):
+    t_unit, = t_units_of_objtensor(ot)
+
+    if len(ot.dims) > 2:
+        raise NotImplementedError()
+    if set(ot.dims[1].keys()) != set(PT):
+        raise NotImplementedError()
+    subplots_args, subplots_kwargs = {
+        1: ((1, 1), {'figsize': [4, 4]}),
+        2: ((1, 2), {'figsize': [6, 4]}),
+        3: ((1, 3), {'figsize': [9, 4]}),
+        4: ((2, 2), {'figsize': [8, 7]}),
+        5: ((2, 3), {'figsize': [10, 7]}),
+        6: ((2, 3), {'figsize': [10, 7]}),
+        7: ((2, 4), {'figsize': [14, 7]}),
+        8: ((2, 4), {'figsize': [14, 7]}),
+        9: ((3, 3), {'figsize': [10, 10]}),
+        10: ((3, 4), {'figsize': [14, 10]}),
+        11: ((3, 4), {'figsize': [14, 10]}),
+        12: ((3, 4), {'figsize': [14, 10]}),
+        13: ((4, 4), {'figsize': [14, 13]}),
+        14: ((4, 4), {'figsize': [14, 13]}),
+        15: ((4, 4), {'figsize': [14, 13]}),
+        16: ((4, 4), {'figsize': [14, 13]}),
+    }[ot.shape[0]]
+    fig, axs = plt.subplots(*subplots_args, **subplots_kwargs)
+
+    for dim_elem, ax, oti in zip(ot.dims[0], axs.flatten(), ot):
+        v_unit, = v_units_of_objtensor(oti)
+        # guarantees that all pint and SparseTimeSeries have same unit
+        for val, pt in zip(oti, ot.dims[1]):
+            if isinstance(val, pint.Quantity):
+                if val.magnitude != 0:
+                    ax.axhline(val.magnitude)
+            elif val.times:
+                ax.scatter(
+                    val.times,
+                    val.values[1:],
+                    label=pt.value,
+                    **kwargs)
+        ax.set_title(dim_elem.value)
+        ax.set_xlabel(t_unit)
+        ax.set_ylabel(v_unit)
+        if legend_loc:
+            ax.legend(loc=legend_loc)
+    fig.tight_layout()
+
+
+def stacked_bar(ot, legend_loc, **kwargs):
     t_unit = self.t_unit
     v_unit = self.v_unit
     bottom = None

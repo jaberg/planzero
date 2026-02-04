@@ -2,6 +2,7 @@ import array
 import bisect
 import builtins
 from enum import Enum
+import functools
 
 import numpy as np
 import pint
@@ -324,21 +325,15 @@ class STSDict(BaseModel):
     fallback: object | None # STSDict with more broadcasting
 
     def __init__(self, *, val_d, dims, broadcast, fallback=None):
-        unpacked_dims = []
-        for dim in dims:
-            if isinstance(dim, dict):
-                unpacked_dims.append(dim)
-            else:
-                # works for lists and enums
-                unpacked_dims.append({dimval:ii for ii, dimval in enumerate(dim)})
         assert len(dims) == len(broadcast)
+        unpacked_dims = []
         nonbc_dims = [dim for dim, bc in zip(unpacked_dims, broadcast) if not bc]
 
         # tuplify keys
         val_d = {key if isinstance(key, tuple) else (key,): val
                  for key, val in val_d.items()}
         for key in val_d:
-            assert len(key) == len(nonbc_dims)
+            assert len(key) == len(nonbc_dims), key
             for dim, key_elem in zip(nonbc_dims, key):
                 assert key_elem in dim, (key_elem, dim)
 
@@ -593,6 +588,8 @@ def usum(args):
     will be ignored.
     """
     args = [arg for arg in args if arg is not None]
+    # XXX check units here - this is incorrect handling of e.g. 0 Celcius, and could mask incompatible units
+    args = [arg for arg in args if not (isinstance(arg, pint.Quantity) and arg.magnitude == 0)]
     if not args:
         return None
     if len(args) == 1:

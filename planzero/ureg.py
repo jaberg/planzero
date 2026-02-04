@@ -1,5 +1,5 @@
 import pint
-from .enums import FuelType
+from . import enums
 
 ureg = pint.UnitRegistry()
 
@@ -30,6 +30,7 @@ assert ureg.Quantity("1 Mt_CO2").to('kg_CO2').magnitude == 1_000_000_000
 
 for volume_substance in ['NG_mk', 'NG_nmk',
                          'diesel',
+                         'gasoline',
                          'LFO',  # Light Fuel Oil
                          'HFO',  # Heavy Fuel Oil
                         ]:
@@ -42,10 +43,29 @@ u = ureg
 u.m3 = u.m ** 3
 
 litres_by_fuel_type = {
-    FuelType.LightFuelOil: u.l_LFO,
-    FuelType.HeavyFuelOil: u.l_HFO,
-    FuelType.Diesel: u.l_diesel,
+    enums.FuelType.LightFuelOil: u.l_LFO,
+    enums.FuelType.HeavyFuelOil: u.l_HFO,
+    enums.FuelType.Diesel: u.l_diesel,
+    enums.FuelType.Gasoline: u.l_gasoline,
+}
+
+kg_by_ghg = {
+    enums.GHG.CO2: u.kg_CO2,
+    enums.GHG.CH4: u.kg_CH4,
+    enums.GHG.N2O: u.kg_N2O,
+    enums.GHG.HFCs: u.kg_HFC,
+    enums.GHG.PFCs: u.kg_PFC,
+    enums.GHG.SF6: u.kg_SF6,
+    enums.GHG.NF3: u.kg_NF3,
+}
+
+kg_by_coal_type = {
+    enums.CoalType.CanadianBituminous: u.kg_coal_bit,
+    enums.CoalType.CanadianSubbituminous: u.kg_coal_bit,
+    enums.CoalType.Lignite: u.kg_lignite,
+    enums.CoalType.ImportedBituminous: u.kg_coal_subbit,
+    enums.CoalType.ImportedSubbituminous: u.kg_coal_subbit,
 }
 
 
-from .enums import *
+from .enums import * # XXX
