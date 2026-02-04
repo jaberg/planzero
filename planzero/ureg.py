@@ -1,4 +1,5 @@
 import pint
+from .enums import FuelType
 
 ureg = pint.UnitRegistry()
 
@@ -27,12 +28,24 @@ for mass_substance in ['coal_bit', 'coal_subbit', 'lignite',
 # TODO: move to test file
 assert ureg.Quantity("1 Mt_CO2").to('kg_CO2').magnitude == 1_000_000_000
 
-for volume_substance in ['NG_mk', 'NG_nmk']:
+for volume_substance in ['NG_mk', 'NG_nmk',
+                         'diesel',
+                         'LFO',  # Light Fuel Oil
+                         'HFO',  # Heavy Fuel Oil
+                        ]:
     ureg.define(f"m3_{volume_substance} = [volume_{volume_substance}]")
     ureg.define(f"l_{volume_substance} = .001 * m3_{volume_substance}")
+    ureg.define(f"litres_{volume_substance} = .001 * m3_{volume_substance}")
+    ureg.define(f"kilolitres_{volume_substance} = m3_{volume_substance}")
 
 u = ureg
 u.m3 = u.m ** 3
+
+litres_by_fuel_type = {
+    FuelType.LightFuelOil: u.l_LFO,
+    FuelType.HeavyFuelOil: u.l_HFO,
+    FuelType.Diesel: u.l_diesel,
+}
 
 
 from .enums import *

@@ -6,10 +6,11 @@ import stats_can
 import markdown
 import pandas as pd
 
-from .ureg import u, Geo
+from .ureg import u, Geo, litres_by_fuel_type
 from .enums import (
     ElectricityGenerationTech,
     CoalType,
+    FuelType,
     )
 from .sts import annual_report
 from .ptvalues import PTValues
@@ -230,8 +231,6 @@ class Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Util
         val_d = {}
         for (geo_name,), geo_df in fuel_df.groupby(['GEO']):
             geo = Geo(geo_name)
-            if geo == Geo.CA:
-                continue
             uom, = list(set(geo_df.UOM.values))
             factor, = list(set(geo_df.SCALAR_FACTOR.values))
             assert factor == 'thousands'
@@ -240,6 +239,27 @@ class Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Util
                 times=geo_df.REF_DATE.values * u.years,
                 values=geo_df.VALUE.values * u.m3_NG_mk * 1000,
                 skip_nan_values=True)
+        return PTValues(val_d=val_d)
+
+    def ptv_fuel_type(self, fuel_type):
+        fuel_type = FuelType(fuel_type)
+        df = self.zip_table_to_dataframe()
+        if fuel_type == FuelType.HeavyFuelOil:
+            fuel_df = df[df['Fuel consumed for electric power generation'] == 'Total heavy fuel oil']
+        else:
+            fuel_df = df[df['Fuel consumed for electric power generation'] == fuel_type.value]
+        val_d = {}
+        for (geo_name,), geo_df in fuel_df.groupby(['GEO']):
+            geo = Geo(geo_name)
+            uom, = list(set(geo_df.UOM.values))
+            factor, = list(set(geo_df.SCALAR_FACTOR.values))
+            assert factor == 'units'
+            assert uom == 'Kilolitres', uom
+            val_d[geo] = annual_report(
+                times=geo_df.REF_DATE.values * u.years,
+                values=geo_df.VALUE.values * 1000 * litres_by_fuel_type[fuel_type],
+                skip_nan_values=True)
+        assert Geo.CA in val_d, (fuel_type, fuel_type.value)
         return PTValues(val_d=val_d)
 
 

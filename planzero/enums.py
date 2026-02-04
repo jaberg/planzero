@@ -58,3 +58,26 @@ class CoalType(str, enum.Enum):
     Lignite = 'Lignite'
     ImportedBituminous = 'Imported bituminous coal'
     ImportedSubbituminous = 'Imported subbituminous coal'
+
+
+class FuelType(str, enum.Enum):
+    # Used in Archived table 25-10-0017-01
+    LightFuelOil = 'Light fuel oil'
+    HeavyFuelOil = 'Heavy fuel oil'
+    Diesel = 'Diesel'
+
+    # Used in NIR Annex6 Table 1-6
+    Gasoline = 'Motor gasoline'
+    Kerosene = 'Kerosene'
+    PetroleumCoke = 'Petroleum coke'
+    StillGas = 'Still gas'
+
+
+class GHG(str, enum.Enum):
+    CO2 = 'CO2'
+    CH4 = 'CH4'
+    N2O = 'N2O'
+    HFCs = 'HFCs'
+    PFCs = 'PFCs'
+    SF6 = 'SF6'
+    NF3 = 'NF3'

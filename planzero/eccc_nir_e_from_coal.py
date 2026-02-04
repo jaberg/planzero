@@ -38,6 +38,7 @@ class A6_1_10_CanadianBituminous(PTValues):
         val_d[Geo.BC] = 2212 * u.kg_CO2 / u.tonne_coal_bit
         super().__init__(val_d=val_d)
 
+
 class A6_1_10_ImportedBituminous(PTValues):
 
     def __init__(self):

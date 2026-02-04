@@ -12,6 +12,17 @@ from .ureg import ureg as u
 
 _seconds_per_year = (1 * u.year).to(u.second).magnitude
 
+def _no_pint_operators(value, *args, **kwargs):
+    if isinstance(value, (SparseTimeSeries, STSDict)):
+        raise TypeError("Skip STS classes")
+    return _orig_to_magnitude(value, *args, **kwargs)
+
+if pint.compat._to_magnitude.__name__ == '_to_magnitude':
+    _orig_to_magnitude = pint.compat._to_magnitude
+    pint.compat._to_magnitude = _no_pint_operators
+    # also replace symbol imports in other modules as required
+    pint.facets.plain.quantity._to_magnitude = _no_pint_operators
+
 
 class InterpolationMode(str, Enum):
     # queries with exact matches will return the corresponding value
@@ -227,6 +238,12 @@ class SparseTimeSeries(BaseModel):
         pass
 
     def __add__(self, other):
+        if isinstance(other, pint.Quantity):
+            if other.magnitude == 0:
+                # TODO: check units
+                return self * 1
+            raise NotImplementedError()
+
         if self.interpolation != InterpolationMode.no_interpolation:
             raise NotImplementedError()
         if other.interpolation != InterpolationMode.no_interpolation:
@@ -285,14 +302,221 @@ class SparseTimeSeries(BaseModel):
             return scale(self, other)
         elif isinstance(other, pint.Quantity) and isinstance(other.magnitude, (int, float)):
             return scale_convert(self, other)
+        elif isinstance(other, STSDict):
+            return other.__rmul__(self)
+        raise NotImplementedError(other)
 
-        raise NotImplementedError()
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
 def annual_report(**kwargs):
     return SparseTimeSeries(
         t_unit=u.years,
         interpolation='no_interpolation',
         **kwargs)
+
+
+class STSDict(BaseModel):
+
+    val_d: dict[object, object | None]
+    dims: list[dict[object, int]] # list of list of enums or enum classes
+    broadcast: list[bool]
+    fallback: object | None # STSDict with more broadcasting
+
+    def __init__(self, *, val_d, dims, broadcast, fallback=None):
+        unpacked_dims = []
+        for dim in dims:
+            if isinstance(dim, dict):
+                unpacked_dims.append(dim)
+            else:
+                # works for lists and enums
+                unpacked_dims.append({dimval:ii for ii, dimval in enumerate(dim)})
+        assert len(dims) == len(broadcast)
+        nonbc_dims = [dim for dim, bc in zip(unpacked_dims, broadcast) if not bc]
+
+        # tuplify keys
+        val_d = {key if isinstance(key, tuple) else (key,): val
+                 for key, val in val_d.items()}
+        for key in val_d:
+            assert len(key) == len(nonbc_dims)
+            for dim, key_elem in zip(nonbc_dims, key):
+                assert key_elem in dim, (key_elem, dim)
+
+        if fallback is None:
+            pass
+        else:
+            assert fallback.dims == unpacked_dims
+            for bc, fbc in zip(broadcast, fallback.broadcast):
+                if bc and not fbc:
+                    raise NotImplementedError('fallback with more structure than main STSDict')
+        super().__init__(val_d=val_d,
+                         dims=unpacked_dims,
+                         broadcast=broadcast,
+                         fallback=fallback)
+
+    @property
+    def logical_size(self):
+        rval = 1
+        for dim in self.dims:
+            rval *= len(dim)
+        return rval
+
+    @property
+    def logical_shape(self):
+        return [len(dim) for dim in self.dims]
+
+    @property
+    def nonbroadcast_dims(self):
+        return [dim for dim, bc in zip(self.dims, self.broadcast) if not bc]
+
+    def val_d_key(self, key):
+        assert len(key) == len(self.dims)
+        val_d_key = []
+        for key_elem, key_dim, bc in zip(key, self.dims, self.broadcast):
+            if key_elem not in key_dim:
+                raise KeyError(key)
+            if not bc:
+                val_d_key.append(key_elem)
+        return tuple(val_d_key)
+
+    def __setitem__(self, key, value):
+        self.val_d[self.val_d_key(key)] = value
+
+    def __getitem__(self, key):
+        if isinstance(key, list):
+            key = tuple(key)
+        if not isinstance(key, tuple):
+            key = (key,)
+        _key = self.val_d_key(key)
+        if _key in self.val_d:
+            return self.val_d[_key]
+        elif self.fallback is not None:
+            return self.fallback[key]
+        raise KeyError(key)
+
+    def nonbroadcast_getitem(self, key):
+        """only require key elements for nonbroadcasted dimensions"""
+        if isinstance(key, list):
+            key = tuple(key)
+        if not isinstance(key, tuple):
+            _key = (key,)
+        else:
+            _key = key
+        nbdims = self.nonbroadcast_dims
+        assert len(_key) == len(nbdims), (_key, nbdims)
+        if _key in self.val_d:
+            return self.val_d[_key]
+        elif self.fallback is not None:
+            foo = [
+                fbc
+                for bc, fbc in zip(self.broadcast, self.fallback.broadcast)
+                if not bc]
+            assert len(foo) == len(_key) == len(nbdims)
+            fb_key = [
+                key_elem
+                for key_elem, fbc in zip(_key, foo)
+                if not fbc]
+            return self.fallback.nonbroadcast_getitem(tuple(fb_key))
+        raise KeyError(key)
+
+    def nonfallback_items(self):
+        return self.val_d.items()
+
+    @property
+    def t_unit(self):
+        if self.fallback is None:
+            t_units = set()
+        else:
+            t_units = set([self.fallback.t_unit])
+        for val in self.val_d.values():
+            if val is None:
+                continue
+            elif isinstance(val, pint.Quantity):
+                continue
+            else:
+                t_units.add(val.t_unit)
+        t_unit, = t_units
+        return t_unit
+
+    @property
+    def v_units(self):
+
+        if self.fallback is None:
+            v_units = set()
+        elif isinstance(self.fallback, pint.Quantity):
+            v_units = set([self.fallback.u])
+        else:
+            v_units = set([self.fallback.v_unit])
+
+        for val in self.val_d.values():
+            if val is None:
+                continue
+            elif isinstance(val, pint.Quantity):
+                v_units.add(val.u)
+            else:
+                v_units.add(val.v_unit)
+        return v_units
+
+    @property
+    def v_unit(self):
+        v_unit, = self.v_units
+        return v_unit
+
+    def to(self, unit):
+        if self.fallback is None:
+            fallback = None
+        else:
+            fallback = self.fallback.to(unit)
+        val_d = {
+            pt: (None if val is None else val.to(unit))
+            for pt, val in self.val_d.items()}
+        return STSDict(
+            val_d=val_d,
+            dims=self.dims,
+            broadcast=broadcast,
+            fallback=self.fallback)
+
+    @property
+    def val_class(self):
+        if self.fallback is None:
+            val_classes = set()
+        else:
+            val_classes = set([self.fallback.val_class])
+        for val in self.val_d.values():
+            if val is None:
+                continue
+            val_classes.add(val.__class__)
+        val_class, = val_classes
+        return val_class
+
+    def __add__(self, other):
+        from . import stsdict_fns
+        if isinstance(other, STSDict):
+            return stsdict_fns.add_stsdict_stsdict(self, other)
+        else:
+            return stsdict_fns.add_stsdict_other(self, other)
+
+    def __rmul__(self, other):
+        from . import stsdict_fns
+        if isinstance(other, STSDict):
+            assert 0
+        else:
+            # flip the argument order
+            return stsdict_fns.mul_stsdict_other(self, other)
+
+    def __mul__(self, other):
+        from . import stsdict_fns
+        if isinstance(other, STSDict):
+            return stsdict_fns.mul_stsdict_stsdict(self, other)
+        else:
+            return stsdict_fns.mul_stsdict_other(self, other)
+
+    def __matmul__(self, other):
+        from . import stsdict_fns
+        if isinstance(other, STSDict):
+            return stsdict_fns.matmul_stsdict_stsdict(self, other)
+        else:
+            raise NotImplementedError(other)
 
 def mul_no_interp_no_interp(a, b):
     if a.t_unit != b.t_unit:
