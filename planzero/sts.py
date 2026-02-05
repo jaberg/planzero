@@ -9,21 +9,10 @@ import pint
 from pydantic import BaseModel
 
 from .ureg import ureg as u
+from . import objtensor
 
 
 _seconds_per_year = (1 * u.year).to(u.second).magnitude
-
-def _no_pint_operators(value, *args, **kwargs):
-    if isinstance(value, (SparseTimeSeries, STSDict)):
-        raise TypeError("Skip STS classes")
-    return _orig_to_magnitude(value, *args, **kwargs)
-
-if pint.compat._to_magnitude.__name__ == '_to_magnitude':
-    _orig_to_magnitude = pint.compat._to_magnitude
-    pint.compat._to_magnitude = _no_pint_operators
-    # also replace symbol imports in other modules as required
-    pint.facets.plain.quantity._to_magnitude = _no_pint_operators
-
 
 class InterpolationMode(str, Enum):
     # queries with exact matches will return the corresponding value
@@ -244,36 +233,20 @@ class SparseTimeSeries(BaseModel):
                 # TODO: check units
                 return self * 1
             raise NotImplementedError()
+        self_nointerp = (self.interpolation == InterpolationMode.no_interpolation)
+        other_nointerp = (other.interpolation == InterpolationMode.no_interpolation)
 
-        if self.interpolation != InterpolationMode.no_interpolation:
-            raise NotImplementedError()
-        if other.interpolation != InterpolationMode.no_interpolation:
-            raise NotImplementedError()
-        default_value = None
-        interpolation = InterpolationMode.no_interpolation
-        if self.t_unit != other.t_unit:
-            raise NotImplementedError()
-        t_unit = self.t_unit
-        other_as_dict = {tt:vv for tt, vv in zip(other.times, other.values[1:])}
-        times = []
-        values = []
-        for tt, vv in zip(self.times, self.values[1:]):
-            if tt in other_as_dict:
-                times.append(tt * t_unit)
-                values.append(vv * self.v_unit + other_as_dict[tt] * other.v_unit)
-        if values:
-            v_unit = values[0].u
+        if self_nointerp and other_nointerp:
+            return add_nointerp_nointerp(self, other)
+        elif self_nointerp and not other_nointerp:
+            return add_nointerp_interp(self, other)
+        elif not self_nointerp and other_nointerp:
+            return add_nointerp_interp(other, self)
         else:
-            v_unit = self.v_unit
-        rval = SparseTimeSeries(
-            times=times,
-            values=values,
-            default_value=default_value,
-            t_unit=t_unit,
-            unit=v_unit,
-            identifier=None,
-            interpolation=InterpolationMode.no_interpolation)
-        return rval
+            raise NotImplementedError()
+
+    def __radd__(self, other):
+        return self.__add__(other)
 
     def __sub__(self, other):
         return (self + scale(other, -1))
@@ -315,6 +288,63 @@ def annual_report(**kwargs):
         t_unit=u.years,
         interpolation='no_interpolation',
         **kwargs)
+
+
+def add_nointerp_nointerp(self, other):
+    assert self.interpolation == InterpolationMode.no_interpolation
+    assert other.interpolation == InterpolationMode.no_interpolation
+
+    default_value = None
+    interpolation = InterpolationMode.no_interpolation
+    if self.t_unit != other.t_unit:
+        raise NotImplementedError()
+    t_unit = self.t_unit
+    other_as_dict = {tt:vv for tt, vv in zip(other.times, other.values[1:])}
+    times = []
+    values = []
+    for tt, vv in zip(self.times, self.values[1:]):
+        if tt in other_as_dict:
+            times.append(tt * t_unit)
+            values.append(vv * self.v_unit + other_as_dict[tt] * other.v_unit)
+    if values:
+        v_unit = values[0].u
+    else:
+        v_unit = self.v_unit
+    rval = SparseTimeSeries(
+        times=times,
+        values=values,
+        default_value=default_value,
+        t_unit=t_unit,
+        unit=v_unit,
+        identifier=None,
+        interpolation=InterpolationMode.no_interpolation)
+    return rval
+
+
+def add_nointerp_interp(self, other):
+    assert self.interpolation == InterpolationMode.no_interpolation
+    assert other.interpolation != InterpolationMode.no_interpolation
+
+    if self.t_unit != other.t_unit:
+        raise NotImplementedError()
+    t_unit = self.t_unit
+    times = [tt * t_unit for tt in self.times]
+    other_values_at_times = other.query(times)
+    values = [vv * self.v_unit + ov
+              for vv, ov in zip(self.values, other_values_at_times)]
+    if values:
+        v_unit = values[0].u
+    else:
+        v_unit = (1 * self.v_unit + 1 * other.v_unit).u
+    rval = SparseTimeSeries(
+        times=times,
+        values=values,
+        default_value=None,
+        t_unit=t_unit,
+        unit=v_unit,
+        identifier=None,
+        interpolation=InterpolationMode.no_interpolation)
+    return rval
 
 
 class STSDict(BaseModel):
@@ -633,9 +663,8 @@ def scale(self, amount):
     assert isinstance(amount, (float, int))
     if self.interpolation == InterpolationMode.no_interpolation:
         default_value = None
-        interpolation = InterpolationMode.no_interpolation
     else:
-        raise NotImplementedError()
+        default_value = self.values[0] * self.v_unit * amount
     rval = SparseTimeSeries(
         times=[tt * self.t_unit for tt in self.times],
         values=[vv * amount * self.v_unit for vv in self.values[1:]],
@@ -643,17 +672,16 @@ def scale(self, amount):
         t_unit=self.t_unit,
         unit=self.v_unit,
         identifier=None,
-        interpolation=interpolation)
+        interpolation=self.interpolation)
     return rval
 
 
 def scale_convert(self, amount):
+    v_coef = amount * self.v_unit
     if self.interpolation == InterpolationMode.no_interpolation:
         default_value = None
-        interpolation = InterpolationMode.no_interpolation
     else:
-        raise NotImplementedError()
-    v_coef = amount * self.v_unit
+        default_value = self.values[0] * v_coef
     rval = SparseTimeSeries(
         times=[tt * self.t_unit for tt in self.times],
         values=[vv * v_coef for vv in self.values[1:]],
@@ -661,5 +689,12 @@ def scale_convert(self, amount):
         t_unit=self.t_unit,
         unit=v_coef.u,
         identifier=None,
-        interpolation=interpolation)
+        interpolation=self.interpolation)
     return rval
+
+if SparseTimeSeries not in objtensor._types_for_pint_to_ignore:
+    objtensor._types_for_pint_to_ignore = (
+        objtensor._types_for_pint_to_ignore
+        + (SparseTimeSeries,))
+
+

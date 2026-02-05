@@ -5,31 +5,10 @@ from .enums import PT
 import matplotlib.pyplot as plt
 from . import sts
 
-def t_units_of_objtensor(ot):
-    t_units = set()
-    for obj in ot.ravel():
-        try:
-            t_units.add(obj.t_unit)
-        except (AttributeError, TypeError):
-            pass
-    return t_units
-
-
-def v_units_of_objtensor(ot):
-    v_units = set()
-    for obj in ot.ravel():
-        try:
-            v_units.add(obj.u)
-        except (AttributeError, TypeError):
-            try:
-                v_units.add(obj.v_unit)
-            except (AttributeError, TypeError):
-                pass
-    return v_units
 
 
 def scatter(ot, legend_loc=None, **kwargs):
-    t_unit, = t_units_of_objtensor(ot)
+    t_unit, = set(ot.t_units())
 
     if len(ot.dims) > 2:
         raise NotImplementedError()
@@ -56,7 +35,11 @@ def scatter(ot, legend_loc=None, **kwargs):
     fig, axs = plt.subplots(*subplots_args, **subplots_kwargs)
 
     for dim_elem, ax, oti in zip(ot.dims[0], axs.flatten(), ot):
-        v_unit, = v_units_of_objtensor(oti)
+        v_units = set(oti.v_units())
+        try:
+            v_unit, = v_units
+        except ValueError as exc:
+            raise RuntimeError(v_units, dim_elem) from exc
         # guarantees that all pint and SparseTimeSeries have same unit
         for val, pt in zip(oti, ot.dims[1]):
             if isinstance(val, pint.Quantity):

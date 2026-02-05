@@ -59,12 +59,12 @@ kg_by_ghg = {
     enums.GHG.NF3: u.kg_NF3,
 }
 
-kg_by_coal_type = {
-    enums.CoalType.CanadianBituminous: u.kg_coal_bit,
-    enums.CoalType.CanadianSubbituminous: u.kg_coal_bit,
-    enums.CoalType.Lignite: u.kg_lignite,
-    enums.CoalType.ImportedBituminous: u.kg_coal_subbit,
-    enums.CoalType.ImportedSubbituminous: u.kg_coal_subbit,
+tonne_by_coal_type = {
+    enums.CoalType.CanadianBituminous: u.tonne_coal_bit,
+    enums.CoalType.CanadianSubbituminous: u.tonne_coal_subbit,
+    enums.CoalType.Lignite: u.tonne_lignite,
+    enums.CoalType.ImportedBituminous: u.tonne_coal_bit,
+    enums.CoalType.ImportedSubbituminous: u.tonne_coal_subbit,
 }
 
 
