@@ -331,7 +331,7 @@ def add_nointerp_interp(self, other):
     times = [tt * t_unit for tt in self.times]
     other_values_at_times = other.query(times)
     values = [vv * self.v_unit + ov
-              for vv, ov in zip(self.values, other_values_at_times)]
+              for vv, ov in zip(self.values[1:], other_values_at_times)]
     if values:
         v_unit = values[0].u
     else:
