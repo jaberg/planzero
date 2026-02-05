@@ -1,0 +1,151 @@
+import pandas as pd
+import numpy as np
+
+from . import enums
+from .enums import GHG, CoalType, PT
+from .ureg import u, tonne_by_coal_type, kg_by_ghg
+from .sc_utils import zip_table_to_dataframe
+from . import objtensor
+from . import sts
+from . import eccc_nir_annex6
+
+def A6_1_1(): # marketable natural gas
+
+    df = eccc_nir_annex6.df_a6_1_2
+    in_times = df.Year.values
+    out_times = np.arange(1990, 2024) * u.years
+
+    rval = {}
+    for pt in PT:
+        if pt in (PT.CA, PT.PX): # not present
+            continue
+        values = _repeat_prev_for_omitted_years(
+                in_times,
+                getattr(df, pt.two_letter_code()).values * u.g_CO2 / u.m3_NG_nmk)
+        rval[pt] = sts.annual_report(times=out_times, values=values, skip_nan_values=True)
+        if len(rval[pt].times) == 0:
+            rval[pt] = None
+    return objtensor.from_dict(rval)
+
+
+def A6_1_2(): # non-marketable natural gas
+    df = eccc_nir_annex6.df_a6_1_2
+    in_times = df.Year.values
+    out_times = np.arange(1990, 2024) * u.years
+
+    rval = {}
+    for pt in PT:
+        if pt in (PT.CA, PT.PX): # not present
+            continue
+        values = _repeat_prev_for_omitted_years(
+                in_times,
+                getattr(df, pt.two_letter_code()).values * u.g_CO2 / u.m3_NG_nmk)
+        rval[pt] = annual_report(times=out_times, values=values, skip_nan_values=True)
+        if len(rval[pt].times) == 0:
+            rval[pt] = None
+    return objtensor.from_dict(rval)
+
+def A6_1_3_and_4():
+    GHG = enums.GHG
+    NGU = enums.NaturalGasUser
+    PT = enums.PT
+    rval = objtensor.empty([GHG.CH4, GHG.N2O], NGU, PT)
+
+    # start with Table 3, CH4
+    rval[GHG.CH4] = .037 * u.g_CH4 / u.m3_NG_mk
+    rval[GHG.CH4, NGU.ElectricUtilities] = .490 * u.g_CH4 / u.m3_NG_mk
+    rval[GHG.CH4, NGU.Producer] = 6.4 * u.g_CH4 / u.m3_NG_nmk
+    rval[GHG.CH4, NGU.Producer, PT.NL] = .490 * u.g_CH4 / u.m3_NG_nmk
+    rval[GHG.CH4, NGU.Pipelines] = 1.90 * u.g_CH4 / u.m3_NG_mk
+
+    # start with Table 3, N2O
+    rval[GHG.N2O] = .035 * u.g_N2O / u.m3_NG_mk
+    rval[GHG.N2O, NGU.ElectricUtilities] = .0490 * u.g_N2O / u.m3_NG_mk
+    rval[GHG.N2O, NGU.Producer] = 0.06 * u.g_N2O / u.m3_NG_nmk
+    rval[GHG.N2O, NGU.Pipelines] = 0.05 * u.g_N2O / u.m3_NG_mk
+    rval[GHG.N2O, NGU.Cement] = 0.034 * u.g_N2O / u.m3_NG_mk
+    rval[GHG.N2O, NGU.Manufacturing] = 0.033 * u.g_N2O / u.m3_NG_mk
+
+    # Now bring in Table 4
+    # with year-by-year CH4 factors for western provinces
+    df = eccc_nir_annex6.df_a6_1_4
+    rval[GHG.CH4, NGU.Producer, PT.BC] = annual_report(
+        times=df.Year,
+        values=df.BC * u.g_N2O / u.m3_NG_nmk)
+    rval[GHG.CH4, NGU.Producer, PT.AB] = annual_report(
+        times=df.Year,
+        values=df.AB * u.g_N2O / u.m3_NG_nmk)
+    rval[GHG.CH4, NGU.Producer, PT.SK] = annual_report(
+        times=df.Year,
+        values=df.SK * u.g_N2O / u.m3_NG_nmk)
+
+    return rval
+
+
+def A6_1_10_and_12():
+    rval = objtensor.empty(GHG, CoalType, PT)
+
+    for ghg in [GHG.HFCs, GHG.PFCs, GHG.SF6, GHG.NF3]:
+        for coal_type in CoalType:
+            rval[ghg, coal_type] = (
+                0 * kg_by_ghg[ghg] / tonne_by_coal_type[coal_type])
+
+    # put a massive number here so that it shows up if it's used
+    # but if it's multiplied by 0, it's fine (not e.g. NaN).
+    for coal_type in CoalType:
+        rval[GHG.CO2, coal_type] = (
+            1e10 * kg_by_ghg[GHG.CO2] / tonne_by_coal_type[coal_type])
+
+    # table 1-12
+    for coal_type in CoalType:
+        rval[GHG.CH4, coal_type] = (
+            .02 / 1000 * kg_by_ghg[GHG.CH4] / tonne_by_coal_type[coal_type])
+
+    for coal_type in CoalType:
+        rval[GHG.N2O, coal_type] = (
+            .03 / 1000 * kg_by_ghg[GHG.N2O] / tonne_by_coal_type[coal_type])
+
+    # table 1-10
+    co2_canbit = rval[GHG.CO2, CoalType.CanadianBituminous]
+    co2_canbit[[PT.NL, PT.NS, PT.PE, PT.QC]] = sts.SparseTimeSeries(
+        times=[2000 * u.years],
+        values=[2218 * u.kg_CO2 / u.tonne_coal_bit],
+        default_value=2344 * u.kg_CO2 / u.tonne_coal_bit,
+        t_unit=u.years)
+    co2_canbit[PT.NB] = sts.SparseTimeSeries(
+        times=[2010 * u.years],
+        values=[2212 * u.kg_CO2 / u.tonne_coal_bit],
+        default_value=2333 * u.kg_CO2 / u.tonne_coal_bit,
+        t_unit=u.years)
+    co2_canbit[[PT.ON, PT.MB, PT.SK, PT.AB, PT.BC]] = 2212 * u.kg_CO2 / u.tonne_coal_bit
+
+    co2_impbit = rval[GHG.CO2, CoalType.ImportedBituminous]
+    co2_impbit[[PT.NB, PT.NS, PT.PE, PT.NL]] = 2571 * u.kg_CO2 / u.tonne_coal_bit
+    co2_impbit[[PT.MB, PT.ON]] = 2651 * u.kg_CO2 / u.tonne_coal_bit
+    co2_impbit[[PT.QC, PT.AB, PT.BC]] = 2662 * u.kg_CO2 / u.tonne_coal_bit
+
+    rval[GHG.CO2, CoalType.Lignite] = 1463 * u.kg_CO2 / u.tonne_lignite
+
+    subs = [CoalType.CanadianSubbituminous, CoalType.ImportedSubbituminous]
+    rval[GHG.CO2, subs, [PT.QC, PT.ON, PT.MB]] = 1865 * u.kg_CO2 / u.tonne_coal_subbit
+    rval[GHG.CO2, subs, [PT.NS, PT.PE]] = 1743 * u.kg_CO2 / u.tonne_coal_subbit
+    rval[GHG.CO2, subs, [PT.SK, PT.AB, PT.BC]] = 1775 * u.kg_CO2 / u.tonne_coal_subbit
+    rval[GHG.CO2, subs, PT.NB] = sts.SparseTimeSeries(
+            times=[
+                2010 * u.years,
+                2011 * u.years,
+                2012 * u.years,
+                2013 * u.years,
+                2014 * u.years,
+                2015 * u.years],
+            values=[
+                2189 * u.kg_CO2 / u.tonne_coal_subbit,
+                2189 * u.kg_CO2 / u.tonne_coal_subbit,
+                2352 * u.kg_CO2 / u.tonne_coal_subbit,
+                2189 * u.kg_CO2 / u.tonne_coal_subbit,
+                2189 * u.kg_CO2 / u.tonne_coal_subbit,
+                2352 * u.kg_CO2 / u.tonne_coal_subbit],
+            default_value=1e10 * u.kg_CO2 / u.tonne_coal_subbit, # should only be used to multiply by zero
+            t_unit=u.years)
+
+    return rval

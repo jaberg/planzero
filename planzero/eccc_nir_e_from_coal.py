@@ -9,67 +9,85 @@ from .planet_model import CO2e_from_emissions
 from .sc_nir import Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility
 
 
-class A6_1_10_CanadianBituminous(PTValues):
-    def __init__(self):
-        row_1_2 = SparseTimeSeries(
-            times=[2000 * u.years],
-            values=[2218 * u.kg_CO2 / u.tonne_coal_bit],
-            default_value=2344 * u.kg_CO2 / u.tonne_coal_bit,
-            t_unit=u.years,
-            )
-        val_d = {}
-        val_d[Geo.NL] = row_1_2
-        val_d[Geo.NS] = row_1_2
-        val_d[Geo.PE] = row_1_2
-        val_d[Geo.QC] = row_1_2
+class WithPrefix(object):
+    def __init__(self, base_dict, prefix):
+        self.base_dict = base_dict
+        self.prefix = prefix
 
-        row_3_4 = SparseTimeSeries(
-            times=[2010 * u.years],
-            values=[2212 * u.kg_CO2 / u.tonne_coal_bit],
-            default_value=2333 * u.kg_CO2 / u.tonne_coal_bit,
-            t_unit=u.years,
-            )
-        val_d[Geo.NB] = row_3_4
+    def __setitem__(self, item, value):
+        if not isinstance(item, tuple):
+            item = (item,)
+        self.base_dict[prefix + item] = value
 
-        val_d[Geo.ON] = 2212 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.MB] = 2212 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.SK] = 2212 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.AB] = 2212 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.BC] = 2212 * u.kg_CO2 / u.tonne_coal_bit
-        super().__init__(val_d=val_d)
+def update_A6_1_10_CanadianBituminous(val_d):
+    dd = WithPrefix(val_d, (CoalType.CanadianBituminous,))
+    row_1_2 = SparseTimeSeries(
+        times=[2000 * u.years],
+        values=[2218 * u.kg_CO2 / u.tonne_coal_bit],
+        default_value=2344 * u.kg_CO2 / u.tonne_coal_bit,
+        t_unit=u.years,
+        )
+    dd[Geo.NL] = row_1_2
+    dd[Geo.NS] = row_1_2
+    dd[Geo.PE] = row_1_2
+    dd[Geo.QC] = row_1_2
 
+    row_3_4 = SparseTimeSeries(
+        times=[2010 * u.years],
+        values=[2212 * u.kg_CO2 / u.tonne_coal_bit],
+        default_value=2333 * u.kg_CO2 / u.tonne_coal_bit,
+        t_unit=u.years,
+        )
+    dd[Geo.NB] = row_3_4
 
-class A6_1_10_ImportedBituminous(PTValues):
-
-    def __init__(self):
-
-        val_d = {}
-        val_d[Geo.NB] = 2571 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.NS] = 2571 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.PE] = 2571 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.NL] = 2571 * u.kg_CO2 / u.tonne_coal_bit
-
-        val_d[Geo.MB] = 2651 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.ON] = 2651 * u.kg_CO2 / u.tonne_coal_bit
-
-        val_d[Geo.QC] = 2662 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.AB] = 2662 * u.kg_CO2 / u.tonne_coal_bit
-        val_d[Geo.BC] = 2662 * u.kg_CO2 / u.tonne_coal_bit
-        super().__init__(val_d=val_d)
+    dd[Geo.ON] = 2212 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.MB] = 2212 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.SK] = 2212 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.AB] = 2212 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.BC] = 2212 * u.kg_CO2 / u.tonne_coal_bit
 
 
-class A6_1_10_Lignite(PTValues):
-    def __init__(self):
-        val_d = {}
-        for pt in Geo.provinces_and_territories():
-            val_d[pt] = 1463 * u.kg_CO2 / u.tonne_lignite
-        super().__init__(val_d=val_d)
+def update_A6_1_10_ImportedBituminous(val_d):
+
+    dd = WithPrefix(val_d, (CoalType.ImportedBituminous,))
+
+    dd[Geo.NB] = 2571 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.NS] = 2571 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.PE] = 2571 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.NL] = 2571 * u.kg_CO2 / u.tonne_coal_bit
+
+    dd[Geo.MB] = 2651 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.ON] = 2651 * u.kg_CO2 / u.tonne_coal_bit
+
+    dd[Geo.QC] = 2662 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.AB] = 2662 * u.kg_CO2 / u.tonne_coal_bit
+    dd[Geo.BC] = 2662 * u.kg_CO2 / u.tonne_coal_bit
 
 
-class A6_1_10_Subbituminous(PTValues):
+def update_A6_1_10_Lignite(val_d):
 
-    def __init__(self):
-        NB = SparseTimeSeries(
+    dd = WithPrefix(val_d, (CoalType.Lignite,))
+    for pt in Geo.provinces_and_territories():
+        dd[pt] = 1463 * u.kg_CO2 / u.tonne_lignite
+
+
+def update_A6_1_10_Subbituminous(val_d):
+
+    for coal_type in [CoalType.CanadianSubbituminous, CoalType.ImportedSubbituminous]:
+        dd = WithPrefix(val_d, (coal_type,))
+
+        dd[Geo.QC] = 1865 * u.kg_CO2 / u.tonne_coal_subbit
+        dd[Geo.ON] = 1865 * u.kg_CO2 / u.tonne_coal_subbit
+        val_d[Geo.MB] = 1865 * u.kg_CO2 / u.tonne_coal_subbit
+
+        dd[Geo.NS] = 1743 * u.kg_CO2 / u.tonne_coal_subbit
+        dd[Geo.PE] = 1743 * u.kg_CO2 / u.tonne_coal_subbit
+
+        dd[Geo.SK] = 1775 * u.kg_CO2 / u.tonne_coal_subbit
+        dd[Geo.AB] = 1775 * u.kg_CO2 / u.tonne_coal_subbit
+        dd[Geo.BC] = 1775 * u.kg_CO2 / u.tonne_coal_subbit
+
+        dd[Geo.NB] = SparseTimeSeries(
             times=[
                 2010 * u.years,
                 2011 * u.years,
@@ -88,34 +106,17 @@ class A6_1_10_Subbituminous(PTValues):
             t_unit=u.years,
             )
 
-        val_d = {}
-        val_d[Geo.QC] = 1865 * u.kg_CO2 / u.tonne_coal_subbit
-        val_d[Geo.ON] = 1865 * u.kg_CO2 / u.tonne_coal_subbit
-        val_d[Geo.MB] = 1865 * u.kg_CO2 / u.tonne_coal_subbit
+def A6_1_10():
+    val_d = {}
+    update_A6_1_10_CanadianBituminous(val_d)
+    update_A6_1_10_ImportedBituminous(val_d)
+    update_A6_1_10_Lignite(val_d)
+    update_A6_1_10_Subbituminous(val_d)
+    return sts.STSDict(
+        val_d=val_d,
+        dims=[CoalType, PTDim],
+        broadcast=[False, False])
 
-        val_d[Geo.NS] = 1743 * u.kg_CO2 / u.tonne_coal_subbit
-        val_d[Geo.PE] = 1743 * u.kg_CO2 / u.tonne_coal_subbit
-
-        val_d[Geo.SK] = 1775 * u.kg_CO2 / u.tonne_coal_subbit
-        val_d[Geo.AB] = 1775 * u.kg_CO2 / u.tonne_coal_subbit
-        val_d[Geo.BC] = 1775 * u.kg_CO2 / u.tonne_coal_subbit
-
-        val_d[Geo.NB] = NB
-        super().__init__(val_d=val_d)
-
-
-class A6_1_10(object):
-    # Construct the PTValues of coefficients by CoalType
-
-    @staticmethod
-    def ptv_by_coal_type():
-        rval = {}
-        rval[CoalType.CanadianBituminous] = A6_1_10_CanadianBituminous()
-        rval[CoalType.ImportedBituminous] = A6_1_10_ImportedBituminous()
-        rval[CoalType.Lignite] = A6_1_10_Lignite()
-        rval[CoalType.CanadianSubbituminous] = A6_1_10_Subbituminous()
-        rval[CoalType.ImportedSubbituminous] = A6_1_10_Subbituminous()
-        return rval
 
 
 class AmountConsumed(PTValues):

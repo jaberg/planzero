@@ -90,6 +90,9 @@ class SparseTimeSeries(BaseModel):
             identifier=identifier,
             interpolation=interpolation)
 
+        if self.v_unit == u.kg_CO2 ** 2:
+            assert 0
+
         if interpolation == InterpolationMode.no_interpolation:
             assert default_value is None
 
@@ -390,6 +393,10 @@ class STSDict(BaseModel):
     def logical_shape(self):
         return [len(dim) for dim in self.dims]
 
+    def all_logical_keys(self):
+        for key in functools.product(self.dims):
+            yield key
+
     @property
     def nonbroadcast_dims(self):
         return [dim for dim, bc in zip(self.dims, self.broadcast) if not bc]
@@ -406,6 +413,51 @@ class STSDict(BaseModel):
 
     def __setitem__(self, key, value):
         self.val_d[self.val_d_key(key)] = value
+
+    def select_fn(self, key_range):
+        if len(key_range) < len(self.dims):
+            key_range = list(key_range) + [slice(None)] * (len(self.dims) - len(key_range))
+
+        def dim_from_key_range_elem(dim, kre):
+            if kre == slice(None):
+                return dict(dim)
+            elif hasattr(kre, '__iter__') or hasattr(kre, '__getitem__'):
+                for krei in kre:
+                    assert krei in dim
+                return {krei: ii for ii, krei in enumerate(kre)}
+            else:
+                raise NotImplementedError(kre)
+
+        new_dims = [dim_from_key_range_elem(dim, kre) for dim, kre in zip(self.dims, key_range)]
+
+        # later, if we allow selection of single elements per dimension, this
+        # may not necessarily be true, but for now:
+        broadcast = self.broadcast
+        new_nbc_dims = [dim for dim, bc in zip(new_dims, broadcast) if not bc]
+        def in_new_dims(key):
+            for new_dim, key_elem in zip(new_nbc_dims, key):
+                if key_elem not in new_dim:
+                    return False
+            return True
+
+        if self.fallback is None:
+            fallback = None
+        else:
+            fallback = self.fallback.select(key_range)
+
+        return STSDict(
+            val_d={key: val for key, val in self.val_d.items() if in_new_dims(key)},
+            dims=new_dims,
+            broadcast=broadcast,
+            fallback = fallback)
+    @property
+    def select(self):
+        class SelectionObj:
+            def __getitem__(_, key_range):
+                if not isinstance(key_range, tuple):
+                    key_range = (key_range,)
+                return self.select_fn(key_range)
+        return SelectionObj()
 
     def __getitem__(self, key):
         if isinstance(key, list):
@@ -441,7 +493,10 @@ class STSDict(BaseModel):
                 key_elem
                 for key_elem, fbc in zip(_key, foo)
                 if not fbc]
-            return self.fallback.nonbroadcast_getitem(tuple(fb_key))
+            try:
+                return self.fallback.nonbroadcast_getitem(tuple(fb_key))
+            except KeyError as exc:
+                raise KeyError(key) from exc
         raise KeyError(key)
 
     def nonfallback_items(self):

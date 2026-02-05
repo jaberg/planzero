@@ -20,6 +20,9 @@ class ProvinceTerritory(str, enum.Enum):
     # provincial subtotals.
     XX = 'Unknown Province or Territory'
 
+    def two_letter_code(self):
+        return str(self)[-2:]
+
 PT = ProvinceTerritory
 
 
@@ -57,6 +60,9 @@ class FuelType(str, enum.Enum):
     PetroleumCoke = 'Petroleum coke'
     StillGas = 'Still gas'
 
+    NaturalGasMkt = 'Natural gas'
+    NaturalGasNonMkt = 'Natural gas (non-marketable)'
+
 
 class GHG(str, enum.Enum):
     CO2 = 'CO2'
@@ -66,3 +72,21 @@ class GHG(str, enum.Enum):
     PFCs = 'PFCs'
     SF6 = 'SF6'
     NF3 = 'NF3'
+
+class ElectricityProducer(str, enum.Enum):
+    Utilities = 'Utilities'
+    Industry = 'Industry' # Aka producers sometimes, of e.g. Natural Gas
+
+
+# from ECCC NIR Annex 6 Table 1-3
+class NaturalGasUser(str, enum.Enum):
+    ElectricUtilties = 'Electric Utilities'
+    Industrial = 'Industrial'
+    Producer = 'Producer Consumption'
+    Pipelines = 'Pipelines'
+    Cement = 'Cement'
+    Manufacturing = 'Manufacturing Industries'
+    Residential = 'Residential'
+    Construction = 'Construction'
+    Commercial = 'Commercial/Institutional'
+    Agriculture = 'Agriculture'
