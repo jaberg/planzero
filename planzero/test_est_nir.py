@@ -1,16 +1,17 @@
+import pytest
 from .enums import PT
 from .ureg import u
 from . import est_nir
 from . import eccc_nir_annex13
 
 def test_small_delta_natural_gas_for_electricity_2005():
-    co2e = est_nir.est_annex13_electricity_from_ng()
-    estimate = co2e.sum(PT)
+    est = est_nir.EstAnnex13ElectricityFromNG()
+    estimate = est.co2e.sum(PT)
 
     target = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['natural_gas']
 
-    estimate_2005 = estimate.query(2005 * u.years)
     target_2005 = target.query(2005 * u.years)
+    estimate_2005 = estimate.query(2005 * u.years).to(target_2005.u)
     assert 14500 * u.kt_CO2e < target_2005 < 14505 * u.kt_CO2e
     assert 14100 * u.kt_CO2e < estimate_2005 < 14805 * u.kt_CO2e
 

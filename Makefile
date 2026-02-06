@@ -24,49 +24,56 @@ test: .build
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest --maxfail=2 .
+		pytest -W error --maxfail=2 .
 
 test_blogs: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest --maxfail=2 -vv -k test_each_blog test_200.py
+		pytest -W error --maxfail=2 -vv -k test_each_blog test_200.py
 
 test_mapml: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest --maxfail=2 -vv planzero/test_mapml.py
+		pytest -W error --maxfail=2 -vv planzero/test_mapml.py
 
 test_co2e: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest --maxfail=2 -vv planzero/test_co2e.py
+		pytest -W error --maxfail=2 -vv planzero/test_co2e.py
 
 test_est_nir: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest --maxfail=2 -vv planzero/test_est_nir.py
+		pytest -W error --maxfail=2 -vv planzero/test_est_nir.py
 
 test_sc_nir: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest --maxfail=2 -vv planzero/test_sc_nir.py
+		pytest -W error --maxfail=2 -vv planzero/test_sc_nir.py
 
 test_sts: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest --maxfail=2 -vv planzero/test_sts.py
+		pytest -W error --maxfail=2 -vv planzero/test_sts.py
+
+test_objtensor: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest -W error --maxfail=2 -vv planzero/test_objtensor.py
 
 test_html: .build
 	docker run \

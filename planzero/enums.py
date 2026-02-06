@@ -80,7 +80,7 @@ class ElectricityProducer(str, enum.Enum):
 
 # from ECCC NIR Annex 6 Table 1-3
 class NaturalGasUser(str, enum.Enum):
-    ElectricUtilties = 'Electric Utilities'
+    ElectricUtilities = 'Electric Utilities'
     Industrial = 'Industrial'
     Producer = 'Producer Consumption'
     Pipelines = 'Pipelines'

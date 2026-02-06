@@ -35,20 +35,24 @@ def scatter(ot, legend_loc=None, **kwargs):
     fig, axs = plt.subplots(*subplots_args, **subplots_kwargs)
 
     for dim_elem, ax, oti in zip(ot.dims[0], axs.flatten(), ot):
-        v_units = set(oti.v_units())
-        try:
+        v_units = list(set(oti.v_units()))
+        if len(v_units) == 1:
             v_unit, = v_units
-        except ValueError as exc:
-            raise RuntimeError(v_units, dim_elem) from exc
-        # guarantees that all pint and SparseTimeSeries have same unit
+        else:
+            v_unit = v_units[0]
+            for other_v_unit in v_units[1:]:
+                try:
+                    (1 * v_unit).to(other_v_unit)
+                except Exception as exc:
+                    raise ValueError(v_units) from exc
         for val, pt in zip(oti, ot.dims[1]):
             if isinstance(val, pint.Quantity):
                 if val.magnitude != 0:
-                    ax.axhline(val.magnitude)
+                    ax.axhline(val.to(v_unit).magnitude)
             elif val.times:
                 ax.scatter(
                     val.times,
-                    val.values[1:],
+                    [(vv * val.v_unit).to(v_unit).magnitude for vv in val.values[1:]],
                     label=pt.value,
                     **kwargs)
         ax.set_title(dim_elem.value)

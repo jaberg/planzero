@@ -672,45 +672,60 @@ def usum(args):
     None is a valid argument, it's a signal that isn't defined anywhere, and
     will be ignored.
     """
-    args = [arg for arg in args if arg is not None]
     # XXX check units here - this is incorrect handling of e.g. 0 Celcius, and could mask incompatible units
-    args = [arg for arg in args if not (isinstance(arg, pint.Quantity) and arg.magnitude == 0)]
     if not args:
-        return None
+        raise NotImplementedError()
     if len(args) == 1:
         return args[0]
-    assert None not in args
-    interpolations = set(arg.interpolation for arg in args)
+    qs = [arg for arg in args if isinstance(arg, pint.Quantity)]
+    nonqs = [arg for arg in args if not isinstance(arg, pint.Quantity)]
+    sum_qs = sum(qs)
+    if not nonqs:
+        assert qs
+        return sum_qs
+    # there's at least one non-Quantity element in args
+    interpolations = set(arg.interpolation for arg in nonqs)
     if len(interpolations) > 1:
         # This can probably be defined, but it isn't yet.
         raise NotImplementedError(interpolations)
+    interpolation, = interpolations
 
-    t_units = set(arg.t_unit for arg in args)
-    v_units = set(arg.v_unit for arg in args)
+    assert interpolation == InterpolationMode.no_interpolation
+    default_value = None
+
+    t_units = set(arg.t_unit for arg in nonqs)
+    v_units = set(arg.v_unit for arg in nonqs)
     if len(t_units) != 1:
         raise NotImplementedError()
     if len(v_units) != 1:
         raise NotImplementedError()
-    t_unit = args[0].t_unit
-    v_unit = args[0].v_unit
+    t_unit = nonqs[0].t_unit
+    v_unit = nonqs[0].v_unit
+    if qs:
+        default_val_by_time = (sum_qs.to(v_unit).magnitude,)
+    else:
+        default_val_by_time = ()
     vals_by_time = {}
-    for arg in args:
+    for arg in nonqs:
         for tt, vv in zip(arg.times, arg.values[1:]):
-            vals_by_time.setdefault(tt, []).append(vv)
+            vals_by_time.setdefault(tt, list(default_val_by_time)).append(vv)
     times = []
     values = []
     for tt, vvs in sorted(vals_by_time.items()):
         times.append(tt)
-        values.append(builtins.sum(vvs))
+        try:
+            values.append(builtins.sum(vvs))
+        except Exception as exc:
+            raise RuntimeError(vvs) from exc
 
     rval = SparseTimeSeries(
         times=[tt * t_unit for tt in times],
         values=[vv * v_unit for vv in values],
-        default_value=None,
+        default_value=default_value,
         t_unit=t_unit,
         unit=v_unit,
         identifier=None,
-        interpolation='no_interpolation')
+        interpolation=interpolation)
     return rval
 
 

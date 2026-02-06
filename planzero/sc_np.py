@@ -21,6 +21,37 @@ unit_by_fuel_type = {
     enums.FuelType.Diesel: ('Diesel', 'Kilolitres', u.kilolitres_diesel),
 }
 
+_actual_PTs = [pt for pt in enums.PT if pt != enums.PT.XX]
+
+def set_ptxx(rval_pt, rval_ca):
+    assert rval_pt.ndim == 2
+    assert rval_ca.ndim == 1
+    for key in rval_ca.dims[0]:
+        eps = 1e-4
+        try:
+            # sum up the values listed for provinces and territories
+            pt_total = sts.usum(rval_pt[key, _actual_PTs])
+            xx = rval_ca[key] - pt_total
+            # xx may be a pint quantity of a SparseTimeSeries
+            if isinstance(xx, sts.SparseTimeSeries):
+                assert np.isnan(xx.values[0])
+                # It can happen, e.g. in the case of "Other" energy sources
+                # in Alberta, 2015 in product 20, that the provincial
+                # data adds up to more than the federal data, when using
+                # 0 for all missing entries. So this assertion isn't always
+                # valid.
+                #for tt, vv in zip(xx.times, xx.values[1:]):
+                #    assert vv >= -eps, (tt, vv)
+                if np.allclose(xx.values[1:], 0):
+                    # in the interest of keeping things compact, if the
+                    # difference is about 0, then just put in a zero
+                    xx = 0 * xx.v_unit
+            else:
+                assert xx.magnitude >= -eps
+            rval_pt[key, enums.PT.XX] = xx
+        except Exception as exc:
+            raise RuntimeError(key) from exc
+
 
 def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility():
     df = zip_table_to_dataframe("25-10-0017-01")
@@ -55,15 +86,13 @@ def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utilit
             assert max(pt_df.REF_DATE.values) <= 2021
             assert min(pt_df.REF_DATE.values) >= 2005
             rep_w_support = sts.usum([rep, support])
+            assert rep_w_support is not None
             if pt_name == 'Canada':
                 rval_ca[fuel_type] = rep_w_support
             else:
                 rval_pt[fuel_type, enums.PT(pt_name)] = rep_w_support
-        xx = rval_ca[fuel_type] - sts.usum(rval_pt[fuel_type])
-        assert np.isnan(xx.values[0])
-        if not np.allclose(xx.values[1:], 0):
-            rval_pt[fuel_type, enums.PT.XX] = xx
 
+    set_ptxx(rval_pt, rval_ca)
     return rval_pt, rval_ca
 
 
@@ -85,32 +114,47 @@ def Electric_Power_Annual_Generation_by_Class_of_Producer():
     }
 
     for ep, (producer_name, exp_uom) in items.items():
-        df = df[df['Class of electricity producer'] == producer_name]
-        for (pt_name, gen_type), pt_df in df.groupby(['GEO', 'Type of electricity generation']):
+        ep_df = df[df['Class of electricity producer'] == producer_name]
+        for (pt_name, gen_type), pt_df in ep_df.groupby(['GEO', 'Type of electricity generation']):
             if gen_type.startswith('Total'):
                 continue
             uom, = list(set(pt_df.UOM.values))
             assert uom == exp_uom
             factor_str, = list(set(pt_df.SCALAR_FACTOR.values))
             factor = Factors[factor_str]
-            rep = sts.annual_report(
-                times=pt_df.REF_DATE.values * u.years,
-                values=pt_df.VALUE.values * u.Quantity(f'{factor} {uom.lower()}'),
-                skip_nan_values=True)
+            as_d = dict(zip(pt_df.REF_DATE.values, pt_df.VALUE.values))
             egt = EGT(gen_type)
-            assert rep is not None
+            upper_valid_year = {
+                EGT.CombustionTurbine: 2014,
+                EGT.ConventionalSteam: 2014,
+                EGT.InternalCombustion: 2014,
+            }.get(egt, 2025)
+            for year in range(2005, upper_valid_year):
+                # XXX Underestimates missing data
+                as_d.setdefault(year, 0)
+                if np.isnan(as_d[year]):
+                    #assert pt_name.lower() != 'canada', (ep, gen_type, year)
+                    # we'll set it to zero here, and then
+                    # pick up the difference in the PT.XX
+                    as_d[year] = 0
+                    # XXX There is still trouble though, data can be
+                    # unavailable or sensored. The PT.XX mechanism
+                    # does not help with unavailable data, and that is
+                    # the most common. Sometimes it appears safe to estimate
+                    # 0 for unavailable data, but not always.
+                    # The most obviously non-zero unavailable data
+                    # is the national totals for CombustionTurbine after
+                    # 2014
+
+            rep = sts.annual_report(
+                times=[year * u.years for year in sorted(as_d)],
+                values=[vv * u.Quantity(f'{factor} {uom.lower()}')
+                        for _, vv in sorted(as_d.items())],
+                skip_nan_values=True)
             if pt_name.lower() == 'canada':
                 rval_ca[ep, egt] = rep
             else:
                 rval_pt[ep, egt, PT(pt_name)] = rep
-    for ep in EP:
-        for egt in EGT:
-            try:
-                xx = rval_ca[ep, egt] - sts.usum(rval_pt[ep, egt])
-            except Exception as exc:
-                raise RuntimeError(ep, egt) from exc
-            assert np.isnan(xx.values[0])
-            if not np.allclose(xx.values[1:], 0):
-                rval_pt[ep, egt, PT.XX] = xx
+        set_ptxx(rval_pt[ep], rval_ca[ep])
 
     return rval_pt, rval_ca

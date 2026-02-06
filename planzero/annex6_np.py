@@ -9,22 +9,44 @@ from . import objtensor
 from . import sts
 from . import eccc_nir_annex6
 
+
+def _repeat_prev_for_omitted_years(years, values, replace_nan_with=None):
+    ii = 0
+    year = years[0]
+    value = values[0]
+    rval = []
+    try:
+        while True:
+            if np.isnan(value) and replace_nan_with is not None:
+                rval.append(replace_nan_with)
+            else:
+                rval.append(value)
+            year += 1
+            if year == years[ii + 1]:
+                value = values[ii + 1]
+                ii += 1
+    except IndexError:
+        return rval
+
+
 def A6_1_1(): # marketable natural gas
 
-    df = eccc_nir_annex6.df_a6_1_2
+    df = eccc_nir_annex6.df_a6_1_1
     in_times = df.Year.values
     out_times = np.arange(1990, 2024) * u.years
+    notice_if_used = 1e10 * u.g_CO2 / u.m3_NG_mk # There is a "Canada" column that could work
 
     rval = {}
     for pt in PT:
-        if pt in (PT.CA, PT.PX): # not present
-            continue
-        values = _repeat_prev_for_omitted_years(
+        if pt == PT.XX: # not present
+            rval[pt] = notice_if_used
+        else:
+            values = _repeat_prev_for_omitted_years(
                 in_times,
-                getattr(df, pt.two_letter_code()).values * u.g_CO2 / u.m3_NG_nmk)
-        rval[pt] = sts.annual_report(times=out_times, values=values, skip_nan_values=True)
-        if len(rval[pt].times) == 0:
-            rval[pt] = None
+                getattr(df, pt.two_letter_code()).values * u.g_CO2 / u.m3_NG_mk,
+                replace_nan_with=notice_if_used)
+            rval[pt] = sts.annual_report(times=out_times, values=values)
+            assert len(rval[pt].times) > 0, (pt, values)
     return objtensor.from_dict(rval)
 
 
@@ -32,33 +54,36 @@ def A6_1_2(): # non-marketable natural gas
     df = eccc_nir_annex6.df_a6_1_2
     in_times = df.Year.values
     out_times = np.arange(1990, 2024) * u.years
+    notice_if_used = 1e10 * u.g_CO2 / u.m3_NG_nmk
 
     rval = {}
     for pt in PT:
-        if pt in (PT.CA, PT.PX): # not present
+        if pt == PT.XX:
+            rval[pt] = notice_if_used
             continue
         values = _repeat_prev_for_omitted_years(
-                in_times,
-                getattr(df, pt.two_letter_code()).values * u.g_CO2 / u.m3_NG_nmk)
-        rval[pt] = annual_report(times=out_times, values=values, skip_nan_values=True)
-        if len(rval[pt].times) == 0:
-            rval[pt] = None
+            in_times,
+            getattr(df, pt.two_letter_code()).values * u.g_CO2 / u.m3_NG_nmk,
+            replace_nan_with=notice_if_used)
+        rval[pt] = sts.annual_report(times=out_times, values=values)
+        assert len(rval[pt].times)
     return objtensor.from_dict(rval)
 
-def A6_1_3_and_4():
+
+def A6_1_3_and_1_4():
     GHG = enums.GHG
     NGU = enums.NaturalGasUser
     PT = enums.PT
     rval = objtensor.empty([GHG.CH4, GHG.N2O], NGU, PT)
 
-    # start with Table 3, CH4
+    # start with Table 1-3, CH4
     rval[GHG.CH4] = .037 * u.g_CH4 / u.m3_NG_mk
     rval[GHG.CH4, NGU.ElectricUtilities] = .490 * u.g_CH4 / u.m3_NG_mk
     rval[GHG.CH4, NGU.Producer] = 6.4 * u.g_CH4 / u.m3_NG_nmk
     rval[GHG.CH4, NGU.Producer, PT.NL] = .490 * u.g_CH4 / u.m3_NG_nmk
     rval[GHG.CH4, NGU.Pipelines] = 1.90 * u.g_CH4 / u.m3_NG_mk
 
-    # start with Table 3, N2O
+    # start with Table 1-3, N2O
     rval[GHG.N2O] = .035 * u.g_N2O / u.m3_NG_mk
     rval[GHG.N2O, NGU.ElectricUtilities] = .0490 * u.g_N2O / u.m3_NG_mk
     rval[GHG.N2O, NGU.Producer] = 0.06 * u.g_N2O / u.m3_NG_nmk
@@ -66,18 +91,18 @@ def A6_1_3_and_4():
     rval[GHG.N2O, NGU.Cement] = 0.034 * u.g_N2O / u.m3_NG_mk
     rval[GHG.N2O, NGU.Manufacturing] = 0.033 * u.g_N2O / u.m3_NG_mk
 
-    # Now bring in Table 4
+    # Now bring in Table 1-4
     # with year-by-year CH4 factors for western provinces
     df = eccc_nir_annex6.df_a6_1_4
-    rval[GHG.CH4, NGU.Producer, PT.BC] = annual_report(
-        times=df.Year,
-        values=df.BC * u.g_N2O / u.m3_NG_nmk)
-    rval[GHG.CH4, NGU.Producer, PT.AB] = annual_report(
-        times=df.Year,
-        values=df.AB * u.g_N2O / u.m3_NG_nmk)
-    rval[GHG.CH4, NGU.Producer, PT.SK] = annual_report(
-        times=df.Year,
-        values=df.SK * u.g_N2O / u.m3_NG_nmk)
+    rval[GHG.CH4, NGU.Producer, PT.BC] = sts.annual_report(
+        times=list(df.Year.values * u.years),
+        values=list(df.BC.values * u.g_CH4 / u.m3_NG_nmk))
+    rval[GHG.CH4, NGU.Producer, PT.AB] = sts.annual_report(
+        times=list(df.Year.values * u.years),
+        values=list(df.AB.values * u.g_CH4 / u.m3_NG_nmk))
+    rval[GHG.CH4, NGU.Producer, PT.SK] = sts.annual_report(
+        times=list(df.Year.values * u.years),
+        values=list(df.SK.values * u.g_CH4 / u.m3_NG_nmk))
 
     return rval
 
