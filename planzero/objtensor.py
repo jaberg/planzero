@@ -376,6 +376,21 @@ class ObjectTensor(object):
         else:
             raise NotImplementedError()
 
+    def __add__(self, other):
+        if isinstance(other, ObjectTensor):
+            r_dims = elemwise_binary_op_dims(self.dims, other.dims)
+            rval = ObjectTensor.empty(*r_dims)
+            up_self = self.broadcast_to_dims(r_dims)
+            up_other = other.broadcast_to_dims(r_dims)
+            for key, (aa, bb, cc) in ravel_multi(rval, up_self, up_other):
+                rval.buf[aa] = up_self.buf[bb] + up_other.buf[cc]
+            return rval
+        else:
+            rval = ObjectTensor.empty(*self.dims)
+            for key, (aa, bb) in ravel_multi(rval, self):
+                rval.buf[aa] = self.buf[bb] + other
+            return rval
+
     def squeeze(self, axis=None):
         dims, strides = squeeze_dims_strides(self.dims, self.strides, axis=axis)
         return ObjectTensor(dims=dims, strides=strides, offset=self.offset, buf=self.buf)

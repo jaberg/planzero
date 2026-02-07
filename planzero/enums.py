@@ -90,3 +90,13 @@ class NaturalGasUser(str, enum.Enum):
     Construction = 'Construction'
     Commercial = 'Commercial/Institutional'
     Agriculture = 'Agriculture'
+
+# from ECCC NIR Annex 6 Table 1-6 and 1-3
+class RPP_User(str, enum.Enum):
+    ElectricUtilities = "Electric Utilities"
+    Industrial = "Industrial"
+    Producer = "Producer Consumption"
+    Residential = "Residential"
+    Commercial = "Construction, Forestry, Public Admin, Commercial/Institutional"
+    Refineries = "Refineries and Others"
+    Upgraders = "Upgraders"

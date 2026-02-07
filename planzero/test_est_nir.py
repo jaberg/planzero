@@ -5,7 +5,7 @@ from . import est_nir
 from . import eccc_nir_annex13
 
 def test_small_delta_natural_gas_for_electricity_2005():
-    est = est_nir.EstAnnex13ElectricityFromNG()
+    est = est_nir.EstAnnex13ElectricityFromNaturalGas()
     estimate = est.co2e.sum(PT)
 
     target = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['natural_gas']
@@ -17,11 +17,11 @@ def test_small_delta_natural_gas_for_electricity_2005():
 
 
 def test_annex13_electricity_from_coal():
-    co2e = est_nir.est_annex13_electricity_from_coal()
-    estimate = co2e.sum(PT)
+    est = est_nir.EstAnnex13ElectricityFromCoal()
+    estimate = est.co2e.sum(PT)
 
     a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['coal']
-    target = a13_ng.to(co2e.as_one_v_unit())
+    target = a13_ng.to(est.co2e.as_one_v_unit())
 
     estimate_2005 = estimate.query(2005 * u.years)
     target_2005 = target.query(2005 * u.years)
@@ -42,3 +42,11 @@ def test_annex13_electricity_from_coal():
     target_2020 = target.query(2020 * u.years)
     assert 32_000 * u.kt_CO2e < target_2020 < 36_000 * u.kt_CO2e
     assert 32_000 * u.kt_CO2e < estimate_2020 < 36_000 * u.kt_CO2e
+
+
+def test_annex13_electricity_from_other():
+    est = est_nir.EstAnnex13ElectricityFromOther()
+    estimate = est.co2e.sum(PT)
+
+    a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['other_fuels']
+    target = a13_ng.to(estimate.v_unit)

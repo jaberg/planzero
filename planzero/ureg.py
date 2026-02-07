@@ -31,6 +31,7 @@ assert ureg.Quantity("1 Mt_CO2").to('kg_CO2').magnitude == 1_000_000_000
 for volume_substance in ['NG_mk', 'NG_nmk',
                          'diesel',
                          'gasoline',
+                         'kerosene', # aka jet fuel
                          'LFO',  # Light Fuel Oil
                          'HFO',  # Heavy Fuel Oil
                         ]:
@@ -38,6 +39,8 @@ for volume_substance in ['NG_mk', 'NG_nmk',
     ureg.define(f"l_{volume_substance} = .001 * m3_{volume_substance}")
     ureg.define(f"litres_{volume_substance} = .001 * m3_{volume_substance}")
     ureg.define(f"kilolitres_{volume_substance} = m3_{volume_substance}")
+    ureg.define(f"kilo_m3_{volume_substance} = 1000 * m3_{volume_substance}")
+    ureg.define(f"mega_m3_{volume_substance} = 1000_000 * m3_{volume_substance}")
 
 u = ureg
 u.m3 = u.m ** 3
@@ -47,6 +50,7 @@ litres_by_fuel_type = {
     enums.FuelType.HeavyFuelOil: u.l_HFO,
     enums.FuelType.Diesel: u.l_diesel,
     enums.FuelType.Gasoline: u.l_gasoline,
+    enums.FuelType.Kerosene: u.l_kerosene,
 }
 
 kg_by_ghg = {
@@ -67,5 +71,10 @@ tonne_by_coal_type = {
     enums.CoalType.ImportedSubbituminous: u.tonne_coal_subbit,
 }
 
-
-from .enums import * # XXX
+kilotonne_by_coal_type = {
+    enums.CoalType.CanadianBituminous: u.kilotonne_coal_bit,
+    enums.CoalType.CanadianSubbituminous: u.kilotonne_coal_subbit,
+    enums.CoalType.Lignite: u.kilotonne_lignite,
+    enums.CoalType.ImportedBituminous: u.kilotonne_coal_bit,
+    enums.CoalType.ImportedSubbituminous: u.kilotonne_coal_subbit,
+}

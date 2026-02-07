@@ -1,4 +1,4 @@
-from .ureg import GHG
+from .enums import GHG
 from . import objtensor
 from .ureg import u
 

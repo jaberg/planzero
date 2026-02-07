@@ -10,10 +10,6 @@ from .ureg import u, litres_by_fuel_type
 from .sc_nir import Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility
 from .ghgvalues import GWP_100
 
-OtherFuelsDim = tuple([
-    FuelType.Diesel,
-    FuelType.LightFuelOil,
-    FuelType.HeavyFuelOil])
 
 
 def consumption():
@@ -71,21 +67,3 @@ def coefficients():
         broadcast=[False, False])
 
 
-def GHG_Amounts():
-    amts = consumption()
-    coefs_by_ft = coefficients()
-    ghg_pt = coefs_by_ft @ amts
-    return ghg_pt
-
-
-def plot_est_vs_target():
-    ghg_amts = GHG_Amounts()
-
-    plt.figure()
-    est = national_total(GWP_100 @ ghg_amts)
-    est.plot(label='Estimate')
-    a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['other_fuels']
-    a13_ng.to(est.v_unit).plot(label='Annex13 (Target)')
-    plt.title('Emissions: Electricity from Other Fuels')
-    plt.legend(loc='upper left')
-    plt.xlim(2004, max(max(est.times), max(a13_ng.times)) + 1)

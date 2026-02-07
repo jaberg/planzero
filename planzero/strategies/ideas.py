@@ -1017,4 +1017,8 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 # High-power THz-range microwave heating for plasma ... helpful for Methane Pyrolysis?
 # https://interestingengineering.com/energy/uk-firm-microwave-fusion-energy
 
+# https://interestingengineering.com/energy/worlds-first-hydrogen-pilot
+# https://www.globenewswire.com/news-release/2026/02/03/3230886/0/en/Vema-Hydrogen-Drills-Pilot-Wells-in-Quebec-for-World-s-First-Engineered-Mineral-Hydrogen-Test-Project.html
 
+
+# https://interestingengineering.com/energy/finland-sand-battery-heat-transfer
