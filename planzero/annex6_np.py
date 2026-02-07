@@ -178,6 +178,88 @@ def A6_1_6_Diesel_and_Gasoline():
     return rval
 
 
+def A6_1_7_and_1_8_and_1_9():
+    GHG = enums.GHG
+
+    FT = enums.FuelType
+    Fuels = FT.PetCoke, FT.StillGas
+
+    # TODO: RPP stands for "Refined Petroleum Products"
+    #       which isn't the intended descriptor of users of PetCoke and StillGas
+    RPP_User = enums.RPP_User
+    Users = RPP_User.UpgradingFacilities, RPP_User.RefineriesAndOthers
+
+    rval = objtensor.empty(GHG, Fuels, Users) # TABLE DIMENSIONS
+
+    table7 = eccc_nir_annex6.data_a6_1_7
+    table7_years = [int(year) for year in table7['Year']]
+    years_since_1990 = [year * u.years for year in range(1990, max(table7_years) + 1)]
+
+    # CO2 petcoke upgraders
+    data_cell = table7['Petroleum Coke - Upgrading Facilities (g/L)']
+    table_vals = [float(val) * u.g_CO2 / u.l_petcoke for val in data_cell]
+    vals_since_1990 = _repeat_prev_for_omitted_years(table7_years, table_vals)
+    rval[GHG.CO2, FT.PetCoke, RPP_User.UpgradingFacilities] = \
+            sts.annual_report(times=years_since_1990, values=vals_since_1990)
+
+    # CO2 petcoke refineries and others
+    data_cell = table7['Petroleum Coke - Refineries and Others (g/L)']
+    table_vals = [float(val) * u.g_CO2 / u.l_petcoke for val in data_cell]
+    vals_since_1990 = _repeat_prev_for_omitted_years(table7_years, table_vals)
+    rval[GHG.CO2, FT.PetCoke, RPP_User.RefineriesAndOthers] = \
+            sts.annual_report(times=years_since_1990, values=vals_since_1990)
+
+    # CO2 stillgas upgraders
+    data_cell = table7['Still Gas - Upgrading Facilities (g/m3)']
+    table_vals = [float(val) * u.g_CO2 / u.m3_stillgas for val in data_cell]
+    vals_since_1990 = _repeat_prev_for_omitted_years(table7_years, table_vals)
+    rval[GHG.CO2, FT.StillGas, RPP_User.UpgradingFacilities] = \
+            sts.annual_report(times=years_since_1990, values=vals_since_1990)
+
+    # CO2 stillgas refineries and others
+    data_cell = table7['Still Gas - Refineries and Others (g/m3)']
+    table_vals = [float(val) * u.g_CO2 / u.m3_stillgas for val in data_cell]
+    vals_since_1990 = _repeat_prev_for_omitted_years(table7_years, table_vals)
+    rval[GHG.CO2, FT.StillGas, RPP_User.RefineriesAndOthers] = \
+            sts.annual_report(times=years_since_1990, values=vals_since_1990)
+
+    # CH4 petcoke (from A6 Table 1-6)
+    rval[GHG.CH4, FT.PetCoke] = 0.12 * u.g_CH4 / u.l_petcoke
+
+    # CH4 stillgas (aka A6 Table 1-9)
+    table9 = eccc_nir_annex6.data_a6_1_9
+    table9_years = [int(year) * u.years for year in table9['Year']]
+    table9_vals = [vv * u.g_CH4 / u.m3_stillgas for vv in table9['CH4 Emission Factor (g/m^3)']]
+    rval[GHG.CH4, FT.StillGas, RPP_User.UpgradingFacilities] = \
+            0.000039 * u.g_CH4 / u.m3_stillgas
+    rval[GHG.CH4, FT.StillGas, RPP_User.RefineriesAndOthers] = \
+            sts.annual_report(times=table9_years, values=table9_vals)
+
+    # N2O petcoke (aka A6 Table 1-8)
+    table8 = eccc_nir_annex6.data_a6_1_8
+    table8_years = [int(year) for year in table8['Year']]
+    table8_vals_up = [vv * u.g_N2O / u.m3_petcoke for vv in table8['Upgrading Facilities (g/m3)']]
+    vals_since_1990_up = _repeat_prev_for_omitted_years(table8_years, table8_vals_up)
+    rval[GHG.N2O, FT.PetCoke, RPP_User.UpgradingFacilities] = \
+            sts.annual_report(times=years_since_1990, values=vals_since_1990_up)
+
+    table8_vals_ref = [vv * u.g_N2O / u.m3_petcoke for vv in table8['Refineries and Others (g/m3)']]
+    vals_since_1990_ref = _repeat_prev_for_omitted_years(table8_years, table8_vals_ref)
+    rval[GHG.N2O, FT.PetCoke, RPP_User.RefineriesAndOthers] = \
+            sts.annual_report(times=years_since_1990, values=vals_since_1990_ref)
+
+    # N2O stillgas (from A6 Table 1-6)
+    rval[GHG.N2O, FT.StillGas] = 0.00002 * u.g_N2O / u.l_stillgas
+
+    for ghg in [GHG.HFCs, GHG.PFCs, GHG.SF6, GHG.NF3]:
+        for fuel_type in Fuels:
+            rval[ghg, fuel_type] = (
+                0 * kg_by_ghg[ghg] / litres_by_fuel_type[fuel_type])
+
+    assert None not in rval.buf, [elem is None for elem in rval.buf]
+    return rval
+
+
 def A6_1_10_and_12():
     rval = objtensor.empty(GHG, CoalType, PT)
 

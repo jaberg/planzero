@@ -156,38 +156,100 @@ class EstAnnex13ElectricityFromOther(object):
 
     """
     Estimate the emissions associated with "Other Fuels" in Annex 13,
-    which I take to be:
+    which I take to be (because of SC-25-10-0017-1):
 
     * Diesel
     * Light fuel oil
     * Heavy fuel oil
+    * Petroleum coke
+    * Wood
+    * Other Solid Fuels
+    * Methane
+    * Other Gaseous Fuels
+    * Propane
     """
 
-    def __init__(self):
-        self.prov_consumption, self.national_consumption = \
-                sc_np.Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility()
 
-        self.emission_factors_lhk = annex6_np.A6_1_6_LFO_HFO_Kerosene()
-        self.emission_factors_dg = annex6_np.A6_1_6_Diesel_and_Gasoline()
 
+    def init_LightHeavy(self):
         FT = enums.FuelType
         RPP_User = enums.RPP_User
+        self.LightAndHeavyOil = [FT.LightFuelOil, FT.HeavyFuelOil]
+
+        self.emission_factors_lhk = annex6_np.A6_1_6_LFO_HFO_Kerosene()
 
         # afaik the only RPP_User producing electricity is ElectricUtilities
         # GHG x LightAndHeavy x PT
-        LightAndHeavyOil = [FT.LightFuelOil, FT.HeavyFuelOil]
         self.emissions_LH_pt = (
-            self.emission_factors_lhk[:, LightAndHeavyOil, RPP_User.ElectricUtilities, None]
-            * self.prov_consumption[LightAndHeavyOil])
+            self.emission_factors_lhk[:, self.LightAndHeavyOil, RPP_User.ElectricUtilities, None]
+            * self.prov_consumption[self.LightAndHeavyOil])
 
+    def init_Diesel(self):
+        FT = enums.FuelType
+
+        self.emission_factors_dg = annex6_np.A6_1_6_Diesel_and_Gasoline()
         # GHG x PT
         self.emissions_diesel_pt = (
             self.emission_factors_dg[:, FT.Diesel, None]
             * self.prov_consumption[FT.Diesel])
 
+    def init_PetCoke(self):
+        FT = enums.FuelType
+        RPP_User = enums.RPP_User
+        self.emission_factors_ps = annex6_np.A6_1_7_and_1_8_and_1_9()
+
+        # It seems odd, but ECCC-NIR Annex 6 clearly describes Petroleum Coke
+        # in terms of volume, rather than mass.
+
+        # this is Google Gemini's estimate of how to convert between
+        # mass and volume for petcoke, for the purpose of e.g. shipping
+        petcoke_bulk_density = 0.85 * u.kg_petcoke / u.l_petcoke
+
+
+        # TODO: confirm that UpgradingFacilities use PetCoke
+        # for heat (to create more RPPs and PetCoke), not electricity
+        self.emissions_petcoke_pt = (
+            self.emission_factors_ps[:, FT.PetCoke, RPP_User.RefineriesAndOthers, None]
+            * (self.prov_consumption[FT.PetCoke] / petcoke_bulk_density)
+        )
+
+    def init_wood(self):
+        # According to note (a) in A6.6-1, CO2 from burning wood isn't
+        # counted in the NIR, although CH4 and N2O is counted.
+        # (It is assumed that this carbon is already in circulation)
+        #
+        # The note on the table reads: All greenhouse gas (GHG) emissions,
+        # including CO2 emissions from biomass burned in managed forests
+        # (wildfires and controlled burning), are reported under Land-Use,
+        # Land-use Change and Forestry (LULUCF) and excluded from national
+        # inventory totals.
+        #
+        # My interpretation is that if, hypothetically, wildfires and wood
+        # harvest for fuel were to consume all of Canada's forests, then
+        # it still wouldn't count toward CO2 emissions in the NIR. I'm
+        # confused why that would be the case, but here in the
+        # non-hypothetical world, that is not in fact happening, so
+        # it's a moot point.
+
+        pass
+        
+
+    def __init__(self):
+        self.prov_consumption, self.national_consumption = \
+                sc_np.Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility()
+
+        self.init_LightHeavy()
+        self.init_Diesel()
+        self.init_PetCoke()
+        #self.init_Wood()
+        #self.init_OtherSolidFuels()
+        #self.init_OtherGaseousFuels()
+
         self.emissions = (
-            self.emissions_LH_pt.sum(LightAndHeavyOil)
-            + self.emissions_diesel_pt)
+            self.emissions_LH_pt.sum(self.LightAndHeavyOil)
+            + self.emissions_diesel_pt
+            + self.emissions_petcoke_pt
+        )
 
         self.co2e = GWP_100 @ self.emissions
 
@@ -210,9 +272,8 @@ class EstAnnex13ElectricityFromOther(object):
             },
             legend_loc='upper right')
 
-
     def plot_vs_annex13_target(self):
-        estimate = self.co2e.sum(enums.PT)
+        estimate = self.co2e.sum(enums.PT).to(u.kilotonne_CO2e)
 
         a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['other_fuels']
         target = a13_ng.to(estimate.v_unit)
@@ -221,5 +282,5 @@ class EstAnnex13ElectricityFromOther(object):
         estimate.plot(label='Estimate')
         target.plot(label='Annex13 (Target)')
         plt.title('Emissions: Electricity from Other Fuels')
-        plt.legend(loc='upper left')
+        plt.legend(loc='upper right')
         plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)

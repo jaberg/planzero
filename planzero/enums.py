@@ -53,11 +53,14 @@ class FuelType(str, enum.Enum):
     LightFuelOil = 'Light fuel oil'
     HeavyFuelOil = 'Heavy fuel oil'
     Diesel = 'Diesel'
+    Wood = 'Wood'
+    OtherSolid = "Other solid fuels"
+    OtherGaseous = "Other gaseous fuels"
 
     # Used in NIR Annex6 Table 1-6
     Gasoline = 'Motor gasoline'
     Kerosene = 'Kerosene'
-    PetroleumCoke = 'Petroleum coke'
+    PetCoke = 'Petroleum coke'
     StillGas = 'Still gas'
 
     NaturalGasMkt = 'Natural gas'
@@ -98,5 +101,5 @@ class RPP_User(str, enum.Enum):
     Producer = "Producer Consumption"
     Residential = "Residential"
     Commercial = "Construction, Forestry, Public Admin, Commercial/Institutional"
-    Refineries = "Refineries and Others"
-    Upgraders = "Upgraders"
+    RefineriesAndOthers = "Refineries and Others"
+    UpgradingFacilities = "Upgrading Facilities"
