@@ -13,7 +13,7 @@ ureg.define('fraction = [] = frac')
 ureg.define('ppm = 1e-6 fraction')
 ureg.define('ppb = 1e-9 fraction')
 
-for mass_substance in ['coal_bit', 'coal_subbit', 'lignite', 'petcoke',
+for mass_substance in ['coal_bit', 'coal_subbit', 'lignite', 'petcoke', 'wood',
                        'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3']:
     ureg.define(f"kg_{mass_substance} = [mass_{mass_substance}]")
     ureg.define(f"tonne_{mass_substance} = 1000 * kg_{mass_substance}")
@@ -36,6 +36,7 @@ for volume_substance in ['NG_mk', 'NG_nmk',
                          'HFO',  # Heavy Fuel Oil
                          'stillgas',
                          'petcoke',
+                         'methane',
                         ]:
     ureg.define(f"m3_{volume_substance} = [volume_{volume_substance}]")
     ureg.define(f"l_{volume_substance} = .001 * m3_{volume_substance}")

@@ -63,6 +63,8 @@ class FuelType(str, enum.Enum):
     PetCoke = 'Petroleum coke'
     StillGas = 'Still gas'
 
+    Methane = 'Methane'
+
     NaturalGasMkt = 'Natural gas'
     NaturalGasNonMkt = 'Natural gas (non-marketable)'
 

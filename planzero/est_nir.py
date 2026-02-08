@@ -166,7 +166,7 @@ class EstAnnex13ElectricityFromOther(object):
     * Other Solid Fuels
     * Methane
     * Other Gaseous Fuels
-    * Propane
+    * Propane (so small can be ignored)
     """
 
 
@@ -205,15 +205,16 @@ class EstAnnex13ElectricityFromOther(object):
         # mass and volume for petcoke, for the purpose of e.g. shipping
         petcoke_bulk_density = 0.85 * u.kg_petcoke / u.l_petcoke
 
+        # and for some more theoretical equivalence of solid pieces,
+        # which makes the estimation of the Annex13 totals come out better
+        petcoke_material_density = 1.30 * u.kg_petcoke / u.l_petcoke
 
-        # TODO: confirm that UpgradingFacilities use PetCoke
-        # for heat (to create more RPPs and PetCoke), not electricity
         self.emissions_petcoke_pt = (
             self.emission_factors_ps[:, FT.PetCoke, RPP_User.RefineriesAndOthers, None]
-            * (self.prov_consumption[FT.PetCoke] / petcoke_bulk_density)
+            * (self.prov_consumption[FT.PetCoke] / petcoke_material_density)
         )
 
-    def init_wood(self):
+    def init_Wood(self):
         # According to note (a) in A6.6-1, CO2 from burning wood isn't
         # counted in the NIR, although CH4 and N2O is counted.
         # (It is assumed that this carbon is already in circulation)
@@ -231,7 +232,63 @@ class EstAnnex13ElectricityFromOther(object):
         # non-hypothetical world, that is not in fact happening, so
         # it's a moot point.
 
+        GHG = enums.GHG
+        FT = enums.FuelType
+        self.emissions_wood_pt = objtensor.empty(GHG, enums.PT)
+        for ghg in [GHG.CO2, GHG.HFCs, GHG.PFCs, GHG.SF6, GHG.NF3]:
+            self.emissions_wood_pt[ghg] = 0 * kg_by_ghg[ghg]
+
+        self.emissions_wood_pt[GHG.CH4] = self.prov_consumption[FT.Wood] \
+                    * (0.1 * u.g_CH4 / u.kg_wood)
+        self.emissions_wood_pt[GHG.N2O] = self.prov_consumption[FT.Wood] \
+                    * (0.07 * u.g_N2O / u.kg_wood)
+
+    def init_OtherSolidFuels(self):
+        # I'm including this category because it is included
+        # by Stats-Can table 17.
+        #
+        # For for emission factors, the closest thing I could find was
+        # Annex6 Table 7.2 about municipal waste incineration,
+        # but there it said that the emission factor should only be
+        # applied to fossil carbon waste. I intuitively thought
+        # "who throws out fossil carbon?" and just moved on.
         pass
+
+    def init_Methane(self):
+        GHG = enums.GHG
+        FT = enums.FuelType
+        self.emissions_methane_pt = objtensor.empty(GHG, enums.PT)
+        for ghg in [GHG.HFCs, GHG.PFCs, GHG.SF6, GHG.NF3]:
+            self.emissions_methane_pt[ghg] = 0 * kg_by_ghg[ghg]
+
+        # why is there a separate category for methane, as
+        # distinct from natural gas?
+
+        # I'm just eyeballing the year-by-year tables in Annex 6
+        # relating to marketable natural gas:
+
+        self.emissions_methane_pt[GHG.CO2] = self.prov_consumption[FT.Methane] \
+                    * (1900 * u.g_CO2 / u.m3_methane)
+        self.emissions_methane_pt[GHG.CH4] = self.prov_consumption[FT.Methane] \
+                    * (.49 * u.g_CH4 / u.m3_methane)
+        self.emissions_methane_pt[GHG.N2O] = self.prov_consumption[FT.Methane] \
+                    * (.049 * u.g_N2O / u.m3_methane)
+
+    def init_OtherGaseousFuels(self):
+        # The comment on this row of the StatsCan table
+        # mentions "refinery fuel gas" which is also sometimes
+        # called "still gas" in e.g. the ECCC NIR Annex6,
+        # so I'll use those emission factors for the whole "Other Gaseous
+        # Fuels" category.
+        FT = enums.FuelType
+        RPP_User = enums.RPP_User
+
+        # TODO: confirm that UpgradingFacilities use PetCoke
+        # for heat (to create more RPPs and PetCoke), not electricity
+        self.emissions_stillgas_pt = (
+            self.emission_factors_ps[:, FT.StillGas, RPP_User.RefineriesAndOthers, None]
+            * self.prov_consumption[FT.StillGas]
+        )
         
 
     def __init__(self):
@@ -241,14 +298,18 @@ class EstAnnex13ElectricityFromOther(object):
         self.init_LightHeavy()
         self.init_Diesel()
         self.init_PetCoke()
-        #self.init_Wood()
+        self.init_Wood()
         #self.init_OtherSolidFuels()
-        #self.init_OtherGaseousFuels()
+        self.init_Methane()
+        self.init_OtherGaseousFuels()
 
         self.emissions = (
             self.emissions_LH_pt.sum(self.LightAndHeavyOil)
             + self.emissions_diesel_pt
             + self.emissions_petcoke_pt
+            + self.emissions_wood_pt
+            + self.emissions_methane_pt
+            + self.emissions_stillgas_pt
         )
 
         self.co2e = GWP_100 @ self.emissions
