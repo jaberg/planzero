@@ -78,6 +78,7 @@ class GHG(str, enum.Enum):
     SF6 = 'SF6'
     NF3 = 'NF3'
 
+
 class ElectricityProducer(str, enum.Enum):
     Utilities = 'Utilities'
     Industry = 'Industry' # Aka producers sometimes, of e.g. Natural Gas
@@ -95,6 +96,7 @@ class NaturalGasUser(str, enum.Enum):
     Construction = 'Construction'
     Commercial = 'Commercial/Institutional'
     Agriculture = 'Agriculture'
+
 
 # from ECCC NIR Annex 6 Table 1-6 and 1-3
 class RPP_User(str, enum.Enum):

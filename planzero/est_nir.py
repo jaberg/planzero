@@ -169,8 +169,6 @@ class EstAnnex13ElectricityFromOther(object):
     * Propane (so small can be ignored)
     """
 
-
-
     def init_LightHeavy(self):
         FT = enums.FuelType
         RPP_User = enums.RPP_User
@@ -343,5 +341,28 @@ class EstAnnex13ElectricityFromOther(object):
         estimate.plot(label='Estimate')
         target.plot(label='Annex13 (Target)')
         plt.title('Emissions: Electricity from Other Fuels')
+        plt.legend(loc='upper right')
+        plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)
+
+
+class EstAnnex13ElectricityEmissionsTotal(object):
+    def __init__(self):
+        self.from_coal = EstAnnex13ElectricityFromCoal()
+        self.from_ng = EstAnnex13ElectricityFromNaturalGas()
+        self.from_other = EstAnnex13ElectricityFromOther()
+
+    def plot_vs_annex13_target(self):
+        estimate = (
+            self.from_coal.co2e.sum(enums.PT).to(u.kilotonne_CO2e)
+            + self.from_ng.co2e.sum(enums.PT).to(u.kilotonne_CO2e)
+            + self.from_other.co2e.sum(enums.PT).to(u.kilotonne_CO2e))
+
+        a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['combustion']
+        target = a13_ng.to(estimate.v_unit)
+
+        plt.figure()
+        estimate.plot(label='Estimate', alpha=.5)
+        target.plot(label='Annex13 (Target)', alpha=.5)
+        plt.title('Emissions: Electricity from Combustion')
         plt.legend(loc='upper right')
         plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)

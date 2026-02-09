@@ -1022,3 +1022,17 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 
 
 # https://interestingengineering.com/energy/finland-sand-battery-heat-transfer
+
+
+# https://interestingengineering.com/energy/catalyst-solves-hydrogen-fuel-efficiency
+
+# https://interestingengineering.com/energy/solar-powered-method-converts-co2-into-fuel
+
+# Modular homes & Tiny Houses - any climate impact?
+
+
+# Hydrofoiling ferries from Candela (Sweden)
+# https://www.economist.com/science-and-technology/2026/02/09/flying-electric-boats-could-remake-urban-transport
+
+
+# https://www.theguardian.com/environment/ng-interactive/2026/feb/09/economic-growth-carbon-emissions-impact-global-heating

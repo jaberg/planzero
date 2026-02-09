@@ -29,5 +29,8 @@ def national_electricity_CO2e_from_combustion():
         other_fuels=annual_report(
             times=np.asarray(years) * u.years,
             values=df_A13_1_t['Other Fuelsc'].values * u.kt_CO2e),
+        combustion=annual_report( # total
+            times=np.asarray(years) * u.years,
+            values=df_A13_1_t['Combustion'].values * u.kt_CO2e),
         )
     return rval
