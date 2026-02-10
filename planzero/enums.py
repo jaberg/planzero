@@ -107,3 +107,119 @@ class RPP_User(str, enum.Enum):
     Commercial = "Construction, Forestry, Public Admin, Commercial/Institutional"
     RefineriesAndOthers = "Refineries and Others"
     UpgradingFacilities = "Upgrading Facilities"
+
+
+# Used to organize
+class IPCC_Sector_Group(str, enum.Enum):
+    Energy = "Energy"
+    Industrial_Processes_and_Product_Use = "Industrial Processes and Product Use"
+    Agriculture = 'Agriculture'
+    Waste = 'Waste'
+    LULUCF = 'Land Use, Land Use Change, and Forestry'
+    
+    Stationary_Combustion_Sources = 'Stationary Combustion Sources'
+    Manufacturing = 'Manufacturing'
+    Transport = 'Transport'
+    Aviation = 'Aviation'
+    Road_Transport = 'Road Transport'
+    Marine_Transport = 'Marine Transport'
+    Other_Transport = 'Other Transport'
+    Fugitive_Sources = 'Fugitive Sources'
+    Fugitive_Sources__Oil_and_Natural_Gas = 'Fugitive Sources, Oil and Natural Gas'
+
+
+# Leaf nodes of Canada's IPCC taxonomy
+class IPCC_Sector(str, enum.Enum):
+    # Energy
+    SCS__Public_Electricity_and_Heat = 'Public Electricity and Heat Production'
+    SCS__Petroleum_Refining_Industries = 'Petroleum Refining Industries' # Producer consumption for heat & electricity
+    SCS__Oil_and_Gas_Extraction = 'Oil and Gas Extraction'
+    SCS__Mining = 'Mining'
+
+    SCS__Manufacturing__Iron_and_Steel = 'Iron and Steel'
+    SCS__Manufacturing__NonFerous = 'Non-Ferrous Metals'
+    SCS__Manufacturing__Chemical = 'Chemical'
+    SCS__Manufacturing__Pulp_and_Paper = 'Pulp and Paper'
+    SCS__Manufacturing__Cement = 'Cement'
+    SCS__Manufacturing__Other = 'Other Manufacturing'
+
+    SCS__Construction = 'Construction'
+    SCS__Commercial_and_Institutional = 'Commercial and Institutional'
+    SCS__Residential = 'Residential'
+    SCS__Agriculture_and_Forestry = 'Agriculture and Forestry'
+
+    Transport__Air__Domestic_Civil = 'Domestic Aviation (Civil)'
+    Transport__Air__Military = 'Military'
+
+    Transport__Road__Light_Duty_Gasoline_Vehicles = 'Light-Duty Gasoline Vehicles'
+    Transport__Road__Light_Duty_Gasoline_Trucks = 'Light-Duty Gasoline Trucks'
+    Transport__Road__Heavy_Duty_Gasoline_Vehicles = 'Heavy-Duty Gasoline Vehicles'
+    Transport__Road__Motorcycles = 'Motorcycles'
+    Transport__Road__Light_Duty_Diesel_Vehicles = 'Light-Duty Diesel Vehicles'
+    Transport__Road__Light_Duty_Diesel_Trucks = 'Light-Duty Diesel Trucks'
+    Transport__Road__Heavy_Duty_Diesel_Vehicles = 'Heavy-Duty Diesel Vehicles'
+    Transport__Road__Propane_and_Natural_Gas_Vehicles = 'Propane and Natural Gas Vehicles'
+
+    Transport__Rail = 'Railways'
+
+    Transport__Marine__Domestic = 'Domestic Navigation'
+    Transport__Marine__Fishing = 'Fishing'
+    Transport__Marine__Military = 'Military Water-Borne Navigation'
+
+    Transport__Other__Agriculture_and_Forestry = 'Off-Road Agriculture and Forestry'
+    Transport__Other__Commercial_and_Institutional = 'Off-Road Commercial and Institutional'
+    Transport__Other__Mfg_Mining_Construction = 'Off-Road Manufacturing, Mining and Construction'
+    Transport__Other__Residential = 'Off-Road Residential'
+    Transport__Other__Other = 'Off-Road Other Transportation'
+    Transport__Other__Pipeline = 'Pipeline Transport'
+
+    Fugitive__Coal = 'Coal Mining'
+    Fugitive__Oil = 'Oil'
+    Fugitive__Natural_Gas = 'Natural Gas'
+    Fugitive__Venting = 'Venting'
+    Fugitive__Flaring = 'Flaring'
+
+    CO2_Transport_and_Storage = 'CO2 Transport and Storage'
+
+    # Industrial
+    Cement_Production = 'Cement Production'
+    Lime_Production = 'Lime Production'
+    Mineral_Product_Use = 'Mineral Product Use'
+
+    Ammonia_Production = 'Ammonia Production'
+    Nitric_Acid_Production = 'Nitric Acid Production'
+    Adipic_Acid_Production = 'Adipic Acid Production'
+    Petrochemical_and_Carbon_Black_Production = 'Petrochemical and Carbon Black Production'
+
+    Iron_and_Steel_Production = 'Iron and Steel Production'
+    Aluminium_Production = 'Aluminium Production'
+    Magnesium_Production_and_Casting = 'Magnesium Production and Casting'
+
+    Production_and_Consumption_of_Halocarbons = 'Production and Consumption of Halocarbons, SF6 and NF3d'
+    Non_Energy_Products_from_Fuels_and_Solvent_Use = 'Non-Energy Products from Fuels and Solvent Use'
+    Other_Product_Manufacture_and_Use = 'Other Product Manufacture and Use'
+
+    # Agriculture
+    Enteric_Fermentation = 'Enteric Fermentation'
+    Manure_Management = 'Manure Management'
+    Agricultural_Soils_Direct = 'Direct Sources'
+    Agricultural_Soils_Indirect = 'Indirect Sources'
+    Field_Burning_of_Agricultural_Residues = 'Field Burning of Agricultural Residues'
+    Liming_Urea_Other = 'Liming, Urea Application and Other Carbon-Containing Fertilizers'
+
+    # Waste
+    Municipal_Solid_Waste_Landfills = 'Municipal Solid Waste Landfills'
+    Industrial_Wood_Waste_Landfills = 'Industrial Wood Waste Landfills'
+    Biological_Treatment_of_Solid_Waste = 'Biological Treatment of Solid Waste'
+    Incineration_and_Open_Burning_Waste = 'Incineration and Open Burning of Waste'
+    Municipal_Wastewater_Treatment_and_Discharge = 'Municipal Wastewater Treatment and Discharge'
+    Industrial_Wastewater_Treatment_and_Discharge = 'Industrial Wastewater Treatment and Discharge'
+
+    # Land use, land use change, and forestry
+    Forest_Land = 'Forest Land'
+    Cropland = 'Cropland'
+    Grassland = 'Grassland'
+    Wetlands = 'Wetlands'
+    Settlements = 'Settlements'
+
+    Harvested_Wood_Products = 'Harvested Wood Products'

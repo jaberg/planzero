@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 from .enums import CoalType
 from .ghgvalues import GWP_100
 
-from .ureg import u, kg_by_ghg, kilotonne_by_coal_type
+from .ureg import u, kg_by_ghg, kilotonne_by_coal_type, kt_by_ghg
 from . import ureg
 from . import sc_np
 from . import objtensor
 from . import sts
 from . import annex6_np
 from . import eccc_nir_annex13
+from . import eccc_nir_annex9
 from . import enums
 from . import ptvalues
 
@@ -351,18 +352,57 @@ class EstAnnex13ElectricityEmissionsTotal(object):
         self.from_ng = EstAnnex13ElectricityFromNaturalGas()
         self.from_other = EstAnnex13ElectricityFromOther()
 
-    def plot_vs_annex13_target(self):
-        estimate = (
+        self.total_co2e = (
             self.from_coal.co2e.sum(enums.PT).to(u.kilotonne_CO2e)
             + self.from_ng.co2e.sum(enums.PT).to(u.kilotonne_CO2e)
             + self.from_other.co2e.sum(enums.PT).to(u.kilotonne_CO2e))
 
+    def update_A9_emissions(self, emissions_sectoral_pt):
+        for src in [self.from_coal, self.from_ng, self.from_other]:
+            emissions_sectoral_pt[:, enums.IPCC_Sector.SCS__Public_Electricity_and_Heat] += src.emissions
+
+    def plot_vs_annex13_target(self):
         a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['combustion']
-        target = a13_ng.to(estimate.v_unit)
+        target = a13_ng.to(self.total_co2e.v_unit)
 
         plt.figure()
-        estimate.plot(label='Estimate', alpha=.5)
+        self.total_co2e.plot(label='Estimate', alpha=.5)
         target.plot(label='Annex13 (Target)', alpha=.5)
         plt.title('Emissions: Electricity from Combustion')
         plt.legend(loc='upper right')
         plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)
+
+
+class EstSectorEmissions(object):
+
+    def __init__(self):
+        self.sectoral_emissions = objtensor.empty(enums.GHG, enums.IPCC_Sector, enums.PT)
+        for ghg, kt in kt_by_ghg.items():
+            self.sectoral_emissions[ghg] = 0 * kt
+
+        EstAnnex13ElectricityEmissionsTotal().update_A9_emissions(self.sectoral_emissions)
+
+    def max_gap_2005(self):
+        a9_2005_total = eccc_nir_annex9.emissions_by_IPCC_sector(2005, 'Total_CO2e')
+        estimate = GWP_100 @ self.sectoral_emissions.sum(enums.PT)
+        gaps = []
+        for keys, buf_offset in estimate.ravel_keys_offsets():
+            sector, = keys
+            try:
+                est_2005 = estimate.buf[buf_offset].query(2005 * u.years)
+            except AttributeError:
+                est_2005 = estimate.buf[buf_offset]
+                assert est_2005.magnitude == 0
+            #print(a9_2005_total)
+            #print(a9_2005_total[enums.IPCC_Sector.Grassland])
+            #print(a9_2005_total[enums.IPCC_Sector('Grassland')])
+            gaps.append((abs(est_2005 - a9_2005_total[sector]).to('kt_CO2e'), sector))
+
+        max_gap = None
+        for gap, sector in reversed(sorted(gaps)):
+            if max_gap is None:
+                max_gap = gap
+            else:
+                max_gap = max(max_gap, gap)
+            print('* ' if gap.magnitude > 100 else '  ', gap, sector)
+        return max_gap

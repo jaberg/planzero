@@ -74,6 +74,16 @@ kg_by_ghg = {
     enums.GHG.NF3: u.kg_NF3,
 }
 
+kt_by_ghg = {
+    enums.GHG.CO2: u.kt_CO2,
+    enums.GHG.CH4: u.kt_CH4,
+    enums.GHG.N2O: u.kt_N2O,
+    enums.GHG.HFCs: u.kt_HFC,
+    enums.GHG.PFCs: u.kt_PFC,
+    enums.GHG.SF6: u.kt_SF6,
+    enums.GHG.NF3: u.kt_NF3,
+}
+
 tonne_by_coal_type = {
     enums.CoalType.CanadianBituminous: u.tonne_coal_bit,
     enums.CoalType.CanadianSubbituminous: u.tonne_coal_subbit,
