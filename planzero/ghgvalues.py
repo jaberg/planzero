@@ -12,4 +12,4 @@ GWP_100 = objtensor.from_dict({
     GHG.HFCs: 1_430.0 * u.kg_CO2e / u.kg_HFC,
     GHG.PFCs: 6_630.0 * u.kg_CO2e / u.kg_PFC,
     GHG.SF6: 23_500.0 * u.kg_CO2e / u.kg_SF6,
-    GHG.NF3: 17_200.0 * u.kg_CO2e / u.kg_NF3})
+    GHG.NF3: 16_100.0 * u.kg_CO2e / u.kg_NF3})
