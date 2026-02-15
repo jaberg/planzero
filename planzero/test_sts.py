@@ -4,7 +4,6 @@ import numpy as np
 from .sts import *
 from .stsdict_fns import *
 from .ureg import u
-from .enums import Geo, GHG
 
 nan = float('nan')
 
@@ -42,12 +41,12 @@ def test_mul_scale_convert():
     assert a.values[1] == 2000
 
 
-def test_usum():
+def test_usum3():
     a = annual_report(times=[10 * u.years], values=[1 * u.m])
     b = annual_report(times=[20 * u.years], values=[2 * u.m])
     c = annual_report(times=[10 * u.years], values=[3 * u.m])
 
-    s = usum([a, b, c, None])
+    s = usum([a, b, c])
 
     assert s.times == array.array('d', [10, 20])
     assert s.values[1:] == array.array('d', [4, 2])
@@ -72,153 +71,16 @@ def test_pint_rmul():
     assert c.v_unit == u.kg * u.m
 
 
-def test_matmul_missing():
-    a_val_d = {
-        (Geo.AB, GHG.CO2): 1.0,
-        (Geo.BC, GHG.CO2): 2.0,
-        (Geo.AB, GHG.CH4): 3.0,
-        (Geo.BC, GHG.CH4): 4.0,
-        (Geo.SK, GHG.CH4): 5.0,
-    }
-    # a large sparse matrix with 6 elements
-    a = STSDict(
-        val_d=a_val_d,
-        dims=[Geo, GHG],
-        broadcast=[False, False],
-        fallback=None)
+def test_decay():
+    a = annual_report(
+        times=[10 * u.years, 12 * u.years],
+        values=[1 * u.m, 2 * u.m])
+    b = annual_report_decay(
+        a,
+        timescale=4 * u.years,
+        horizon=50 * u.years)
 
-    b_val_d = {
-        GHG.CO2: 1.0,
-        GHG.CH4: 3.0,
-    }
-    b = STSDict(
-        val_d=b_val_d,
-        dims=[GHG],
-        broadcast=[False],
-        fallback=None)
-
-    with pytest.raises(KeyError):
-        # missing lots of keys
-        ab = a @ b
-
-def test_matmul_dim_mismatch():
-    a_val_d = {
-        (Geo.AB, GHG.CO2): 1.0,
-        (Geo.BC, GHG.CO2): 2.0,
-        (Geo.AB, GHG.CH4): 3.0,
-        (Geo.BC, GHG.CH4): 4.0,
-        (Geo.SK, GHG.CH4): 5.0,
-    }
-    # sparse with regards to Geo
-    # but now dense with regards to GHG
-    a = STSDict(
-        val_d=a_val_d,
-        dims=[Geo, [GHG.CO2, GHG.CH4]],
-        broadcast=[False, False],
-        fallback=None)
-
-    b_val_d = {
-        GHG.CO2: 1.0,
-        GHG.CH4: 3.0,
-    }
-    b = STSDict(
-        val_d=b_val_d,
-        dims=[GHG],
-        broadcast=[False],
-        fallback=None)
-
-    with pytest.raises(DimensionalityMismatch):
-        # missing lots of keys
-        ab = a @ b
-
-def test_matmul_mat_vec():
-    a_val_d = {
-        (Geo.AB, GHG.CO2): 1.0,
-        (Geo.BC, GHG.CO2): 2.0,
-        (Geo.AB, GHG.CH4): 3.0,
-        (Geo.BC, GHG.CH4): 4.0,
-        (Geo.SK, GHG.CH4): 5.0,
-    }
-    # sparse with regards to Geo
-    # but now dense with regards to GHG
-    a = STSDict(
-        val_d=a_val_d,
-        dims=[Geo, [GHG.CO2, GHG.CH4]],
-        broadcast=[False, False],
-        fallback=STSDict(
-            val_d={(): 9.0},
-            dims=[Geo, [GHG.CO2, GHG.CH4]],
-            broadcast=[True, True],
-            fallback=None
-            ))
-
-    b_val_d = {
-        GHG.CO2: 1.0,
-        GHG.CH4: 3.0,
-    }
-    b = STSDict(
-        val_d=b_val_d,
-        dims=[[GHG.CO2, GHG.CH4]],
-        broadcast=[False],
-        fallback=None)
-
-    ab = a @ b
-    assert len(ab.val_d) == 3
-    assert ab[Geo.AB] == 10
-    assert ab[Geo.BC] == 14
-    assert ab[Geo.SK] == 24
-
-def test_matmul_mat_vec_fallback_semibroadcasting():
-    a_val_d = {
-        (Geo.AB, GHG.CO2): 1.0,
-        (Geo.BC, GHG.CO2): 2.0,
-        (Geo.AB, GHG.CH4): 3.0,
-        (Geo.BC, GHG.CH4): 4.0,
-        (Geo.SK, GHG.CH4): 5.0,
-        (Geo.MB, GHG.CO2): 6.0,
-    }
-    # sparse with regards to Geo
-    # but now dense with regards to GHG
-    a = STSDict(
-        val_d=a_val_d,
-        dims=[Geo, [GHG.CO2, GHG.CH4]],
-        broadcast=[False, False],
-        fallback=STSDict(
-            val_d={(GHG.CO2,): 7.0, (GHG.CH4,): 8.0},
-            dims=[Geo, [GHG.CO2, GHG.CH4]],
-            broadcast=[True, False],
-            fallback=None
-            ))
-    mma = MatMul(a, 1)
-    mma_elems_by_outer_key = mma.elems_by_outer_key()
-    assert mma_elems_by_outer_key == {
-        (Geo.AB,): {GHG.CO2: 1.0, GHG.CH4: 3.0},
-        (Geo.BC,): {GHG.CO2: 2.0, GHG.CH4: 4.0},
-        (Geo.SK,): {GHG.CO2: 7.0, GHG.CH4: 5.0},
-        (Geo.MB,): {GHG.CO2: 6.0, GHG.CH4: 8.0},
-    }
-
-    b_val_d = {
-        GHG.CO2: 1.0,
-        GHG.CH4: 3.0,
-    }
-    b = STSDict(
-        val_d=b_val_d,
-        dims=[[GHG.CO2, GHG.CH4]],
-        broadcast=[False],
-        fallback=None)
-
-    mmb = MatMul(b, 0)
-    mmb_elems_by_outer_key = mmb.elems_by_outer_key()
-    assert mmb_elems_by_outer_key == {
-        (): {GHG.CO2: 1.0, GHG.CH4: 3.0},
-    }
-
-    ab = a @ b
-    assert len(ab.val_d) == 4
-    assert ab[Geo.AB] == 1 * 1 + 3 * 3
-    assert ab[Geo.BC] == 2 * 1 + 4 * 3
-    assert ab[Geo.SK] == 7 * 1 + 5 * 3
-    assert ab[Geo.MB] == 6 * 1 + 8 * 3
-    assert ab[Geo.ON] == 7 * 1 + 8 * 3
-    assert ab[Geo.QC] == 7 * 1 + 8 * 3
+    assert 0 * u.m <= b.max() < 2 * u.m
+    assert a.sum() == 3 * u.m
+    assert b.values[1] == 0.25
+    assert 2.99 * u.m <= b.sum() <= 3 * u.m

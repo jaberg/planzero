@@ -349,6 +349,8 @@ class ObjectTensor(object):
                 rval.buf[aa] = self.buf[bb] * other
             return rval
 
+    __rmul__ = __mul__
+
     def __truediv__(self, other):
         if isinstance(other, ObjectTensor):
             r_dims = elemwise_binary_op_dims(self.dims, other.dims)

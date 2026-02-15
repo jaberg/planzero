@@ -223,3 +223,23 @@ class IPCC_Sector(str, enum.Enum):
     Settlements = 'Settlements'
 
     Harvested_Wood_Products = 'Harvested Wood Products'
+
+
+class RoundwoodSpeciesGroup(str, enum.Enum):
+    Unspecified = 'Unspecified'
+    Softwoods = 'Softwoods'
+    Hardwoods = 'Hardwoods'
+
+
+class RoundwoodProductCategory(str, enum.Enum):
+    Logs_and_Bolts = 'Logs and bolts'
+    Other_Industrial_Roundwood = 'Other industrial roundwood'
+    Fuelwood_and_Firewood = 'Fuelwood*b and firewood*c'
+    Pulpwood = 'Pulpwood'
+
+
+class RoundwoodTenure(str, enum.Enum):
+    Unspecified = 'Unspecified'
+    Private_Land = 'Private land'
+    Federal_Land = 'Federal land'
+    Provincial_Land = 'Provincial land'

@@ -522,3 +522,48 @@ df_a6_1_15 = pd.DataFrame(data_a6_1_15, columns=columns_a6_1_15)
 
 # Note on Renewables: CH4 and N2O factors for Ethanol/Biodiesel depend on the specific vehicle/mode
 # and are generally assumed to be the same as the gasoline/diesel equivalent (see Table Notes).
+
+
+# Table A6.5–1 Default Parameter Values Used in Harvested Wood Products
+# Analysis
+data_a6_5_1 = {
+    'Description': [
+        'Bark expansion factor, Softwoods',
+        'Bark expansion factor, Hardwoods',
+        'Bark expansion factor, Mixedwoods',
+        'C content of wood'],
+    'Units': [
+        'dimensionless',
+        'dimensionless',
+        'dimensionless',
+        'tonnes C per od tonne'],
+    'Value': [1.11, 1.15, 1.13, .5],
+}
+
+# Table A6.5–2 Wood Densities of Commodities
+data_a6_5_2 = {
+    'Country': ['Canada'] * 5,
+    'Description': [
+        'Species-weighted average density, Roundwood',
+        'Species-weighted average density, Sawnwood',
+        'Species-weighted average density, Other industrial roundwood',
+        'Species-weighted average density, Panels',
+        'Species-weighted average density, Bioenergy',
+    ],
+    'Units': ['od tonne per m3'] * 5,
+    'Value': [
+        .386,
+        .481,
+        .583,
+        .643,
+        .523,
+    ],
+}
+
+
+# Table A6.5–3 Half-Life Parameters (Years) of Harvested Wood Products In-use
+data_a6_5_3 = {
+    'Countries': ['Canada'] * 4 + ['U.S.'] * 4 + ['Rest of World'] * 4,
+    'Description': ['Sawnwood', 'Wood panels', 'Pulp and paper', 'Other industrial roundwood'] * 4,
+    'Values': [35, 25, 2, 35, 40, 27.04, 3.25, 40, 35, 25, 2, 35],
+}

@@ -20,7 +20,7 @@ unit_by_fuel_type = {
     enums.FuelType.LightFuelOil: ('Light fuel oil', 'Kilolitres', u.kilolitres_LFO),
     enums.FuelType.Diesel: ('Diesel', 'Kilolitres', u.kilolitres_diesel),
     enums.FuelType.PetCoke: ('Petroleum coke', 'Metric tonnes', u.tonne_petcoke),
-    enums.FuelType.Wood: ('Wood', 'Metric tonnes', u.tonne_wood),
+    enums.FuelType.Wood: ('Wood', 'Metric tonnes', u.tonne_wood_mc25),
     enums.FuelType.Methane: ('Methane', 'Cubic metres', u.m3_methane),
     enums.FuelType.StillGas: ('Other gaseous fuels', 'Cubic metres', u.m3_stillgas),
 }

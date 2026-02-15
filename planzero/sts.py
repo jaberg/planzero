@@ -51,8 +51,12 @@ class SparseTimeSeries(BaseModel):
 
 
     def max(self, _i_start=None):
+        # TODO: what is this _i_start business??
         if _i_start is None:
-            rval = max(self.values)
+            if self.interpolation == InterpolationMode.no_interpolation:
+                rval = max(self.values[1:])
+            else:
+                rval = max(self.values)
         else:
             rval = max(self.values[_i_start:])
         return rval * self.v_unit
@@ -286,11 +290,48 @@ class SparseTimeSeries(BaseModel):
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def sum(self):
+        assert self.interpolation == InterpolationMode.no_interpolation
+        rval = sum(self.values[1:]) * self.v_unit
+        return rval
+
+    def integral(self, start_time=None, end_time=None):
+        raise NotImplementedError()
+
+
 def annual_report(**kwargs):
     return SparseTimeSeries(
         t_unit=u.years,
         interpolation='no_interpolation',
         **kwargs)
+
+
+def annual_report_decay(self, timescale, horizon):
+    """An operation to spread annual sums out forward over time according to
+    a first order process """
+    assert np.isnan(self.values[0])
+    assert all(tt == int(tt) for tt in self.times)
+    assert self.t_unit == u.years
+    assert self.interpolation == InterpolationMode.no_interpolation
+
+    v_by_t = {int(tt): vv
+              for tt, vv in zip(self.times, self.values[1:])}
+    v_running = 0.0
+    coef = 1.0 / timescale.to(u.years).magnitude
+    times = range(int(self.times[0]), int(horizon.to('years').magnitude))
+    u_times = []
+    values = []
+    for tt in times:
+        v_running += v_by_t.get(tt, 0)
+        values.append(v_running * coef * self.v_unit)
+        u_times.append(tt * self.t_unit)
+        v_running -= coef * v_running
+
+    return SparseTimeSeries(
+        t_unit=u.years,
+        times=u_times,
+        values=values,
+        interpolation='no_interpolation')
 
 
 def add_nointerp_nointerp(self, other):

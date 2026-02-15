@@ -13,7 +13,7 @@ def national_emissions_IPCC(year):
     assert year == int(year)
     assert 1990 <= year <= 2023
     yod = year % 10
-    decade = (year // 10) % 100
+    decade = ((year - yod) % 100) // 10
 
     file_path = '/mnt/data/EN_Annex9_GHG_IPCC_Canada.xlsx'
 

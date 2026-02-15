@@ -3,16 +3,21 @@ import matplotlib.pyplot as plt
 from .enums import CoalType
 from .ghgvalues import GWP_100
 
-from .ureg import u, kg_by_ghg, kilotonne_by_coal_type, kt_by_ghg
+from .ureg import (u, kg_by_ghg,
+                   kilotonne_by_coal_type,
+                   kt_by_ghg,
+                   m3_by_roundwood_species_group)
 from . import ureg
 from . import sc_np
 from . import objtensor
 from . import sts
 from . import annex6_np
-from . import eccc_nir_annex13
+from . import eccc_nir_annex6
 from . import eccc_nir_annex9
+from . import eccc_nir_annex13
 from . import enums
 from . import ptvalues
+from . import nrc_nfd
 
 
 class EstAnnex13ElectricityFromCoal(object):
@@ -371,6 +376,135 @@ class EstAnnex13ElectricityEmissionsTotal(object):
         plt.title('Emissions: Electricity from Combustion')
         plt.legend(loc='upper right')
         plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)
+
+
+class EstForestAndHarvestedWoodProducts(object):
+    """
+    Canada's forests are modelled here as constant-size, constant-composition
+    ecosystems, which buffer atmospheric carbon. This model ignores types and
+    location of forest, although it does recognize the different density of
+    softwood and hardwood species groups.
+
+    The model is that the tree population absorb carbon from the atmosphere at
+    a constant rate, and releases it at a variable rate in three ways:
+
+    1. harvesting for durable products (transfers C to products & atmosphere)
+    2. decay after insect infestation
+    3. combustion due to wild fire
+
+    Data supporting this simple model is drawn from 
+    http://nfdp.ccfm.org/en/download.php
+
+    """
+
+    def __init__(self):
+        # This initial value doesn't really matter, it isn't trying
+        # to reflect a physical quantity.
+        self.buffered_C_1990 = 0 * u.megatonne_wood_mc25
+
+        # This rate of accumulation does matter, the intention is to
+        # approximately match the trend of forestry sector emissions reported
+        # by the ECCC. This is not a very interesting model, in that it
+        # doesn't attempt to reveal anything about why the trend is the value
+        # that it is. NRCan does world-class bottom-up forest carbon
+        # modelling, including with open-source software, although I couldn't
+        # yet find public data for that software. It would be interesting
+        # future work to use that model instead.
+        self.reforestation_rate = 50 * u.megatonne_wood_mc25 / u.year
+
+        self.net_harvested_w_tenure = nrc_nfd.net_merchantable_volume_harvested()
+        # ignore tenure
+        self.net_harvested = self.net_harvested_w_tenure.sum(enums.RoundwoodTenure)
+
+        SG = enums.RoundwoodSpeciesGroup
+        RPC = enums.RoundwoodProductCategory
+        GHG = enums.GHG
+        PT = enums.PT
+        IPCC = enums.IPCC_Sector
+
+        sectoral_emissions = objtensor.empty(GHG, IPCC, PT)
+        for ghg, kt in kt_by_ghg.items():
+            sectoral_emissions[ghg] = 0 * kt
+
+        idx = eccc_nir_annex6.data_a6_5_2['Description'].index(
+            'Species-weighted average density, Bioenergy')
+        assert eccc_nir_annex6.data_a6_5_2['Units'][idx] == 'od tonne per m3'
+
+        for cat in RPC:
+            if cat == RPC.Logs_and_Bolts:
+                # The carbon content of net harvested timber is accounted as
+                # being instantaneously decremented from the forest (considered as part of the atmosphere) and slowly
+                # incremented in the HWP sector. This is physically
+                # unrealistic in that the CO2 was absorbed slowly into the
+                # tree over the tree's lifetime, not all at once.
+                # sector. But the HWP increment
+                for sg in SG:
+                    if sg == SG.Unspecified:
+                        pass
+                    elif sg == SG.Softwoods:
+                        pass
+                    elif sg == SG.Hardwoods:
+                        pass
+                    else:
+                        raise NotImplementedError(sg)
+
+            elif cat == RPC.Other_Industrial_Roundwood:
+                # pilings, railway ties, electricity poles
+                # similar to Logs and Bolts but lasts slightly longer
+                pass
+
+            elif cat == RPC.Fuelwood_and_Firewood:
+                self._fuelwood_and_firewood(
+                    bioenergy_density_raw=eccc_nir_annex6.data_a6_5_2['Value'][idx],
+                    sectoral_emissions=sectoral_emissions)
+
+            elif cat == RPC.Pulpwood:
+                # Pulpwood is considered to be removed from
+                # atmosphere when it's harvested, but then
+                # returned to the atmosphere over the following years
+                    pass
+
+            else:
+                raise NotImplementedError(cat)
+
+        self.sectoral_emissions = sectoral_emissions
+        self.emissions = self.sectoral_emissions.sum(IPCC)
+
+    def _fuelwood_and_firewood(self, sectoral_emissions):
+        # Fuelwood CO2 is considered to released
+        # back to the atmosphere from whence it came
+        # but N2O and CH4 are considered new emissions
+        for sg in SG:
+
+            # extra 15% moisture content, supposing oven-dried is 10% moisture
+            # content
+            avg_bioenergy_density = (
+                (bioenergy_density_raw + .15)
+                * (u.tonne_wood_mc25 / m3_by_roundwood_species_group[sg]))
+
+            mass_wood_mc25 = self.net_harvested[sg, cat] * avg_bioenergy_density
+            # eyeballing table Annex6 6-1
+            # using coefficients for residential combustion
+            CH4_coef = 5.0 * u.g_CH4 / u.kg_wood_mc25
+            N2O_coef = 0.06 * u.g_N2O / u.kg_wood_mc25
+            sectoral_emissions[GHG.CH4, IPCC.Forest_Land] += CH4_coef * mass_wood_mc25
+            sectoral_emissions[GHG.N2O, IPCC.Forest_Land] += N2O_coef * mass_wood_mc25
+
+    def plot_emissions(self):
+        GHG = enums.GHG
+        ptvalues.scatter_subplots(
+            self.emissions[[GHG.CO2, GHG.CH4, GHG.N2O]],
+            v_unit_by_outer_key={
+                GHG.CO2: u.kilotonne_CO2,
+                GHG.CH4: u.tonne_CH4,
+                GHG.N2O: u.tonne_N2O,
+            },
+            legend_loc='upper left')
+
+
+    def update_A9_emissions(self, sectoral_emissions):
+        raise NotImplementedError()
+        #sectoral_emissions[enums.GHG.CO2, enums.IPCC_Sector.Forestry] +=
 
 
 class EstSectorEmissions(object):

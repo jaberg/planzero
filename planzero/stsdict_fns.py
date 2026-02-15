@@ -1,3 +1,4 @@
+import functools
 from .sts import STSDict
 
 def add_stsdict_stsdict(self, other):
@@ -29,57 +30,28 @@ def add_stsdict_stsdict(self, other):
 
 
 def mul_stsdict_stsdict(aa, bb):
-    val_d = {}
     assert aa.dims == bb.dims
     dims = aa.dims
     broadcast = [bca and bcb for bca, bcb in zip(aa.broadcast, bb.broadcast)]
+    nbdims = [dim for dim, bc in zip(dims, broadcast) if not bc]
 
-    if aa.fallback is not None and bb.fallback is not None:
-        fallback = mul_stsdict_stsdict(aa.fallback, bb.fallback)
-    elif self.fallback is not None and len(other.val_d) == other.logical_size:
-        fallback = mul_stsdict_stsdict(aa.fallback, bb.fallback)
-    else:
-        fallback = None
+    aa_key_pos_list = []
+    bb_key_pos_list = []
 
-    my_keys = set(self.val_d.keys())
-    other_keys = set(other.val_d.keys())
-    result_keys = my_keys & other_keys
-    for key in result_keys:
-        my_val = self.val_d.get(key)
-        other_val = other.val_d.get(key)
-        if my_val is None and other_val is None:
-            val_d[key] = None
-        elif my_val is None:
-            if self.assume_None_is_zero:
-                val_d[key] = None
-            else:
-                raise KeyError(key)
-        elif other_val is None:
-            if other.assume_None_is_zero:
-                val_d[key] = None
-            else:
-                raise KeyError(key)
-        else:
-            val_d[key] = my_val * other_val
-    return self.__class__(
+    # make it dense :/
+    val_d = {}
+    for key in functools.product(nbdims):
+        key_aa = [key[ii] for ii in aa_key_pos_list]
+        key_bb = [key[ii] for ii in bb_key_pos_list]
+        val_aa = aa.nonbroadcast_getitem(key_aa)
+        val_bb = aa.nonbroadcast_getitem(key_bb)
+        val_d[key] = val_aa * val_bb
+
+    return STSDict(
         val_d=val_d,
-        assume_None_is_zero=self.assume_None_is_zero and other.assume_None_is_zero)
+        dims=dims,
+        broadcast=broadcast)
 
-
-def mul_stsdict_stsdict(self, other):
-        else:
-            val_d = {}
-            for key, val in self.val_d.items():
-                if val is None:
-                    if self.assume_None_is_zero:
-                        val_d[key] = None
-                    else:
-                        raise KeyError(key)
-                else:
-                    val_d[key] = val * other
-            return self.__class__(
-                val_d=val_d,
-                assume_None_is_zero=self.assume_None_is_zero)
 
 
 class DimensionalityMismatch(Exception):

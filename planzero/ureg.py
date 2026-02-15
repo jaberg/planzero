@@ -13,7 +13,9 @@ ureg.define('fraction = [] = frac')
 ureg.define('ppm = 1e-6 fraction')
 ureg.define('ppb = 1e-9 fraction')
 
-for mass_substance in ['coal_bit', 'coal_subbit', 'lignite', 'petcoke', 'wood',
+for mass_substance in ['coal_bit', 'coal_subbit', 'lignite', 'petcoke',
+                       'wood_od', # oven-dried wood
+                       'wood_mc25', # wood at 25% moisture content - the level for which Annex6 (table 6-1) lists combustion emission coefficients
                        'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3']:
     ureg.define(f"kg_{mass_substance} = [mass_{mass_substance}]")
     ureg.define(f"tonne_{mass_substance} = 1000 * kg_{mass_substance}")
@@ -37,6 +39,7 @@ for volume_substance in ['NG_mk', 'NG_nmk',
                          'stillgas',
                          'petcoke',
                          'methane',
+                         'wood', 'hardwood', 'softwood',
                         ]:
     ureg.define(f"m3_{volume_substance} = [volume_{volume_substance}]")
     ureg.define(f"l_{volume_substance} = .001 * m3_{volume_substance}")
@@ -98,4 +101,10 @@ kilotonne_by_coal_type = {
     enums.CoalType.Lignite: u.kilotonne_lignite,
     enums.CoalType.ImportedBituminous: u.kilotonne_coal_bit,
     enums.CoalType.ImportedSubbituminous: u.kilotonne_coal_subbit,
+}
+
+m3_by_roundwood_species_group = {
+    enums.RoundwoodSpeciesGroup.Unspecified: u.m3_wood,
+    enums.RoundwoodSpeciesGroup.Softwoods: u.m3_softwood,
+    enums.RoundwoodSpeciesGroup.Hardwoods: u.m3_hardwood,
 }
