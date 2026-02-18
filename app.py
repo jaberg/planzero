@@ -61,6 +61,9 @@ async def get_ipcc_sectors(request: Request, error_text:str=None):
             error_text=error_text,
             npv_unit='MCAD',
             nph_unit='exajoule',
+            CNZEAA_targets_list=[float(x) for x in planzero.ipcc_canada.CNZEAA_targets()],
+            net_emissions_total_without_LULUCF=[float(x) for x in planzero.ipcc_canada.net_emissions_total_without_LULUCF()],
+            net_emissions_total=[float(x) for x in planzero.ipcc_canada.net_emissions_total()],
             ),
     )
 

@@ -39,9 +39,30 @@ option = {
       nameGap: 40,
   },
   series: [
-      {% for series_elem in ipcc_canada.echart_series_all_Mt(only_positive=True) %}
+      {% for series_elem in ipcc_canada.echart_series_all_Mt() %}
       {{ json.dumps(series_elem) | safe }},
       {% endfor %}
+      {
+          "name":"Target",
+          "type":"line",
+          "lineStyle":{"width": 2, 'type':'dotted', 'color':'#606060'},
+          "itemStyle":{'color':'#606060'},
+          "data":{{CNZEAA_targets_list}}
+      },
+      {
+          "name":"Net Total (without LULUCF)",
+          "type":"line",
+          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
+          "itemStyle":{'color':'#303030'},
+          "data":{{net_emissions_total_without_LULUCF}}
+      },
+      {
+          "name":"Net Total",
+          "type":"line",
+          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
+          "itemStyle":{'color':'#303030'},
+          "data":{{net_emissions_total}}
+      },
   ],
   tooltip: {
     trigger: 'item',

@@ -1,0 +1,113 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+The <a href="./2026-01-21-unfccc">previous post</a> introduced greenhouse gases and radiative forcing,
+which is the mechanism by which greenhouse gases increase the heat retained by the planetary system of the earth.
+This post introduces Canada’s net-zero commitments:
+the signing of the UN Paris Accords, and the
+passing of the Canadian Net-Zero Emissions Accountability Act (CNZEAA).
+This motivates an upgrade to the figure from the <a href="./2025-12-05-first-post">very first post</a>, which showed the trends of Canada's emissions by IPCC Sector. This post adds Canada's Net-Zero commitments under the CNZEAA,
+and visualizes the sink sectors as well as source ones.
+</p>
+
+
+<div id="mychart" style="width: 800px; height: 600px; margin: 0 auto;"></div>
+<script>
+var myChart = echarts.init(document.getElementById('mychart'));
+var option;
+
+option = {
+  title: {
+      text: 'Canadian Emissions by IPCC Sector',
+      subtext: 'Click on data points to explore sectors, clicking regions would be nice but does not work yet', // Optional subtitle
+      left: 'center', // Align: 'left', 'center', or 'right'
+  },
+  xAxis: {
+      name: 'Year', // The label text
+      nameLocation: 'middle', // Places it in the center (default is 'end')
+      nameGap: 30, // Distance from the axis line (pixel count)
+      data: {{ ipcc_canada.echart_years() }},
+  },
+  yAxis: {
+      name: 'Emissions (Mt CO2e)', // The label text
+      nameLocation: 'middle',
+      nameGap: 40,
+  },
+  series: [
+      {% for series_elem in ipcc_canada.echart_series_all_Mt() %}
+      {{ json.dumps(series_elem) | safe }},
+      {% endfor %}
+      {
+          "name":"Net Target",
+          "type":"line",
+          "lineStyle":{"width": 2, 'type':'dotted', 'color':'#606060'},
+          "itemStyle":{'color':'#606060'},
+          "data":{{blog.CNZEAA_targets}}
+      },
+      {
+          "name":"Net Total (without LULUCF)",
+          "type":"line",
+          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
+          "itemStyle":{'color':'#303030'},
+          "data":{{blog.net_emissions_total_without_LULUCF}}
+      },
+      {
+          "name":"Net Total",
+          "type":"line",
+          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
+          "itemStyle":{'color':'#303030'},
+          "data":{{blog.net_emissions_total}}
+      },
+  ],
+  tooltip: {
+    trigger: 'item',
+    axisPointer: {
+      type: 'cross',
+      label: {
+        backgroundColor: '#6a7985'
+      }
+    },
+    formatter: params => {
+        return params.seriesName;
+    },
+  },
+};
+
+option && myChart.setOption(option);
+
+// 3. Add the Click Listener
+myChart.on('click', function(params) {
+  // Console log to see what data is available
+  console.log(params);
+
+  // params.data contains the array for that point: [x, y, url]
+  // So the URL is at index 2
+  var url = params.data.url;
+
+  if (url) {
+    // Open in new tab
+    //window.open(url, '_blank');
+
+    // OR open in same tab:
+    window.location.href = url;
+  }
+});
+
+
+window.addEventListener('resize', function() {
+  myChart.resize();
+});
+
+
+</script>
+
+</section>
+</div>
+{% include "post-main.html" %}

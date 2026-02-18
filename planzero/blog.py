@@ -32,6 +32,7 @@ from io import StringIO
 from .html import HTML_element
 from .html import HTML_Math_Latex
 import matplotlib.pyplot as plt
+from . import ipcc_canada
 
 
 def latex(latex, display='inline'):
@@ -47,6 +48,26 @@ class HTML_Matplotlib_Figure(HTML_element):
         plt.close()
         svg_string = svg_buffer.getvalue()
         return svg_string
+
+
+class CNZEAA(BlogPost):
+    """A brief introduction to the Canadian Net-Zero Emissions Accountability
+    Act, the federal implementation of Canada’s obligations under the Paris
+    Accords.
+    """
+    CNZEAA_targets:list[float]
+    net_emissions_total_without_LULUCF:list[float]
+    net_emissions_total:list[float]
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 2, 2),
+            title="Paris Accords and the CNZEAA",
+            url_filename="2026-02-02-cnzeaa",
+            author="James Bergstra",
+            CNZEAA_targets=list(ipcc_canada.CNZEAA_targets()),
+            net_emissions_total_without_LULUCF=list(ipcc_canada.net_emissions_total_without_LULUCF()),
+            net_emissions_total=list(ipcc_canada.net_emissions_total()),
+            )
 
 
 class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
@@ -149,9 +170,32 @@ class GHG_Emissions(BlogPost):
             ))
 
 
+class Contributing(BlogPost):
+    """Coming back from the winter break, I thought I'd write about how
+    I myself should contribute to this site; partly to get back in gear, and
+    partly to encourage collaboration."""
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 1, 6),
+            title="Contributing (even for myself)",
+            url_filename="2026-01-06-contributing",
+            author="James Bergstra")
+
+
+class HowMightWe(BlogPost):
+    """Plan Zero is an independent research project to work publicly toward
+    understanding how Canada might achieve net-zero emissions."""
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2025, 12, 5),
+            title='How might Canada achieve Net-Zero?',
+            url_filename="2025-12-05-first-post",
+            author="James Bergstra")
+
+
 def init_blogs_by_url_filename():
     for cls in _classes:
         obj = cls()
         _blogs_by_url_filename[obj.url_filename] = obj
         _blogs_sorted_by_date.append(obj)
-    _blogs_sorted_by_date.sort(key=lambda x: x.date)
+    _blogs_sorted_by_date.sort(key=lambda x: x.date, reverse=True)
