@@ -27,8 +27,11 @@ def echart_years():
 
 
 def echart_series_Mt(catpath, name=None):
-    datalen = len(echart_years())
+    non_agg_years = list(set(non_agg['Year'].unique()))
+    non_agg_years.sort()
+    datalen = len(non_agg_years)
     assert ('kt',) == inv['Unit'].unique()
+    assert non_agg_years == echart_years()[:datalen]
     catpath_data = non_agg[non_agg['CategoryPathWithWhitespace'] == catpaths[catpath]]
     data = [(int(year), float(co2eq) / 1000)
             for year, co2eq in catpath_data[['Year', 'CO2eq']].values]

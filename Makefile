@@ -75,13 +75,6 @@ print_sectoral_emissions_gaps: .build
 		-it --rm $(target) \
 		python -m planzero
 
-test_sc_nir: .build
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target) \
-		pytest -W error --maxfail=2 -vv planzero/test_sc_nir.py
-
 test_sts: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

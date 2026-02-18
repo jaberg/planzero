@@ -46,7 +46,7 @@ def test_each_strategy(idea_name):
 
 @pytest.mark.parametrize("url_filename", planzero.blog._blogs_by_url_filename)
 def test_each_blog(url_filename):
-    assert len(planzero.blog._blogs_by_url_filename) == 1
+    assert len(planzero.blog._blogs_by_url_filename) == 4
     url = f"/blog/{url_filename}/"
     response = client.get(url)
     assert response.status_code == 200
