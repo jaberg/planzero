@@ -24,7 +24,9 @@ class BlogPost(BaseModel):
         super().__init_subclass__()
         _classes.append(cls)
 
-from .planet_model import emissions_impulse_response_project_evaluation, u, GHGs
+from .planet_model import emissions_impulse_response_project_evaluation
+from . import enums
+from .ureg import u
 
 from io import StringIO
 from .html import HTML_element
@@ -59,7 +61,7 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
         plt.title(self.title)
         years = [year for year in range(2000, 2101)]
         #years = [year for year in range(1990, 2101)]
-        for ghg in GHGs:
+        for ghg in enums.GHG:
             comp = self.peval.comparisons[ghg]
             years_pint = [year * u.year for year in years]
             energy_A = comp.state_A.sts[self.sts_key].query(years_pint)

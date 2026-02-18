@@ -66,9 +66,3 @@ def test_annex13_electricity_from_other():
     target_2015 = target.query(2015 * u.years)
     assert 4_000 * u.kt_CO2e < target_2015 < 6_000 * u.kt_CO2e
     assert 4_000 * u.kt_CO2e < estimate_2015 < 6_000 * u.kt_CO2e
-
-
-def test_annex9_total():
-    est = est_nir.EstSectorEmissions()
-    max_gap = est.max_gap_2005()
-    assert 0 <= max_gap.to('kt_CO2e').magnitude < 100

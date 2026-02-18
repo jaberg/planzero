@@ -1,5 +1,6 @@
 import functools
 
+from . import enums
 from .base import (
     Project,
     ProjectEvaluation,
@@ -7,15 +8,15 @@ from .base import (
     SparseTimeSeries,
     ureg as u,
     )
+from .ghgvalues import GWP_100
 
 
 class EmissionsImpulseResponse(Project):
-    ghg:str
+    ghg:object
     impulse_co2e:object
     catpath:str
 
     def on_add_project(self, state):
-
         with state.defining(self) as ctx:
             ctx.impulse_response = SparseTimeSeries(
                 times=[2000 * u.years, 2001 * u.years],
@@ -33,7 +34,7 @@ def emissions_impulse_response_project_evaluation(impulse_co2e, years,
         projects={ghg: EmissionsImpulseResponse(impulse_co2e=impulse_co2e,
                                                 ghg=ghg,
                                                 catpath=catpath)
-                  for ghg in GHGs},
+                  for ghg in enums.GHG},
         common_projects=[AtmosphericChemistry()],
         present=2000 * u.years,
     )

@@ -33,6 +33,20 @@ test_blogs: .build
 		-it --rm $(target) \
 		pytest -W error --maxfail=2 -vv -k test_each_blog test_200.py
 
+test_200: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest -W error --maxfail=2 -vv test_200.py
+
+test_ipcc_canada: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest -W error --maxfail=2 -vv test_ipcc_canada.py
+
 test_mapml: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
@@ -53,6 +67,13 @@ test_est_nir: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		pytest -W error --maxfail=2 -vv planzero/test_est_nir.py
+
+print_sectoral_emissions_gaps: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero
 
 test_sc_nir: .build
 	docker run \

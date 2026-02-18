@@ -27,7 +27,7 @@ u = ureg
 
 
 from . import ipcc_canada
-GHGs = ('CO2', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3')
+from .enums import GHG
 
 from .sts import SparseTimeSeries
 
@@ -265,7 +265,7 @@ class State(object):
     def register_emission(self, category_path, ghg, sts_key):
         if self.emissions_registration_closed:
             raise RuntimeError()
-        assert ghg in GHGs
+        assert ghg == GHG(ghg)
         assert sts_key in self.sts
         self.sectoral_emissions_contributors[category_path].setdefault(ghg, []).append(sts_key)
 
@@ -373,7 +373,7 @@ N2O_GWP_100 = 265.0 * u.kg_CO2e / u.kg_N2O
 HFC_GWP_100 = 1_430 * u.kg_CO2e / u.kg_HFC
 PFC_GWP_100 = 6_630 * u.kg_CO2e / u.kg_PFC
 SF6_GWP_100 = 23_500 * u.kg_CO2e / u.kg_SF6
-NF3_GWP_100 = 17_200 * u.kg_CO2e / u.kg_NF3
+NF3_GWP_100 = 16_100 * u.kg_CO2e / u.kg_NF3
 
 
 
@@ -403,19 +403,19 @@ class AtmosphericChemistry(BaseScenarioProject):
     def on_add_project(self, state):
         with state.requiring_current(self) as ctx:
             for catpath, contributors in state.sectoral_emissions_contributors.items():
-                for sts_key in contributors.get('CO2', []):
+                for sts_key in contributors.get(GHG.CO2, []):
                     ctx.will_read_current(sts_key)
-                for sts_key in contributors.get('CH4', []):
+                for sts_key in contributors.get(GHG.CH4, []):
                     ctx.will_read_current(sts_key)
-                for sts_key in contributors.get('N2O', []):
+                for sts_key in contributors.get(GHG.N2O, []):
                     ctx.will_read_current(sts_key)
-                for sts_key in contributors.get('HFC', []):
+                for sts_key in contributors.get(GHG.HFCs, []):
                     ctx.will_read_current(sts_key)
-                for sts_key in contributors.get('PFC', []):
+                for sts_key in contributors.get(GHG.PFCs, []):
                     ctx.will_read_current(sts_key)
-                for sts_key in contributors.get('SF6', []):
+                for sts_key in contributors.get(GHG.SF6, []):
                     ctx.will_read_current(sts_key)
-                for sts_key in contributors.get('NF3', []):
+                for sts_key in contributors.get(GHG.NF3, []):
                     ctx.will_read_current(sts_key)
 
         with state.defining(self) as ctx:
@@ -482,7 +482,7 @@ class AtmosphericChemistry(BaseScenarioProject):
         for catpath, contributors in state.sectoral_emissions_contributors.items():
             catpath_CO2e_mass = 0 * u.kg_CO2e
 
-            catpath_CO2_contributors = contributors.get('CO2', [])
+            catpath_CO2_contributors = contributors.get(GHG.CO2, [])
             if catpath_CO2_contributors:
                 catpath_CO2_mass = sum(getattr(current, sts_key) for sts_key in catpath_CO2_contributors)
                 try:
@@ -493,7 +493,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                 catpath_CO2e_mass += catpath_CO2_mass * CO2_GWP_100
                 annual_CO2_mass += catpath_CO2_mass
 
-            catpath_CH4_contributors = contributors.get('CH4', [])
+            catpath_CH4_contributors = contributors.get(GHG.CH4, [])
             if catpath_CH4_contributors:
                 catpath_CH4_mass = sum(getattr(current, sts_key) for sts_key in catpath_CH4_contributors)
                 try:
@@ -504,7 +504,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                 catpath_CO2e_mass += catpath_CH4_mass * CH4_GWP_100
                 annual_CH4_mass += catpath_CH4_mass
 
-            catpath_N2O_contributors = contributors.get('N2O', [])
+            catpath_N2O_contributors = contributors.get(GHG.N2O, [])
             if catpath_N2O_contributors:
                 catpath_N2O_mass = sum(getattr(current, sts_key) for sts_key in catpath_N2O_contributors)
                 try:
@@ -515,28 +515,28 @@ class AtmosphericChemistry(BaseScenarioProject):
                 catpath_CO2e_mass += catpath_N2O_mass * N2O_GWP_100
                 annual_N2O_mass += catpath_N2O_mass
 
-            catpath_HFC_contributors = contributors.get('HFC', [])
+            catpath_HFC_contributors = contributors.get(GHG.HFCs, [])
             if catpath_HFC_contributors:
                 catpath_HFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_HFC_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
                 catpath_CO2e_mass += catpath_HFC_mass * HFC_GWP_100
                 annual_HFC_mass += catpath_HFC_mass
 
-            catpath_PFC_contributors = contributors.get('PFC', [])
+            catpath_PFC_contributors = contributors.get(GHG.PFCs, [])
             if catpath_PFC_contributors:
                 catpath_PFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_PFC_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
                 catpath_CO2e_mass += catpath_PFC_mass * PFC_GWP_100
                 annual_PFC_mass += catpath_PFC_mass
 
-            catpath_SF6_contributors = contributors.get('SF6', [])
+            catpath_SF6_contributors = contributors.get(GHG.SF6, [])
             if catpath_SF6_contributors:
                 catpath_SF6_mass = sum(getattr(current, sts_key) for sts_key in catpath_SF6_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
                 catpath_CO2e_mass += catpath_SF6_mass * SF6_GWP_100
                 annual_SF6_mass += catpath_SF6_mass
 
-            catpath_NF3_contributors = contributors.get('NF3', [])
+            catpath_NF3_contributors = contributors.get(GHG.NF3, [])
             if catpath_NF3_contributors:
                 catpath_NF3_mass = sum(getattr(current, sts_key) for sts_key in catpath_NF3_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
@@ -984,7 +984,7 @@ class IPCC_Forest_Land_Model(BaseScenarioProject):
             ctx.Other_Forest_Land_CO2 = SparseTimeSeries(
                 default_value=40.0 * u.Mt_CO2)
 
-        state.register_emission('Forest_Land', 'CO2', 'Other_Forest_Land_CO2')
+        state.register_emission('Forest_Land', GHG.CO2, 'Other_Forest_Land_CO2')
 
 
 class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProject):
@@ -1014,8 +1014,8 @@ class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProj
             ctx.Other_LightDutyGasolineTrucks_CO2 = SparseTimeSeries(
                 default_value=0 * u.Mt_CO2)
 
-        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', 'CO2', 'Other_LightDutyGasolineTrucks_CO2')
-        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', 'CO2', 'Government_LightDutyGasolineTrucks_CO2')
+        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', GHG.CO2, 'Other_LightDutyGasolineTrucks_CO2')
+        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', GHG.CO2, 'Government_LightDutyGasolineTrucks_CO2')
         return state.t_now + self.stepsize
 
     def step(self, state, current):

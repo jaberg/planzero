@@ -564,6 +564,13 @@ data_a6_5_2 = {
 # Table A6.5–3 Half-Life Parameters (Years) of Harvested Wood Products In-use
 data_a6_5_3 = {
     'Countries': ['Canada'] * 4 + ['U.S.'] * 4 + ['Rest of World'] * 4,
-    'Description': ['Sawnwood', 'Wood panels', 'Pulp and paper', 'Other industrial roundwood'] * 4,
-    'Values': [35, 25, 2, 35, 40, 27.04, 3.25, 40, 35, 25, 2, 35],
+    'Description': ['Sawnwood', 'Wood panels', 'Pulp and paper', 'Other industrial roundwood'] * 3,
+    'Values': [35, 25, 2, 35,
+               40, 27.04, 3.25, 40,
+               35, 25, 2, 35],
 }
+df_a6_5_3 = pd.DataFrame(data_a6_5_3)
+dict_a6_5_3 = {(country, desc): value
+               for country, desc, value in zip(data_a6_5_3['Countries'],
+                                               data_a6_5_3['Description'],
+                                               data_a6_5_3['Values'])}

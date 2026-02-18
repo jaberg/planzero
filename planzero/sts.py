@@ -255,8 +255,14 @@ class SparseTimeSeries(BaseModel):
     def __radd__(self, other):
         return self.__add__(other)
 
+    def __neg__(self):
+        return scale(self, -1)
+
     def __sub__(self, other):
-        return (self + scale(other, -1))
+            return (self + (-other))
+
+    def __rsub__(self, other):
+        return (other + (-self))
 
     def __truediv__(self, other):
         default_value = (

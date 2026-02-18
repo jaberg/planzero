@@ -25,7 +25,7 @@ def test_views():
 
     bar = empty([A.B, A.A])
     assert foo.dims != bar.dims
-    assert are_ravel_compatible(foo.dims, bar.dims)
+    assert dims_are_ravel_compatible(foo.dims, bar.dims)
 
     bar[A.A] = 0
     assert bar.buf == [None, 0]

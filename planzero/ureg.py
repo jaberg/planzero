@@ -14,9 +14,11 @@ ureg.define('ppm = 1e-6 fraction')
 ureg.define('ppb = 1e-9 fraction')
 
 for mass_substance in ['coal_bit', 'coal_subbit', 'lignite', 'petcoke',
-                       'wood_od', # oven-dried wood
+                       'wood_od', # wood, oven-dried
                        'wood_mc25', # wood at 25% moisture content - the level for which Annex6 (table 6-1) lists combustion emission coefficients
-                       'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3']:
+                       'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3',
+                       'carbon' # in e.g. wood
+                      ]:
     ureg.define(f"kg_{mass_substance} = [mass_{mass_substance}]")
     ureg.define(f"tonne_{mass_substance} = 1000 * kg_{mass_substance}")
     ureg.define(f"kilotonne_{mass_substance} = 1_000_000 * kg_{mass_substance} = kt_{mass_substance}")

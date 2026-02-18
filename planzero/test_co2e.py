@@ -1,11 +1,9 @@
 import numpy as np
 
-from .planet_model import (
-    emissions_impulse_response_project_evaluation,
-    GWP_100,
-    GHGs,
-    u,
-    )
+from .ureg import u
+from .enums import GHG
+from .ghgvalues import GWP_100
+from .planet_model import emissions_impulse_response_project_evaluation
 
 
 def test_co2e(assert_value=0, years=100):
@@ -13,7 +11,7 @@ def test_co2e(assert_value=0, years=100):
     peval = emissions_impulse_response_project_evaluation(impulse_co2e=impulse_mass, years=years)
     catpath = peval.projects['CO2'].catpath
     forcings = []
-    for ghg in GHGs:
+    for ghg in GHG:
         comp = peval.comparisons[ghg]
         assert comp.state_A.sts['impulse_response'].max() == impulse_mass / GWP_100[ghg]
         co2e_key = f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'
