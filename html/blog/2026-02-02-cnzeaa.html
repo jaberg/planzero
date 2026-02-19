@@ -8,105 +8,168 @@
     </header>
 
 <p>
+Table of Contents:
+<ul>
+    <li><a href="#h2_intro">Introduction</a></li>
+    <li><a href="#paris">Paris Accords</a></li>
+    <li><a href="#cnzeaa">Canada's Net-Zero Emissions Accountability Act</a></li>
+    <li><a href="#targets">ECCC's Latest National GHG Targets and LULUCF</a></li>
+    <li><a href="#summary">Summary</a></li>
+</ul>
+</p>
+
+<h2 id="h2_intro">Introduction</h2>
+<p>
 The <a href="./2026-01-21-unfccc">previous post</a> introduced greenhouse gases and radiative forcing,
 which is the mechanism by which greenhouse gases increase the heat retained by the planetary system of the earth.
 This post introduces Canada’s net-zero commitments:
-the signing of the UN Paris Accords, and the
+the signing of the UN Paris Accords (developed with input from the International Panel on Climate Change, IPCC), and the
 passing of the Canadian Net-Zero Emissions Accountability Act (CNZEAA).
-This motivates an upgrade to the figure from the <a href="./2025-12-05-first-post">very first post</a>, which showed the trends of Canada's emissions by IPCC Sector. This post adds Canada's Net-Zero commitments under the CNZEAA,
-and visualizes the sink sectors as well as source ones.
+Discussion of the CNZEAA motivates an upgrade to the IPCC sector emissions figure from this blog's <a href="./2025-12-05-first-post">first post</a>:
+namely adding Canada's Net-Zero commitments and targets under the CNZEAA, and visualizing the sink sectors in addition to the source sectors.
+</p>
+<p>
+Taking a step back, I believe the structure of Canada's net-zero commitments is important to write about because
+(1) I would like to use PlanZero to evaluate business ideas, and businesses address private problems,
+and (2) the roll-up of economic activity into national GHG emissions appears to mirror (in reverse) the breakdown of public problems into private ones.
+By replicating here in PlanZero at least some of the computation of the national [GHG] inventory,
+I hope to systematically break down the public problem of GHG emissions into the many contributing factors from across the economy,
+in a way that can be used to evaluate business ideas from an emissions-impact perspective.
+This post introduces Canada's targets, and the framework in which they are defined.
+In doing so, it sets up a series of follow-on posts about replicating (if sometimes approximating)
+the sector-by-IPCC-sector totals that, together, make up Canada's national greenhouse gas inventory.
 </p>
 
 
-<div id="mychart" style="width: 800px; height: 600px; margin: 0 auto;"></div>
-<script>
-var myChart = echarts.init(document.getElementById('mychart'));
-var option;
+<h2 id="paris">Paris Accords</h2>
+<p>
+Some of Canada’s indigenous peoples practiced a “<a href="https://en.wikipedia.org/wiki/Seven_generation_sustainability">seven-generations</a>” doctrine,
+which emphasized the consideration of future generations in decision-making.
+However, Canada’s federal constitution, laws and governance mechanisms have
+historically not included mechanisms or principles to look and plan far-enough
+ahead to consider the long-term negative impacts of greenhouse gas emissions.
+The starting point for PlanZero’s modelling of Canada’s current federal commitments to net-zero greenhouse gas
+emissions is Canada's signing of the Paris Agreement in 2016, as part of the United Nations Framework Convention on Climate Change (UNFCCC).
+</p>
 
-option = {
-  title: {
-      text: 'Canadian Emissions by IPCC Sector',
-      subtext: 'Click on data points to explore sectors, clicking regions would be nice but does not work yet', // Optional subtitle
-      left: 'center', // Align: 'left', 'center', or 'right'
-  },
-  xAxis: {
-      name: 'Year', // The label text
-      nameLocation: 'middle', // Places it in the center (default is 'end')
-      nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ ipcc_canada.echart_years() }},
-  },
-  yAxis: {
-      name: 'Emissions (Mt CO2e)', // The label text
-      nameLocation: 'middle',
-      nameGap: 40,
-  },
-  series: [
-      {% for series_elem in ipcc_canada.echart_series_all_Mt() %}
-      {{ json.dumps(series_elem) | safe }},
-      {% endfor %}
-      {
-          "name":"Net Target",
-          "type":"line",
-          "lineStyle":{"width": 2, 'type':'dotted', 'color':'#606060'},
-          "itemStyle":{'color':'#606060'},
-          "data":{{blog.CNZEAA_targets}}
-      },
-      {
-          "name":"Net Total (without LULUCF)",
-          "type":"line",
-          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
-          "itemStyle":{'color':'#303030'},
-          "data":{{blog.net_emissions_total_without_LULUCF}}
-      },
-      {
-          "name":"Net Total",
-          "type":"line",
-          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
-          "itemStyle":{'color':'#303030'},
-          "data":{{blog.net_emissions_total}}
-      },
-  ],
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    },
-    formatter: params => {
-        return params.seriesName;
-    },
-  },
-};
+<p>
+From <a href="https://en.wikipedia.org/wiki/Paris_Agreement">wikipedia</a>:
+<i>The Paris Agreement (also called the Paris Accords or Paris Climate Accords) is an international treaty on climate change that was signed in 2016.
+The treaty covers climate change mitigation, adaptation, and finance.
+The Paris Agreement was negotiated by 196 parties at the 2015 United Nations Climate Change Conference near Paris, France.
+The Paris Agreement has a long-term temperature goal which is to keep the rise in global surface temperature to well below 2 °C (3.6 °F) above pre-industrial levels.
+The treaty also states that preferably the limit of the increase should only be 1.5 °C (2.7 °F).
+These limits are defined as averages of the global temperature as measured over many years.
+The lower the temperature increase, the smaller the expected effects of climate change.
+To achieve this temperature goal, greenhouse gas emissions should be reduced as soon as, and by as much as, possible.
+They should even reach net zero by the middle of the 21st century.
+To stay below 1.5 °C of global warming, emissions need to be cut by roughly 50% by 2030.
+</i>
+</p>
 
-option && myChart.setOption(option);
-
-// 3. Add the Click Listener
-myChart.on('click', function(params) {
-  // Console log to see what data is available
-  console.log(params);
-
-  // params.data contains the array for that point: [x, y, url]
-  // So the URL is at index 2
-  var url = params.data.url;
-
-  if (url) {
-    // Open in new tab
-    //window.open(url, '_blank');
-
-    // OR open in same tab:
-    window.location.href = url;
-  }
-});
+<p>
+Under the Paris Agreement, each country must determine its own emissions targets (exceeding its previous targets), plan, and <a href="https://en.wikipedia.org/wiki/Enhanced_Transparency_Framework">regularly report</a> on its greenhouse gas (GHG) contributions.
+Countries are not legally obligated by the Paris Accord to set particular targets, nor to hit those targets, but countries are obliged
+to have targets on emissions as measured in particular ways,
+to communicate those targets, and then
+to report on their progress using standard methodology.
+This activity is the foundation of what might colloquially be called a name-and-shame system, or what has semi-officially been called a “<a href="https://web.archive.org/web/20151213054835/http://www.cbsnews.com/news/cop21-climate-change-conference-final-draft-historic-plan/">name and encourage</a>” system.
+The Paris Accords exist within a realm of international relations that already includes a range of mechanisms for such encouragement to be applied between countries.
+The Paris Agreement creates transparency so that other kinds of political and economic mechanisms can exert aligned encouragement toward the global net-zero goals of the UNFCCC.
+</p>
 
 
-window.addEventListener('resize', function() {
-  myChart.resize();
-});
+<h2 id="cnzeaa">Canadian Net-Zero Emissions Accountability Act</h2>
+
+<p>
+Canada passed the Canadian Net Zero Emissions Accountability Act (CNZEAA, 2021) in order to implement the changes required to meet its responsibilities under the Paris Accords.
+The implications of the CNZEAA are far-reaching.
+For a few introductions to the act, see e.g.
+the <a href="https://laws-lois.justice.gc.ca/eng/acts/c-19.3/fulltext.html">full text</a>,
+the <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/net-zero-emissions-2050/canadian-net-zero-emissions-accountability-act.html">overview maintained by the civil service</a>, and
+the Honourable Senator Rosa Galvez’s “<a href="https://rosagalvez.ca/en/initiatives/climate-accountability/short-guide-to-the-cnzeaa">Short Guide to the Canadian Net-Zero Emissions Accountability Act</a>”).
+</p>
+
+<p>
+The Paris Accords are primarily about standardizing how countries report emissions and plans.
+The CNZEAA makes Canada’s Ministry of the Environment and Climate Change (ECCC) primarily accountable for planning and reporting on Canada’s behalf.
+The ECCC reports on both its own work and the work of many other areas of the public and private sectors.
+The CNZEAA directly and indirectly added responsibilities across many areas of federal and provincial government.
+For a few examples:
+</p>
+<table>
+    <tr><td>Ministry of the Environment and Climate Change (ECCC)</td><td>Ultimately accountable for reporting ot the UNFCCC</td></tr>
+    <tr><td>Ministry of Natural Resources (NRCan)</td><td>Reporting and planning in some sectors, especially energy, industrial, and land use</td></tr>
+    <tr><td>Statistics Canada (StatsCan)</td><td>Collecting and reporting many economic statistics that supporting emissions estimates</td></tr>
+    <tr><td>Ministry of Finance</td><td>Reporting and planning for government agencies' internal operations and the same for crown corporations</td></tr>
+    <tr><td>Provinces and Territories</td><td>Jurisdictional reporting and planning, especially natural resources, energy, land use, buildings, transportation</td></tr>
+    <tr><td>Net-Zero Advisory Body</td><td>Newly-created scientific advisory group created by CNZEAA</td></tr>
+</table>
+
+<p>
+The CNZEAA required the ECCC to publish a 2030 emissions
+reduction plan by 2023, and to update it with progress reports in 2025 and
+2027, leading up to a major replanning iteration in 2029-2030.
+The ECCC has done so:
+it maintains 2030 targets via the ECCC <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/climate-plan-overview/emissions-reduction-2030.html">website</a>, and last year published the <a href="https://publications.gc.ca/site/eng/9.954865/publication.html">2025 progress report</a>.
+The 2030 plan is substantial, and will drive many future blog-updates to PlanZero.
+</p>
+
+<h2 id="targets">ECCC's Latest National GHG Targets and LULUCF</h2>
+<p>
+The ECCC has set national targets for the years 2030, 2035, and 2050:
+<ul>
+    <li>2030: 40% below 2005 levels</li>
+    <li>2035: 40-45% below 2005 levels</li>
+    <li>2050: 100% below 2005 levels</li>
+</ul>
+As of this blog post, PlanZero includes these federal targets as a curve overlayed on the IPCC Sectors page.
+</p>
+
+<a href="/ipcc-sectors/">
+<img src="/images/2026-02-02-national-emissions-targets.png" alt="" class="image main"/>
+</a>
 
 
-</script>
+<p>
+Also overlayed now are two other curves: the total net emissions with and without the Land Use, Land Use Change, and Forestry (LULUCF) sectors.
+Two net emissions totals (with and without LULUCF) are plotted because LULUCF sector presents complications and is excluded from totals in some circumstances.
+Canada's National Inventory is prepared by the ECCC for the United Nations (compiled strictly according to the IPCC guidelines),
+and the IPCC requires that LULUCF be included as an Annex. I expect LULUCF is treated differently for at least the following reasons:
+<ul>
+    <li>Few nations have large forested areas.</li>
+    <li>It is not currently possible to characterize LULUCF impacts with as much precision as other sectors.</li>
+    <li>Natural randomness plays a significant role in annual emission events relating to land.</li>
+    <li>The amplitude of specific emission events from e.g. forest wildfires can be large relative to other sectors.</li>
+    <li>Forest wildfire emissions in particular are naturally cyclic and historically sustainable, unlike emissions from combustion of fossil carbon.</li>
+</ul>
+That said, Canada's vast land mass is a unique resource that can help achieve Canada's net-zero goal.
+For that reason (perhaps), Canada has adopted Net-Zero targets in terms of the total national emissions <i>inclusive</i> of LULUCF emissions.
+Still, in keeping with IPCC reporting guidelines, the "Total" in Canada's National Inventory Report is <i>exclusive</i> of LULUCF emissions.
+</p>
+
+
+<h2 id="summary">Summary</h2>
+<p>
+The UNFCCC's Paris Accords, established in 2015, seem to be holding strong as an international agreement to
+(a) define greenhouse gases (GHGs),
+(b) recognize the role of anthropogenic greenhouse gas emissions in affecting the global climate, and
+(c) standardize methodology for collecting and reporting nation-by-nation data on global emissions.
+Canada signed the Paris Accords,
+and subsequently passed the Canadian Net-Zero Emissions Accountability Act (CNZEAA) in order to establish the programs and responsibilities across many areas of government, that ultimately
+allow the Ministry of Environment and Climate Change (ECCC) to fulfil Canada's reporting obligations to the International Panel on Climate Change (IPCC).
+Canada has set GHG emission targets in terms of total net IPCC sectoral emissions: 40% below the 2005 total by 2030, 45-50% below by 2035, and 100% below by 2050.
+PlanZero's IPCC Sectors page has been updated to show these targets.
+</p>
+<p>
+Coming up over the next several blog-updates will be the development of an estimate of the national inventory on the basis of data from StatScan and NRCan.
+The aim is to connect emissions to the most detailed available data from Canada's economic activity and land use.
+The purpose of this PlanZero project is partly for me to learn about all of the sources of Canada's GHG emissions,
+but also, beyond that, to systematically break down the public problem of too-much-GHG-emissions into the many private problems and decisions about which e.g. StatsCan and NRCan collect survey data.
+I would like to use PlanZero to evaluate business ideas, and businesses address private problems.
+I plan to go through the IPCC Sectors in order of decreasing magnitude in the 2005 emissions baseline, making time-boxed efforts to estimate each one as well as possible.
+First up: Public Electricity and Heat.
+</p>
 
 </section>
 </div>

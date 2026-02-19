@@ -101,7 +101,7 @@ def net_emissions_total():
     total_without = can[can.Source == 'Total'].CO2eq.values / 1000
     lulucf = can[(can.Source == 'Land Use, Land-Use Change and Forestry')
                  & (can.Category.isna())].CO2eq.values / 1000
-    rval = total_without - lulucf
+    rval = total_without + lulucf
     assert len(rval) == 2024 - 1990
     return rval
 
@@ -114,8 +114,8 @@ def net_emissions_total_without_LULUCF():
 
 
 def CNZEAA_targets():
-    can = inv[inv.Region.isin(['Canada', 'canada'])]
-    baseline = float(can[(can.Source == 'Total') & (can.Year == 2005)].CO2eq.values[0] / 1000)
+    net_emissions = net_emissions_total()
+    baseline = net_emissions[2005 - 1990]
     return np.interp(
         echart_years(),
         [2005, 2030, 2035, 2050],
