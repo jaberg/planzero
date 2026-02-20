@@ -24,6 +24,7 @@
 						<!-- Posts -->
 							<section class="posts">
                                 {% for blog in blogs_sorted_by_date %}
+                                {% if blog.published %}
 								<article>
 									<header>
                                         <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
@@ -37,6 +38,7 @@
                                         <li><a href="/blog/{{blog.url_filename}}" class="button">Full Post</a></li>
 									</ul>
 								</article>
+                                {% endif %}
                                 {% endfor %}
 							</section>
 

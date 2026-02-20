@@ -23,25 +23,25 @@ Table of Contents:
 The <a href="./2026-01-21-unfccc">previous post</a> introduced greenhouse gases and CO2e, the standard-if-imperfect way to compare impact across different gases.
 This post introduces Canada’s net-zero commitments and objectives:
 the signing of the UN Paris Accords (developed with input from the International Panel on Climate Change, IPCC), the
-passing of the Canadian Net-Zero Emissions Accountability Act (CNZEAA), and the aim for net-zero CO2e by 2050.
-Discussion of the CNZEAA motivates an upgrade to the IPCC sector emissions figure from this blog's <a href="./2025-12-05-first-post">first post</a>:
+passing of the Canadian Net-Zero Emissions Accountability Act (CNZEAA), and
+the aim for net-zero CO2e by 2050.
+Discussion of the CNZEAA motivates an upgrade to the IPCC sector emissions figure from PlanZero's <a href="./2025-12-05-first-post">first post</a>:
 namely adding Canada's Net-Zero commitments and targets under the CNZEAA, and visualizing the sink sectors in addition to the source sectors.
 </p>
 <p>
 This post sets up a series of future posts about replicating (if sometimes approximating)
 the sector-by-IPCC-sector totals that, together, make up Canada's national greenhouse gas inventory.
-I would like to use PlanZero someday to evaluate product and project ideas from an emissions perspective, and
-the computation of the greenhouse gas inventory is the gold standard of how business and individual actions affect Canada's emissions.
+I would like to use PlanZero some day to evaluate product and project ideas from an emissions perspective, and
+the computation of the greenhouse gas inventory is the gold standard for how business and individual actions affect to Canada's emissions.
 </p>
 
 <h2 id="paris">Paris Accords</h2>
 <p>
-Some of Canada’s Indigenous peoples practiced a “<a href="https://en.wikipedia.org/wiki/Seven_generation_sustainability">seven-generations</a>” doctrine,
+Some Indigenous peoples practiced a “<a href="https://en.wikipedia.org/wiki/Seven_generation_sustainability">seven-generations</a>” doctrine,
 which emphasized the consideration of future generations in decision-making.
-However, Canada’s federal constitution, laws and governance mechanisms have
-historically not included mechanisms or principles to look and plan far-enough
-ahead to consider the long-term negative impacts of greenhouse gas emissions.
-The starting point for PlanZero’s modelling of Canada’s current federal commitments to net-zero greenhouse gas
+However, since European colonization, Canada’s federal constitution, laws and governance mechanisms have emphasized shorter-term planning.
+The potential impacts of greenhouse gas emissions have been known for over a century, but
+the starting point for PlanZero’s modelling of Canada’s current federal commitments to net-zero greenhouse gas
 emissions is Canada's signing of the Paris Agreement in 2016, as part of the United Nations Framework Convention on Climate Change (UNFCCC).
 </p>
 
@@ -62,13 +62,13 @@ To stay below 1.5 °C of global warming, emissions need to be cut by roughly 50%
 
 <p>
 Under the Paris Agreement, each country must determine its own emissions targets (exceeding its previous targets), plan, and <a href="https://en.wikipedia.org/wiki/Enhanced_Transparency_Framework">regularly report</a> to the Secretariat of the UN Framework Convention on Climate Change (UNFCCC) on its greenhouse gas (GHG) contributions.
-Countries are not legally obligated by the Paris Accord to set particular targets, nor to hit those targets, but countries are obliged
+Countries are not legally obligated by the Paris Accords to set particular targets, nor to hit those targets, but countries are obliged
 to have targets on emissions as measured in particular ways,
 to communicate those targets, and then
 to report on their progress using standard methodology.
 This activity is the foundation of what might colloquially be called a name-and-shame system, or what has semi-officially been called a “<a href="https://web.archive.org/web/20151213054835/http://www.cbsnews.com/news/cop21-climate-change-conference-final-draft-historic-plan/">name and encourage</a>” system.
 The Paris Accords exist within a realm of international relations that already includes a range of mechanisms for such encouragement to be applied between countries.
-The Paris Agreement creates transparency so that other kinds of political and economic mechanisms can exert aligned encouragement toward the global net-zero goals of the UNFCCC.
+The Paris Agreement creates transparency so that other kinds of political and economic mechanisms can exert aligned encouragement toward the global net-zero goal of the UNFCCC.
 </p>
 
 
@@ -105,12 +105,15 @@ reduction plan by 2023, and to update it with progress reports in 2025 and
 2027, leading up to a major replanning iteration in 2029-2030.
 The ECCC has done so:
 it maintains 2030 targets via the ECCC <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/climate-plan-overview/emissions-reduction-2030.html">website</a>, and last year published the <a href="https://publications.gc.ca/site/eng/9.954865/publication.html">2025 progress report</a>.
-The 2030 plan is substantial, and will drive many future blog-updates to PlanZero.
+Some of the key federal policy measures are the per-industry carbon pricing schemes for industrial emitters,
+the incentives to reduce the carbon intensity of electricity generation, and consumer incentives to improve building efficiency and promote EV adoption.
+The report linked above includes 80 pages of tables of federal programs with an expected impact on national emissions.
+My intention is to incorporate some of these federal initiatives into the PlanZero model after the national inventory calculation is implemented.
 </p>
 
 <h2 id="targets">Canada's Latest National GHG Targets</h2>
 <p>
-The ECCC has set national targets for the years 2030, 2035, and 2050:
+The ECCC has set national targets for the following years, although they are subject to revision in 2029-2030:
 <ul>
     <li>2030: 40% below 2005 levels</li>
     <li>2035: 40-45% below 2005 levels</li>
@@ -145,22 +148,17 @@ Still, in keeping with IPCC reporting guidelines, the number labelled "Total" in
 <h2 id="summary">Summary</h2>
 <p>
 The UNFCCC's Paris Accords, established in 2015, seem to be holding strong as an international agreement to
-(a) define greenhouse gases (GHGs),
-(b) recognize the role of anthropogenic greenhouse gas emissions in affecting the global climate, and
+(a) define a set of GHGs,
+(b) recognize the role of anthropogenic emissions in affecting the global climate, and
 (c) standardize methodology for collecting and reporting nation-by-nation data on global emissions.
-Canada signed the Paris Accords,
-and subsequently passed the Canadian Net-Zero Emissions Accountability Act (CNZEAA) in order to establish the programs and responsibilities across many areas of government, that ultimately
-allow ECCC to fulfil Canada's reporting obligations to the UNFCCC.
+Canada signed the Paris Accords, and subsequently passed the CNZEAA in order to establish the programs and responsibilities across government for the
+ECCC to fulfil Canada's reporting obligations to the UNFCCC.
 Canada has set CO2e emissions targets in terms of total net IPCC sectoral emissions inclusive of LULUCF: 40% below the 2005 total by 2030, 45-50% below by 2035, and 100% below by 2050.
 PlanZero's <a href="/ipcc-sectors/">IPCC Sectors page</a> has been updated to show these targets.
 </p>
 <p>
 Coming up over the next several posts will be the development of an estimate of the national inventory on the basis of public data from StatScan and NRCan.
-StatsCan and NRCan data are largely the basis for the national inventory calculation, although I'm not sure that I can exactly replicate the calculation with public data.
-I would like for PlanZero to be able to evaluate business and product ideas in terms of their ability to support Canada's net-zero targets,
-so it seems to me I should do this by
-(1) implementing a close approximation to the official national inventory calculation, and then
-(2) estimating the effect of hypothetical business and product ideas on those foundational StatsCan and NRCan statistics.
+I believe StatsCan and NRCan data are the basis for the national inventory calculation, although I'm not sure that I can exactly replicate the calculation with data that is publicly available.
 Over the coming weeks, I intend to develop this approximation by going through the IPCC Sectors in order of decreasing magnitude in the 2005 emissions baseline,
 making time-boxed efforts to estimate each one as well as possible.
 First up: Public Electricity and Heat.

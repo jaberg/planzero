@@ -1,0 +1,30 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if blog.published %}{{blog.title}} {% else %} Draft: {{blog.title}}{% endif %}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#h2_intro">Introduction</a></li>
+    <li><a href="#paris">Paris Accords</a></li>
+    <li><a href="#cnzeaa">Canada's Net-Zero Emissions Accountability Act</a></li>
+    <li><a href="#targets">Canada's Latest Emissions Targets</a></li>
+    <li><a href="#summary">Summary</a></li>
+</ul>
+</p>
+
+<h2 id="h2_intro">Introduction</h2>
+
+I would like for PlanZero to be able to evaluate business and product ideas in terms of their ability to support Canada's net-zero targets,
+so it seems to me I should do this by
+(1) implementing a close approximation to the official national inventory calculation, and then
+(2) estimating the effect of hypothetical business and product ideas on those foundational StatsCan and NRCan statistics.
+
+</section>
+</div>
+{% include "post-main.html" %}

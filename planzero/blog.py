@@ -13,6 +13,7 @@ class BlogPost(BaseModel):
     about: str
     url_filename: str
     author: str
+    published: bool = True
 
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
@@ -48,6 +49,20 @@ class HTML_Matplotlib_Figure(HTML_element):
         plt.close()
         svg_string = svg_buffer.getvalue()
         return svg_string
+
+
+class PublicElectricity(BlogPost):
+    """First in a series replicating the sector-by-sector computation of
+    Canada's National Greenhouse Gas Inventory: Public Electricity and Heat.
+    """
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 2, 12),
+            title="Replicating emissions calculations for Public Electricity and Heat",
+            url_filename="2026-02-12-public-electricity",
+            author="James Bergstra",
+            published=False,
+            )
 
 
 class CNZEAA(BlogPost):
