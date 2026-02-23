@@ -19,6 +19,7 @@ templates = Jinja2Templates(directory=htmlroot)
 import planzero
 import planzero.blog
 import planzero.ipcc_home
+import planzero.est_nir
 
 planzero.blog.init_blogs_by_url_filename()
 u = planzero.ureg
@@ -111,9 +112,9 @@ async def get_ipcc_sectors_category(
                 peval=get_peval(),
                 stakeholders=planzero.strategies.stakeholders,
                 catpath=catpath,
-                blogs_by_tag=planzero.blog.blogs_by_tag
-                ),
-        )
+                blogs_by_tag=planzero.blog.blogs_by_tag,
+                est_nir=planzero.est_nir,
+                ))
     else:
         rval = await get_ipcc_sectors(
             request, 

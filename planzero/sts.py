@@ -160,8 +160,6 @@ class SparseTimeSeries(BaseModel):
             values = [self.values[idx] for idx in idxs]
             rval = np.asarray(values)
             rval[~np.asarray(valids)] = float('nan')
-            assert all(valids)
-
             return rval * self.v_unit
         else:
             idx, valid = self._idx_of_time(t_query)

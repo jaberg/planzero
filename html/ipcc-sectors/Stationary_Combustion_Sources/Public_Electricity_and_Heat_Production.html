@@ -12,54 +12,29 @@
         </p>
     </header>
 
-<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
-<script>
-var myChart = echarts.init(document.getElementById('mychart'));
-var option;
-
-option = {
-  title: {
-      text: 'Emissions: {{catpath}}',
-      left: 'center', // Align: 'left', 'center', or 'right'
-  },
-  xAxis: {
-      name: 'Year', // The label text
-      nameLocation: 'middle', // Places it in the center (default is 'end')
-      nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ ipcc_canada.echart_years() }},
-  },
-  yAxis: {
-      name: 'Emissions (Mt CO2e)', // The label text
-      nameLocation: 'middle',
-      nameGap: 40,
-  },
-  series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
-  ],
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    },
-    formatter: '{a}',
-  },
-};
-
-option && myChart.setOption(option);
-window.addEventListener('resize', function() {
-  myChart.resize();
-});
-
-
-</script>
-<div>
+{{est_nir.EstAnnex13ElectricityEmissionsTotal().echart() | safe}}
 
 <p>
 The "Public Electricity and Heat Production" IPCC sector refers to companies whose primary business is selling electricity or heat to the grid or the public.
-Emissions from this sector peaked around year 2000, and have been steadily declining since then due primarily to a reduction in the use of coal for producing electricity.
+Emissions from this sector peaked around year 2000, and have been steadily declining since then due primarily to a reduction in the use of coal (blue).
+The use of natural gas (green) has been rising, and the use of other fuels
+(e.g. diesel, light and heavy fuel oils, petroleum coke, still gas, and wood)
+has remained relatively steady.
+</p>
+
+<p>
+Emissions for the sector, at least for years around 2005, were well-predicted by multiplying the greenhouse gas coefficients from
+Annex 6 of the <a href="https://open.canada.ca/data/en/dataset/779c7bcf-4982-47eb-af1b-a33618a05e5b">2025 national inventory report</a>,
+by the amounts of each fuel used for electricity generation.
+For most of the fuel types, the quantities of fuel were available directly from the now-archived StatsCan data set
+<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510001701">"Electric Power Generation, Annual, Fuel Consumed by Electric Utilities" (25-10-0017-01)</a>.
+For natural gas though, the data from 25-10-0017-01 gave what seemed like the wrong answer.
+
+Instead, for natural gas (at least from 2005-2014), a better estimate seemed to come from another StatsCan table:
+<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">"Electric Power, Annual, Generation by Class of Producer" (25-10-0020-01)</a>,
+together with some thermal efficiency assumptions
+(namely that Alberta mainly used simple cycle plants with 0.3 efficiency, and Ontario used more combined-cycle plants to give average efficiency of 0.5).
+For years 2015-
 </p>
 
 <h2>Google Gemini's assessment of what causes these emissions</h2>

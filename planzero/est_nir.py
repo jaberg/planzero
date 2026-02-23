@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 from .enums import CoalType
 from .ghgvalues import GWP_100
@@ -18,6 +19,17 @@ from . import eccc_nir_annex13
 from . import enums
 from . import ptvalues
 from . import nrc_nfd
+from . import ipcc_canada
+
+from .html import (
+    EChartTitle,
+    EChartXAxis,
+    EChartYAxis,
+    EChartSeriesStackElem,
+    EChartSeriesBase,
+    EChartLineStyle,
+    EChartItemStyle,
+    StackedAreaEChart)
 
 GHG = enums.GHG
 PT = enums.PT
@@ -374,6 +386,51 @@ class EstAnnex13ElectricityEmissionsTotal(object):
         plt.title('Emissions: Electricity from Combustion')
         plt.legend(loc='upper right')
         plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)
+
+    def echart(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Public Electricity and Heat Production']['CO2eq'].values
+
+        sts_coal = self.from_coal.co2e.sum(enums.PT).to(u.megatonne_CO2e)
+        sts_ng = self.from_ng.co2e.sum(enums.PT).to(u.megatonne_CO2e)
+        sts_other = self.from_other.co2e.sum(enums.PT).to(u.megatonne_CO2e)
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_public_electricity',
+            title=EChartTitle(
+                text='Emissions from Generation of Public Electricity',
+                subtext='Hover over data points to see fuel type,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name='Coal',
+                    data=[
+                        {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
+                         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
+                        for vv in sts_coal.query([yy * u.years for yy in years])],
+                    ),
+                EChartSeriesStackElem(
+                    name='Natural Gas',
+                    data=[
+                        {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
+                         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
+                        for vv in sts_ng.query([yy * u.years for yy in years])],
+                    ),
+                EChartSeriesStackElem(
+                    name='Other Fuels',
+                    data=[
+                        {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
+                         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
+                        for vv in sts_other.query([yy * u.years for yy in years])],
+                    ),
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    data=values / 1000)])
 
 
 class EstForestAndHarvestedWoodProducts(object):

@@ -91,7 +91,8 @@ class EChartSeriesStackDataElem(BaseModel):
 
 
 class EChartSeriesStackElem(EChartSeriesBase):
-    list_raw_data: list[float]
+    catpath: str | None = None
+    list_raw_data: list[float] | None = None
     select: dict = {'itemStyle': {'borderWidth': 20}}
     stack: str = 'Total'
     areaStyle: dict = {}
