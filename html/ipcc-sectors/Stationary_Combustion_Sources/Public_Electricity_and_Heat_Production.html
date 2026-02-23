@@ -5,10 +5,10 @@
     <header class="major">
         <h1>Stationary Combustion/<br />Public Electricity and Heat Production</h1>
         <p>
-        Emissions from the equipment of public power utilities make it
-        Canada's second-largest IPCC sector.
-        Emissions in this sector have been dropping, despite Canada's rising population,
-        due primarily to a transition away from the use of coal to produce electricity.
+        Emissions from the equipment of public power utilities made electricity generation
+        Canada's largest IPCC sector in 2005.
+        Emissions in this sector have been dropping since then, despite Canada's rising population,
+        due primarily to a reduction in the use of coal.
         </p>
     </header>
 
@@ -128,6 +128,13 @@ The arithmetic of this sector is straightforward. To reduce emissions in this se
 </ul>
 
 {% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Public Electricity and Heat Production") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
 
 </div>
 </section>

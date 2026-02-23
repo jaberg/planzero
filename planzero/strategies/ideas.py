@@ -1036,3 +1036,7 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 
 
 # https://www.theguardian.com/environment/ng-interactive/2026/feb/09/economic-growth-carbon-emissions-impact-global-heating
+
+
+# Advance in molten salt reactor
+# https://interestingengineering.com/energy/new-fuel-deal-for-advanced-nuclear-reactors

@@ -16,102 +16,15 @@
         </p>
     </header>
 
-<div id="mychart" style="width: 800px; height: 600px; margin: 0 auto;"></div>
-<script>
-var myChart = echarts.init(document.getElementById('mychart'));
-var option;
-
-option = {
-  title: {
-      text: 'Canadian Emissions by IPCC Sector',
-      subtext: 'Click on data points to explore sectors, clicking regions would be nice but does not work yet', // Optional subtitle
-      left: 'center', // Align: 'left', 'center', or 'right'
-  },
-  xAxis: {
-      name: 'Year', // The label text
-      nameLocation: 'middle', // Places it in the center (default is 'end')
-      nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ ipcc_canada.echart_years() }},
-  },
-  yAxis: {
-      name: 'Emissions (Mt CO2e)', // The label text
-      nameLocation: 'middle',
-      nameGap: 40,
-  },
-  series: [
-      {% for series_elem in ipcc_canada.echart_series_all_Mt() %}
-      {{ json.dumps(series_elem) | safe }},
-      {% endfor %}
-      {
-          "name":"Target",
-          "type":"line",
-          "lineStyle":{"width": 2, 'type':'dotted', 'color':'#606060'},
-          "itemStyle":{'color':'#606060'},
-          "data":{{CNZEAA_targets_list}}
-      },
-      {
-          "name":"Net Total (without LULUCF)",
-          "type":"line",
-          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
-          "itemStyle":{'color':'#303030'},
-          "data":{{net_emissions_total_without_LULUCF}}
-      },
-      {
-          "name":"Net Total",
-          "type":"line",
-          "lineStyle":{"width": 2, 'type':'solid', 'color':'#303030'},
-          "itemStyle":{'color':'#303030'},
-          "data":{{net_emissions_total}}
-      },
-  ],
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    },
-    formatter: params => {
-        return params.seriesName;
-    },
-  },
-};
-
-option && myChart.setOption(option);
-
-// 3. Add the Click Listener
-myChart.on('click', function(params) {
-  // Console log to see what data is available
-  console.log(params);
-
-  // params.data contains the array for that point: [x, y, url]
-  // So the URL is at index 2
-  var url = params.data.url;
-
-  if (url) {
-    // Open in new tab
-    //window.open(url, '_blank');
-
-    // OR open in same tab:
-    window.location.href = url;
-  }
-});
-
-
-window.addEventListener('resize', function() {
-  myChart.resize();
-});
-
-
-</script>
+{{ipcc_home.stacked_area() | safe}}
 <p>
-The chart above shows the contributions from the emissions sectors whose net emissions have been consistently positive.
+The chart above shows the contributions from all emissions sectors.
+Most sector emissions have been consistently positive.
 The two sectors that have at times been negative (CO2e sinks) are Cropland and Harvested Wood Products.
-Their contribution would shift the stack downward by about 50 Mt CO2e since about 2007.
 Data is from
 <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/A-IPCC-Sector?lang=en">
-    Canada's official Greenhouse Gas Inventory</a>, I believe it  is refreshed annually by Environment Canada.
+    Canada's official Greenhouse Gas Inventory</a>.
+Environment and Climate Change Canada refreshes the inventory report annually in April, but refreshes are not automatically pulled into this figure (or anywhere in PlanZero).
 </p>
 <p>
 

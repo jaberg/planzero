@@ -147,7 +147,6 @@ class EstAnnex13ElectricityFromNaturalGas(object):
         axs[0].set_xlim(2004, 2014)
         axs[1].set_xlim(2004, 2014)
 
-
     def plot_vs_annex13_target(self):
         plt.figure()
         est = self.co2e.sum(enums.PT).to(u.kilotonne_CO2e)

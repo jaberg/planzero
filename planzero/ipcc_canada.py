@@ -116,7 +116,9 @@ def net_emissions_total_without_LULUCF():
 def CNZEAA_targets():
     net_emissions = net_emissions_total()
     baseline = net_emissions[2005 - 1990]
-    return np.interp(
+    rval = np.interp(
         echart_years(),
         [2005, 2030, 2035, 2050],
         [baseline, baseline * .6, baseline * .525, 0.0])
+    rval[:15] = net_emissions[:15]
+    return rval

@@ -96,6 +96,13 @@ test_html: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 -vv planzero/test_html.py
 
+test_ipcc_home: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_ipcc_home.py
+
 stakeholders: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

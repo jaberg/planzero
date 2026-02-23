@@ -137,7 +137,7 @@ class IPCC_Sector(str, enum.Enum):
     SCS__Mining = 'Mining'
 
     SCS__Manufacturing__Iron_and_Steel = 'Iron and Steel'
-    SCS__Manufacturing__NonFerous = 'Non-Ferrous Metals'
+    SCS__Manufacturing__NonFerrous = 'Non-Ferrous Metals'
     SCS__Manufacturing__Chemical = 'Chemical'
     SCS__Manufacturing__Pulp_and_Paper = 'Pulp and Paper'
     SCS__Manufacturing__Cement = 'Cement'

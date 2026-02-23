@@ -1,9 +1,16 @@
+import enum
 from pydantic import BaseModel
 import datetime
+
+from . import enums
 
 _classes = []
 _blogs_by_url_filename = {}
 _blogs_sorted_by_date = []
+
+
+class BlogTag(str, enum.Enum):
+    NIR_Modelling = "NIR Modelling"
 
 
 class BlogPost(BaseModel):
@@ -14,6 +21,7 @@ class BlogPost(BaseModel):
     url_filename: str
     author: str
     published: bool = True
+    tags: set[str] = set()
 
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
@@ -50,18 +58,38 @@ class HTML_Matplotlib_Figure(HTML_element):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
+class IPCC_ForestAndHWP(BlogPost):
+    """Second in the sector-by-sector National Greenhouse Gas Inventory computation:
+    Forest Land and Harvested Wood Products
+    """
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 2, 22),
+            title='Replicating emissions calculations for "Forest Land" and "Harvested Wood Products"',
+            url_filename="2026-02-22-forest-hwp",
+            author="James Bergstra",
+            published=False,
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.Harvested_Wood_Products,
+                  enums.IPCC_Sector.Forest_Land,
+                 },
+            )
 
-class PublicElectricity(BlogPost):
+
+class IPCC_PublicElectricity(BlogPost):
     """First in a series replicating the sector-by-sector computation of
     Canada's National Greenhouse Gas Inventory: Public Electricity and Heat.
     """
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 2, 12),
-            title="Replicating emissions calculations for Public Electricity and Heat",
+            title='Emission calculations for "Public Electricity and Heat"',
             url_filename="2026-02-12-public-electricity",
             author="James Bergstra",
             published=False,
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.SCS__Public_Electricity_and_Heat,
+                 },
             )
 
 
@@ -209,8 +237,14 @@ class HowMightWe(BlogPost):
 
 
 def init_blogs_by_url_filename():
+    global _blogs_sorted_by_date
     for cls in _classes:
         obj = cls()
         _blogs_by_url_filename[obj.url_filename] = obj
         _blogs_sorted_by_date.append(obj)
     _blogs_sorted_by_date.sort(key=lambda x: x.date, reverse=True)
+
+def blogs_by_tag(tag):
+    for blog in _blogs_sorted_by_date:
+        if tag in blog.tags:
+            yield blog

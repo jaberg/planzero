@@ -18,6 +18,7 @@ templates = Jinja2Templates(directory=htmlroot)
 
 import planzero
 import planzero.blog
+import planzero.ipcc_home
 
 planzero.blog.init_blogs_by_url_filename()
 u = planzero.ureg
@@ -61,9 +62,7 @@ async def get_ipcc_sectors(request: Request, error_text:str=None):
             error_text=error_text,
             npv_unit='MCAD',
             nph_unit='exajoule',
-            CNZEAA_targets_list=[float(x) for x in planzero.ipcc_canada.CNZEAA_targets()],
-            net_emissions_total_without_LULUCF=[float(x) for x in planzero.ipcc_canada.net_emissions_total_without_LULUCF()],
-            net_emissions_total=[float(x) for x in planzero.ipcc_canada.net_emissions_total()],
+            ipcc_home=planzero.ipcc_home
             ),
     )
 
@@ -112,6 +111,7 @@ async def get_ipcc_sectors_category(
                 peval=get_peval(),
                 stakeholders=planzero.strategies.stakeholders,
                 catpath=catpath,
+                blogs_by_tag=planzero.blog.blogs_by_tag
                 ),
         )
     else:
