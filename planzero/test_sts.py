@@ -7,11 +7,11 @@ from .ureg import u
 
 nan = float('nan')
 
-def test_usum():
+def test_add():
     a = annual_report(times=[10 * u.years], values=[5 * u.kg])
     b = annual_report(times=[10 * u.years], values=[8 * u.kg])
 
-    c = usum([a, b])
+    c = a + b
     assert c.times == array.array('d', [10])
     assert np.isnan(c.values[0])
     assert c.values[1:] == array.array('d', [13])
@@ -41,15 +41,16 @@ def test_mul_scale_convert():
     assert a.values[1] == 2000
 
 
-def test_usum3():
+def test_setdefault_zero():
     a = annual_report(times=[10 * u.years], values=[1 * u.m])
-    b = annual_report(times=[20 * u.years], values=[2 * u.m])
-    c = annual_report(times=[10 * u.years], values=[3 * u.m])
+    b = with_default_zero(a, [5 * u.years, 10 * u.years, 15 * u.years])
+    c = with_default_zero(a, [5 * u.years, 15 * u.years])
 
-    s = usum([a, b, c])
+    assert b.times == array.array('d', [5, 10, 15])
+    assert c.values[1:] == array.array('d', [0, 1, 0])
 
-    assert s.times == array.array('d', [10, 20])
-    assert s.values[1:] == array.array('d', [4, 2])
+    assert b.times == c.times
+    assert b.values[1:] == c.values[1:]
 
 
 def test_idx_of_first_len_1():

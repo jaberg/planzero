@@ -1,3 +1,5 @@
+import functools
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -20,6 +22,7 @@ from . import enums
 from . import ptvalues
 from . import nrc_nfd
 from . import ipcc_canada
+from . import sc_2510003001 # supply and demand of primary and secondary energy
 
 from .html import (
     EChartTitle,
@@ -100,14 +103,46 @@ class EstAnnex13ElectricityFromNaturalGas(object):
         thermal_efficiency[EP.Industry] *= Natural_Gas_gross_heating_value_nonmarketable
 
         prov_power_gen, _ = sc_np.Electric_Power_Annual_Generation_by_Class_of_Producer()
-        prov_ng_vol = prov_power_gen[:, EGT.CombustionTurbine] / thermal_efficiency
+
+        # prov_ng_vol_2005_to_2013 is indexed by class of producer and PT
+        # and it only covers years 2005-2013
+        prov_ng_vol_2005_to_2013 = prov_power_gen[:, EGT.CombustionTurbine] / thermal_efficiency
+
+        # this other disposition table covers years prior to 2005 and after 2013
+        SDC = sc_2510003001.Supply_And_Demand_Characteristics
+        supply_and_demand_pt, supply_and_demand_ca \
+                = sc_2510003001.supply_and_demand_of_primary_and_secondary_energy()
+        prov_ng_vol_pre2005_post2013 = supply_and_demand_pt[sc_2510003001.Fuel_Type.Natural_Gas]
+
+        # usum is used to union the years covered
+        years = [tt * u.years for tt in range(1995, 2024)]
+        support_years = functools.partial(sts.with_default_zero, times=years)
+        #foo = sts.annual_report(times=[2000 * u.years], values=[1 * u.kg])
+        #bar = support_years(foo)
+        prov_ng_vol = objtensor.empty(EP, enums.PT)
+        prov_ng_vol[EP.Utilities] = (
+            prov_ng_vol_2005_to_2013[EP.Utilities].apply(support_years)
+            + prov_ng_vol_pre2005_post2013[SDC.Transformed_to_Electricity_by_Utilities].apply(support_years))
+        prov_ng_vol[EP.Industry] = (
+            prov_ng_vol_2005_to_2013[EP.Industry].apply(support_years)
+            + prov_ng_vol_pre2005_post2013[SDC.Transformed_to_Electricity_by_Industry].apply(support_years))
 
         emission_factors = objtensor.empty(GHG, EP, PT)
         T34 = annex6_np.A6_1_3_and_1_4()
         emission_factors[GHG.CO2, EP.Utilities] = annex6_np.A6_1_1()
         emission_factors[GHG.CO2, EP.Industry] = annex6_np.A6_1_2()
+        # I thought that industry consumption of natural gas for electricity generation
+        # was mostly by producers, using non-marketable natural gas. That assumption
+        # is at least somewhat false, in that Annex 6 Table 1-2 suggests that Quebec
+        # did not use non-marketable natural gas, but did generate electricity by industry.
+        # I am just patching up the emission factors here, but this feels like a symptom,
+        # and perhaps there are significantly many other industrial electricity generators
+        # burning marketable natural gas to do so.
+        emission_factors[GHG.CO2, EP.Industry, PT.QC] \
+                = emission_factors[GHG.CO2, EP.Utilities, PT.QC] * (1 * u.m3_NG_mk / u.m3_NG_nmk)
+
         emission_factors[[GHG.CH4, GHG.N2O], EP.Utilities] = T34[:, NGU.ElectricUtilities]
-        emission_factors[[GHG.CH4, GHG.N2O], EP.Industry] = T34[:, NGU.Producer]
+        emission_factors[[GHG.CH4, GHG.N2O], EP.Industry] = T34[:, NGU.Producer] # see comment above
         for ghg in [GHG.HFCs, GHG.PFCs, GHG.SF6, GHG.NF3]:
             emission_factors[ghg, EP.Utilities] = 0 * kg_by_ghg[ghg] / u.m3_NG_mk
             emission_factors[ghg, EP.Industry] = 0 * kg_by_ghg[ghg] / u.m3_NG_nmk
@@ -119,7 +154,8 @@ class EstAnnex13ElectricityFromNaturalGas(object):
         self.emissions_by_ep = (emission_factors * prov_ng_vol)
         self.emissions = self.emissions_by_ep.sum(EP)
         self.co2e = GWP_100 @ self.emissions
-
+        assert self.emissions_by_ep.ndim == 3
+        self.co2e_by_ep = (GWP_100[:, None, None] * self.emissions_by_ep).sum(0)
 
     def plot_provincial_volumes(self):
         fig, axs = ptvalues.scatter_subplots(
@@ -130,44 +166,74 @@ class EstAnnex13ElectricityFromNaturalGas(object):
             legend_loc='lower right')
         fig.set_size_inches(12, 5)
 
-    def plot_emissions_by_utilities(self):
+    def plot_emissions_by_utilities(self, as_co2e=False):
         GHG = enums.GHG
         EP = enums.ElectricityProducer
-        fig, axs = ptvalues.scatter_subplots(
-            self.emissions_by_ep[[GHG.CO2, GHG.CH4, GHG.N2O], EP.Utilities],
-            v_unit_by_outer_key={
+        if as_co2e:
+            ot = GWP_100[:, None, None] * self.emissions_by_ep
+            v_unit_by_outer_key = {
+                GHG.CO2: u.kt_CO2e,
+                GHG.CH4: u.kt_CO2e,
+                GHG.N2O: u.kt_CO2e,
+            }
+        else:
+            ot = self.emissions_by_ep
+            v_unit_by_outer_key = {
                 GHG.CO2: u.kilotonne_CO2,
                 GHG.CH4: u.tonne_CH4,
                 GHG.N2O: u.tonne_N2O,
-            },
-            legend_loc='lower right')
+            }
+        fig, axs = ptvalues.scatter_subplots(
+            ot[[GHG.CO2, GHG.CH4, GHG.N2O], EP.Utilities],
+            v_unit_by_outer_key=v_unit_by_outer_key,
+            legend_loc='upper left')
         fig.set_size_inches(12, 5)
-        axs[0].set_xlim(2004, 2014)
+        for ax in axs:
+            ax.set_xlim(2000, 2025)
 
-    def plot_emissions_by_natural_gas_producers(self):
+    def plot_emissions_by_natural_gas_producers(self, as_co2e=False):
         GHG = enums.GHG
         EP = enums.ElectricityProducer
-        fig, axs = ptvalues.scatter_subplots(
-            self.emissions_by_ep[[GHG.CO2, GHG.CH4, GHG.N2O], EP.Industry],
-            v_unit_by_outer_key={
+        if as_co2e:
+            ot = GWP_100[:, None, None] * self.emissions_by_ep
+            v_unit_by_outer_key = {
+                GHG.CO2: u.kt_CO2e,
+                GHG.CH4: u.kt_CO2e,
+                GHG.N2O: u.kt_CO2e,
+            }
+        else:
+            ot = self.emissions_by_ep
+            v_unit_by_outer_key = {
                 GHG.CO2: u.kilotonne_CO2,
                 GHG.CH4: u.tonne_CH4,
                 GHG.N2O: u.tonne_N2O,
-            },
-            legend_loc='lower right')
+            }
+        fig, axs = ptvalues.scatter_subplots(
+            ot[[GHG.CO2, GHG.CH4, GHG.N2O], EP.Industry],
+            v_unit_by_outer_key=v_unit_by_outer_key,
+            legend_loc='upper left')
         fig.set_size_inches(12, 5)
-        axs[0].set_xlim(2004, 2014)
-        axs[1].set_xlim(2004, 2014)
+        for ax in axs:
+            ax.set_xlim(2000, 2025)
 
     def plot_vs_annex13_target(self):
+        EP = enums.ElectricityProducer
         plt.figure()
+
         est = self.co2e.sum(enums.PT).to(u.kilotonne_CO2e)
         est.plot(label='Estimate')
         a13_ng = eccc_nir_annex13.national_electricity_CO2e_from_combustion()['natural_gas']
         a13_ng.to(est.v_unit).plot(label='Annex13 (Target)')
         plt.title('Emissions: Electricity from Natural Gas')
-        plt.legend(loc='upper left')
+
+        est_util = self.co2e_by_ep[EP.Utilities].sum(enums.PT).to(u.kilotonne_CO2e)
+        est_util.plot(label='Est (Utilities)')
+
+        est_ind = self.co2e_by_ep[EP.Industry].sum(enums.PT).to(u.kilotonne_CO2e)
+        est_ind.plot(label='Est (Industry)')
+
         plt.xlim(2004, max(max(est.times), max(a13_ng.times)) + 1)
+        plt.legend(loc='upper left')
 
 
 class EstAnnex13ElectricityFromOther(object):
@@ -387,13 +453,14 @@ class EstAnnex13ElectricityEmissionsTotal(object):
         plt.legend(loc='upper right')
         plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)
 
-    def echart(self):
+    def echart_by_utilities(self):
         non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Public Electricity and Heat Production']['CO2eq'].values
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Public Electricity and Heat Production']['CO2eq'].values / 1000
 
         sts_coal = self.from_coal.co2e.sum(enums.PT).to(u.megatonne_CO2e)
-        sts_ng = self.from_ng.co2e.sum(enums.PT).to(u.megatonne_CO2e)
+        sts_ng = self.from_ng.co2e_by_ep[
+            enums.ElectricityProducer.Utilities].sum(enums.PT).to(u.megatonne_CO2e)
         sts_other = self.from_other.co2e.sum(enums.PT).to(u.megatonne_CO2e)
 
         return StackedAreaEChart(
@@ -430,7 +497,7 @@ class EstAnnex13ElectricityEmissionsTotal(object):
             other_series=[
                 EChartSeriesBase(
                     name='NIR Sector Total',
-                    data=values / 1000)])
+                    data=values)])
 
 
 class EstForestAndHarvestedWoodProducts(object):

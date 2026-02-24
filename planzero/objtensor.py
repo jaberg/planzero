@@ -63,9 +63,9 @@ def squeeze_dims_strides(dims, strides, axis=None):
                 no_none_strides.append(stride_i)
         return no_none_dims, no_none_strides
     else:
-        assert self.dims[axis] is None
-        new_dims = list(self.dims)
-        new_strides = list(self.strides)
+        assert dims[axis] is None or strides[axis] == 0, (dims, strides)
+        new_dims = list(dims)
+        new_strides = list(strides)
         new_dims.pop(axis)
         new_strides.pop(axis)
         return new_dims, new_strides
@@ -376,39 +376,29 @@ class ObjectTensor(object):
         elif self.ndim == 2 and other.ndim == 1:
             return (self * other).sum(1)
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(self.ndim, other.ndim)
 
     def __add__(self, other):
         if isinstance(other, ObjectTensor):
-            r_dims = elemwise_binary_op_dims(self.dims, other.dims)
-            rval = ObjectTensor.empty(*r_dims)
-            up_self = self.broadcast_to_dims(r_dims)
-            up_other = other.broadcast_to_dims(r_dims)
-            for key, (aa, bb, cc) in ravel_multi(rval, up_self, up_other):
-                rval.buf[aa] = up_self.buf[bb] + up_other.buf[cc]
-            return rval
+            def fn(x, y):
+                return x + y
+            return apply_elemwise(fn, [self, other])
         else:
-            rval = ObjectTensor.empty(*self.dims)
-            for key, (aa, bb) in ravel_multi(rval, self):
-                rval.buf[aa] = self.buf[bb] + other
-            return rval
+            def fn(x):
+                return x + other
+            return apply_elemwise(fn, [self])
 
     __radd__ = __add__
 
     def __sub__(self, other):
         if isinstance(other, ObjectTensor):
-            r_dims = elemwise_binary_op_dims(self.dims, other.dims)
-            rval = ObjectTensor.empty(*r_dims)
-            up_self = self.broadcast_to_dims(r_dims)
-            up_other = other.broadcast_to_dims(r_dims)
-            for key, (aa, bb, cc) in ravel_multi(rval, up_self, up_other):
-                rval.buf[aa] = up_self.buf[bb] - up_other.buf[cc]
-            return rval
+            def fn(x, y):
+                return x - y
+            return apply_elemwise(fn, [self, other])
         else:
-            rval = ObjectTensor.empty(*self.dims)
-            for key, (aa, bb) in ravel_multi(rval, self):
-                rval.buf[aa] = self.buf[bb] - other
-            return rval
+            def fn(x):
+                return x - other
+            return apply_elemwise(fn, [self])
 
     def squeeze(self, axis=None):
         dims, strides = squeeze_dims_strides(self.dims, self.strides, axis=axis)
@@ -429,7 +419,7 @@ class ObjectTensor(object):
                 return True
         return False
 
-    def sum(self, sum_dim=None):
+    def sum(self, sum_dim=None, keep_dim=False):
         if sum_dim is None:
             rval = None
             for key, off in self.ravel_keys_offsets():
@@ -450,12 +440,16 @@ class ObjectTensor(object):
                 rval = ObjectTensor.empty(*dims)
                 rval_unsq = rval.unsqueeze(sum_dim_idx, dim=summed_dim)
                 assert self.dims == rval_unsq.dims
+                assert len(rval.dims) == len(self.dims) - 1
                 for key, (my_offset, rval_offset) in ravel_multi(self, rval_unsq):
                     if rval_unsq.buf[rval_offset] is None:
                         rval_unsq.buf[rval_offset] = self.buf[my_offset]
                     else:
                         rval_unsq.buf[rval_offset] += self.buf[my_offset]
-                return rval
+                if keep_dim:
+                    return rval_unsq
+                else:
+                    return rval
             else:
                 return self.sum()
         else:
@@ -499,6 +493,9 @@ class ObjectTensor(object):
         rval, = set(self.v_units())
         return rval
 
+    def apply(self, fn):
+        return apply_elemwise(fn, [self])
+
 
 empty = ObjectTensor.empty
 from_dict = ObjectTensor.from_dict
@@ -528,3 +525,22 @@ if pint.compat._to_magnitude.__name__ == '_to_magnitude':
 
     _orig_add_sub = pint.Quantity._add_sub
     pint.Quantity._add_sub = _Quantity_add_sub
+
+def apply_elemwise(fn, ot_args):
+    if len(ot_args) == 1:
+        self, = ot_args
+        rval = ObjectTensor.empty(*self.dims)
+        for key, (aa, bb) in ravel_multi(rval, self):
+            rval.buf[aa] = fn(self.buf[bb])
+        return rval
+    elif len(ot_args) == 2:
+        self, other = ot_args
+        r_dims = elemwise_binary_op_dims(self.dims, other.dims)
+        rval = ObjectTensor.empty(*r_dims)
+        up_self = self.broadcast_to_dims(r_dims)
+        up_other = other.broadcast_to_dims(r_dims)
+        for key, (aa, bb, cc) in ravel_multi(rval, up_self, up_other):
+            rval.buf[aa] = fn(up_self.buf[bb], up_other.buf[cc])
+        return rval
+    else:
+        raise NotImplementedError()

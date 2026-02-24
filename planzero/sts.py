@@ -49,6 +49,9 @@ class SparseTimeSeries(BaseModel):
 
     interpolation: InterpolationMode
 
+    def times_with_units(self):
+        return [tt * self.t_unit for tt in self.times]
+
 
     def max(self, _i_start=None):
         # TODO: what is this _i_start business??
@@ -294,6 +297,9 @@ class SparseTimeSeries(BaseModel):
     def __rmul__(self, other):
         return self.__mul__(other)
 
+    def copy(self):
+        return self * 1
+
     def sum(self):
         assert self.interpolation == InterpolationMode.no_interpolation
         rval = sum(self.values[1:]) * self.v_unit
@@ -301,6 +307,31 @@ class SparseTimeSeries(BaseModel):
 
     def integral(self, start_time=None, end_time=None):
         raise NotImplementedError()
+
+    def _setdefault_scalar(self, times, val):
+        assert self.interpolation == InterpolationMode.no_interpolation
+        as_d = dict(zip(self.times, self.values[1:]))
+        for ttu in times:
+            tt = ttu.to(self.t_unit).magnitude
+            as_d.setdefault(tt, val)
+        times, values = zip(*list(sorted(as_d.items())))
+        self.times = array.array('d', times)
+        self.values = array.array('d', self.values[:1])
+        self.values.extend(values)
+
+    def setdefault_zero(self, times):
+        # Consider also setdefault_one and setdefault_nan
+        # I feel like setdefault(...) should require units on values, and
+        # maybe it should be a dictionary / vectorized update?
+        # it is convenient to not require units on 0 and 1
+        # so that templatized code can prepare arguments for arithmetic identities
+        # without bothering about units
+        # e.g.
+        # years_i_care_about = foo()
+        # a.setdefault_zero(years) + b.setdefault_zero(years)
+        # ...
+        # will produce a result that is at least defined for the given years
+        return self._setdefault_scalar(times, 0)
 
 
 def annual_report(**kwargs):
@@ -393,6 +424,43 @@ def add_nointerp_interp(self, other):
         identifier=None,
         interpolation=InterpolationMode.no_interpolation)
     return rval
+
+
+def union_times(args, ignore_constants=True):
+    if not args:
+        raise NotImplementedError()
+    qs = [arg for arg in args if isinstance(arg, pint.Quantity) or arg is None]
+    nonqs = [arg for arg in args if not isinstance(arg, pint.Quantity) and arg is not None]
+    if ignore_constants:
+        del qs
+    else:
+        raise TypeError(qs)
+
+    if len(nonqs) == 0:
+        return set()
+    elif len(nonqs) == 1:
+        return set(nonqs[0].times_with_units())
+
+    t_units = set(arg.t_unit for arg in nonqs)
+    if len(t_units) != 1:
+        raise NotImplementedError(t_units)
+    t_unit = nonqs[0].t_unit
+
+    times = set()
+    for arg in nonqs:
+        times.update(arg.times)
+    return {tt * t_unit for tt in times}
+
+
+def with_default_zero(self, times):
+    if times and isinstance(self, SparseTimeSeries):
+        rval = self.copy()
+        rval.setdefault_zero(times)
+        return rval
+    else:
+        # This passthrough works for both SparseTimeSeries, and Quantities
+        assert not isinstance(self, list)
+        return self
 
 
 class STSDict(BaseModel):
@@ -709,7 +777,7 @@ def mul_sts_sts(self, other):
     raise NotImplementedError()
 
 
-def usum(args):
+def bad_idea_dont_use_usum(args, *, v_unit=None):
     """Sum a set of no_interpolation STSs, but assuming 0 instead of NaN where
     they're undefined, so that it's kind of a "union-sum": the union of times,
     and the sum of values at those times.
@@ -741,11 +809,9 @@ def usum(args):
     t_units = set(arg.t_unit for arg in nonqs)
     v_units = set(arg.v_unit for arg in nonqs)
     if len(t_units) != 1:
-        raise NotImplementedError()
-    if len(v_units) != 1:
-        raise NotImplementedError()
+        raise NotImplementedError(t_units)
     t_unit = nonqs[0].t_unit
-    v_unit = nonqs[0].v_unit
+    v_unit = v_unit or nonqs[0].v_unit
     if qs:
         default_val_by_time = (sum_qs.to(v_unit).magnitude,)
     else:
@@ -753,7 +819,11 @@ def usum(args):
     vals_by_time = {}
     for arg in nonqs:
         for tt, vv in zip(arg.times, arg.values[1:]):
-            vals_by_time.setdefault(tt, list(default_val_by_time)).append(vv)
+            if arg.v_unit == v_unit:
+                vals_by_time.setdefault(tt, list(default_val_by_time)).append(vv)
+            else:
+                vals_by_time.setdefault(tt, list(default_val_by_time)).append(
+                    (vv * arg.v_unit).to(v_unit).magnitude)
     times = []
     values = []
     for tt, vvs in sorted(vals_by_time.items()):

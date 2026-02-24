@@ -36,7 +36,7 @@ for mass_substance in ['coal', 'coal_bit', 'coal_subbit',
 # TODO: move to test file
 assert ureg.Quantity("1 Mt_CO2").to('kg_CO2').magnitude == 1_000_000_000
 
-for volume_substance in ["NG", 'NG_mk', 'NG_nmk',
+for volume_substance in ['NG_mk', 'NG_nmk',
                          'crude',
                          'diesel',
                          'gasoline',

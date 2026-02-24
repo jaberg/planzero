@@ -1040,3 +1040,6 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 
 # Advance in molten salt reactor
 # https://interestingengineering.com/energy/new-fuel-deal-for-advanced-nuclear-reactors
+
+
+# Vehicle 2 Grid - whole thing

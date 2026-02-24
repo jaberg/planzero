@@ -36,7 +36,9 @@ def set_ptxx(rval_pt, rval_ca):
         eps = 1e-4
         try:
             # sum up the values listed for provinces and territories
-            pt_total = sts.usum(rval_pt[key, _actual_PTs])
+            times = sts.union_times(rval_pt[key, _actual_PTs])
+            pt_total = rval_pt[key, _actual_PTs].apply(
+                functools.partial(sts.with_default_zero, times=times)).sum()
             xx = rval_ca[key] - pt_total
             # xx may be a pint quantity of a SparseTimeSeries
             if isinstance(xx, sts.SparseTimeSeries):
@@ -73,9 +75,7 @@ def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utilit
         assert len(fuel_df) > 10, fuel_type
         rval_pt[fuel_type, :] = 0.0 * unit
 
-        support = sts.annual_report(
-            times=np.arange(2005, 2022) * u.years,
-            values=np.zeros(2022 - 2005) * unit)
+        support_years = np.arange(2005, 2022) * u.years
 
         for (pt_name,), pt_df in fuel_df.groupby(['GEO']):
             uom, = list(set(pt_df.UOM.values))
@@ -92,12 +92,11 @@ def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utilit
             # with pseudo-province PT.XX
             assert max(pt_df.REF_DATE.values) <= 2021
             assert min(pt_df.REF_DATE.values) >= 2005
-            rep_w_support = sts.usum([rep, support])
-            assert rep_w_support is not None
+            rep.setdefault_zero(support_years)
             if pt_name == 'Canada':
-                rval_ca[fuel_type] = rep_w_support
+                rval_ca[fuel_type] = rep
             else:
-                rval_pt[fuel_type, enums.PT(pt_name)] = rep_w_support
+                rval_pt[fuel_type, enums.PT(pt_name)] = rep
 
     set_ptxx(rval_pt, rval_ca)
     return rval_pt, rval_ca

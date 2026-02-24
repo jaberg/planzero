@@ -57,7 +57,9 @@ UoM_by_fuel_type = {
     Fuel_Type.Light_Fuel_Oil: ('Megalitres', u.megalitres_LFO),
     Fuel_Type.Lignite: ('Kilotonnes', u.kt_lignite),
     Fuel_Type.Gasoline: ('Megalitres', u.megalitres_gasoline),
-    Fuel_Type.Natural_Gas: ('Gigalitres', u.gigalitres_NG),
+    # default to marketable natural gas, see
+    # UoM_by_fuel_type_and_characteristic below for exceptions
+    Fuel_Type.Natural_Gas: ('Gigalitres', u.gigalitres_NG_mk),
     Fuel_Type.Non_Energy_Products: ('Megalitres', u.megalitres),
     Fuel_Type.PetCoke: ('Megalitres', u.megalitres_petcoke),
     Fuel_Type.Primary_Electricity: ('Gigawatt hours', u.gigawatt * u.hours),
@@ -121,6 +123,12 @@ class Supply_And_Demand_Characteristics(str, enum.Enum):
     Foreign_Marine = 'Foreign marine'
 
 
+UoM_by_fuel_type_and_characteristic = {
+    (Fuel_Type.Natural_Gas, Supply_And_Demand_Characteristics.Transformed_to_Electricity_by_Industry): (
+        'Gigalitres', u.gigalitres_NG_nmk),
+}
+
+
 @functools.cache
 def supply_and_demand_of_primary_and_secondary_energy():
     df = zip_table_to_dataframe("25-10-0030-01")
@@ -132,35 +140,52 @@ def supply_and_demand_of_primary_and_secondary_energy():
     rval_pt = objtensor.empty(FT, SDC, PT)
     rval_ca = objtensor.empty(FT, SDC)
 
-    years = list(range(1995, 2024))
+    min_year = 1995
+    max_year = 2025
+
+    years = list(range(min_year, max_year))
 
     for ft, df_ft in df.groupby('Fuel type'):
         ft = FT(ft)
-        UOM, ft_unit = UoM_by_fuel_type[ft]
-        rval_pt[ft] = 0 * ft_unit
-        rval_ca[ft] = 0 * ft_unit
         for sdc, df_ft_sdc in df_ft.groupby('Supply and demand characteristics'):
             sdc = SDC(sdc)
+            UOM, sdc_unit = UoM_by_fuel_type_and_characteristic.get(
+                (ft, sdc), UoM_by_fuel_type[ft])
+            rval_pt[ft, sdc] = 0 * sdc_unit
+            rval_ca[ft, sdc] = 0 * sdc_unit
             for geo, df_geo in df_ft_sdc.groupby('GEO'):
                 uom, = set(df_geo.UOM.values)
                 assert uom == UOM
                 factor_str, = set(df_geo.SCALAR_FACTOR.values)
                 factor = Factors[factor_str]
-                as_d = dict(zip(df_geo.REF_DATE.values, df_geo.VALUE.values))
+                geo_dates = df_geo.REF_DATE.values
+                geo_values = df_geo.VALUE.values
+                as_d = dict(zip(geo_dates, geo_values))
+                assert geo_dates.min() >= min_year, geo_dates.min()
+                assert geo_dates.max() < max_year, geo_dates.max()
                 for year in years:
                     as_d.setdefault(year, 0)
                     if np.isnan(as_d[year]):
                         as_d[year] = 0 # the hope is to pick up missing or sensored data via PT.XX
+                assert np.isfinite(list(as_d.values())).all()
                 rep = sts.annual_report(
                     times=[year * u.years for year in sorted(as_d)],
-                    values=[vv * factor * ft_unit for _, vv in sorted(as_d.items())])
+                    values=[vv * factor * sdc_unit for _, vv in sorted(as_d.items())])
                 if geo == 'Canada':
                     rval_ca[ft, sdc] = rep
                 elif geo == 'Atlantic provinces':
-                    rval_pt[ft, sdc, PT.XX] += rep
+                    # TODO: check if this should be PT.XX or it's a subtotal
+                    # of data already counted by province
+                    #rval_pt[ft, sdc, PT.XX] += rep
+                    pass
                 elif geo == 'Yukon, Northwest Territories and Nunavut':
-                    rval_pt[ft, sdc, PT.XX] += rep
+                    # TODO: check if this should be PT.XX or it's a subtotal
+                    # of data already counted by province
+                    #rval_pt[ft, sdc, PT.XX] += rep
+                    pass
                 else:
                     rval_pt[ft, sdc, geo] = rep
-        set_ptxx(rval_pt[ft], rval_ca[ft])
+        # TODO: review logic - set_ptxx would clobber the PT.XX increments above
+        # But it also assumes 0s are set in some places that are still empty
+        #set_ptxx(rval_pt[ft], rval_ca[ft])
     return rval_pt, rval_ca

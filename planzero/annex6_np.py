@@ -46,6 +46,7 @@ def A6_1_1(): # marketable natural gas
                 getattr(df, pt.two_letter_code()).values * u.g_CO2 / u.m3_NG_mk,
                 replace_nan_with=notice_if_used)
             rval[pt] = sts.annual_report(times=out_times, values=values)
+            assert np.isfinite(rval[pt].values[1:]).all()
             assert len(rval[pt].times) > 0, (pt, values)
     return objtensor.from_dict(rval)
 
