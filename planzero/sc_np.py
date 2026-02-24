@@ -1,3 +1,5 @@
+import functools
+
 import pandas as pd
 import numpy as np
 
@@ -57,6 +59,7 @@ def set_ptxx(rval_pt, rval_ca):
             raise RuntimeError(key) from exc
 
 
+@functools.cache
 def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility():
     df = zip_table_to_dataframe("25-10-0017-01")
     df['REF_DATE'] = df['REF_DATE'].apply(pd.to_numeric)
@@ -100,6 +103,7 @@ def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utilit
     return rval_pt, rval_ca
 
 
+@functools.cache
 def Electric_Power_Annual_Generation_by_Class_of_Producer():
     df = zip_table_to_dataframe("25-10-0020-01")
     df['REF_DATE'] = df['REF_DATE'].apply(pd.to_numeric)
@@ -124,7 +128,7 @@ def Electric_Power_Annual_Generation_by_Class_of_Producer():
                 continue
             uom, = list(set(pt_df.UOM.values))
             assert uom == exp_uom
-            factor_str, = list(set(pt_df.SCALAR_FACTOR.values))
+            factor_str, = set(pt_df.SCALAR_FACTOR.values)
             factor = Factors[factor_str]
             as_d = dict(zip(pt_df.REF_DATE.values, pt_df.VALUE.values))
             egt = EGT(gen_type)

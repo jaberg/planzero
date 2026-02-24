@@ -13,11 +13,15 @@ ureg.define('fraction = [] = frac')
 ureg.define('ppm = 1e-6 fraction')
 ureg.define('ppb = 1e-9 fraction')
 
-for mass_substance in ['coal_bit', 'coal_subbit', 'lignite', 'petcoke',
+for mass_substance in ['coal', 'coal_bit', 'coal_subbit',
+                       'lignite',
+                       'anthracite',
+                       'petcoke',
                        'wood_od', # wood, oven-dried
                        'wood_mc25', # wood at 25% moisture content - the level for which Annex6 (table 6-1) lists combustion emission coefficients
                        'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3',
-                       'carbon' # in e.g. wood
+                       'carbon', # in e.g. wood
+                       'steam',
                       ]:
     ureg.define(f"kg_{mass_substance} = [mass_{mass_substance}]")
     ureg.define(f"tonne_{mass_substance} = 1000 * kg_{mass_substance}")
@@ -32,21 +36,29 @@ for mass_substance in ['coal_bit', 'coal_subbit', 'lignite', 'petcoke',
 # TODO: move to test file
 assert ureg.Quantity("1 Mt_CO2").to('kg_CO2').magnitude == 1_000_000_000
 
-for volume_substance in ['NG_mk', 'NG_nmk',
+for volume_substance in ["NG", 'NG_mk', 'NG_nmk',
+                         'crude',
                          'diesel',
                          'gasoline',
-                         'kerosene', # aka jet fuel
-                         'LFO',  # Light Fuel Oil
+                         'kerosene', # aka jet fuel, stove oil
                          'HFO',  # Heavy Fuel Oil
+                         'LFO',  # Light Fuel Oil
+                         'LPGs', # Liquified petroleum gases
+                         'NGLs', # Natural Gas Liquids
+                         'RPPs', # Refined petroleum products
                          'stillgas',
+                         'ovengas',
                          'petcoke',
                          'methane',
                          'wood', 'hardwood', 'softwood',
+                         'aviation_gasoline',
+                         'aviation_turbo_fuel',
                         ]:
     ureg.define(f"m3_{volume_substance} = [volume_{volume_substance}]")
     ureg.define(f"l_{volume_substance} = .001 * m3_{volume_substance}")
     ureg.define(f"litres_{volume_substance} = .001 * m3_{volume_substance}")
     ureg.define(f"kilolitres_{volume_substance} = m3_{volume_substance}")
+    ureg.define(f"megalitres_{volume_substance} = 1000 * m3_{volume_substance}")
     ureg.define(f"kilo_m3_{volume_substance} = 1000 * m3_{volume_substance}")
     ureg.define(f"mega_m3_{volume_substance} = 1000_000 * m3_{volume_substance}")
 
