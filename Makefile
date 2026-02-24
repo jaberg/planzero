@@ -103,6 +103,13 @@ test_ipcc_home: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 -vv planzero/test_ipcc_home.py
 
+test_sc_2510003001: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_sc_2510003001.py
+
 stakeholders: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

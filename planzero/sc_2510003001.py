@@ -168,9 +168,11 @@ def supply_and_demand_of_primary_and_secondary_energy():
                     if np.isnan(as_d[year]):
                         as_d[year] = 0 # the hope is to pick up missing or sensored data via PT.XX
                 assert np.isfinite(list(as_d.values())).all()
-                rep = sts.annual_report(
-                    times=[year * u.years for year in sorted(as_d)],
-                    values=[vv * factor * sdc_unit for _, vv in sorted(as_d.items())])
+                times, values = zip(*list(sorted(as_d.items())))
+                rep = sts.annual_report2(
+                    years=times,
+                    values=[vv * factor for vv in values],
+                    v_unit=sdc_unit)
                 if geo == 'Canada':
                     rval_ca[ft, sdc] = rep
                 elif geo == 'Atlantic provinces':

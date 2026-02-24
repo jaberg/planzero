@@ -41,7 +41,7 @@ def set_ptxx(rval_pt, rval_ca):
                 functools.partial(sts.with_default_zero, times=times)).sum()
             xx = rval_ca[key] - pt_total
             # xx may be a pint quantity of a SparseTimeSeries
-            if isinstance(xx, sts.SparseTimeSeries):
+            if isinstance(xx, sts.STS):
                 assert np.isnan(xx.values[0])
                 # It can happen, e.g. in the case of "Other" energy sources
                 # in Alberta, 2015 in product 20, that the provincial
@@ -82,10 +82,11 @@ def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utilit
             assert uom == exp_uom
             factor_str, = list(set(pt_df.SCALAR_FACTOR.values))
             factor = Factors[factor_str]
-            rep = sts.annual_report(
-                times=pt_df.REF_DATE.values * u.years,
-                values=(pt_df.VALUE.values * factor) * unit,
-                skip_nan_values=True)
+            rep = sts.annual_report2(
+                years=pt_df.REF_DATE.values,
+                values=(pt_df.VALUE.values * factor),
+                v_unit=unit,
+                include_nan_values=False)
             # these can be missing or sensored, but either way
             # skipping is okay, b/c (a) it is set to zero by the usum with support
             # and then sensored contributions to the national total are associated
@@ -119,14 +120,15 @@ def Electric_Power_Annual_Generation_by_Class_of_Producer():
         EP.Utilities: ('Electricity producer, electric utilities', 'Megawatt hours'),
         EP.Industry: ('Electricity producer, industries', 'Megawatt hours'),
     }
+    unit = u.megawatt_hours
 
     for ep, (producer_name, exp_uom) in items.items():
         ep_df = df[df['Class of electricity producer'] == producer_name]
         for (pt_name, gen_type), pt_df in ep_df.groupby(['GEO', 'Type of electricity generation']):
             if gen_type.startswith('Total'):
                 continue
-            uom, = list(set(pt_df.UOM.values))
-            assert uom == exp_uom
+            uom_str, = set(pt_df.UOM.values)
+            assert uom_str == exp_uom
             factor_str, = set(pt_df.SCALAR_FACTOR.values)
             factor = Factors[factor_str]
             as_d = dict(zip(pt_df.REF_DATE.values, pt_df.VALUE.values))
@@ -153,11 +155,12 @@ def Electric_Power_Annual_Generation_by_Class_of_Producer():
                     # is the national totals for CombustionTurbine after
                     # 2014
 
-            rep = sts.annual_report(
-                times=[year * u.years for year in sorted(as_d)],
-                values=[vv * u.Quantity(f'{factor} {uom.lower()}')
-                        for _, vv in sorted(as_d.items())],
-                skip_nan_values=True)
+            times, values = zip(*list(sorted(as_d.items())))
+            rep = sts.annual_report2(
+                years=times,
+                values=[vv * factor for vv in values],
+                include_nan_values=False,
+                v_unit=unit)
             if pt_name.lower() == 'canada':
                 rval_ca[ep, egt] = rep
             else:

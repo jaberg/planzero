@@ -28,7 +28,7 @@ class InterpolationMode(str, Enum):
     current = 'current'
 
 
-class SparseTimeSeries(BaseModel):
+class STS(BaseModel):
     """A data structure of (time, value) pairs (stored separately) representing
     a timeseries. It may or not have a default value.
     It is unit-aware.
@@ -42,12 +42,18 @@ class SparseTimeSeries(BaseModel):
     times:object # will be a double-precision float array
     values:object # will be a double-precision float array
 
-    current_readers:list[str]
-    writer:str|None
+    current_readers:list[str] = []
+    writer:str|None = None
 
-    identifier: str | None # shouldn't be None after construction
+    identifier: str | None = None
 
     interpolation: InterpolationMode
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        #assert len(self.times) + 1 == len(self.values), (len(self.times), len(self.values))
+        #assert isinstance(self.times, array.array)
+        #assert isinstance(self.values, array.array)
 
     def times_with_units(self):
         return [tt * self.t_unit for tt in self.times]
@@ -85,30 +91,6 @@ class SparseTimeSeries(BaseModel):
             return default_value.u
 
 
-    def __init__(self, *, times=None, values=None, unit=None, identifier=None, t_unit=u.seconds, default_value=None,
-                 interpolation='current', skip_nan_values=False):
-        super().__init__(
-            t_unit=t_unit,
-            v_unit=self._init_v_unit(values, unit, default_value),
-            times=array.array('d'),
-            values=array.array('d'),
-            current_readers=[],
-            writer=None,
-            identifier=identifier,
-            interpolation=interpolation)
-
-        if self.v_unit == u.kg_CO2 ** 2:
-            assert 0
-
-        if interpolation == InterpolationMode.no_interpolation:
-            assert default_value is None
-
-        if default_value is None:
-            self.values.append(float('nan'))
-        else:
-            self.values.append(default_value.to(self.v_unit).magnitude)
-        if times is not None:
-            self.extend(times, values, skip_nan_values=skip_nan_values)
 
     def __len__(self):
         return len(self.times)
@@ -284,14 +266,12 @@ class SparseTimeSeries(BaseModel):
         raise NotImplementedError()
 
     def __mul__(self, other):
-        if isinstance(other, SparseTimeSeries):
+        if isinstance(other, STS):
             return mul_sts_sts(self, other)
         elif isinstance(other, (int, float)):
             return scale(self, other)
         elif isinstance(other, pint.Quantity) and isinstance(other.magnitude, (int, float)):
             return scale_convert(self, other)
-        elif isinstance(other, STSDict):
-            return other.__rmul__(self)
         raise NotImplementedError(other)
 
     def __rmul__(self, other):
@@ -334,11 +314,63 @@ class SparseTimeSeries(BaseModel):
         return self._setdefault_scalar(times, 0)
 
 
+class SparseTimeSeries(STS):
+
+    def __init__(self, *, times=None, values=None, unit=None, identifier=None, t_unit=u.seconds, default_value=None,
+                 interpolation='current', skip_nan_values=False):
+        super().__init__(
+            t_unit=t_unit,
+            v_unit=self._init_v_unit(values, unit, default_value),
+            times=array.array('d'),
+            values=array.array('d'),
+            current_readers=[],
+            writer=None,
+            identifier=identifier,
+            interpolation=interpolation)
+
+        if self.v_unit == u.kg_CO2 ** 2:
+            assert 0
+
+        if interpolation == InterpolationMode.no_interpolation:
+            assert default_value is None
+
+        if default_value is None:
+            self.values.append(float('nan'))
+        else:
+            self.values.append(default_value.to(self.v_unit).magnitude)
+        if times is not None:
+            self.extend(times, values, skip_nan_values=skip_nan_values)
+
+
 def annual_report(**kwargs):
     return SparseTimeSeries(
         t_unit=u.years,
         interpolation='no_interpolation',
         **kwargs)
+
+
+def annual_report2(years, values, v_unit, include_nan_values=True):
+    # This is a faster implementation of annual_report
+    array_values = array.array('d', [float('nan')])
+    array_times = array.array('d')
+    assert len(years) == len(values)
+    if include_nan_values:
+        array_times.extend(years)
+        array_values.extend(values)
+    else:
+        for tt, vv in zip(years, values):
+            if not np.isnan(vv):
+                array_times.append(tt)
+                array_values.append(vv)
+    return STS(
+        t_unit=u.years,
+        v_unit=v_unit,
+        times=array_times,
+        values=array_values,
+        current_readers=[],
+        writer=None,
+        identifier=None,
+        interpolation=InterpolationMode.no_interpolation)
 
 
 def annual_report_decay(self, timescale, horizon):
@@ -380,23 +412,37 @@ def add_nointerp_nointerp(self, other):
     t_unit = self.t_unit
     other_as_dict = {tt:vv for tt, vv in zip(other.times, other.values[1:])}
     times = []
-    values = []
+    self_values = []
+    other_values = []
     for tt, vv in zip(self.times, self.values[1:]):
-        if tt in other_as_dict:
-            times.append(tt * t_unit)
-            values.append(vv * self.v_unit + other_as_dict[tt] * other.v_unit)
-    if values:
-        v_unit = values[0].u
+        try:
+            other_values.append(other_as_dict[tt])
+            times.append(tt)
+            self_values.append(vv)
+        except KeyError:
+            continue
+    rval_values = array.array('d', [float('nan')])
+    rval_times = array.array('d', times)
+    if times:
+        typed_self_values = np.asarray(self_values) * self.v_unit
+        typed_other_values = np.asarray(other_values) * other.v_unit
+        typed_rval_values = typed_self_values + typed_other_values
+        rval_values.extend(typed_rval_values.magnitude)
+        rval = STS(
+            times=rval_times,
+            values=rval_values,
+            t_unit=t_unit,
+            v_unit=typed_rval_values.u,
+            identifier=None,
+            interpolation=InterpolationMode.no_interpolation)
     else:
-        v_unit = self.v_unit
-    rval = SparseTimeSeries(
-        times=times,
-        values=values,
-        default_value=default_value,
-        t_unit=t_unit,
-        unit=v_unit,
-        identifier=None,
-        interpolation=InterpolationMode.no_interpolation)
+        rval = STS(
+            times=rval_times,
+            values=rval_values,
+            t_unit=t_unit,
+            v_unit=self.u,
+            identifier=None,
+            interpolation=InterpolationMode.no_interpolation)
     return rval
 
 
@@ -453,7 +499,7 @@ def union_times(args, ignore_constants=True):
 
 
 def with_default_zero(self, times):
-    if times and isinstance(self, SparseTimeSeries):
+    if times and isinstance(self, STS):
         rval = self.copy()
         rval.setdefault_zero(times)
         return rval
@@ -462,254 +508,6 @@ def with_default_zero(self, times):
         assert not isinstance(self, list)
         return self
 
-
-class STSDict(BaseModel):
-
-    val_d: dict[object, object | None]
-    dims: list[dict[object, int]] # list of list of enums or enum classes
-    broadcast: list[bool]
-    fallback: object | None # STSDict with more broadcasting
-
-    def __init__(self, *, val_d, dims, broadcast, fallback=None):
-        assert len(dims) == len(broadcast)
-        unpacked_dims = []
-        nonbc_dims = [dim for dim, bc in zip(unpacked_dims, broadcast) if not bc]
-
-        # tuplify keys
-        val_d = {key if isinstance(key, tuple) else (key,): val
-                 for key, val in val_d.items()}
-        for key in val_d:
-            assert len(key) == len(nonbc_dims), key
-            for dim, key_elem in zip(nonbc_dims, key):
-                assert key_elem in dim, (key_elem, dim)
-
-        if fallback is None:
-            pass
-        else:
-            assert fallback.dims == unpacked_dims
-            for bc, fbc in zip(broadcast, fallback.broadcast):
-                if bc and not fbc:
-                    raise NotImplementedError('fallback with more structure than main STSDict')
-        super().__init__(val_d=val_d,
-                         dims=unpacked_dims,
-                         broadcast=broadcast,
-                         fallback=fallback)
-
-    @property
-    def logical_size(self):
-        rval = 1
-        for dim in self.dims:
-            rval *= len(dim)
-        return rval
-
-    @property
-    def logical_shape(self):
-        return [len(dim) for dim in self.dims]
-
-    def all_logical_keys(self):
-        for key in functools.product(self.dims):
-            yield key
-
-    @property
-    def nonbroadcast_dims(self):
-        return [dim for dim, bc in zip(self.dims, self.broadcast) if not bc]
-
-    def val_d_key(self, key):
-        assert len(key) == len(self.dims)
-        val_d_key = []
-        for key_elem, key_dim, bc in zip(key, self.dims, self.broadcast):
-            if key_elem not in key_dim:
-                raise KeyError(key)
-            if not bc:
-                val_d_key.append(key_elem)
-        return tuple(val_d_key)
-
-    def __setitem__(self, key, value):
-        self.val_d[self.val_d_key(key)] = value
-
-    def select_fn(self, key_range):
-        if len(key_range) < len(self.dims):
-            key_range = list(key_range) + [slice(None)] * (len(self.dims) - len(key_range))
-
-        def dim_from_key_range_elem(dim, kre):
-            if kre == slice(None):
-                return dict(dim)
-            elif hasattr(kre, '__iter__') or hasattr(kre, '__getitem__'):
-                for krei in kre:
-                    assert krei in dim
-                return {krei: ii for ii, krei in enumerate(kre)}
-            else:
-                raise NotImplementedError(kre)
-
-        new_dims = [dim_from_key_range_elem(dim, kre) for dim, kre in zip(self.dims, key_range)]
-
-        # later, if we allow selection of single elements per dimension, this
-        # may not necessarily be true, but for now:
-        broadcast = self.broadcast
-        new_nbc_dims = [dim for dim, bc in zip(new_dims, broadcast) if not bc]
-        def in_new_dims(key):
-            for new_dim, key_elem in zip(new_nbc_dims, key):
-                if key_elem not in new_dim:
-                    return False
-            return True
-
-        if self.fallback is None:
-            fallback = None
-        else:
-            fallback = self.fallback.select(key_range)
-
-        return STSDict(
-            val_d={key: val for key, val in self.val_d.items() if in_new_dims(key)},
-            dims=new_dims,
-            broadcast=broadcast,
-            fallback = fallback)
-    @property
-    def select(self):
-        class SelectionObj:
-            def __getitem__(_, key_range):
-                if not isinstance(key_range, tuple):
-                    key_range = (key_range,)
-                return self.select_fn(key_range)
-        return SelectionObj()
-
-    def __getitem__(self, key):
-        if isinstance(key, list):
-            key = tuple(key)
-        if not isinstance(key, tuple):
-            key = (key,)
-        _key = self.val_d_key(key)
-        if _key in self.val_d:
-            return self.val_d[_key]
-        elif self.fallback is not None:
-            return self.fallback[key]
-        raise KeyError(key)
-
-    def nonbroadcast_getitem(self, key):
-        """only require key elements for nonbroadcasted dimensions"""
-        if isinstance(key, list):
-            key = tuple(key)
-        if not isinstance(key, tuple):
-            _key = (key,)
-        else:
-            _key = key
-        nbdims = self.nonbroadcast_dims
-        assert len(_key) == len(nbdims), (_key, nbdims)
-        if _key in self.val_d:
-            return self.val_d[_key]
-        elif self.fallback is not None:
-            foo = [
-                fbc
-                for bc, fbc in zip(self.broadcast, self.fallback.broadcast)
-                if not bc]
-            assert len(foo) == len(_key) == len(nbdims)
-            fb_key = [
-                key_elem
-                for key_elem, fbc in zip(_key, foo)
-                if not fbc]
-            try:
-                return self.fallback.nonbroadcast_getitem(tuple(fb_key))
-            except KeyError as exc:
-                raise KeyError(key) from exc
-        raise KeyError(key)
-
-    def nonfallback_items(self):
-        return self.val_d.items()
-
-    @property
-    def t_unit(self):
-        if self.fallback is None:
-            t_units = set()
-        else:
-            t_units = set([self.fallback.t_unit])
-        for val in self.val_d.values():
-            if val is None:
-                continue
-            elif isinstance(val, pint.Quantity):
-                continue
-            else:
-                t_units.add(val.t_unit)
-        t_unit, = t_units
-        return t_unit
-
-    @property
-    def v_units(self):
-
-        if self.fallback is None:
-            v_units = set()
-        elif isinstance(self.fallback, pint.Quantity):
-            v_units = set([self.fallback.u])
-        else:
-            v_units = set([self.fallback.v_unit])
-
-        for val in self.val_d.values():
-            if val is None:
-                continue
-            elif isinstance(val, pint.Quantity):
-                v_units.add(val.u)
-            else:
-                v_units.add(val.v_unit)
-        return v_units
-
-    @property
-    def v_unit(self):
-        v_unit, = self.v_units
-        return v_unit
-
-    def to(self, unit):
-        if self.fallback is None:
-            fallback = None
-        else:
-            fallback = self.fallback.to(unit)
-        val_d = {
-            pt: (None if val is None else val.to(unit))
-            for pt, val in self.val_d.items()}
-        return STSDict(
-            val_d=val_d,
-            dims=self.dims,
-            broadcast=broadcast,
-            fallback=self.fallback)
-
-    @property
-    def val_class(self):
-        if self.fallback is None:
-            val_classes = set()
-        else:
-            val_classes = set([self.fallback.val_class])
-        for val in self.val_d.values():
-            if val is None:
-                continue
-            val_classes.add(val.__class__)
-        val_class, = val_classes
-        return val_class
-
-    def __add__(self, other):
-        from . import stsdict_fns
-        if isinstance(other, STSDict):
-            return stsdict_fns.add_stsdict_stsdict(self, other)
-        else:
-            return stsdict_fns.add_stsdict_other(self, other)
-
-    def __rmul__(self, other):
-        from . import stsdict_fns
-        if isinstance(other, STSDict):
-            assert 0
-        else:
-            # flip the argument order
-            return stsdict_fns.mul_stsdict_other(self, other)
-
-    def __mul__(self, other):
-        from . import stsdict_fns
-        if isinstance(other, STSDict):
-            return stsdict_fns.mul_stsdict_stsdict(self, other)
-        else:
-            return stsdict_fns.mul_stsdict_other(self, other)
-
-    def __matmul__(self, other):
-        from . import stsdict_fns
-        if isinstance(other, STSDict):
-            return stsdict_fns.matmul_stsdict_stsdict(self, other)
-        else:
-            raise NotImplementedError(other)
 
 def mul_no_interp_no_interp(a, b):
     if a.t_unit != b.t_unit:
@@ -777,86 +575,15 @@ def mul_sts_sts(self, other):
     raise NotImplementedError()
 
 
-def bad_idea_dont_use_usum(args, *, v_unit=None):
-    """Sum a set of no_interpolation STSs, but assuming 0 instead of NaN where
-    they're undefined, so that it's kind of a "union-sum": the union of times,
-    and the sum of values at those times.
-
-    None is a valid argument, it's a signal that isn't defined anywhere, and
-    will be ignored.
-    """
-    # XXX check units here - this is incorrect handling of e.g. 0 Celcius, and could mask incompatible units
-    if not args:
-        raise NotImplementedError()
-    if len(args) == 1:
-        return args[0]
-    qs = [arg for arg in args if isinstance(arg, pint.Quantity)]
-    nonqs = [arg for arg in args if not isinstance(arg, pint.Quantity)]
-    sum_qs = sum(qs)
-    if not nonqs:
-        assert qs
-        return sum_qs
-    # there's at least one non-Quantity element in args
-    interpolations = set(arg.interpolation for arg in nonqs)
-    if len(interpolations) > 1:
-        # This can probably be defined, but it isn't yet.
-        raise NotImplementedError(interpolations)
-    interpolation, = interpolations
-
-    assert interpolation == InterpolationMode.no_interpolation
-    default_value = None
-
-    t_units = set(arg.t_unit for arg in nonqs)
-    v_units = set(arg.v_unit for arg in nonqs)
-    if len(t_units) != 1:
-        raise NotImplementedError(t_units)
-    t_unit = nonqs[0].t_unit
-    v_unit = v_unit or nonqs[0].v_unit
-    if qs:
-        default_val_by_time = (sum_qs.to(v_unit).magnitude,)
-    else:
-        default_val_by_time = ()
-    vals_by_time = {}
-    for arg in nonqs:
-        for tt, vv in zip(arg.times, arg.values[1:]):
-            if arg.v_unit == v_unit:
-                vals_by_time.setdefault(tt, list(default_val_by_time)).append(vv)
-            else:
-                vals_by_time.setdefault(tt, list(default_val_by_time)).append(
-                    (vv * arg.v_unit).to(v_unit).magnitude)
-    times = []
-    values = []
-    for tt, vvs in sorted(vals_by_time.items()):
-        times.append(tt)
-        try:
-            values.append(builtins.sum(vvs))
-        except Exception as exc:
-            raise RuntimeError(vvs) from exc
-
-    rval = SparseTimeSeries(
-        times=[tt * t_unit for tt in times],
-        values=[vv * v_unit for vv in values],
-        default_value=default_value,
-        t_unit=t_unit,
-        unit=v_unit,
-        identifier=None,
-        interpolation=interpolation)
-    return rval
-
-
 def scale(self, amount):
     assert isinstance(amount, (float, int))
-    if self.interpolation == InterpolationMode.no_interpolation:
-        default_value = None
-    else:
-        default_value = self.values[0] * self.v_unit * amount
-    rval = SparseTimeSeries(
-        times=[tt * self.t_unit for tt in self.times],
-        values=[vv * amount * self.v_unit for vv in self.values[1:]],
-        default_value=default_value,
+    rval_times = array.array('d', self.times)
+    rval_values = array.array('d', [vv * amount for vv in self.values])
+    rval = STS(
+        times=rval_times,
+        values=rval_values,
         t_unit=self.t_unit,
-        unit=self.v_unit,
-        identifier=None,
+        v_unit=self.v_unit,
         interpolation=self.interpolation)
     return rval
 
@@ -880,6 +607,6 @@ def scale_convert(self, amount):
 if SparseTimeSeries not in objtensor._types_for_pint_to_ignore:
     objtensor._types_for_pint_to_ignore = (
         objtensor._types_for_pint_to_ignore
-        + (SparseTimeSeries,))
+        + (STS,))
 
 

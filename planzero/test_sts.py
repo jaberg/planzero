@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 
 from .sts import *
-from .stsdict_fns import *
 from .ureg import u
 
 nan = float('nan')
@@ -68,7 +67,7 @@ def test_pint_rmul():
     a = u.Quantity('1 kg')
     b = annual_report(times=[10 * u.years, 20 * u.years], values=[1 * u.m, 2 * u.m])
     c = a * b
-    assert isinstance(c, SparseTimeSeries)
+    assert isinstance(c, STS)
     assert c.v_unit == u.kg * u.m
 
 
