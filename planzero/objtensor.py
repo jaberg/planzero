@@ -490,7 +490,11 @@ class ObjectTensor(object):
                     pass
 
     def as_one_v_unit(self):
-        rval, = set(self.v_units())
+        v_units = set(self.v_units())
+        try:
+            rval, = v_units
+        except ValueError:
+            raise ValueError(v_units)
         return rval
 
     def apply(self, fn):

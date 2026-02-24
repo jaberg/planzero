@@ -38,16 +38,52 @@ GHG = enums.GHG
 PT = enums.PT
 IPCC = enums.IPCC_Sector
 
+est_nir_years = np.arange(1995, 2025) * u.years
+
 
 class EstAnnex13ElectricityFromCoal(object):
     """Return CO2e by PT"""
     def __init__(self):
 
-        self.prov_consumption, self.national_consumption = \
+        self.prov_consumption_a, self.national_consumption_a = \
                 sc_np.Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility()
+        self.prov_consumption_b, self.national_consumption_b = \
+                sc_2510003001.supply_and_demand_of_primary_and_secondary_energy()
+
+        # CoalTypes x PT
+        self.coaltypes_until_2022 = self.prov_consumption_a[CoalType]
+
+        # PT
+        SDC = sc_2510003001.Supply_And_Demand_Characteristics
+        support_years = functools.partial(sts.with_default_zero, times=est_nir_years)
+        self.total_coal_transformed_by_utilities = self.prov_consumption_b[
+            sc_2510003001.Fuel_Type.Total_Coal,
+            SDC.Transformed_to_Electricity_by_Utilities].apply(support_years)
+
+        self.prov_consumption = self.coaltypes_until_2022.apply(support_years)
+        # XXX guessing a coaltype with which to associate the
+        # aggregate data Im' using for years after 2022
+        # smarter: use the historically-most-used type for each province?
+        # keep the same proportions? find the data?
+        self.prov_consumption[CoalType.CanadianBituminous] \
+            += (self.total_coal_transformed_by_utilities
+                * sts.STS.zero_one(2021.5 * u.years, v_unit=u.kg_coal_bit / u.kg_coal))
+
+        # GHG x CoalType x PT
         self.emission_factors = annex6_np.A6_1_10_and_12()
-        self.emissions = (self.emission_factors * self.prov_consumption[CoalType]).sum(enums.CoalType)
-        self.co2e = GWP_100 @ self.emissions
+
+        # GHG x PT
+        self.emissions = (
+            self.emission_factors * self.prov_consumption[CoalType]).sum(enums.CoalType)
+
+        # PT
+        def to_CO2e(x):
+            if all(vv == 0 for vv in x.values):
+                return 0 * u.kt_CO2e
+            else:
+                return x.to(u.kt_CO2e)
+
+        self.co2e = (GWP_100 @ self.emissions).apply(to_CO2e)
 
     def plot_consumption(self):
         ptvalues.scatter_subplots(
@@ -115,8 +151,7 @@ class EstAnnex13ElectricityFromNaturalGas(object):
         prov_ng_vol_pre2005_post2013 = supply_and_demand_pt[sc_2510003001.Fuel_Type.Natural_Gas]
 
         # usum is used to union the years covered
-        years = [tt * u.years for tt in range(1995, 2024)]
-        support_years = functools.partial(sts.with_default_zero, times=years)
+        support_years = functools.partial(sts.with_default_zero, times=est_nir_years)
         #foo = sts.annual_report(times=[2000 * u.years], values=[1 * u.kg])
         #bar = support_years(foo)
         prov_ng_vol = objtensor.empty(EP, enums.PT)

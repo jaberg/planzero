@@ -49,6 +49,16 @@ class STS(BaseModel):
 
     interpolation: InterpolationMode
 
+    @classmethod
+    def zero_one(cls, time, interpolation=InterpolationMode.current, v_unit=None):
+        rval = cls(
+            times=array.array('d', [time.magnitude]),
+            t_unit=time.u,
+            values=array.array('d', [0, 1]),
+            v_unit=v_unit or u.dimensionless,
+            interpolation=InterpolationMode.current)
+        return rval
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         #assert len(self.times) + 1 == len(self.values), (len(self.times), len(self.values))
@@ -202,7 +212,7 @@ class STS(BaseModel):
         default_value = (
             None
             if self.interpolation == InterpolationMode.no_interpolation
-            else self.values[0] * scalar * self.v_unit)
+            else self.values[0] * scalar * v_unit)
         rval = SparseTimeSeries(
             times=[tt * self.t_unit for tt in self.times],
             values=[v * scalar * v_unit for v in self.values[1:]],
@@ -232,6 +242,8 @@ class STS(BaseModel):
             return add_nointerp_interp(self, other)
         elif not self_nointerp and other_nointerp:
             return add_nointerp_interp(other, self)
+        elif all(vv == 0 for vv in other.values):
+            return self.copy()
         else:
             raise NotImplementedError()
 
@@ -499,7 +511,8 @@ def union_times(args, ignore_constants=True):
 
 
 def with_default_zero(self, times):
-    if times and isinstance(self, STS):
+    # times may be ndarray
+    if len(times) and isinstance(self, STS):
         rval = self.copy()
         rval.setdefault_zero(times)
         return rval
@@ -572,6 +585,8 @@ def mul_sts_sts(self, other):
         return mul_no_interp_sts(self, other)
     elif other.interpolation == 'no_interpolation':
         return mul_no_interp_sts(other, self)
+    elif all(vv == 0 for vv in other.values):
+        return scale(self, 0)
     raise NotImplementedError()
 
 
