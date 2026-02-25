@@ -23,15 +23,26 @@ has remained relatively steady.
 </p>
 
 <p>
-Emissions for the sector, at least for years around 2005, were well-predicted by multiplying the greenhouse gas coefficients from
+Emissions for the sector, at least for years 2005-2010, are somewhat-well-predicted by multiplying the greenhouse gas coefficients from
 Annex 6 of the <a href="https://open.canada.ca/data/en/dataset/779c7bcf-4982-47eb-af1b-a33618a05e5b">2025 national inventory report</a>,
 by the amounts of each fuel used for electricity generation.
-For most of the fuel types, the quantities of fuel were available directly from the now-archived StatsCan data set
-<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510001701">"Electric Power Generation, Annual, Fuel Consumed by Electric Utilities" (25-10-0017-01)</a>.
+The data for the fuel usage was estimated from a few different sources:
+<ul>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510001701">"Electric Power Generation, Annual, Fuel Consumed by Electric Utilities" (25-10-0017-01)</a>
+        provided good data for years 2005-2022 for all fuel types, except natural gas
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">"Electric Power, Annual, Generation by Class of Producer" (25-10-0020-01)</a>
+        support an accurate estimation for years 2005-2014, but only by including both utility and producer consumption.
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510003001">"Supply and Demand of Primary and Secondary Energy" (25-10-0030-01)</a>
+        provided natural gas consumption by electric utilities for years 2015-2024, and matches the NIR total well when only including utility consumption,
+        and poorly when including both utility and industry consumption.
+    </li>
+</ul>
+.
 For natural gas though, the data from 25-10-0017-01 gave what seemed like the wrong answer.
 
 Instead, for natural gas (at least from 2005-2014), a better estimate seemed to come from another StatsCan table:
-<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">"Electric Power, Annual, Generation by Class of Producer" (25-10-0020-01)</a>,
 together with some thermal efficiency assumptions
 (namely that Alberta mainly used simple cycle plants with 0.3 efficiency, and Ontario used more combined-cycle plants to give average efficiency of 0.5).
 For years 2015-

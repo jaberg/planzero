@@ -3,6 +3,7 @@ from pydantic import BaseModel
 import datetime
 
 from . import enums
+from . import est_nir
 
 _classes = []
 _blogs_by_url_filename = {}
@@ -80,6 +81,7 @@ class IPCC_PublicElectricity(BlogPost):
     """First in a series replicating the sector-by-sector computation of
     Canada's National Greenhouse Gas Inventory: Public Electricity and Heat.
     """
+    est_nir:object
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 2, 12),
@@ -90,6 +92,7 @@ class IPCC_PublicElectricity(BlogPost):
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.SCS__Public_Electricity_and_Heat,
                  },
+            est_nir=est_nir,
             )
 
 

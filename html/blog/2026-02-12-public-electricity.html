@@ -196,38 +196,70 @@ My intention with PlanZero is to replicate / approximate the emissions in each o
 <h2 id="public_electricity">Public Electricity and Heat</h2>
 
 <p>
-The largest single-sector source of CO2e in 2005 in Canada was in the energy sector, specifically the stationary combustion of fossil fuels for the purpose of producing
-public electricity and public heat.
+The largest single-sector contributor of CO2e in 2005 in Canada was the stationary combustion of fossil fuels for the purpose of producing public electricity and public heat.
+This was responsible for 124 megatonnes of CO2e (MtCO2e) that year, almost all of which was actually carbon dioxide, rather than other greenhouse gases.
 Public electricity dominated the emissions, rather than public heat, although there are district heat systems in Toronto, Montreal, and Vancouver, and this sector should include their emissions.
+The emissions of public electricity generation are mostly from coal (heating water, creating steam to drive a turbine) and from natural gas (usually injected straight into a combustion turbine like a jet engine,
+sometimes with the heat being used to also drive a steam turbine).
 </p>
+
+{{blog.est_nir.EstAnnex13ElectricityEmissionsTotal().echart_by_utilities() | safe}}
+
 <p>
-Canada's emissions from the generation of public electricity are driven by the combustion of fossil fuels in power plants:
-coal (various types), natural gas (marketable, and un-marketable), diesel, light and heavy fuel oils, petroleum coke, and still gas.
-The combustion of wood (a non-fossil fuel) is also counted as releasing CH4 and N2O into the atmosphere, although the emissions are small relative to the fossil combustion emissions.
-Emissions for the sector, at least for years around 2005, were well-predicted by multiplying the greenhouse gas coefficients from
-Annex 6 of the <a href="https://open.canada.ca/data/en/dataset/779c7bcf-4982-47eb-af1b-a33618a05e5b">2025 national inventory report</a>,
-by the amounts of each fuel used for electricity generation.
-For most of the fuel types, the quantities of fuel were available directly from the now-archived StatsCan data set
-<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510001701">"Electric Power Generation, Annual, Fuel Consumed by Electric Utilities" (25-10-0017-01)</a>.
-For natural gas though, the data from 25-10-0017-01 gave what seemed like the wrong answer.
-Instead, for natural gas, a better estimate seemed to come from another StatsCan table:
-<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">"Electric Power, Annual, Generation by Class of Producer" (25-10-0020-01)</a>,
-together with some thermal efficiency assumptions
-(namely that Alberta mainly used simple cycle plants with 0.3 efficiency, and Ontario used more combined-cycle plants to give average efficiency of 0.5).
-Unfortunately for me, the data on electricity generation by "Combustion Turbine" disappears after 2014.
-The emissions of each gas were combined into CO2e using the standard coefficients introduced in the <a href="./2026-01-21-unfccc">earlier PlanZero post on GHGs</a>.
+The stacked bar chart in the figure above is my first attempt to approximate the ECCC's sector total in the national inventory report submitted to the UNFCCC.
+It's close-ish, not perfect; sometimes over, sometimes under.
+Not shown in the colors is the breakdown by coal type, province / territory, and specific types of "other fuels",
+although those subtotals are in the underlying data from Statistics Canada.
 </p>
+
 <p>
-The result of this estimation is <!-- figures! -->
-The code for this estimation is <!-- linked on github -->
-</p>
+Emissions for the sector were generally calculated by multiplying greenhouse gas emission factors by amounts of fuel combusted.
+The data for this estimate comes from a handful of sources:
+<ul>
+    <li>Annex 6 of the <a href="https://open.canada.ca/data/en/dataset/779c7bcf-4982-47eb-af1b-a33618a05e5b">2025 national inventory report</a> lists the emissions factors for different fuels,
+        sometimes varying by year, by province, by application, or by combustion technology (e.g. residential vs. industrial wood combustion).
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510001701">"Electric Power Generation, Annual, Fuel Consumed by Electric Utilities" (StatsCan 25-10-0017-01)</a>
+        provided data for years 2005-2022 for all fuel types, except natural gas.
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">"Electric Power, Annual, Generation by Class of Producer" (StatsCan 25-10-0020-01)</a>
+        supported an accurate estimation for years 2005-2014 relating to natural gas, but only by including both utility and industry consumption.
+        To use this data source, I had to approximate natural gas consumption using thermal efficiency assumptions:
+        by default I assumed 30% for plants in Alberta (conjecturing that steam would be used to move heat into oil sands rather than create additional electricity), and 50% for Ontario (where more combined-cycle turbines were in operation).
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510003001">"Supply and Demand of Primary and Secondary Energy" (StatsCan 25-10-0030-01)</a>
+        provided natural gas consumption by electric utilities for years 2015-2024, and allowed my estimate to approximately match the NIR total when only including utility consumption.
+        In contrast to the years for which I used of StatsCan 25-10-0020-01, the estimates for later years using this data were poor when including both utility and industry consumption.
+    </li>
+</ul>
 <p>
+The emissions of each gas were combined into CO2e using the non-time-dependent coefficients introduced in the <a href="./2026-01-21-unfccc">earlier PlanZero post on GHGs</a>.
 I did not include the contribution to this sector from district heating systems  (e.g. in Toronto, Montreal, Vancouver), as the impact of these systems on the national calculation
-appears to be relatively small.
+appears to be smaller than the current fitting error.
+</p>
+
+<p>
+It is encouraging to see the downward trend over the last two decades in emissions from this sector, but the figure shows only 17 more MtCO2e of annual emissions from coal combustion can be eliminated.
+The strategy of replacing coal plants with natural gas turbines is reducing emissions for now, but the strategy will not get us to net zero.
+Troublingly, the emissions from natural-gas-powered plants have been rising sharply in recent years.
+I have yet to incorporate the emissions projections from the provincial and territorial utilities,
+but based on this recent investment in gas turbine capacity, I expect emissions in this sector to remain in the 40-60 MtCO2e range for many years.
+Unless there's a huge breakthrough in carbon sequestration,
+we will have to find sources of lower-emission electricity both to handle ever-increasing demand, as well as to replace those gas turbine plants as they reach end-of-life in the decades ahead.
 </p>
 
 <h2 id="summary">Summary</h2>
-TODO
+<p>
+This post introduced the sectors recommended by the IPCC reporting guidelines, and enumerated all 71 sectors used by the ECCC to represent Canada's national greenhouse gas inventory.
+It presented the first attempt in PlanZero to replicate a sectoral emissions calculation from that national inventory: public electricity and heat.
+The basic mathematics of the emission calculation is straightforward: a weighted sum of amounts of fuel consumed multiplied by emissions factors of each greenhouse gas for each fuel.
+The implementation is complicated by the emissions factors being presented in various sizes and natures of tables, and by the fuel consumption being stored in multiple
+StatsCan products covering different time periods, and with overlapping but somewhat different semantics.
+Still, the required data seems by and large to be public, and the prescribed arithmetic gave rise to roughly the desired result.
+I look forward to complementing and extending the time series involved in this calculation with the emissions projections from provincial and territorial electric utilities, and modelling
+how Canada might be powered in the decades to come, but I won't do these things just yet.
+Coming up in the next post will be a similar modelling summary of Canada's next-largest emissions-contributing sector from 2005: forest land.
+</p>
 
 </section>
 </div>
