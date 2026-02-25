@@ -3,7 +3,6 @@ import functools
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .enums import CoalType
 from .ghgvalues import GWP_100
 
 from .ureg import (u, kg_by_ghg,
@@ -23,6 +22,7 @@ from . import ptvalues
 from . import nrc_nfd
 from . import ipcc_canada
 from . import sc_2510003001 # supply and demand of primary and secondary energy
+from . import sc_25_10_0084_01 # electric power generation fuel consumed cost of fuel
 
 from .html import (
     EChartTitle,
@@ -37,7 +37,8 @@ from .html import (
 GHG = enums.GHG
 PT = enums.PT
 IPCC = enums.IPCC_Sector
-
+CoalType = enums.CoalType
+NAICS = enums.NAICS
 est_nir_years = np.arange(1995, 2025) * u.years
 
 
@@ -276,6 +277,7 @@ class EstAnnex13ElectricityFromOther(object):
     """
     Estimate the emissions associated with "Other Fuels" in Annex 13,
     which I take to be (because of SC-25-10-0017-1):
+    TODO: go through the remaining fuel types in table 25-10-0084-01.
 
     * Diesel
     * Light fuel oil
@@ -290,28 +292,42 @@ class EstAnnex13ElectricityFromOther(object):
 
     def init_LightHeavy(self):
         FT = enums.FuelType
+        FT2 = sc_25_10_0084_01.FuelType
         RPP_User = enums.RPP_User
         self.LightAndHeavyOil = [FT.LightFuelOil, FT.HeavyFuelOil]
 
         self.emission_factors_lhk = annex6_np.A6_1_6_LFO_HFO_Kerosene()
 
+        self.consumption_LFO = (
+            self.cutover * self.prov_consumption[FT.LightFuelOil].apply(self.support_years)
+            + self.fuel_consumed_pt[FT2.LightFuelOil].apply(self.support_years))
+        self.consumption_HFO = (
+            self.cutover * self.prov_consumption[FT.HeavyFuelOil].apply(self.support_years)
+            + self.fuel_consumed_pt[FT2.TotalHeavyFuelOil].apply(self.support_years))
+
         # afaik the only RPP_User producing electricity is ElectricUtilities
         # GHG x LightAndHeavy x PT
-        self.emissions_LH_pt = (
-            self.emission_factors_lhk[:, self.LightAndHeavyOil, RPP_User.ElectricUtilities, None]
-            * self.prov_consumption[self.LightAndHeavyOil])
+        self.emissions_LFO_pt = (
+            self.emission_factors_lhk[:, FT.LightFuelOil, RPP_User.ElectricUtilities, None]
+            * self.consumption_LFO)
+        self.emissions_HFO_pt = (
+            self.emission_factors_lhk[:, FT.HeavyFuelOil, RPP_User.ElectricUtilities, None]
+            * self.consumption_HFO)
 
     def init_Diesel(self):
         FT = enums.FuelType
+        FT2 = sc_25_10_0084_01.FuelType
 
         self.emission_factors_dg = annex6_np.A6_1_6_Diesel_and_Gasoline()
         # GHG x PT
         self.emissions_diesel_pt = (
             self.emission_factors_dg[:, FT.Diesel, None]
-            * self.prov_consumption[FT.Diesel])
+            * (self.cutover * self.prov_consumption[FT.Diesel].apply(self.support_years)
+               + self.fuel_consumed_pt[FT2.Diesel].apply(self.support_years)))
 
     def init_PetCoke(self):
         FT = enums.FuelType
+        FT2 = sc_25_10_0084_01.FuelType
         RPP_User = enums.RPP_User
         self.emission_factors_ps = annex6_np.A6_1_7_and_1_8_and_1_9()
 
@@ -328,7 +344,9 @@ class EstAnnex13ElectricityFromOther(object):
 
         self.emissions_petcoke_pt = (
             self.emission_factors_ps[:, FT.PetCoke, RPP_User.RefineriesAndOthers, None]
-            * (self.prov_consumption[FT.PetCoke] / petcoke_material_density)
+            * ((self.cutover * self.prov_consumption[FT.PetCoke].apply(self.support_years)
+                + self.fuel_consumed_pt[FT2.PetCoke].apply(self.support_years))
+               / petcoke_material_density)
         )
 
     def init_Wood(self):
@@ -349,15 +367,23 @@ class EstAnnex13ElectricityFromOther(object):
         # non-hypothetical world, that is not in fact happening, so
         # it's a moot point.
 
-        FT = enums.FuelType
         self.emissions_wood_pt = objtensor.empty(GHG, enums.PT)
         for ghg in [GHG.CO2, GHG.HFCs, GHG.PFCs, GHG.SF6, GHG.NF3]:
             self.emissions_wood_pt[ghg] = 0 * kg_by_ghg[ghg]
 
-        self.emissions_wood_pt[GHG.CH4] = self.prov_consumption[FT.Wood] \
-                    * (0.1 * u.g_CH4 / u.kg_wood_mc25)
-        self.emissions_wood_pt[GHG.N2O] = self.prov_consumption[FT.Wood] \
-                    * (0.07 * u.g_N2O / u.kg_wood_mc25)
+        FT = enums.FuelType
+        FT2 = sc_25_10_0084_01.FuelType
+        self.consumption_wood = (
+            self.cutover * self.prov_consumption[FT.Wood].apply(self.support_years)
+            + (self.fuel_consumed_pt[FT2.Wood].apply(self.support_years)
+               * (.5 * u.kg_wood_mc25 / u.kg_wood_mc50)))
+
+        self.emissions_wood_pt[GHG.CH4] = (
+            self.consumption_wood
+            * (0.1 * u.g_CH4 / u.kg_wood_mc25))
+        self.emissions_wood_pt[GHG.N2O] = (
+            self.consumption_wood
+            * (0.07 * u.g_N2O / u.kg_wood_mc25))
 
     def init_OtherSolidFuels(self):
         # I'm including this category because it is included
@@ -382,11 +408,11 @@ class EstAnnex13ElectricityFromOther(object):
         # I'm just eyeballing the year-by-year tables in Annex 6
         # relating to marketable natural gas:
 
-        self.emissions_methane_pt[GHG.CO2] = self.prov_consumption[FT.Methane] \
+        self.emissions_methane_pt[GHG.CO2] = self.prov_consumption[FT.Methane].apply(self.support_years) \
                     * (1900 * u.g_CO2 / u.m3_methane)
-        self.emissions_methane_pt[GHG.CH4] = self.prov_consumption[FT.Methane] \
+        self.emissions_methane_pt[GHG.CH4] = self.prov_consumption[FT.Methane].apply(self.support_years) \
                     * (.49 * u.g_CH4 / u.m3_methane)
-        self.emissions_methane_pt[GHG.N2O] = self.prov_consumption[FT.Methane] \
+        self.emissions_methane_pt[GHG.N2O] = self.prov_consumption[FT.Methane].apply(self.support_years) \
                     * (.049 * u.g_N2O / u.m3_methane)
 
     def init_OtherGaseousFuels(self):
@@ -396,30 +422,40 @@ class EstAnnex13ElectricityFromOther(object):
         # so I'll use those emission factors for the whole "Other Gaseous
         # Fuels" category.
         FT = enums.FuelType
+        FT2 = sc_25_10_0084_01.FuelType
         RPP_User = enums.RPP_User
 
         # TODO: confirm that UpgradingFacilities use PetCoke
         # for heat (to create more RPPs and PetCoke), not electricity
         self.emissions_stillgas_pt = (
-            self.emission_factors_ps[:, FT.StillGas, RPP_User.RefineriesAndOthers, None]
-            * self.prov_consumption[FT.StillGas]
-        )
-        
+            self.cutover * self.emission_factors_ps[:, FT.StillGas, RPP_User.RefineriesAndOthers, None]
+            * (self.prov_consumption[FT.StillGas].apply(self.support_years)
+               + (self.fuel_consumed_pt[FT2.OtherGaseous].apply(self.support_years) * (1 * u.m3_stillgas / u.m3))))
 
     def __init__(self):
         self.prov_consumption, self.national_consumption = \
                 sc_np.Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility()
 
+        # what's the relationship between this table and the one above, I'm not sure
+        self.epgfc_pt, self.epgfc_ca = \
+                sc_25_10_0084_01.electric_power_generation_fuel_consumed_cost_of_fuel()
+        self.fuel_consumed_pt = self.epgfc_pt[
+            sc_25_10_0084_01.MetaFuelType.Fuel_Consumed, :, NAICS.Electricity_Producers__Utilities]
+
+        self.support_years = functools.partial(sts.with_default_zero, times=est_nir_years)
+        self.cutover = sts.STS.one_zero(2019.5 * u.years)
+
         self.init_LightHeavy()
         self.init_Diesel()
         self.init_PetCoke()
         self.init_Wood()
-        #self.init_OtherSolidFuels()
+        self.init_OtherSolidFuels()
         self.init_Methane()
         self.init_OtherGaseousFuels()
 
         self.emissions = (
-            self.emissions_LH_pt.sum(self.LightAndHeavyOil)
+            self.emissions_LFO_pt
+            + self.emissions_HFO_pt
             + self.emissions_diesel_pt
             + self.emissions_petcoke_pt
             + self.emissions_wood_pt
@@ -431,9 +467,8 @@ class EstAnnex13ElectricityFromOther(object):
 
     def plot_consumption(self):
         FT = enums.FuelType
-        ptvalues.scatter_subplots(
-            self.prov_consumption[
-                [FT.LightFuelOil, FT.HeavyFuelOil, FT.Diesel]],
+        ptvalues.scatter(
+            self.consumption_wood,
             #v_unit_by_outer_key=kilotonne_by_coal_type,
             legend_loc='upper right')
 
@@ -446,7 +481,7 @@ class EstAnnex13ElectricityFromOther(object):
                 GHG.CH4: u.tonne_CH4,
                 GHG.N2O: u.tonne_N2O,
             },
-            legend_loc='upper right')
+            legend_loc='upper left')
 
     def plot_vs_annex13_target(self):
         estimate = self.co2e.sum(enums.PT).to(u.kilotonne_CO2e)
@@ -498,6 +533,16 @@ class EstAnnex13ElectricityEmissionsTotal(object):
             enums.ElectricityProducer.Utilities].sum(enums.PT).to(u.megatonne_CO2e)
         sts_other = self.from_other.co2e.sum(enums.PT).to(u.megatonne_CO2e)
 
+        def rstrip_data(ts):
+            vals = list(ts.query([yy * u.years for yy in years]))
+            while vals and (vals[-1].magnitude == 0 or np.isnan(vals[-1].magnitude)):
+                vals.pop()
+            rval = [
+                {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
+                 'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
+                 for vv in vals]
+            return rval
+
         return StackedAreaEChart(
             div_id='ipcc_chart_public_electricity',
             title=EChartTitle(
@@ -509,29 +554,19 @@ class EstAnnex13ElectricityEmissionsTotal(object):
             stacked_series=[
                 EChartSeriesStackElem(
                     name='Coal',
-                    data=[
-                        {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
-                         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
-                        for vv in sts_coal.query([yy * u.years for yy in years])],
-                    ),
+                    data=rstrip_data(sts_coal)),
                 EChartSeriesStackElem(
                     name='Natural Gas',
-                    data=[
-                        {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
-                         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
-                        for vv in sts_ng.query([yy * u.years for yy in years])],
-                    ),
+                    data=rstrip_data(sts_ng)),
                 EChartSeriesStackElem(
                     name='Other Fuels',
-                    data=[
-                        {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
-                         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
-                        for vv in sts_other.query([yy * u.years for yy in years])],
-                    ),
+                    data=rstrip_data(sts_other)),
             ],
             other_series=[
                 EChartSeriesBase(
                     name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
                     data=values)])
 
 

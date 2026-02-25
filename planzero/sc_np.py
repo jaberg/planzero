@@ -5,11 +5,9 @@ import numpy as np
 
 from . import enums
 from .ureg import u 
-from .sc_utils import zip_table_to_dataframe
+from .sc_utils import zip_table_to_dataframe, Factors
 from . import objtensor
 from . import sts
-
-Factors = {'units': 1, 'thousands': 1000}
 
 unit_by_fuel_type = {
     enums.CoalType.CanadianBituminous: ('Canadian bituminous coal', 'Metric tonnes', u.tonne_coal_bit),

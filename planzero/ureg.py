@@ -19,9 +19,11 @@ for mass_substance in ['coal', 'coal_bit', 'coal_subbit',
                        'petcoke',
                        'wood_od', # wood, oven-dried
                        'wood_mc25', # wood at 25% moisture content - the level for which Annex6 (table 6-1) lists combustion emission coefficients
+                       'wood_mc50', # wood at 50% moisture content (e.g. green bark & branches)
                        'CO2', 'CO2e', 'CH4', 'N2O', 'HFC', 'PFC', 'SF6', 'NF3',
                        'carbon', # in e.g. wood
                        'steam',
+                       'uranium',
                       ]:
     ureg.define(f"kg_{mass_substance} = [mass_{mass_substance}]")
     ureg.define(f"tonne_{mass_substance} = 1000 * kg_{mass_substance}")
@@ -47,9 +49,12 @@ for volume_substance in ['NG_mk', 'NG_nmk',
                          'NGLs', # Natural Gas Liquids
                          'RPPs', # Refined petroleum products
                          'stillgas',
+                         'biogas',
                          'ovengas',
                          'petcoke',
                          'methane',
+                         'propane',
+                         'pulpingliquor',
                          'wood', 'hardwood', 'softwood',
                          'aviation_gasoline',
                          'aviation_turbo_fuel',

@@ -110,6 +110,14 @@ test_sc_2510003001: .build
 		-it --rm $(target) \
 		pytest --maxfail=2 -vv planzero/test_sc_2510003001.py
 
+test_sc_25_10_0084_01: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest --maxfail=2 -vv planzero/test_sc_25_10_0084_01.py
+
+
 stakeholders: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

@@ -80,15 +80,16 @@ class IPCC_ForestAndHWP(BlogPost):
 class IPCC_PublicElectricity(BlogPost):
     """First in a series replicating the sector-by-sector computation of
     Canada's National Greenhouse Gas Inventory: Public Electricity and Heat.
+    Also introduces the sectors of the IPCC reporting guidelines, and the
+    71 sectors with which Canada reports its greenhouse gas inventory.
     """
     est_nir:object
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 2, 12),
-            title='Emission calculations for "Public Electricity and Heat"',
+            title='Emission calculations for Public Electricity and Heat',
             url_filename="2026-02-12-public-electricity",
             author="James Bergstra",
-            published=False,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.SCS__Public_Electricity_and_Heat,
                  },

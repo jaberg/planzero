@@ -22,46 +22,6 @@ The use of natural gas (green) has been rising, and the use of other fuels
 has remained relatively steady.
 </p>
 
-<p>
-Emissions for the sector, at least for years 2005-2010, are somewhat-well-predicted by multiplying the greenhouse gas coefficients from
-Annex 6 of the <a href="https://open.canada.ca/data/en/dataset/779c7bcf-4982-47eb-af1b-a33618a05e5b">2025 national inventory report</a>,
-by the amounts of each fuel used for electricity generation.
-The data for the fuel usage was estimated from a few different sources:
-<ul>
-    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510001701">"Electric Power Generation, Annual, Fuel Consumed by Electric Utilities" (25-10-0017-01)</a>
-        provided good data for years 2005-2022 for all fuel types, except natural gas
-    </li>
-    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">"Electric Power, Annual, Generation by Class of Producer" (25-10-0020-01)</a>
-        support an accurate estimation for years 2005-2014, but only by including both utility and producer consumption.
-    </li>
-    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510003001">"Supply and Demand of Primary and Secondary Energy" (25-10-0030-01)</a>
-        provided natural gas consumption by electric utilities for years 2015-2024, and matches the NIR total well when only including utility consumption,
-        and poorly when including both utility and industry consumption.
-    </li>
-</ul>
-.
-For natural gas though, the data from 25-10-0017-01 gave what seemed like the wrong answer.
-
-Instead, for natural gas (at least from 2005-2014), a better estimate seemed to come from another StatsCan table:
-together with some thermal efficiency assumptions
-(namely that Alberta mainly used simple cycle plants with 0.3 efficiency, and Ontario used more combined-cycle plants to give average efficiency of 0.5).
-For years 2015-
-</p>
-
-<h2>Google Gemini's assessment of what causes these emissions</h2>
-
-<ol>
-    <li><b>Steam Turbines (Thermal Power Plants)</b>: a technology in which huge boilers heat water, and high-pressure steam blasts through a massive fan (turbine) to spin a generator. Coal plants are of this type, but any combustible fuel can be used.</li>
-    <li><b>Combustion Gas Turbines</b>: a technology in which the expansion of combusting natural gas powers a turbine directly.
-        <ul>
-            <li>In <em>Peaker Plants</em>, the hot exhaust is vented, making the plant a relatively simple to construct and providing quick power for peak demand periods.</li>
-            <li>In <em>Combined Cycle Gas Turbines</em>, the hot exhaust is used to drive a second steam turbine, providing a less-responsive, more-efficient electricity-generation process.</li>
-        </ul>
-    </li>
-    <li><b>Reciprocating Engines</b>: diesel generators are commonly used to power remote communities. Gemini estimates there are roughly 200 such communities in Canada.</li>
-    <li><b>District Heating</b>: Some cities, such as Toronto (Enwave) and Vancouver (Creative Energy) have district heating systems powered by huge boilers. The emissions of those boilers are counted in this sector.</li>
-</ol>
-
 <h2>
     How might Canada reduce emissions in this sector to zero?
 </h2>
@@ -70,38 +30,57 @@ For years 2015-
     Critical Success Factors
 </h3>
 
-The arithmetic of this sector is straightforward. To reduce emissions in this sector, we must
+The arithmetic of emissions in this sector is straightforward: to reduce emissions in this sector, we must
+either
 <ul>
-    <li>generate less public electricity and/or public heat, and/or</li>
-    <li>reduce the emissions per unit electricity produced.</li>
+    <li>require less public electricity and/or public heat, and/or</li>
+    <li>reduce the average emission intensity per unit electricity produced, i.e. by
+        <ul>
+            <li>reducing the usage of fossil fuels, and/or</li>
+            <li>increasing the average efficiency of fossil fuel combustion.</li>
+        </ul>
+    </li>
 </ul>
+<p>
+To achieve net-zero, the emissions of this sector (which are mostly CO2) need, at a minimum, to be less than the average amount of carbon being sequestered annually.
+There is not yet a plan for annual sequestration at anything resembling the scale of current emissions in this sector. It appears net-zero requires the reduction of emissions in this sector by perhaps 99-100%.
+</p>
 
 <h3>
     Barriers
 </h3>
 
 <ul>
-    <li>Canada's population is growing, so electricity demand is also growing.</li>
-    <li>Strategies for reducing energy in other sectors often involve using electricity instead of other energy sources</li>
-    <li>Rising economic productivity typically requires more energy use.</li>
-    <li>
+    <li><b>Population</b>: Canada's population is growing, so electricity demand is also growing.</li>
+    <li><b>Electrification</b>: Strategies for reducing emissions in other sectors (e.g. relating to heating)
+        often depend on electricity as the replacement energy source, further <i>raising</i> the per-capita electricity requirement</li>
+    <li><b>Growth</b>: Rising economic productivity is historically associated with rising energy use.</li>
+    <li><b>Cost and Speed</b>:
         The infrastructure of public electricity is designed around large centralized plants.
     </li>
-    <li>
-        Canada exports only modest amounts of electricity. Any reduction in generation probably requires a reduction in consumption.
+    <li><b>Limited Trade Options</b>:
+        Our only option for importing electricity is from US states.
+        I believe the emissions intensity of electricity from states along Canada's border is similar
+        to the provinces they neighbour. We cannot reduce emissions by importing electricity.
+        Anyway, at present, Canadian provinces are electricity exporters.
     </li>
-    <li>
+    <li><b>Geography</b>:
         Canada is a northern country with relatively cold temperatures, and relatively little light per unit area, especially in the winter.
         The heating of buildings is a significant driver of Canada's combustion emissions,
         and the need for that heating comes at the time of year with the lowest incidence of solar energy.
     </li>
-    <li>
-        Canada has a wealth of fossil fuel natural resources, and decades of infrastructure to transport
-        them around the country.
-        Oil and natural gas heating is relatively inexpensive, compared to most other countries.
+    <li><b>Fossil Wealth</b>:
+        Canada has a wealth of fossil fuels in several forms across the country,
+        and decades of infrastructure to extract, transport, and use them.
+        There are significant reserves of somewhat accessible fossil fuels for potential future extraction.
+        Other than the emissions, they're pretty great.
+        Fossil fuels are cheaper in Canada than in most countries,
+        presenting tougher competition to alternative energy sources here vs. other markets.
     </li>
 </ul>
+<h3> Key Stakeholder Groups </h3>
 
+<!--
 <h3>
     Key Stakeholder Groups
 </h3>
@@ -112,6 +91,7 @@ The arithmetic of this sector is straightforward. To reduce emissions in this se
     {% endif %}
     {% endfor %}
 </ul>
+-->
 
 {% include "ipcc-sectors-strategy-ideas-table.html" %}
 

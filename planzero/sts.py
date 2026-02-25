@@ -59,6 +59,16 @@ class STS(BaseModel):
             interpolation=InterpolationMode.current)
         return rval
 
+    @classmethod
+    def one_zero(cls, time, interpolation=InterpolationMode.current, v_unit=None):
+        rval = cls(
+            times=array.array('d', [time.magnitude]),
+            t_unit=time.u,
+            values=array.array('d', [1, 0]),
+            v_unit=v_unit or u.dimensionless,
+            interpolation=InterpolationMode.current)
+        return rval
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         #assert len(self.times) + 1 == len(self.values), (len(self.times), len(self.values))
@@ -284,7 +294,8 @@ class STS(BaseModel):
             return scale(self, other)
         elif isinstance(other, pint.Quantity) and isinstance(other.magnitude, (int, float)):
             return scale_convert(self, other)
-        raise NotImplementedError(other)
+        return NotImplemented
+        #raise NotImplementedError(other)
 
     def __rmul__(self, other):
         return self.__mul__(other)

@@ -875,6 +875,22 @@ ss.Building_Owners = Stakeholders()
 # geo-engineering TODO: how much heat could be vented this way? who could pay for it? who would benefit and how? Could it be built in Southern USA or Mexico?
 # "www.MEER.org",
 
+ideas.deploy_SMRs = NewcoIdea(
+    descr='Generate public electricity from small modular reactors (SMRs)',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.deploy_MMRs = NewcoIdea(
+    descr='Generate behind-the-meter industrial electricity from micro modular reactors (MMRs)',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
 ideas.deploy_sky_windows = NewcoIdea(
     descr='Cool buildings with so-called "sky windows" - heat bypasses greenhouse gases',
     for_whom=[ss.Building_Owners],
@@ -996,9 +1012,7 @@ ss.Photovoltaic_Equipment_Vendors = Stakeholders(
     ])
 
 ss.CCS_Equipment_Vendors = Stakeholders(
-    ipcc_catpaths=[
-        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
-    ])
+    ipcc_catpaths=[ ])
 
 
 # Tidal power:
@@ -1043,3 +1057,7 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 
 
 # Vehicle 2 Grid - whole thing
+
+
+# Nexa95 renewable gasoline, hybrid engine
+# https://interestingengineering.com/transportation/hybrid-concept-engine-boosts-mileage-cuts-emissions

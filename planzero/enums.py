@@ -84,6 +84,14 @@ class ElectricityProducer(str, enum.Enum):
     Industry = 'Industry' # Aka producers sometimes, of e.g. Natural Gas
 
 
+class NAICS(str, enum.Enum):
+    # Used in SC 25-10-0084-01
+    # TODO: use this instead of ElectricityProducer above?
+    Electricity_Producers__Total = 'Total all classes of electricity'
+    Electricity_Producers__Utilities = 'Electricity producers, electricity utilities [2211]'
+    Electricity_Producers__Industries = 'Electricity producers, industries'
+
+
 # from ECCC NIR Annex 6 Table 1-3
 class NaturalGasUser(str, enum.Enum):
     ElectricUtilities = 'Electric Utilities'

@@ -8,8 +8,8 @@ from .ureg import u
 from . import enums
 from . import objtensor
 from . import sts
-from .sc_utils import zip_table_to_dataframe
-from .sc_np import Factors, set_ptxx
+from .sc_utils import zip_table_to_dataframe, Factors, times_values
+from .sc_np import set_ptxx
 
 class Fuel_Type(str, enum.Enum):
     Total_Coal = 'Total coal, primary energy'
@@ -140,10 +140,10 @@ def supply_and_demand_of_primary_and_secondary_energy():
     rval_pt = objtensor.empty(FT, SDC, PT)
     rval_ca = objtensor.empty(FT, SDC)
 
-    min_year = 1995
-    max_year = 2025
+    min_year_incl = 1995
+    max_year_excl = 2025
 
-    years = list(range(min_year, max_year))
+    years = list(range(min_year_incl, max_year_excl))
 
     for ft, df_ft in df.groupby('Fuel type'):
         ft = FT(ft)
@@ -158,17 +158,7 @@ def supply_and_demand_of_primary_and_secondary_energy():
                 assert uom == UOM
                 factor_str, = set(df_geo.SCALAR_FACTOR.values)
                 factor = Factors[factor_str]
-                geo_dates = df_geo.REF_DATE.values
-                geo_values = df_geo.VALUE.values
-                as_d = dict(zip(geo_dates, geo_values))
-                assert geo_dates.min() >= min_year, geo_dates.min()
-                assert geo_dates.max() < max_year, geo_dates.max()
-                for year in years:
-                    as_d.setdefault(year, 0)
-                    if np.isnan(as_d[year]):
-                        as_d[year] = 0 # the hope is to pick up missing or sensored data via PT.XX
-                assert np.isfinite(list(as_d.values())).all()
-                times, values = zip(*list(sorted(as_d.items())))
+                times, values = times_values(df_geo, min_year_incl, max_year_excl)
                 rep = sts.annual_report2(
                     years=times,
                     values=[vv * factor for vv in values],
