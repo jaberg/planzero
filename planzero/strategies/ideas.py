@@ -840,7 +840,7 @@ ss.Farmers = Stakeholders(
 
 
 ideas.vertically_integrated_mass_timber_construction_co = NewcoIdea(
-    descr="Vertically-integrated mass-timber construction company",
+    descr="Long-lifetime mass-timber construction products",
     for_whom=[ss.Commercial_Real_Estate_Developers],
     ipcc_catpaths=[
         'Forest_Land',
@@ -849,7 +849,7 @@ ideas.vertically_integrated_mass_timber_construction_co = NewcoIdea(
     ])
 
 ideas.enhanced_rock_weathering_for_managed_forests = NewcoIdea(
-    descr="Enhanced rock weathering product for managed forests, selling carbon credits",
+    descr="Enhanced rock weathering product for managed forests",
     for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
     ipcc_catpaths=[
         'Forest_Land',
@@ -857,14 +857,28 @@ ideas.enhanced_rock_weathering_for_managed_forests = NewcoIdea(
     ])
 
 ideas.something_to_suppress_insect_infestations = NewcoIdea(
-    descr="Something to suppress insect infestations",
+    descr="Suppress insect infestations",
     for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
     ipcc_catpaths=[
         'Forest_Land',
     ])
 
 ideas.something_to_suppress_forest_fires = NewcoIdea(
-    descr="Something to suppress forest fires",
+    descr="Suppress forest fires",
+    for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
+    ipcc_catpaths=[
+        'Forest_Land',
+    ])
+
+ideas.harvest_timber_for_biochar = NewcoIdea(
+    descr="Harvest timber for biochar",
+    for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
+    ipcc_catpaths=[
+        'Forest_Land',
+    ])
+
+ideas.convert_unproductive_cropland_to_forest = NewcoIdea(
+    descr="Convert unproductive cropland to forest",
     for_whom=[ss.Timber_Harvesting_Companies], # sell carbon credits?
     ipcc_catpaths=[
         'Forest_Land',

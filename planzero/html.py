@@ -111,6 +111,7 @@ class StackedAreaEChart(HTML_element):
 
     stacked_series: list[EChartSeriesBase]
     other_series: list[EChartSeriesBase]
+    legend: dict | None = None
 
     def as_html(self):
         newline = '\n'
@@ -139,6 +140,9 @@ class StackedAreaEChart(HTML_element):
                     return params.seriesName;
                 }},
             }},
+        }}
+        if ({1 if self.legend is not None else 0}) {{
+            option_{self.div_id}["legend"] = {self.legend};
         }}
         option_{self.div_id} && mychart_{self.div_id}.setOption(option_{self.div_id});
 

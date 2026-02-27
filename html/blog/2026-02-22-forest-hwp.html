@@ -118,7 +118,7 @@ The net HWP emissions are shown as the solid grey line, and the reference NIR em
 are shown by the solid black.
 </p>
 <p>
-The <code>EstForestAndHarvestedWoodProducts</code> class in PlanZero's <a href="">est_nir.py</a> file
+The <code>EstForestAndHarvestedWoodProducts</code> class in PlanZero's <a href="https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py">est_nir.py</a> file
 has the details but at a high level,
 the HWP pool was implemented as four carbon pools, one per product category.
 The "Harvest" data set from the National Forestry Database lists volumes
@@ -184,13 +184,12 @@ to other sectors for now, but clearly this approximation leaves much to be desir
 <p>
 In this second post developing an approximation to Canada's NIR, we looked at two IPCC sectors:
 Harvested Wood Products and Forest Land. They are tightly coupled, in that one of the driving
-factors in the emissions from Forest Land is the removal of carbon by harvesting trees.
+factors in the emissions from Forest Land is the removal of carbon via the harvest of trees.
 IPCC reporting guidelines recommend modelling both
-Forest Land
-and Harvested Wood Products in terms of carbon pools.
+Forest Land and HWP in terms of carbon pools.
 Physically, emissions from HWP come from product decay over time,
 and in the model, per-product-category carbon pools decay by a constant factor from year to year. 
-In the model, the pools are topped up by the carbon that has been removed from Forest Land by the harvesting of lumber.
+In the model, the HWP pools are topped up by the carbon that has been removed from Forest Land by the harvesting of trees.
 The PlanZero approximation to net HWP emissions does not account for different decay rates for exported lumber,
 and does not account for the smoothness of the reference value, but is usually within 10 Mt CO2e.
 I was hoping my approximation would be a little closer to the reference value,
@@ -207,10 +206,31 @@ Perhaps in future, PlanZero can be integrated with the <a href="https://github.c
 to incorporate the reference model directly.
 For now, I have updated the <a href="/ipcc-sectors/Forest_Land">IPCC Sectors / Forest Land</a> page with the HWP approximation, such as it is.
 </p>
+
+{{blog.est_nir.EstForestAndHarvestedWoodProducts().echart_HWP_and_forest_land_ref() | safe}}
+
+<p>
+Although I have not modelled the absorption of carbon by forests here in PlanZero, we can see the limits of its effect.
+The black "Combined" reference line in the figure above shows that according to Canada's official report to the United Nations,
+based on the gold-standard modelling and data of NRCan,
+the net effect of Canada's Forest Land and HWP sectors, in every year since 1990, has been to emit more carbon into the atmosphere than
+has been captured.
+The IPCC guidelines recommend to think of Forest Land and HWP a carbon <i>pools</i> rather than a carbon <i>sinks</i> because
+on the time scales required to achieve net-zero,
+most of the trees that are growing now will later die, and most of the wood products made today will later decay,
+and most of the carbon in these things will be cycled back into the atmosphere.
+Furthermore, according to the best science, those pools are being drained in Canada, rather than replenished.
+We can, and perhaps should, research how to increase the capacity and degree-of-fill of these carbon pools,
+but at the same time,
+we should temper any expectations that even if we can manage to start replenishing the pools,
+that Canada's forests will substantially counterbalance
+the scales of carbon currently emitted by the burning of fossil fuels.
+</p>
+
 <p>
 The next post in this series,
 still working in decreasing order of emissions magnitude in 2005, will be
-Fugitive Emissions due to Venting.
+fugitive emissions due to the venting of natural gas.
 </p>
 
 </section>

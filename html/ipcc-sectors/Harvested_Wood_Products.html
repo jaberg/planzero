@@ -1,0 +1,51 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+<section class="post">
+    <header class="major">
+        <h1>Harvested Wood Products</h1>
+        <p>
+        </p>
+    </header>
+
+{{est_nir.EstForestAndHarvestedWoodProducts().echart_HWP() | safe}}
+
+<div>
+<h2>Understanding Harvested Wood Products Emissions</h2>
+
+<h2>
+    Reducing Harvested Wood Products Emissions
+</h2>
+
+<h3>
+    Critical Success Factors
+</h3>
+
+<p>
+<ul>
+    <li>Increase the size of HWP carbon pools: harvest more timber, especially for long-lived products</li>
+    <li>Slow the emissions: delay or prevent the decay of harvested wood products</li>
+</ul>
+N.B. Reducing the volume of harvested wood products would not reduce national emissions, the carbon would simply remain in the Forest Land sector.
+</p>
+
+<h3>
+    Barriers
+</h3>
+
+
+{% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Harvested Wood Products") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
+</div>
+
+</section>
+</div>
+
+{% include "post-main.html" %}

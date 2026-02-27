@@ -59,7 +59,7 @@ Environment and Climate Change Canada refreshes the inventory report annually in
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {% if have_page_for_catpath(series_elem.catpath) %}
-                            <a href="{{url_for_catpath(series_elem.catpath) }}">{{series_elem.catpath}}</a>
+                            <a href="{{url_for_catpath(series_elem.catpath) }}">{{series_elem.name}}</a>
                             {% else %}
                             {{series_elem.name}}
                             {% endif %}

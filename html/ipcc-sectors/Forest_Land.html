@@ -8,144 +8,50 @@
         </p>
     </header>
 
-<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
-<script>
-var myChart = echarts.init(document.getElementById('mychart'));
-var option;
-
-option = {
-  title: {
-      text: 'Emissions: {{catpath}}',
-      left: 'center', // Align: 'left', 'center', or 'right'
-  },
-  xAxis: {
-      name: 'Year', // The label text
-      nameLocation: 'middle', // Places it in the center (default is 'end')
-      nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ peval.comparisons.ComboA.years_as_list() }},
-      type: 'category',
-  },
-  yAxis: {
-      name: 'Emissions (Mt CO2e)', // The label text
-      nameLocation: 'middle',
-      nameGap: 40,
-      type: 'value',
-  },
-  series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath, name="Historical")) | safe }},
-      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("A", catpath, name="With Projects")) | safe }},
-      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
-  ],
-  legend: {
-      show: true,
-      data: ['Historical', "Baseline", "With Projects"],
-      top: 30,
-      //left: 'center',
-  },
-  grid: {
-      top: 60,
-    },
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    },
-    formatter: '{a}',
-  },
-};
-
-option && myChart.setOption(option);
-window.addEventListener('resize', function() {
-  myChart.resize();
-});
+{{est_nir.EstForestAndHarvestedWoodProducts().echart_forest_land() | safe}}
 
 
-</script>
 <div>
-
-<h2>Understanding Forest Land emissions</h2>
-
-<p>
-Understanding the "Forest Land" sector in Canada’s National Inventory Report (NIR) involves a complex accounting system that distinguishes between what humans control (harvesting) and what nature controls (wildfires).
-
-In the context of the Intergovernmental Panel on Climate Change (IPCC), "Forest Land" falls under the broader Land Use, Land-Use Change, and Forestry (LULUCF) sector.
-</p>
+<h2>Understanding Forest Land Emissions</h2>
 
 <p>
-Firstly, to understand Canada's emissions in this sector, it's important to distinguish two types of forest:
+Understanding the "Forest Land" sector in Canada’s National Inventory Report
+(NIR) involves a complex accounting system that takes into account
+metrics from commercial logging, land use changes,
+and <a href="https://natural-resources.canada.ca/climate-change/climate-change-impacts-forests/forest-carbon-accounting-team">world-leading scientific modelling</a> of the carbon content of all
+of Canada's forested land.
+At the highest level, from an accounting perspective, Canada's forested regions are partitioned into managed and unmanaged forests.
 <ul>
     <li><b>Managed Forests</b>: These are forests under direct human influence, including lands managed for timber harvesting, fire protection, or conservation.
         This covers roughly 226 million hectares (about 65% of Canada's total forest area).
+        Canada only reports emissions and removals from managed forests.
     </li>
     <li><b>Unmanaged Forests</b>: Remote northern forests not subject to active human stewardship are generally excluded from the inventory until human activity (like a new road or mine) expands into them.</li>
 </ul>
-Canada only reports emissions and removals from "Managed Forests."
+PlanZero does not yet include a useful Forest Land model.
+The blue shaded region above is simply the emissions equivalent of timber
+harvested for wood products other than firewood and fuelwood. Under IPCC reporting guidelines,
+this harvest is accounted as a positive-valued Forest Land emission and a negative-valued <a href="/ipcc-sectors/Harvested_Wood_Products">Harvested Wood Products</a> emission. These positive and negative emissions cancel out in any given year, as they should, because from a physical perspective the carbon in harvested timber that turns into wood products is not emitted to the atmosphere.
 </p>
-
-<h3>Factors</h3>
-
-<ul>
-    <li>Harvest</li>
-    <li>Natural Disturbances</li>
-    <li>Growth</li>
-    <li>Land use Conversion (e.g. deforestation)</li>
-</ul>
 
 <p>
-Historically, Canada's forests were a large sink. However, due to aging forests, higher harvest rates in the past, and increasing natural disturbances (fires and beetles), the managed forest has increasingly become a net source of carbon in recent years.
+Over modern ecological history,
+Canada's forests have stored up large amounts of carbon into their biomass and soil (a <a href="https://climateemergency.ubc.ca/canada-has-a-quarter-of-worlds-soil-carbon-keeping-it-in-the-ground-could-curb-climate-change-experts-say">recent study</a> found that Canada stores about a quarter of the <i>world's</i> soil carbon).
+To put it in other terms, the soil carbon stock, estimated at 384 billion tonnes, is comparable to <i>about 30 years of global</i> fossil fuel emissions.
+But old-growth, mature forests do not store additional carbon into the soil or their biomass, they are "full";
+in such forests, the carbon release from the decay of vegetation cancels out the carbon accrual from plant growth.
+In recent decades, due to timber harvest rates, deforestation due to land-use changes (e.g. settlements and cropland),
+and especially recently due to increasing natural disturbances
+(e.g. fires, insect damage, and temperature changes),
+Canada's managed forests have been net emitters of carbon.
+With regards to the future, scientists emphasize the importance of developing management practices that keep soil carbon locked in the soil;
+I'm not sure scientists of today can accurately simulate what exactly would happen if, hypothetically, Canada's 384 billion tonnes of carbon were all to be released as CO2
+(it would be over a trillion tonnes CO2),
+but given the trouble from today's 38 billion tonnes / year of CO2 emissions, maybe it would be 40x more trouble.
 </p>
-
-<h4>Factor: Timber Harvest</h4>
-<p>
-When timber is harvested, carbon in harversted biomass is removed from the system.
-This is accounted as a source of emissions from the Forest Land sector, and a sink in emissions in the Harvested Wood Products sector.
-Branches roots and stumps left behind decompose and release CO2.
-The operation of logging equipment is not counted in this sector's emissions, the combusion of e.g. fossil fuels in machinery is tracked within the energy sector, not the land-use sector.
-</p>
-
-<h4>Factor: Natural Disturbances</h4>
-<p>
-There are two main disturbances to forests that cause significant emissions: fire and insect infestation.
-Fires burn trees where they stand, and release massive amounts of carbon dioxide into the atmosphere immediately.
-Insects, such as the <a href="https://natural-resources.canada.ca/forest-forestry/insects-disturbances/mountain-pine-beetle">Mountain Pine Beetle</a>, kill trees. The dead trees do not emit carbon immediately, but as they decay over the following decades they release CO2.
-(Canada may sometimes separate major natural occurrances from the anthropogenic emissions meant to be affected by emission reduction policies, TODO: follow up on this.)
-</p>
-
-<h4>Factor: Growth</h4>
-<p>
-Carbon is removed from the atmosphere by the photosynthesis in growing plants, especially trees. This is
-a major avenue of carbon removal from the atmosphere. Carbon is stored into the trunks, the branches, and the roots. Clear-cut lands are typically re-planted with a crop of trees that is all the same age. The rate at which carbon is taken up increases as the trees grow.
-</p>
-
-<h4>Factor: Land use Conversion
-</h4>
-<p>
-The amount of Forest Land may increase or decrease.
-When land is converted from e.g. agriculture to managed forest, it starts of with no stored carbon and begins with growth.
-When land is converted from forest to other purposes, it is expected to be cleared, and the stored carbon is either harvested or released by burning or decay.
-</p>
-
-<h3>Geography</h3>
-
-<p>
-You can visualize the Managed Forest as a massive band stretching across the country, generally south of the "tree line" but north of the heavily settled agricultural border areas.
-</p>
-
-<ul>
-    <li>British Columbia: Almost the entire province is considered "Managed Forest" except for high alpine areas and some northern remote zones. This includes the Interior (Lodgepole Pine, Spruce) and the Coast (Cedar, Hemlock, Douglas Fir).</li>
-    <li>The Prairie Provinces (AB, SK, MB): The managed forest is the northern half of these provinces. It starts where the prairies (farmland) end and the Boreal forest begins.</li>
-    <li>Ontario: There is a specific legal boundary called the "Area of the Undertaking" (AOU). It covers the central band of the province—from the Muskokas/Algonquin Park up to roughly the 51st parallel (north of which is the "Far North," largely unmanaged/remote forest).</li>
-    <li>Quebec: Similar to Ontario, the managed forest covers the southern and central parts of the province. The far northern "taiga" is generally excluded from the managed inventory.</li>
-    <li>New Brunswick is almost entirely managed forest and has some of the most intensive forestry in the country.</li>
-    <li>Nova Scotia and parts of Newfoundland are also heavily managed.</li>
-</ul>
-
 
 <h2>
-    How might Canada reduce Forest Land emissions to zero?
+    Reducing Forest Land emissions
 </h2>
 
 <h3>
@@ -153,14 +59,14 @@ You can visualize the Managed Forest as a massive band stretching across the cou
 </h3>
 
 <ul>
-    <li>Harvest: Maximize the harvest of lumber for long-term usage, e.g. construction</li>
-    <li>Harvest: Minimize the wasted biomass left to decay after harvest</li>
-    <li>Disturbances: Minimize CO2 lost due to fire</li>
-    <li>Disturbances: Minimize CO2 lost due to insect infestation</li>
-    <li>Growth: Maximize the rate of CO2 absorbed by managed forest growth, especially into biomass that either remains after harvest in the soil, or remains for long durations as harvested wood products</li>
-    <li>Conversion: Increase the amount of managed land
-        if Forest Land emissions are net negative, otherwise decrease it.</li>
-    <li>Conversion: minimize CO2 emissions during conversion.</li>
+    <li>Maximize the area of forest land (forest land stores more carbon that other land uses)</li>
+    <li>Maximize the average carbon content of forest land soils
+        <ul>
+            <li>Preserve the current carbon content of forest land soils</li>
+            <li>Raise the capacity of forest land soils</li>
+        </ul>
+    </li>
+    <li>Maximize the harvest of timber for long-term usage, without disturbing the soil carbon</li>
 </ul>
 
 <h3>
@@ -168,13 +74,14 @@ You can visualize the Managed Forest as a massive band stretching across the cou
 </h3>
 
 <ul>
-    <li>Trees are long-duration crops. Different species in different areas grow at different speeds, but ballpark is 40 years.</li>
-    <li>Clear-cut mono-culture forests are more efficient to harvest, but are be more susceptible to fire and insects (TODO: True?)</li>
-    <li>Most of Canada's so-called managed forests are not <em>easy</em> to manage, not accessible by road.</li>
+    <li>Trees grow slowly. Different species in different areas grow at different speeds, but ballpark is 40-60 years.</li>
+    <li>Canada's forestry sector is already harvesting wood as fast as they can sell it.</li>
+    <li>Clear-cut mono-culture forests are more efficient to harvest, but are more susceptible to fire and insects, and decrease biodiversity</li>
+    <li>Most of Canada's managed forests are not <em>easy</em> to manage, not accessible by road.</li>
     <li>Fires and insects play an important and complex role in natural forest health, suppressing them would reduces emissions but <a href="https://natural-resources.canada.ca/forest-forestry/insects-disturbances/forests-need-fires-insects-diseases">brings tradeoffs</a>.</li>
-    <li>Natural forests play an important part in global ecology. Biodiversity in plants and animals is desirable, but seems to be incompatible with large-scale timber harvest from managed forests.</li>
 </ul>
 
+<!--
 <h3>
     Key Stakeholder Groups
 </h3>
@@ -185,8 +92,16 @@ You can visualize the Managed Forest as a massive band stretching across the cou
     {% endif %}
     {% endfor %}
 </ul>
+-->
 
 {% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Forest Land") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
 
 </div>
 </section>

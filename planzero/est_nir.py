@@ -903,6 +903,40 @@ class EstForestAndHarvestedWoodProducts(object):
                     data=_rstrip_data(net_emissions.to(u.Mt_CO2e))),
             ])
 
+    def echart_HWP_and_forest_land_ref(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        forest_land_values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Forest Land']['CO2eq'].values / 1000
+        HWP_values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Harvested Wood Products']['CO2eq'].values / 1000
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_HWP_forest_land_ref',
+            title=EChartTitle(
+                text='Comparing Emissions from Forest Land and HWP',
+                subtext=''),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[],
+            other_series=[
+                EChartSeriesBase(
+                    name='Forest Land (NIR)',
+                    lineStyle=EChartLineStyle(color='#303030', type='dashed'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=forest_land_values),
+                EChartSeriesBase(
+                    name='Harvested Wood Products (NIR)',
+                    lineStyle=EChartLineStyle(color='#303030', type='dotted'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=HWP_values),
+                EChartSeriesBase(
+                    name='Combined',
+                    lineStyle=EChartLineStyle(color='#303030', width=3),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=HWP_values + forest_land_values),
+            ],
+            legend={"top": 40})
+
+
 class EstSectorEmissions(object):
 
     def __init__(self):

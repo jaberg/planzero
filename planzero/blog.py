@@ -62,14 +62,16 @@ class HTML_Matplotlib_Figure(HTML_element):
 class IPCC_ForestAndHWP(BlogPost):
     """Second in the sector-by-sector National Greenhouse Gas Inventory computation:
     Harvested Wood Products and Forest Land.
-    Estimating Harvested Wood Products emissions is relatively easy,
-    and the complexity of Forest Land modelling suggests a more incremental approach.
+    Data from Natural Resources Canada on harvested wood volume
+    supports a satisfactory estimate of Harvested Wood Products emissions,
+    and a first step toward a Forest Land estimate. Modelling
+    more accurately may require different data, techniques and/or software.
     """
     est_nir:object
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 2, 22),
-            title='Emissions calculations Harvested Wood Products and their impact on Forest Land',
+            title='Emissions calculations Harvested Wood Products and implications for Forest Land',
             url_filename="2026-02-22-forest-hwp",
             author="James Bergstra",
             tags={BlogTag.NIR_Modelling,

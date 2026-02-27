@@ -66,20 +66,22 @@ def echart_series_all_Mt():
             # all negative
             # 1 / min makes it look right in eChart with big negative at the
             # bottom
-            for_sorting.append((1 / values.min(), catpath, values))
+            for_sorting.append((1 / values.min(), catpath, catpath, values))
         elif values.min() >= 0:
             # all positive
-            for_sorting.append((values.max(), catpath, values))
+            for_sorting.append((values.max(), catpath, catpath, values))
         else:
             for_sorting.append((1 / values.min(),
+                                catpath,
                                 catpath + ' (sink years)',
                                 np.minimum(values, 0)))
             for_sorting.append((values.max(),
+                                catpath,
                                 catpath + ' (source years)',
                                 np.maximum(values, 0)))
-    for amt, catpath, values in sorted(for_sorting):
+    for amt, catpath, catpath_src_sink_label, values in sorted(for_sorting):
         yield dict(
-            name=catpath,
+            name=catpath_src_sink_label,
             catpath=catpath,
             list_raw_data=[float(vv) / 1000 for vv in values],
             type='line',
