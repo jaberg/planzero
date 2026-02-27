@@ -400,6 +400,11 @@ class ObjectTensor(object):
                 return x - other
             return apply_elemwise(fn, [self])
 
+    def __neg__(self):
+        def fn(x):
+            return -x
+        return apply_elemwise(fn, [self])
+
     def squeeze(self, axis=None):
         dims, strides = squeeze_dims_strides(self.dims, self.strides, axis=axis)
         return ObjectTensor(dims=dims, strides=strides, offset=self.offset, buf=self.buf)

@@ -32,12 +32,55 @@ def test_scale_convert():
     assert a.v_unit == u.meter
     assert a.values[1] == 2000
 
-def test_mul_scale_convert():
+def test_mul_scale_convert_no_interp():
     a = (annual_report(times=[10 * u.years], values=[1000 * u.kg]) * (2 * u.meter / u.kg))
     print(a.v_unit)
     print(u.metric_ton)
     assert a.v_unit == u.meter
     assert a.values[1] == 2000
+
+def test_mul_scale_convert_interp():
+    a = STS(
+        times=[-10, 10],
+        t_unit=u.years,
+        values=[-1, 0, 1],
+        v_unit=u.kg,
+        interpolation=InterpolationMode.current)
+    b = 2 * u.meter / u.kg
+
+    c = a * b
+    print(c.v_unit)
+    print(u.metric_ton)
+    assert c.v_unit == u.meter
+    assert c.values[0] == -2
+    assert c.values[1] == 0
+    assert c.values[2] == 2
+    assert c.times[0] == -10
+    assert c.times[1] == 10
+
+
+def test_mul_sts_sts_scale_convert_zero():
+    a = STS(
+        times=[-10, 10],
+        t_unit=u.years,
+        values=[-1, 0, 1],
+        v_unit=u.kg,
+        interpolation=InterpolationMode.current)
+    b = STS(
+        times=[-3, 4],
+        t_unit=u.years,
+        values=[0, 0, 0],
+        v_unit=u.meter,
+        interpolation=InterpolationMode.current)
+    for c in (a * b, b * a):
+        print(c.v_unit)
+        print(u.metric_ton)
+        assert c.v_unit == u.meter * u.kg
+        assert c.values[0] == 0
+        assert c.values[1] == 0
+        assert c.values[2] == 0
+        assert c.times[0] == -10
+        assert c.times[1] == 10
 
 
 def test_setdefault_zero():

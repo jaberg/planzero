@@ -169,11 +169,13 @@ def supply_and_demand_of_primary_and_secondary_energy():
                     # TODO: check if this should be PT.XX or it's a subtotal
                     # of data already counted by province
                     #rval_pt[ft, sdc, PT.XX] += rep
+                    # XXX ignoring these data is almost certainly wrong
                     pass
                 elif geo == 'Yukon, Northwest Territories and Nunavut':
                     # TODO: check if this should be PT.XX or it's a subtotal
                     # of data already counted by province
                     #rval_pt[ft, sdc, PT.XX] += rep
+                    # XXX ignoring these data is almost certainly wrong
                     pass
                 else:
                     rval_pt[ft, sdc, geo] = rep

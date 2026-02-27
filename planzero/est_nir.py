@@ -42,6 +42,19 @@ NAICS = enums.NAICS
 est_nir_years = np.arange(1995, 2025) * u.years
 
 
+_echart_years = ipcc_canada.echart_years()
+
+def _rstrip_data(ts, years=_echart_years):
+    vals = list(ts.query([yy * u.years for yy in years]))
+    while vals and (vals[-1].magnitude == 0 or np.isnan(vals[-1].magnitude)):
+        vals.pop()
+    rval = [
+        {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
+         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
+         for vv in vals]
+    return rval
+
+
 class EstAnnex13ElectricityFromCoal(object):
     """Return CO2e by PT"""
     def __init__(self):
@@ -68,7 +81,8 @@ class EstAnnex13ElectricityFromCoal(object):
         # keep the same proportions? find the data?
         self.prov_consumption[CoalType.CanadianBituminous] \
             += (self.total_coal_transformed_by_utilities
-                * sts.STS.zero_one(2021.5 * u.years, v_unit=u.kg_coal_bit / u.kg_coal))
+                * sts.STS.zero_one(2021.5 * u.years,
+                                   v_unit=u.kg_coal_bit / u.kg_coal))
 
         # GHG x CoalType x PT
         self.emission_factors = annex6_np.A6_1_10_and_12()
@@ -533,16 +547,6 @@ class EstAnnex13ElectricityEmissionsTotal(object):
             enums.ElectricityProducer.Utilities].sum(enums.PT).to(u.megatonne_CO2e)
         sts_other = self.from_other.co2e.sum(enums.PT).to(u.megatonne_CO2e)
 
-        def rstrip_data(ts):
-            vals = list(ts.query([yy * u.years for yy in years]))
-            while vals and (vals[-1].magnitude == 0 or np.isnan(vals[-1].magnitude)):
-                vals.pop()
-            rval = [
-                {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
-                 'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
-                 for vv in vals]
-            return rval
-
         return StackedAreaEChart(
             div_id='ipcc_chart_public_electricity',
             title=EChartTitle(
@@ -554,13 +558,13 @@ class EstAnnex13ElectricityEmissionsTotal(object):
             stacked_series=[
                 EChartSeriesStackElem(
                     name='Coal',
-                    data=rstrip_data(sts_coal)),
+                    data=_rstrip_data(sts_coal)),
                 EChartSeriesStackElem(
                     name='Natural Gas',
-                    data=rstrip_data(sts_ng)),
+                    data=_rstrip_data(sts_ng)),
                 EChartSeriesStackElem(
                     name='Other Fuels',
-                    data=rstrip_data(sts_other)),
+                    data=_rstrip_data(sts_other)),
             ],
             other_series=[
                 EChartSeriesBase(
@@ -642,7 +646,7 @@ class EstForestAndHarvestedWoodProducts(object):
     def _delayed_CO2_released(self, CO2_by_pt, rpc, halflife):
         for pt in PT:
             report = CO2_by_pt[pt]
-            if isinstance(report, sts.SparseTimeSeries):
+            if isinstance(report, sts.STS):
                 report = sts.annual_report_decay(
                     report, halflife * u.years, self.decay_horizon)
             self.HWP_released[GHG.CO2, rpc, pt] = report
@@ -830,6 +834,74 @@ class EstForestAndHarvestedWoodProducts(object):
         sectoral_emissions[:, IPCC.Harvested_Wood_Products] \
                 += self.HWP_emissions
 
+    def echart_forest_land(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Forest Land']['CO2eq'].values / 1000
+
+        forest_co2e = GWP_100 @ self.forest_emissions.sum(PT)
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_forest_land',
+            title=EChartTitle(
+                text='Emissions from Forest Land',
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name='Harvested Wood Products',
+                    data=_rstrip_data(forest_co2e.to(u.Mt_CO2e))),
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+            ])
+
+    def echart_HWP(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Harvested Wood Products']['CO2eq'].values / 1000
+
+        RPC = enums.RoundwoodProductCategory
+        ts_dict = {
+            (rpc, 'captured'): -GWP_100 @ self.HWP_captured[:, rpc].sum(PT)
+            for rpc in RPC if rpc != RPC.Fuelwood_and_Firewood}
+        ts_dict.update({
+            (rpc, 'released'): GWP_100 @ self.HWP_released[:, rpc].sum(PT)
+            for rpc in RPC if True or rpc != RPC.Fuelwood_and_Firewood})
+
+        net_emissions = GWP_100 @ self.HWP_emissions.sum(PT)
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_hwp',
+            title=EChartTitle(
+                text='Emissions from Harvested Wood Products',
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=f'{rpc.value} {cap_or_rel}',
+                    data=_rstrip_data(ts.to(u.Mt_CO2e)))
+                for (rpc, cap_or_rel), ts in ts_dict.items()],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+                EChartSeriesBase(
+                    name='Net estimate',
+                    lineStyle=EChartLineStyle(color='#606060'),
+                    itemStyle=EChartItemStyle(color='#606060'),
+                    data=_rstrip_data(net_emissions.to(u.Mt_CO2e))),
+            ])
 
 class EstSectorEmissions(object):
 

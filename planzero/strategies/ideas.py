@@ -1061,3 +1061,12 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 
 # Nexa95 renewable gasoline, hybrid engine
 # https://interestingengineering.com/transportation/hybrid-concept-engine-boosts-mileage-cuts-emissions
+
+
+# Why would an iron-air battery startup be targetting a data centre?
+#
+# "The Weirton, West Virginia iron-air battery startup is raising $500
+# million, has IPO plans next year and just landed a big deal powering
+# a Google data center"
+
+# e-Zinc - a canadian battery startup near Toronto, met through CDL AI stream

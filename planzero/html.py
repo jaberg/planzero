@@ -77,17 +77,17 @@ class EChartItemStyle(BaseModel):
     color: str | None = None
 
 
+class EChartSeriesDataElem(BaseModel):
+    value: float
+    url: str
+
+
 class EChartSeriesBase(BaseModel):
     name: str
     type: str = 'line'
     lineStyle: EChartLineStyle | None = EChartLineStyle(width=2)
     itemStyle: EChartItemStyle | None = None
-    data: list[float]
-
-
-class EChartSeriesStackDataElem(BaseModel):
-    value: float
-    url: str
+    data: list[float | EChartSeriesDataElem]
 
 
 class EChartSeriesStackElem(EChartSeriesBase):
@@ -97,7 +97,7 @@ class EChartSeriesStackElem(EChartSeriesBase):
     stack: str = 'Total'
     areaStyle: dict = {}
     emphasis: dict = {'focus': 'series'}
-    data: list[EChartSeriesStackDataElem]
+    data: list[EChartSeriesDataElem]
 
 
 class StackedAreaEChart(HTML_element):

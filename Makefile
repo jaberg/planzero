@@ -68,13 +68,6 @@ test_est_nir: .build
 		-it --rm $(target) \
 		pytest -W error --maxfail=2 -vv planzero/test_est_nir.py
 
-print_sectoral_emissions_gaps: .build
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target) \
-		python -m planzero
-
 test_sts: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
@@ -145,3 +138,10 @@ deploy:
 
 clean:
 	rm .build
+
+print_sectoral_emissions_gaps: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero

@@ -596,8 +596,10 @@ def mul_sts_sts(self, other):
         return mul_no_interp_sts(self, other)
     elif other.interpolation == 'no_interpolation':
         return mul_no_interp_sts(other, self)
+    elif all(vv == 0 for vv in self.values):
+        return scale_convert(other, 0 * self.v_unit)
     elif all(vv == 0 for vv in other.values):
-        return scale(self, 0)
+        return scale_convert(self, 0 * other.v_unit)
     raise NotImplementedError()
 
 
