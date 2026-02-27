@@ -74,6 +74,7 @@ class IPCC_ForestAndHWP(BlogPost):
             title='Emissions calculations Harvested Wood Products and implications for Forest Land',
             url_filename="2026-02-22-forest-hwp",
             author="James Bergstra",
+            published=False,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.Harvested_Wood_Products,
                   enums.IPCC_Sector.Forest_Land,
@@ -83,10 +84,10 @@ class IPCC_ForestAndHWP(BlogPost):
 
 
 class IPCC_PublicElectricity(BlogPost):
-    """First in a series replicating the sector-by-sector computation of
+    """First in a series of posts replicating the sector-by-sector computation of
     Canada's National Greenhouse Gas Inventory: Public Electricity and Heat.
-    Also introduces the sectors of the IPCC reporting guidelines, and the
-    71 sectors with which Canada reports its greenhouse gas inventory.
+    As it is first, it also introduces the sectors of the IPCC reporting guidelines,
+    and the 71 sectors with which Canada reports its greenhouse gas inventory.
     """
     est_nir:object
     def __init__(self):
