@@ -884,6 +884,83 @@ ideas.convert_unproductive_cropland_to_forest = NewcoIdea(
         'Forest_Land',
     ])
 
+ideas.bioenergy_with_CCS = NewcoIdea(
+    descr="Combust wood for energy, then bury the exhaust CO2 (energy with negative emissions)",
+    for_whom=[], # e.g. Drax in UK
+    ipcc_catpaths=[
+        'Forest_Land',
+        #'Harvested_Wood_Products',
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.smart_pellet_boilers_and_condensing_tech = NewcoIdea(
+    descr="Deploy high-efficiency modern wood pellet boilers",
+    for_whom=[], # e.g. OkoFEN, Atikokan (Ontario), two large proposed plants in Mackenzie County, Alberta
+    ipcc_catpaths=[
+        'Forest_Land',
+        #'Harvested_Wood_Products',
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.bio_oil_from_wood = NewcoIdea(
+    descr="Produce oil and biochar from fast pyrolysis (Bio-Oil)",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Forest_Land',
+        #'Harvested_Wood_Products',
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.syngas_from_wood = NewcoIdea(
+    descr="Produce syngas from gasifying wood",
+    for_whom=[], # e.g. Nexterra in Canada
+    ipcc_catpaths=[
+        'Forest_Land',
+        #'Harvested_Wood_Products',
+        'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production',
+    ])
+
+ideas.recycle_construction_demolition_materials = NewcoIdea(
+    descr="Raise the efficiency of construction and demolition recycling",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Harvested_Wood_Products',
+    ])
+
+ideas.block_landfill_emissions = NewcoIdea(
+    descr="landfill that blocks emissions, sells carbon credits",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Harvested_Wood_Products',
+    ])
+
+ideas.precision_forestry_avoid_clearcutting = NewcoIdea(
+    descr="Aerial Extraction of individual trees to avoid clear-cutting",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Forest_Land',
+    ])
+# lol, I'm wondering about a cable robot operating within 3 or 4 tethering
+# cables, all suspended by a large balloon. How much area would it need to
+# cover to steadily extract 100-year-old trees? About 300 hectares, a square
+# 1700m to a side. Maybe the balloon can fly over a tree and land around it
+# somehow, or just grab branches, chop them off, and fly back to base.
+# ...
+# Not actually crazy, "Skyhook" logging was done in North America from
+# 1960s-1990s, using helium balloons.
+# According to Gemini, the practice ended around that time, although heli-logging is still
+# used for high-value lumber.
+# Also according to Gemini, the use of balloons / airships is receiving renewed attention, for timber transport
+# - Flying Whales (France / Canada)
+# - H2 Clipper (USA)
+# - LTA Research (USA)
+# and for low-altitude forest monitoring
+# - Kelluu (Finland)
+# - American Airship Company (USA)
+# of course high-altitude monitoring is also possible, and applicable to forest monitoring as well
+# - Sceye (USA)
+# - Atlas LTA (Israel)
+
 ss.Building_Owners = Stakeholders()
 
 # geo-engineering TODO: how much heat could be vented this way? who could pay for it? who would benefit and how? Could it be built in Southern USA or Mexico?

@@ -20,18 +20,18 @@ Table of Contents:
 <h2 id="h2_intro">Introduction</h2>
 
 <p>
-The previous post introduced the International Panel on Climate Change (IPCC) sectors that Canada uses to report
-greenhouse gas emissions to the United Nations Framework Convention on Climate Change (UNFCCC) Secretariat,
-and approximately replicated the computation of Public Electricity and Heat emissions from Statistics Canada data.
-Next on the list of sectors, in decreasing order of emissions in 2005, is Forest Land.
-As it turns out, Forest Land emissions are tightly coupled to emissions of the Harvested Wood Products sector, so this post reviews both.
+The <a href="/blog/2026-02-12-public-electricity">previous post</a> introduced the International Panel on Climate Change (IPCC) sectors that Canada uses to report
+greenhouse gas emissions,
+and estimated Public Electricity and Heat emissions from Statistics Canada data.
+This post continues that replication effort for the next-largest source of emissions in 2005: Forest Land.
+As it turns out, Forest Land emissions are tightly coupled to emissions of the Harvested Wood Products sector, so this post looks at both.
 On the technical side, this post
 refreshes the <a href="/ipcc-sectors/Forest_Land/">IPCC Sectors / Forest Land</a> page,
-introduces a <a href="/ipcc-sectors/Forest_Land/">IPCC Sectors / Harvested Wood Products</a> page,
-and introduces NIR-approximations for both sectors.
-The approximation is relatively accurate for Harvested Wood Products, and not as accurate for Forest Land.
-Properly replicating the Forest Land calculation seems difficult.
-I might come back to it in future, but to do so I might need help from someone with domain expertise.
+introduces a <a href="/ipcc-sectors/Harvested_Wood_Products/">IPCC Sectors / Harvested Wood Products</a> page,
+and introduces emissions estimates for both sectors based on data from Canada's <a href="http://nfdp.ccfm.org/">National Forestry Database</a>.
+The estimate is relatively accurate for Harvested Wood Products, and not as accurate for Forest Land.
+Proper replication of the Forest Land calculation seems difficult.
+I might come back to it in future, but I expect to need help from someone with domain expertise.
 </p>
 
 <h2 id="forest_land">Forest Land</h2>
@@ -96,7 +96,7 @@ Harvested Wood Products represents one of the largest out-flows of carbon from t
 The IPCC accounting guidelines treat Forest Land as a carbon pool with in-flows and out-flows
 from natural and anthropogenic drivers, and logging is one of the biggest and
 best-tracked of those drivers.
-Harvested Wood Products is, itself also modelled a set of carbon pools, corresponding to
+The Harvested Wood Products sector is, itself, also modelled a set of carbon pools, corresponding to
 volumes of wood used for different purposes, with different lifespans before the carbon they contain returns to the atmosphere.
 The product categories used in the National Forestry Database are:
 <ul>
@@ -105,7 +105,7 @@ The product categories used in the National Forestry Database are:
     <li><b>Fuelwood and Firewood</b> for residential, commercial, or industrial combustion</li>
     <li><b>Pulpwood</b> for producing paper and cardboard.</li>
 </ul>
-Estimated carbon emissions associated with the Harvested Wood Products (HWP) sector are shown in the following figure.
+My PlanZero estimate of HWP emissions is shown in the following figure:
 </p>
 
 {{blog.est_nir.EstForestAndHarvestedWoodProducts().echart_HWP() | safe}}
@@ -140,22 +140,22 @@ The quality of fit of this model is acceptable to me at this point, but it is ad
 My estimation of net HWP emissions is too low by a few MtCO2e in the mid-1990s, and too
 high by various amounts since 2001,
 suggesting that at least some of the Logs and Bolts volume should be modelled as being released a little more slowly.
-The time constants provided Annex 6 Table 5-3 indicate lumber exported to the US does tend to last longer, but I don't [yet] incorporate data on how much lumber was exported.
+The time constants provided in <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/D-Emission-Factors?lang=en">Annex 6 Table 5-3 of the 2025 NIR</a> indicate lumber exported to the US does tend to last longer, but I don't yet incorporate data on how much lumber was exported.
 The jagged shape of CO2e associated with Logs and Bolts harvest vs. the smooth
 shape of the reference total from the national inventory data is, candidly, troubling,
-and I have no idea how to explain it.
+and I wish I could explain it.
 Still, the overall shape of the net HWP emissions estimate matches the reference
-(certainly better than the constant-0 estimate I started with before any modelling)
+better than the implicit constant-0 I had before modelling,
 so I feel progress has been made toward understanding emissions in the sector.
 I have updated the <a href="/ipcc-sectors/Harvested_Wood_Products/">IPCC Sectors / Harvested Wood Products</a> page with this graph
-and the usual type of sector overview.
+and a sector overview.
 </p>
 
 
 <h2 id="forest_land_via_hwp">Approximating Forest Land with Harvested Wood Products</h2>
 
 <p>
-Coming back to the post's original purpose, of approximating Forest Land emissions,
+Coming back to the post's original purpose, of estimating Forest Land emissions,
 recall that we were looking at 
 the HWP sector because it was one of the easiest-to-track drivers of carbon
 removal from Forest Land.
@@ -166,9 +166,9 @@ counting the carbon content of harvested lumber as being emitted as CO2e?
 {{blog.est_nir.EstForestAndHarvestedWoodProducts().echart_forest_land() | safe}}
 
 <p>
-Unsurprisingly, perhaps even reassuringly, the fit to the reference emissions curve for Forest Land is so-so.
-The removal of HWP carbon is <i>not terrible</i>  as a first approximation
-to the Forest Land sector: the mean is probably only about 20MtCO2e off,
+Unsurprisingly, perhaps even reassuringly, the fit to the reference emissions curve for Forest Land is neither terrible nor great.
+The removal of HWP carbon is certainly better than the implicit constant 0 that we would have without any modelling:
+the mean is only about 20MtCO2e off,
 both curves have a sharp dip in 2008, and the overall trend over the last 30 years
 is qualitatively similar.
 Still, this approximation is missing almost everything about forests,
@@ -182,7 +182,7 @@ to other sectors for now, but clearly this approximation leaves much to be desir
 <h2 id="summary">Summary</h2>
 
 <p>
-In this second post developing an approximation to Canada's NIR, we looked at two IPCC sectors:
+In this second post developing an estimate of Canada's National Greenhouse Gas Inventory, we looked at two IPCC sectors:
 Harvested Wood Products and Forest Land. They are tightly coupled, in that one of the driving
 factors in the emissions from Forest Land is the removal of carbon via the harvest of trees.
 IPCC reporting guidelines recommend modelling both
@@ -192,11 +192,11 @@ and in the model, per-product-category carbon pools decay by a constant factor f
 In the model, the HWP pools are topped up by the carbon that has been removed from Forest Land by the harvesting of trees.
 The PlanZero approximation to net HWP emissions does not account for different decay rates for exported lumber,
 and does not account for the smoothness of the reference value, but is usually within 10 Mt CO2e.
-I was hoping my approximation would be a little closer to the reference value,
-but I have updated the <a href="/ipcc-sectors/Harvested_Wood_Products/">IPCC Sectors / Harvested Wood Products</a> page with the figure developed in this post and a sector overview.
+I have updated the <a href="/ipcc-sectors/Harvested_Wood_Products/">IPCC Sectors / Harvested Wood Products</a> page with the figure developed in this post and a sector overview.
 </p>
 <p>
-The official NRCan Forest Land model is too detailed for me to incorporate in this first pass over NIR sectors.
+The official NRCan Forest Land model is too detailed for me to incorporate into PlanZero with the sector-by-sector time-boxed efforts
+I'm doing with this series.
 It seems from the national inventory report
 <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/G-Additional-NIR-Annexes?lang=en">annex 3.5 on LULUCF methodology</a>
 that forests are modelled in terms of geography (ecozones, provincial
@@ -205,6 +205,12 @@ systems, bark, branches, leaves), and time (rates of growth, carbon transfer mat
 Perhaps in future, PlanZero can be integrated with the <a href="https://github.com/moja-global/moja.canada">GCBM open-source software developed by NRCan</a>
 to incorporate the reference model directly.
 For now, I have updated the <a href="/ipcc-sectors/Forest_Land">IPCC Sectors / Forest Land</a> page with the HWP approximation, such as it is.
+</p>
+
+<h3>P.S. Forests and Harvested Wood Products Are Net Emitters</h3>
+
+<p>Forest Land and Harvested Wood Products represent a carbon cycle through the logging industry.
+Their net effect over the last 30+ years in terms of emissions has been to transfer carbon from forests into the atmosphere.
 </p>
 
 {{blog.est_nir.EstForestAndHarvestedWoodProducts().echart_HWP_and_forest_land_ref() | safe}}
@@ -220,11 +226,13 @@ on the time scales required to achieve net-zero,
 most of the trees that are growing now will later die, and most of the wood products made today will later decay,
 and most of the carbon in these things will be cycled back into the atmosphere.
 Furthermore, according to the best science, those pools are being drained in Canada, rather than replenished.
-We can, and perhaps should, research how to increase the capacity and degree-of-fill of these carbon pools,
-but at the same time,
-we should temper any expectations that even if we can manage to start replenishing the pools,
-that Canada's forests will substantially counterbalance
-the scales of carbon currently emitted by the burning of fossil fuels.
+We can, and perhaps should, research how to increase the capacity and degree-of-fill of these carbon pools.
+It seems like it should be very possible to achieve a sustainable forestry sector, given that forests are naturally sustainable.
+At the same time,
+we should temper any expectations that even if we can manage to start replenishing these carbon pools,
+that Canada's forests will substantially counterbalance the scale of carbon emissions currently emitted by other sectors.
+The carbon pools of Canada's forests were already full at the beginning of the industrial revolution,
+when the world's fossil fuels were still underground.
 </p>
 
 <p>

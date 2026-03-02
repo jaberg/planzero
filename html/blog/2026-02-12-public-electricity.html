@@ -24,17 +24,17 @@ Table of Contents:
 A high-level reminder: I would like for PlanZero to be able to evaluate business and product ideas in terms of their ability to support Canada's net-zero targets.
 My approach is:
 <ol>
-    <li>approximately replicating the official national inventory calculation based on public data from Statistics Canada (StatsCan) and Natural Resources Canada (NRCan), and then</li>
-    <li>estimating the effect of hypothetical business and product ideas in terms of those foundational StatsCan and NRCan statistics.</li>
+    <li>estimating the official national inventory calculation based on public data from Statistics Canada (StatsCan) and Natural Resources Canada (NRCan), and then</li>
+    <li>evaluating the effect of hypothetical business and product ideas in terms of those foundational StatsCan and NRCan statistics.</li>
 </ol>
-Over the coming weeks, I intend to make progress on step 1 above ("approximately replicating...")
+Over the coming weeks, I intend to make progress on step 1 above ("estimating...")
 by working through the International Panel on Climate Change's (IPCC's) guideline sectors in order of decreasing magnitude in the 2005 emissions baseline,
 making time-boxed efforts to replicate each one as well as possible.
-I might sneak in some effort toward step 2 above ("estimating...") to reassure myself that my efforts on step 1 are helping, but I'm trying to stay focused on step 1: replicating the national inventory calculation.
+I might sneak in some effort toward step 2 above ("evaluating...") to reassure myself that my efforts on step 1 are helping, but I'm trying to stay focused on step 1: replicating the national inventory calculation.
 </p>
 
 <p>
-This post is the first in a series devoted to approximately replicating Canada's national greenhouse gas inventory in this
+This post is the first in a series devoted to estimating Canada's national greenhouse gas inventory in this
 open-source PlanZero software repository (implemented in the Python programming language).
 It introduces the set of sectors uses by Environment and Climate Change Canada (ECCC), and replicates the calculation of emissions associated with "Public Electricity and Heat"
 for years 2005 to present.
@@ -238,7 +238,7 @@ The data for this estimate comes from a handful of sources:
         by default I assumed 30% for plants in Alberta (conjecturing that steam would be used to move heat into oil sands rather than create additional electricity), and 50% for Ontario (where more combined-cycle turbines were in operation).
     </li>
     <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510003001">"Supply and Demand of Primary and Secondary Energy" (StatsCan 25-10-0030-01)</a>
-        provided natural gas consumption by electric utilities for years 2015-2024, and allowed my estimate to approximately match the NIR total when only including utility consumption.
+        provided natural gas consumption by electric utilities for years 2015-2024, and allowed my estimate to match the NIR total when only including utility consumption.
         In contrast StatsCan 25-10-0020-01, the estimates using this data were poor when including both utility and industry consumption.
     </li>
     <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510008401">"Electric power generation, fuel consumed and cost of fuel by electricity generating thermal plants" (StatsCan 25-10-0084-01)</a>

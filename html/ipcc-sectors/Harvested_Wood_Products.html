@@ -13,6 +13,39 @@
 <div>
 <h2>Understanding Harvested Wood Products Emissions</h2>
 
+<p>
+The IPCC Harvested Wood Products (HWP) sector provides accounting for the flow of carbon through harvested wood.
+The two main drivers of emissions in the HWP sector are
+the collection of wood <i>into</i> wood products, which create <i>negative</i> emissions for the HWP sector, and
+the decay of carbon <i>out of</i> wood products and into the atmosphere, which creates <i>positive</i> emissions for the HWP sector.
+When a tree is felled, small branches and leaves are removed and left on the forest floor, and large sections of timber are transported to a mill for processing.
+The carbon in the transported wood that makes it to its end use is counted as a negative-valued HWP emission,
+and simultaneously as a positive-valued emission from the Forest Land sector, so they cancel out.
+The carbon that doesn't make it to its end use (e.g. off-cuts from lumber milling) is modelled as being combusted and returned to the atmosphere as an emission by the Forest Land sector, as if it had never made it to the mill.
+</p>
+<p>
+There is no stream of carbon from wood products to long-term carbon storage;
+all wood products are modelled as returning to the atmosphere within a few decades, with the rate depending on the product.
+The major categories of timber use recognized in Canada's National Forestry Database are:
+<ul>
+    <li><b>Logs and Bolts</b> for lumber, plywood, veneer and shingles</li>
+    <li><b>Other Industrial Roundwood</b> for poles, pilings, fence posts, shoring timbers</li>
+    <li><b>Fuelwood and Firewood</b> for residential, commercial, or industrial combustion</li>
+    <li><b>Pulpwood</b> for producing paper and cardboard.</li>
+</ul>
+The IPCC model is that milling timber for each application creates two streams of carbon:
+a larger stream that feeds into a national carbon pool (per-application),
+and a smaller waste stream that is modelled as an emission by Forest Land.
+Logs and bolts are the pieces of wood that are processed into lumber, which decays relatively slowly through e.g. demolition (e.g. 35 years).
+Other industrial roundwood tends to last slightly even longer (e.g. 40 years).
+Fuelwood and firewood is modelled as being combusted immediately in the year of harvest,
+and Pulpwood is modelled as usually decaying within 2 years.
+(See <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/G-Additional-NIR-Annexes?lang=en">ECCC NIR methodology</a>,
+<a href="/blog/2026-02-22-forest-hwp">blog post</a> and
+<a href="https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py">estimation code</a> for greater detail.)
+The sum of estimated decays from each wood-application's carbon pool defines the [positive-valued] HWP emissions.
+</p>
+
 <h2>
     Reducing Harvested Wood Products Emissions
 </h2>
@@ -23,15 +56,25 @@
 
 <p>
 <ul>
-    <li>Increase the size of HWP carbon pools: harvest more timber, especially for long-lived products</li>
-    <li>Slow the emissions: delay or prevent the decay of harvested wood products</li>
+    <li>Slow the average decay of wood products:
+        <ul>
+            <li>divert harvested timber into longer-lived wood product applications</li>
+            <li>export timber to jurisdictions where the timber lasts longer</li>
+            <li>change the nature of the wood products to last longer</li>
+            <li>change the nature of wood disposal so that the physical decay is slower</li>
+        </ul>
+    </li>
 </ul>
-N.B. Reducing the volume of harvested wood products would not reduce national emissions, the carbon would simply remain in the Forest Land sector.
+N.B. that harvesting wood for renewable energy could be a high-impact strategy for national emissions reduction,
+but it would not reduce HWP emissions because of the short time between wood harvest and combustion.
 </p>
 
 <h3>
     Barriers
 </h3>
+<ul>
+    <li>Recovering and recycling wood from buildings and furniture is expensive.</li>
+</ul>
 
 
 {% include "ipcc-sectors-strategy-ideas-table.html" %}
