@@ -59,6 +59,23 @@ def test_mul_scale_convert_interp():
     assert c.times[1] == 10
 
 
+def test_add_nointerp_nointerp_no_overlap():
+    a = STS(
+        times=[-10, 10],
+        t_unit=u.years,
+        values=[-1, 0, 1],
+        v_unit=u.kg,
+        interpolation=InterpolationMode.no_interpolation)
+    b = STS(
+        times=[-9, 9],
+        t_unit=u.years,
+        values=[-1, 0, 1],
+        v_unit=u.kg,
+        interpolation=InterpolationMode.no_interpolation)
+    c = a + b
+    assert len(c.times) == 0
+
+
 def test_mul_sts_sts_scale_convert_zero():
     a = STS(
         times=[-10, 10],

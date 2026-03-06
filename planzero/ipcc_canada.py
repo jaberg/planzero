@@ -15,7 +15,10 @@ inv['CategoryPathWithWhitespace'] = (
 ).str.rstrip('/')
 assert not inv['CategoryPathWithWhitespace'].isna().any()
 
-inv['CO2eq'] = inv['CO2eq'].replace('x', float('nan')).astype(float)
+for key in ['CO2', 'CH4', 'CH4 (CO2eq)', 'N2O',
+             'N2O (CO2eq)', 'HFCs', 'PFCs', 'SF6', 'NF3', 'CO2eq']:
+    inv[key] = inv[key].replace('x', float('nan')).astype(float)
+del key
 inv['Year'] = inv['Year'].astype(float)
 
 # non-aggregate rows relating to the entire country (remove subtotals)

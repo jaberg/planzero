@@ -1,3 +1,4 @@
+import array
 import functools
 
 import matplotlib.pyplot as plt
@@ -9,11 +10,15 @@ from .ureg import (u, kg_by_ghg,
                    kilotonne_by_coal_type,
                    kt_by_ghg,
                    m3_by_roundwood_species_group)
+from . import aer
+from . import ghgrp
+from . import naics
 from . import ureg
 from . import sc_np
 from . import objtensor
 from . import sts
 from . import annex6_np
+from . import eccc_nir
 from . import eccc_nir_annex6
 from . import eccc_nir_annex9
 from . import eccc_nir_annex13
@@ -38,11 +43,12 @@ GHG = enums.GHG
 PT = enums.PT
 IPCC = enums.IPCC_Sector
 CoalType = enums.CoalType
-NAICS = enums.NAICS
 est_nir_years = np.arange(1995, 2025) * u.years
 
 
 _echart_years = ipcc_canada.echart_years()
+
+url_est_nir = 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'
 
 def _rstrip_data(ts, years=_echart_years):
     vals = list(ts.query([yy * u.years for yy in years]))
@@ -50,7 +56,7 @@ def _rstrip_data(ts, years=_echart_years):
         vals.pop()
     rval = [
         {'value': 0 if np.isnan(vv.magnitude) else vv.magnitude,
-         'url': 'https://github.com/jaberg/planzero/blob/main/planzero/est_nir.py'}
+         'url': url_est_nir}
          for vv in vals]
     return rval
 
@@ -447,6 +453,7 @@ class EstAnnex13ElectricityFromOther(object):
                + (self.fuel_consumed_pt[FT2.OtherGaseous].apply(self.support_years) * (1 * u.m3_stillgas / u.m3))))
 
     def __init__(self):
+        NAICS = enums.NAICS
         self.prov_consumption, self.national_consumption = \
                 sc_np.Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility()
 
@@ -937,6 +944,187 @@ class EstForestAndHarvestedWoodProducts(object):
             legend={"top": 40})
 
 
+class EstFugitive_OilandNaturalGas_Venting(object):
+
+    def init_ghgrp(self):
+        nse = ghgrp.GHG_NAICS_source_emissions_backfilled()
+
+        NAICS = naics.NAICS
+        oil_and_gas = (
+            NAICS.Oil_and_gas_extraction__except_oil_sands,
+            NAICS.Conventional_Oil_and_Gas_Extraction,
+            NAICS.NonConventional_Oil_Extraction,
+            NAICS.Insitu_oil_sands_extraction,
+            NAICS.Mined_oil_sands_extraction,
+            NAICS.Pipeline_Transportation_of_Crude_Oil,
+            NAICS.Pipeline_Transportation_of_Natural_Gas,
+        )
+        EmissionSource = ghgrp.EmissionSource
+        # these are "arguably venting" because looking at Annex 10, it seems that all of the
+        # emissions from oil & gas facilities seem to reported in the IPCC "energy sector" categories
+        # even if things like "Wastewater" and "Industrial Processes" match other top-level IPCC areas.
+        # In particular, oil sands upgrading is not listed as having any "Industrial Process" emissions.
+        arguably_venting = (
+            #EmissionSource.StationaryFuelCombustion, this is not fugitive emissions
+            EmissionSource.Waste,
+            EmissionSource.Leakage,
+            EmissionSource.Venting,
+            #EmissionSource.Flaring, # Flaring is broken out separately
+            EmissionSource.IndustrialProcess,
+            EmissionSource.Wastewater,
+            EmissionSource.Unspecified,
+        )
+
+        self.emissions_by_label['Registered facilities (GHGRP)'] = nse[:, oil_and_gas, arguably_venting].sum(2).sum(1)
+
+    def init_st60b(self):
+        # st60b is the report on emissions from Alberta facilities that are not in the GHGRP
+        self.st60b = aer.st60b() # volumes
+        self.avg_methane_content_of_vented_gas = .85
+        self.methane_mass_per_volume = (
+            .6785
+            * self.avg_methane_content_of_vented_gas
+            * u.kg_CH4 / u.m3_NG_nmk)
+        self.ch4_st60b = self.st60b * self.methane_mass_per_volume
+        for vt in aer.VentingType:
+            label = f'{vt.value} (Alberta, ST60B report)'
+            ch4_vt = self.ch4_st60b[vt].to(u.kt_CH4)
+            # backfill to 2004 using 2020 values just to make the 2005
+            # estimate less bad
+            assert ch4_vt.times[0] == 2020
+            new_times = list(range(2004, 2020))
+            ch4_vt.times[0:0] = array.array('d', new_times)
+            ch4_vt.values[1:1] = array.array('d', [ch4_vt.values[1]] * len(new_times))
+            self.emissions_by_label[label] = self.ch4_emission(
+                sts.with_default_zero(ch4_vt, self.years * u.years))
+
+    @staticmethod
+    def ch4_emission(amount):
+        rval = objtensor.empty(GHG)
+        for ghg in kt_by_ghg:
+            rval[ghg] = 0 * kt_by_ghg[ghg]
+        rval[GHG.CH4] += amount # += ensures units match
+        return rval
+
+    def init_abandoned_wells(self):
+        self.abandoned_wells_co2e = eccc_nir.table3_11()
+        self.emissions_by_label['Abandoned Wells (National total, NIR)'] = self.ch4_emission(
+            self.abandoned_wells_co2e[eccc_nir.Table3_11_Rows.Total].interp(self.years[:37] * u.years)
+            / GWP_100[GHG.CH4])
+
+    def init_post_meter(self):
+        self.post_meter_co2e = eccc_nir.table3_12()
+        self.emissions_by_label['Post-Meter Fugitive Natural Gas (National total, NIR)'] = self.ch4_emission(
+            self.post_meter_co2e[eccc_nir.Table3_12_Rows.Total].interp(self.years[:37] * u.years)
+            / GWP_100[GHG.CH4])
+
+    def __init__(self):
+        self.emissions_by_label = {}
+        self.years = ipcc_canada.echart_years()
+        self.init_ghgrp()
+        self.init_st60b()
+        self.init_abandoned_wells()
+        self.init_post_meter()
+
+        if 0:
+            inv = ipcc_canada.inv
+            self.ab_non_agg = inv[ (inv['Region'] == 'Alberta') & (inv['Total'] != 'y')]
+
+
+        if 0:
+            # approximating this as a constant does not do justice to the technology and policy work on acid gas injection
+            # There is data on acid gas in ST13 (see aer.py)
+            # but I can't work out how to use it better than
+            # just sticking a number in here.
+            self.alberta_fugitive_CO2 = 8 * u.Mt_CO2
+
+        if 0:
+            # this is simply trying to line up the bitumen production from st98
+            # with the NIR Annex 10 spreadsheet that says in situ oil sands
+            # mining was responsible for 1.8 Mt of Venting emissions in 2023
+            self.st98_crude_bitumen_production = aer.st98_crude_bitumen_production()
+            self.co2e_from_in_situ = (
+                self.st98_crude_bitumen_production[aer.BitumenProductionType.InSitu]
+                * (.064 * u.Mt_CO2e / (u.kilo_m3_crude_bitumen / u.day)))
+
+    def update_A9_emissions(self, emissions_sectoral_pt):
+        for label, emissions in self.emissions_by_label.items():
+            # TODO: upgrade ghgrp to return results by province
+            emissions_sectoral_pt[:, IPCC.Fugitive__Venting, PT.AB] += emissions
+
+    def echart_venting(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
+
+        inv = ipcc_canada.inv
+        ab_non_agg = inv[ (inv['Region'] == 'Alberta') & (inv['Total'] != 'y')]
+        ab_values = ab_non_agg[ab_non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_venting',
+            title=EChartTitle(
+                text='Emissions from Venting (Fugitive Sources / Oil and Natural Gas)',
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(name=label, data=_rstrip_data((GWP_100 @ emissions).to(u.Mt_CO2e)))
+                for label, emissions in self.emissions_by_label.items()],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+                EChartSeriesBase(
+                    name='NIR Sector Total (Alberta only)',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=ab_values),
+            ])
+
+    def echart_st60b(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
+
+        inv = ipcc_canada.inv
+        ab_non_agg = inv[ (inv['Region'] == 'Alberta') & (inv['Total'] != 'y')]
+        ab_values = ab_non_agg[ab_non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_venting_st60b',
+            title=EChartTitle(
+                text='Emissions from Venting (Fugitive Sources / Oil and Natural Gas)',
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=vt.value,
+                    data=_rstrip_data(
+                        sts.with_default_zero(
+                            self.co2e_st60b[vt].to(u.Mt_CO2e),
+                            years * u.years)))
+                for vt in aer.VentingType
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+                EChartSeriesBase(
+                    name='NIR Sector Total (Alberta only)',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=ab_values),
+            ])
+
+
 class EstSectorEmissions(object):
 
     def __init__(self):
@@ -946,6 +1134,7 @@ class EstSectorEmissions(object):
 
         EstAnnex13ElectricityEmissionsTotal().update_A9_emissions(self.sectoral_emissions)
         EstForestAndHarvestedWoodProducts().update_A9_emissions(self.sectoral_emissions)
+        EstFugitive_OilandNaturalGas_Venting().update_A9_emissions(self.sectoral_emissions)
 
     def max_gap_2005(self):
         a9_2005_total = eccc_nir_annex9.emissions_by_IPCC_sector(2005, 'Total_CO2e')

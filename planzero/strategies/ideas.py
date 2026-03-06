@@ -1161,3 +1161,9 @@ ss.CCS_Equipment_Vendors = Stakeholders(
 # a Google data center"
 
 # e-Zinc - a canadian battery startup near Toronto, met through CDL AI stream
+
+
+# from John Martin
+# Here are a couple of links about biochar for carbon sequestration, and how cows can spread it:
+# https://www.anthropocenemagazine.org/2026/02/scientists-fed-biochar-to-cows-heres-what-happened/
+# https://link.springer.com/article/10.1007/s11027-005-9007-4

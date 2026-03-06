@@ -59,6 +59,24 @@ class HTML_Matplotlib_Figure(HTML_element):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
+class IPCC_VentingNaturalGas(BlogPost):
+    """Third in the sector-by-sector National Greenhouse Gas Inventory computation:
+    Accidental and deliberate venting of methane and natural gas
+    in the course of oil and gas exploration, production, processing, and distribution.
+    """
+    est_nir:object
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 3, 2),
+            title='Venting of Natural Gas: Emissions Calculations',
+            url_filename="2026-03-02-venting",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.Fugitive__Venting,
+                 },
+            est_nir=est_nir,
+            )
+
 class IPCC_ForestAndHWP(BlogPost):
     """Second in the sector-by-sector National Greenhouse Gas Inventory computation:
     Harvested Wood Products and Forest Land.

@@ -444,7 +444,9 @@ class ObjectTensor(object):
             if dims:
                 rval = ObjectTensor.empty(*dims)
                 rval_unsq = rval.unsqueeze(sum_dim_idx, dim=summed_dim)
-                assert self.dims == rval_unsq.dims
+                assert len(self.dims) == len(rval_unsq.dims)
+                for ld, rd in zip(self.dims, rval_unsq.dims):
+                    assert set(ld.keys()) == set(rd.keys())
                 assert len(rval.dims) == len(self.dims) - 1
                 for key, (my_offset, rval_offset) in ravel_multi(self, rval_unsq):
                     if rval_unsq.buf[rval_offset] is None:

@@ -1,0 +1,168 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if blog.published %}{{blog.title}} {% else %} Draft: {{blog.title}}{% endif %}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#h2_intro">Introduction</a></li>
+    <li><a href="#drivers">Drivers of Fugitive Vented Emissions of Natural Gas</a></li>
+    <li><a href="#summary">Summary</a></li>
+</ul>
+</p>
+
+<h2 id="h2_intro">Introduction</h2>
+
+<p>
+This post continues the series looking at IPCC sectors in order of decreasing contributions to Canada's 2005 baseline year.
+The previous (2nd) post looked at <a href="/blog/2026-02-22-forest-hwp">Forest Land and Harvested Wood Products</a>
+This one looks at fugitive emissions, especially of natural gas.
+Fugitive emissions of natural gas may admittedly sound like a natural and healthy bodily function (ha ha, ... anyone? sigh)
+but for Canada's GHG inventory, it a consequence of oil and gas extraction, processing, and distribution.
+Chemically, natural gas is mostly methane.
+Depending on exactly what geology it's sourced from, it is at least 60-70% methane at source,
+and once it has been processed to a marketable level of purity, it's at least 95% methane.
+The Canadian UOG sector assets and operations are vast.
+The 2011 emissions inventory included over 300 000 capable oil and gas wells, 14 100 batteries producing gas into more
+than 5000 gathering systems delivering to almost 750 gas plants, and 24 000 oil batteries delivering to 150 tank terminals,
+all interconnected by tens of thousands of kilometres of pipeline carrying hydrocarbons from wells to batteries to plants
+and ultimately markets (<a href="https://publications.gc.ca/collections/collection_2025/eccc/En81-4-2023-1-eng.pdf">2005 NIR, pg 98</a>).
+Across the oil and gas sector,
+methane escapes into the atmosphere for a variety of reasons (some accidental, some deliberate, some unavoidable),
+and methane is a much stronger greenhouse gas than carbon dioxide (see previous post on <a href="/blog/2026-01-21-unfccc">global warming potentials and CO2e</a>).
+</p>
+<p>
+Fugitive methane emissions from the oil and gas sector were about 70 MtCO2e in 2005,
+increased to a peak of 75 MtCO2e in 2014,
+and have since dropped to 40 MtCO2e even as oil and gas production has increased.
+That's about 50-10% of Canada's national emissions, and they are almost all from Alberta and Saskatchewan.
+Alberta set a target to reduce annual emissions by 45% relative to 2015, by the year 2025, and facility operators in Alberta have hit that target.
+</p>
+<p>
+The determination of exactly how much methane is leaking from oil and gas operations, and from which specific sources,
+has been a scientific and operational challenge.
+Even a recent study by Matthew R. Johnson and colleagues
+<a href="https://pubs.acs.org/doi/10.1021/acs.est.7b03525">(Johnson et al. 2017, Comparisons of Airborne Measurements and Inventory Estimates of Methane Emissions in the Alberta Upstream Oil and Gas Sector)</a>,
+which commissioned a plane with a spectrometer to fly over gas-producing and gas-processing regions and measure methane plumes,
+concluded that 2.5 times more methane was leaking than the best government estimates of the day.
+The 2025 NIR (<a href="https://publications.gc.ca/collections/collection_2025/eccc/En81-4-2023-1-eng.pdf">overview pdf, see esp section 3.3.2.2</a>)
+draws on several types of data to estimate fugitive emissions of natural gas:
+direct estimation by facilities to the extent that they have information regarding certain emission events,
+modelling to infer emissions from the remaining activities and facilities,
+atmospheric measurements of the type introduced by Johnson et al. 2017 linked above,
+and interpolation and extrapolation to re-estimate the emissions for certain historical years based on an evolving understanding of the drivers of fugitive methane.
+</p>
+
+<h2 id="drivers">Drivers of Fugitive Vented Emissions of Natural Gas</h2>
+
+<p>
+From an IPCC accounting persepctive, 
+the sector we're talking about is subset of Common Reporting Table category 1.B.2. (Fugitive Emissions from the Oil and Gas Sector)
+relating specifically to <i>vented</i> natural gas, which is natural gas that has been released directly into the atmosphere.
+The sector covers emissions from many sources, which contributes to the difficulty of estimation and management of the emissions.
+Despite the challenges of tracking <i>how much</i> methane is escaping from each of these types of source,
+the set of <i>which</i> sources are responsible for fugitive methane emissions is well understood.
+<ul>
+    <li>Upstream Oil and Gas operations produce fugitive, vented emissions in many ways:
+        <ul>
+            <li>drilling, servicing, and associated testing</li>
+            <li>natural gas production (sometimes in combination with oil),
+                due to accidental and deliberate emissions from equipment in normal operation, maintenance, and failure recovery scenarios</li>
+            <li>oil production, due to <i>solution gas</i> that evaporates from oil as it flows from a high-pressure deposit into a well,
+             and <i>casing gas</i> that evaporates for the same reason after the point at which oil has entered a pipe</li>
+            <li>natural gas processing and transmission, due to equipment leaks</li>
+            <li>liquid product transfer, due to leaks and venting</li>
+            <li>accidents and equipment failures across all segments of the upstream oil and gas industry</li>
+            <li>surface casing vent flow and gas migration, due to e.g. casing leaks or gas-bearing zones that have been penetrated but are not managed with production equipment.</li>
+        </ul>
+    </li>
+    <li>Bitumen extraction from oil sands produces fugitive vented emissions due to:
+        <ul>
+            <li>usual process losses in the use of natural gas to produce the hydrogen required for processing</li>
+            <li>methane released from open mining surface</li>
+            <li>methane released by bacteria from tailings and settling ponds.</li>
+        </ul>
+    </li>
+    <li>Abandoned oil and gas wells should be plugged with cement, but sometimes are not.</li>
+    <li>Downstream (aka post-production) oil and gas operations and equipment can leak at all stages of processing and distribution, both before and after metering.
+    </li>
+</ul>
+
+This set of sources has been condensed as the <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/#CSFs">Critical Success Factors</a>
+of newly-created IPCC Sectors page on <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">"Venting (Fugitive Sources / Oil and Natural Gas)"</a>.
+</p>
+
+<h2 id="estimating">Estimating Fugitive Vented Emissions of Natural Gas</h2>
+
+<p>
+The reference for how to estimate the NIR's fugitive vented emissions of natural gas is the
+<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/G-Additional-NIR-Annexes?lang=en">ECCC's Methodologies regarding Fugitive Emissions</a>.
+For lack of a single national data set other than the NIR itself, the planzero
+Vented Natural Gas (VNG) estimator was built from provincial sources.
+Only three provinces contributed significantly to the VNG total: Alberta, Saskatchewan, and British Columbia.
+</p>
+
+<h3>Alberta: ST60B and OneStop</h3>
+<p>
+The first data set used to build the planzero VNG estimator was
+Statistical Report 60 B from Alberta's Energy Regulator (AER-ST60B),
+the "Upstream Petroleum Industry Emissions Report" for year ending Dec 31, 2024 (<a href="https://static.aer.ca/prd/documents/sts/ST60-B-2025.pdf">pdf</a>).
+AER-ST60B includes a spreadsheet with data from the Petrinex and OneStop reporting systems regarding
+all reported venting emissions from years 2020-2024 on a facility by facility basis.
+In theory, Petrinex vent gas volumes include both routine and non-routine vent incidents,
+and OneStop includes fewer incidents, but with more detail.
+In practice, the text of ST60B observes (and laments) that the sum of OneStop-reported emissions is numerically larger than the sum of Petrinex-reported emissions by about 8%.
+The planzero VNG estimator developed for this post used the OneStop emissions.
+</p>
+
+
+{{blog.est_nir.EstFugitive_OilandNaturalGas_Venting().echart_st60b() | safe}}
+
+As of 2020, OneStop appears to offer a superset of information about venting emissions relative to Petrinex.
+Petrinex's VENT category seems to correspond to the sum of emissions from "COMPRESSOR", Pneumatic Instrument, Pneumatic Pump, and Routine Event.
+TODO: show this with a plot for years 2020-2023, then conclude we don't need the Petrinex Data.
+
+Plot the ECCC emissions for Alberta relative to the sum of vented methane from OneStop. If the curves have the same shape, then just use a multiplier and call it a day.
+It is supposed to stand for the detailed bottom up facility and equipment estimates that we don't have, but can possibly get (b/c how did that Johnson et al. 2017 paper do it?).
+
+Then add in something about oil sands where we just multiply the production by some constant.
+
+The idea is to get to CSFs, of which there are many (see the list in the ECCC NIR on all the sources):
+* reduce the duration and area of oil sands exposed to the atmosphere
+* reduce the volume of gas released by detected and undetected equipment leaks
+* reduce the use of pneumatically-powered equipment
+* reduce the volume of casing gas and solution gas vented to atmosphere
+* reduce the volume vented in the process of oil and gas exploration
+
+
+If you are looking at historical trends, you will see a massive "jump" in venting data in 2020.
+
+The Reason: Before 2020, gas used to power pneumatic devices was often reported as "Fuel" because it was being "used."
+
+The Change: Regulators (AER, BCER, SK) updated their definitions to align with the NIR. Now, any gas that eventually enters the atmosphere must be reported as "Vent."
+
+The Result: This didn't mean more gas was being released; it just meant it was finally being called by its correct name in the spreadsheets.
+
+
+<!-- figure out how to quote something indented / email-style -->
+<p>
+From A3.2.2.8:
+<i>
+Estimates for flaring emissions from petroleum refining are calculated using the refinery model (see A3.2.2.3). The volume
+of fuel flared is back-calculated from the flaring emissions and then subtracted from the producer consumption of still gas
+(also known as refinery fuel gas) since the method used by StatCan to determine producer consumption of still gas is
+currently not well understood.
+</i>
+
+</p>
+
+<h2 id="summary">Summary</h2>
+
+</section>
+</div>
+{% include "post-main.html" %}

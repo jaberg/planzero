@@ -39,6 +39,8 @@ class STS(BaseModel):
     t_unit:object
     v_unit:object
 
+    # TODO: rename to e.g. raw_times, so that `times` can be a property
+    # with the units attached
     times:object # will be a double-precision float array
     values:object # will be a double-precision float array
 
@@ -336,7 +338,26 @@ class STS(BaseModel):
         # will produce a result that is at least defined for the given years
         return self._setdefault_scalar(times, 0)
 
+    def interp(self, times):
+        raw_times = [tt.to(self.t_unit).magnitude for tt in times]
+        raw_times.sort()
+        if self.interpolation == InterpolationMode.no_interpolation:
+            values = np.interp(
+                x=raw_times,
+                xp=self.times,
+                fp=self.values[1:],
+                left=self.values[0])
+            return self.__class__(
+                times=array.array('d', raw_times),
+                values=array.array('d', [float('nan')] + list(values)),
+                t_unit=self.t_unit,
+                v_unit=self.v_unit,
+                interpolation=self.interpolation)
+        else:
+            raise NotImplementedError()
 
+
+# TODO: make this a function, why didn't I?
 class SparseTimeSeries(STS):
 
     def __init__(self, *, times=None, values=None, unit=None, identifier=None, t_unit=u.seconds, default_value=None,
@@ -463,7 +484,7 @@ def add_nointerp_nointerp(self, other):
             times=rval_times,
             values=rval_values,
             t_unit=t_unit,
-            v_unit=self.u,
+            v_unit=self.v_unit,
             identifier=None,
             interpolation=InterpolationMode.no_interpolation)
     return rval

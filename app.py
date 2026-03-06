@@ -80,7 +80,8 @@ def templatepath_for_catpath(catpath):
 
 def have_page_for_catpath(catpath):
     try:
-        open(filepath_for_catpath(catpath)).close()
+        filepath = filepath_for_catpath(catpath)
+        open(filepath).close()
         return True
     except IOError:
         return False
