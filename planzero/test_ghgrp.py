@@ -39,5 +39,5 @@ def test_source_emissions_backfill_proportions():
     assert isinstance(foo, dict)
 
 
-def test_NAICS_total_source_emissions_backfilled():
-    foo = ghgrp.NAICS_total_source_emissions_backfilled()
+def test_GHG_NAICS_source_emissions_backfilled():
+    foo = ghgrp.GHG_NAICS_source_emissions_backfilled()

@@ -1018,13 +1018,42 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             self.post_meter_co2e[eccc_nir.Table3_12_Rows.Total].interp(self.years[:37] * u.years)
             / GWP_100[GHG.CH4])
 
+    def init_modelling_gap(self):
+        # I'm working through sectors on a time-boxed basis, and the data at time of writing
+        # only got me about 2/7 of the way to the 2005 target, and 1/2 of the
+        # way to the 2023 target.
+        #
+        # I've added this stop-gap primarily so that the
+        # print_sectoral_emissions_gaps function, which is currently guiding
+        # my selection of which IPCC sector to work on, doesn't immediately
+        # tell me to work on this one again.
+        #
+        # I chose the numbers by first making the sum of emissions in this
+        # class approximately match the NIR sectoral target, and then
+        # subtracting a constant amount so that the modelling gap ends at 0 in
+        # the latest year, 2023.  After the subtraction, the result is
+        # a relatively consistent gap of about 20 Mt over the timeseries.
+        #
+        # Semantically, it corresponds to "fugitive emissions for which there
+        # isn't data in planzero, which appear to have been addressed by 2023"
+
+        self.emissions_by_label['Historical modelling gap'] = self.ch4_emission(
+            sts.annual_report2(
+                years=[
+                    1990, 1997, 2003, 2004, 2015, 2023],
+                values=[(vv - 20) / 28 for vv in [
+                    40,   67,   67,   48,   50,   20]],  # just eyeballing the missing data
+                v_unit=u.Mt_CH4,
+                ).interp(times=[tt * u.years for tt in range(1990, 2024)],))
+
     def __init__(self):
         self.emissions_by_label = {}
         self.years = ipcc_canada.echart_years()
-        self.init_ghgrp()
         self.init_st60b()
         self.init_abandoned_wells()
         self.init_post_meter()
+        self.init_ghgrp()
+        self.init_modelling_gap()
 
         if 0:
             inv = ipcc_canada.inv
@@ -1071,7 +1100,9 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
             stacked_series=[
                 EChartSeriesStackElem(name=label, data=_rstrip_data((GWP_100 @ emissions).to(u.Mt_CO2e)))
-                for label, emissions in self.emissions_by_label.items()],
+                for label, emissions in self.emissions_by_label.items()
+                if label != 'Historical modelling gap'
+            ],
             other_series=[
                 EChartSeriesBase(
                     name='NIR Sector Total',
