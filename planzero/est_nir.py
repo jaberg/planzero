@@ -1156,6 +1156,61 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             ])
 
 
+class Est_Energy_SCS_OilAndGas_Extraction(object):
+
+    def init_ghgrp(self):
+        nse = ghgrp.GHG_NAICS_source_emissions_backfilled()
+
+        NAICS = naics.NAICS
+        oil_and_gas = (
+            NAICS.Oil_and_gas_extraction__except_oil_sands,
+            NAICS.Conventional_Oil_and_Gas_Extraction,
+            NAICS.NonConventional_Oil_Extraction,
+            NAICS.Insitu_oil_sands_extraction,
+            NAICS.Mined_oil_sands_extraction,
+            NAICS.Pipeline_Transportation_of_Crude_Oil,
+            NAICS.Pipeline_Transportation_of_Natural_Gas,
+        )
+        EmissionSource = ghgrp.EmissionSource
+
+        self.emissions_by_label['Registered facilities (GHGRP)'] = nse[:, oil_and_gas, EmissionSource.StationaryFuelCombustion].sum(1)
+
+    def __init__(self):
+        self.emissions_by_label = {}
+        self.years = ipcc_canada.echart_years()
+        self.init_ghgrp()
+        # TODO: ST60B Petrinex data has FUEL rows
+
+    def update_A9_emissions(self, emissions_sectoral_pt):
+        for label, emissions in self.emissions_by_label.items():
+            # TODO: upgrade ghgrp to return results by province
+            emissions_sectoral_pt[:, IPCC.SCS__Oil_and_Gas_Extraction, PT.AB] += emissions
+
+    def echart(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Oil and Gas Extraction']['CO2eq'].values / 1000
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_scs_oilandgas_extraction',
+            title=EChartTitle(
+                text='Oil and Gas Extraction (Stationary Combustion Sources)',
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(name=label, data=_rstrip_data((GWP_100 @ emissions).to(u.Mt_CO2e)))
+                for label, emissions in self.emissions_by_label.items()
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+            ])
+
 class EstSectorEmissions(object):
 
     def __init__(self):
@@ -1166,8 +1221,9 @@ class EstSectorEmissions(object):
         EstAnnex13ElectricityEmissionsTotal().update_A9_emissions(self.sectoral_emissions)
         EstForestAndHarvestedWoodProducts().update_A9_emissions(self.sectoral_emissions)
         EstFugitive_OilandNaturalGas_Venting().update_A9_emissions(self.sectoral_emissions)
+        Est_Energy_SCS_OilAndGas_Extraction().update_A9_emissions(self.sectoral_emissions)
 
-    def max_gap_2005(self):
+    def max_gap_2005(self, thresh_Mt=1000):
         a9_2005_total = eccc_nir_annex9.emissions_by_IPCC_sector(2005, 'Total_CO2e')
         estimate = GWP_100 @ self.sectoral_emissions.sum(enums.PT)
         gaps = []
@@ -1184,7 +1240,6 @@ class EstSectorEmissions(object):
         for gap, sector in reversed(sorted(gaps)):
             if max_gap is None:
                 max_gap = gap
-            else:
-                max_gap = max(max_gap, gap)
-            print('* ' if gap.magnitude > 100 else '  ', gap, sector)
+            if gap.magnitude > thresh_Mt:
+                print(gap, sector)
         return max_gap

@@ -117,25 +117,6 @@ class RPP_User(str, enum.Enum):
     UpgradingFacilities = "Upgrading Facilities"
 
 
-# Used to organize
-class IPCC_Sector_Group(str, enum.Enum):
-    Energy = "Energy"
-    Industrial_Processes_and_Product_Use = "Industrial Processes and Product Use"
-    Agriculture = 'Agriculture'
-    Waste = 'Waste'
-    LULUCF = 'Land Use, Land Use Change, and Forestry'
-    
-    Stationary_Combustion_Sources = 'Stationary Combustion Sources'
-    Manufacturing = 'Manufacturing'
-    Transport = 'Transport'
-    Aviation = 'Aviation'
-    Road_Transport = 'Road Transport'
-    Marine_Transport = 'Marine Transport'
-    Other_Transport = 'Other Transport'
-    Fugitive_Sources = 'Fugitive Sources'
-    Fugitive_Sources__Oil_and_Natural_Gas = 'Fugitive Sources, Oil and Natural Gas'
-
-
 # Leaf nodes of Canada's IPCC taxonomy
 class IPCC_Sector(str, enum.Enum):
     # Energy
