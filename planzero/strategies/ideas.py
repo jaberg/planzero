@@ -1105,6 +1105,45 @@ ss.Photovoltaic_Equipment_Vendors = Stakeholders(
 ss.CCS_Equipment_Vendors = Stakeholders(
     ipcc_catpaths=[ ])
 
+ideas.electric_gas_equipment = NewcoIdea(
+    descr='Replace gas-powered pneumatic equipment',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
+    ])
+
+ideas.enhanced_oil_recovery = NewcoIdea(
+    descr='Reinject carbon dioxide back into gas-bearing formations',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
+    ])
+
+ideas.liquid_carbon_storage = NewcoIdea(
+    descr='Various liquid carbon dioxide storage approaches',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
+    ])
+
+ideas.flare_instead_of_vent = NewcoIdea(
+    descr='Replace gas vents with flaring systems',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
+    ])
+
+ideas.huge_tents_over_oil_sands = NewcoIdea(
+    descr='Somehow block the dispersion of emissions from oil sands with e.g. enormous tents',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
+    ])
 
 # Tidal power:
 # https://www.orbitalmarine.com/
