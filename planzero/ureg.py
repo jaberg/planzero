@@ -70,6 +70,7 @@ for volume_substance in ['NG_mk', 'NG_nmk',
 
 u = ureg
 u.m3 = u.m ** 3
+ureg.define(f"kilo_m3 = 1000 * meter * meter * meter")
 
 litres_by_fuel_type = {
     enums.FuelType.LightFuelOil: u.l_LFO,

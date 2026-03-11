@@ -11,9 +11,11 @@ class NAICS(int, enum.Enum):
     NonConventional_Oil_Extraction = 211114
     Insitu_oil_sands_extraction = 211141
     Mined_oil_sands_extraction = 211142
+
     Bituminous_Coal_Mining = 212114
     Subbituminous_Coal_Mining = 212115
     Lignite_Coal_Mining = 212116
+
     Iron_Ore_Mining = 212210
     Gold_and_Silver_Ore_Mining = 212220
     LeadZinc_Ore_Mining = 212231

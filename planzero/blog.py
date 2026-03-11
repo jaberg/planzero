@@ -60,15 +60,17 @@ class HTML_Matplotlib_Figure(HTML_element):
         return svg_string
 
 class IPCC_VentingNaturalGas(BlogPost):
-    """Third in the sector-by-sector National Greenhouse Gas Inventory computation:
-    Accidental and deliberate venting of methane and natural gas
-    in the course of oil and gas exploration, production, processing, and distribution.
+    """Third in the sector-by-sector series on the National Greenhouse Gas Inventory computation:
+    the venting of emissions from oil and gas systems.
+    Venting refers to the intentional or engineered release of greenhouse gases across within the oil and gas sector.
+    The re-engineering of the sector to avoid such releases is well underway, but venting still accounts for 5.5%
+    of Canada's annual CO2e total, at least as of 2023.
     """
     est_nir:object
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 3, 2),
-            title='Venting of Natural Gas: Emissions Calculations',
+            title='Oil and Natural Gas Venting Emissions: Emissions Calculations',
             url_filename="2026-03-02-venting",
             author="James Bergstra",
             tags={BlogTag.NIR_Modelling,
