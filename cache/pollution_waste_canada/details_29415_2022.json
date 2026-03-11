@@ -1,0 +1,2778 @@
+{
+    "comments": [
+        {
+            "type": {
+                "id": 225,
+                "en": "General comments about the facility",
+                "fr": "Commentaires généraux à propos de l'installation"
+            },
+            "comment": "The site was offline in 2022 due to an equipment failure experienced in 2021. The site WW and emissions were minimal for this year due to preservation activities. "
+        }
+    ],
+    "company": {
+        "businessNumber": "857624258",
+        "name": "Enerkem Alberta Biofuels",
+        "duns": "",
+        "tradeName": {
+            "en": "",
+            "fr": ""
+        },
+        "website": "enerkem.com",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "General Delivery 460 250 Aurum Road Northeast, Edmonton, Alberta, T6S 1G9, Canada",
+                "fr": "Poste restante 460 250 Aurum Chemin Nord-Est, Edmonton, Alberta, T6S 1G9, Canada"
+            },
+            "address1": null,
+            "city": "Edmonton",
+            "postalZip": "T6S 1G9",
+            "province": {
+                "en": "Alberta",
+                "fr": "Alberta"
+            },
+            "country": ""
+        },
+        "parentCompanies": []
+    },
+    "contacts": [
+        {
+            "firstName": "Michel",
+            "lastName": "Chornet",
+            "email": "mchornet@enerkem.ca",
+            "phoneNumber": "819-742-0260",
+            "extension": "",
+            "position": "Executive Vice President, Project Execution and Plant Operations",
+            "language": {
+                "code": "E",
+                "en": "English",
+                "fr": "Anglais"
+            }
+        }
+    ],
+    "disposalsTransfers": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        },
+        {
+            "substance": {
+                "cas": "630-08-0",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13873,
+                "en": "Carbon monoxide",
+                "fr": "Monoxyde de carbone"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        },
+        {
+            "substance": {
+                "cas": "NA - M08",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14238,
+                "en": "Total particulate matter",
+                "fr": "Matière particulaire totale"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        }
+    ],
+    "egus": [],
+    "facility": {
+        "npriId": 29415,
+        "ghgrpId": "G11489",
+        "name": "Enerkem Alberta Biofuels",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 50,
+        "industry": {
+            "naics6Primary": {
+                "id": 325190,
+                "en": "Other basic organic chemical manufacturing",
+                "fr": "Fabrication d'autres produits chimiques organiques de base"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 3251,
+                "en": "Basic chemical manufacturing",
+                "fr": "Fabrication de produits chimiques de base"
+            },
+            "naics2": {
+                "id": 32,
+                "en": "Manufacturing",
+                "fr": "Fabrication"
+            },
+            "keyIndustrialSector": {
+                "en": "Chemicals",
+                "fr": "Produits chimiques\r\n"
+            }
+        },
+        "website": "",
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "460 250 Aurum Road Northeast, Edmonton, Alberta, T6S 1G9, Canada",
+                "fr": "460 250 Aurum Chemin Nord-Est, Edmonton, Alberta, T6S 1G9, Canada"
+            },
+            "address1": "250 Aurum Road Northeast",
+            "city": "Edmonton",
+            "postalZip": "T6S 1G9",
+            "province": {
+                "en": "Alberta",
+                "fr": "Alberta"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 53.593206,
+            "longitude": -113.338782,
+            "censusSubdivision": {
+                "en": "Edmonton",
+                "fr": "Edmonton"
+            },
+            "censusArea": {
+                "en": "Edmonton",
+                "fr": "Edmonton"
+            },
+            "economicArea": {
+                "en": "Edmonton",
+                "fr": "Edmonton"
+            },
+            "censusDivision": {
+                "en": "Division No. 11",
+                "fr": "Division No. 11"
+            },
+            "ecoZone": {
+                "en": "Prairie",
+                "fr": "Prairies"
+            },
+            "drainageArea": {
+                "en": "Nelson River Drainage Area",
+                "fr": "Aire de drainage du fleuve Nelson"
+            },
+            "datum": 1983,
+            "landsurvey": "12-21-053-23-W4",
+            "topograph": "A-018-F/083-H-11",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": {
+            "mon": true,
+            "tue": true,
+            "wed": true,
+            "thu": true,
+            "fri": true,
+            "sat": true,
+            "sun": true,
+            "operatingHours": 24.0,
+            "startTime": "08:00",
+            "shutdownPeriods": [
+                {
+                    "start": "2022-01-01T00:00:00",
+                    "end": "2022-12-31T00:00:00",
+                    "comments": "The site remained offline due to MPC failure that occurred in 2021.",
+                    "sameTimeNextYear": false,
+                    "isPartial": false
+                }
+            ]
+        },
+        "activities": [
+            {
+                "group": 1,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            },
+            {
+                "group": 2,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            }
+        ],
+        "otherPrograms": [
+            {
+                "identifier": "G11489",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [
+            {
+                "permitNumber": "249118",
+                "issuingAgency": "Alberta Environment and Parks"
+            }
+        ],
+        "formattedAddress": {
+            "en": "460 250 Aurum Road Northeast, Edmonton, Alberta, T6S 1G9, Canada",
+            "fr": "460 250 Aurum Chemin Nord-Est, Edmonton, Alberta, T6S 1G9, Canada"
+        }
+    },
+    "ghgrpId": "G11489",
+    "npriId": 29415,
+    "otherYears": [
+        {
+            "reportYear": 2019,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 12.66,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 21.04,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7446-09-5",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13997,
+                        "en": "Sulphur dioxide",
+                        "fr": "Dioxyde de soufre"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 6.52,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 02",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14190,
+                        "en": "Arsenic (and its compounds)",
+                        "fr": "Arsenic (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 244.22,
+                    "offsiteTreatment": 16.91,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 03",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14192,
+                        "en": "Cadmium (and its compounds)",
+                        "fr": "Cadmium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 44.23,
+                    "offsiteTreatment": 0.16,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 1472.9,
+                    "offsiteTreatment": 0.76,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "We based it upon measured values from the stack test rather than emission factors"
+                        }
+                    ],
+                    "releaseAir": 0.74,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.74,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2016,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "100-41-4",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 13412,
+                        "en": "Ethylbenzene",
+                        "fr": "Éthylbenzène"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.001,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "107-21-1",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 13458,
+                        "en": "Ethylene glycol",
+                        "fr": "Éthylène glycol"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.44,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "108-88-3",
+                        "npriPart": [
+                            "1a",
+                            "5"
+                        ],
+                        "id": 13482,
+                        "en": "Toluene",
+                        "fr": "Toluène"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.0003,
+                    "offsiteTreatment": 0.8449,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "1330-20-7",
+                        "npriPart": [
+                            "1a",
+                            "5"
+                        ],
+                        "id": 13611,
+                        "en": "Xylene (all isomers)",
+                        "fr": "Xylène (tous les isomères)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.08,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "64-18-6",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 13887,
+                        "en": "Formic acid",
+                        "fr": "Acide formique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": 0.0049,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "67-56-1",
+                        "npriPart": [
+                            "1a",
+                            "5"
+                        ],
+                        "id": 13925,
+                        "en": "Methanol",
+                        "fr": "Méthanol"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 4.6,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "71-43-2",
+                        "npriPart": [
+                            "1a",
+                            "5"
+                        ],
+                        "id": 13973,
+                        "en": "Benzene",
+                        "fr": "Benzène"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 5.9983,
+                    "offsiteTreatment": 0.0935,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7440-62-2",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 13995,
+                        "en": "Vanadium (except when in an alloy) and its compounds",
+                        "fr": "Vanadium (sauf lorsqu'il est dans un alliage) et ses composés"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.04,
+                    "offsiteTreatment": 0.0024,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "75-15-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14019,
+                        "en": "Carbon disulphide",
+                        "fr": "Disulfure de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.0046,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7783-06-4",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14070,
+                        "en": "Hydrogen sulphide",
+                        "fr": "Sulfure d'hydrogène"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.0012,
+                    "offsiteTreatment": 0.7203,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "872-50-4",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14135,
+                        "en": "N-Methyl-2-pyrrolidone",
+                        "fr": "N-Méthyl-2-pyrrolidone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": 1.11,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 20.7,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "91-20-3",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14151,
+                        "en": "Naphthalene",
+                        "fr": "Naphtalène"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.24,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 01",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14189,
+                        "en": "Antimony (and its compounds)",
+                        "fr": "Antimoine (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.353,
+                    "offsiteTreatment": 0.05,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 02",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14190,
+                        "en": "Arsenic (and its compounds)",
+                        "fr": "Arsenic (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 1.1404,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 03",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14192,
+                        "en": "Cadmium (and its compounds)",
+                        "fr": "Cadmium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.0202,
+                    "offsiteTreatment": 0.0001,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 04",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14194,
+                        "en": "Chromium (and its compounds)",
+                        "fr": "Chrome (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.99,
+                    "offsiteTreatment": 0.0012,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 05",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14195,
+                        "en": "Cobalt (and its compounds)",
+                        "fr": "Cobalt (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.01,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 06",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14197,
+                        "en": "Copper (and its compounds)",
+                        "fr": "Cuivre (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 3.7302,
+                    "offsiteTreatment": 0.11,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 07",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14199,
+                        "en": "Cyanides (ionic)",
+                        "fr": "Cyanures (ioniques)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.01,
+                    "offsiteTreatment": 5.09,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.78,
+                    "offsiteTreatment": 0.01,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 09",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14202,
+                        "en": "Manganese (and its compounds)",
+                        "fr": "Manganèse (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 13.53,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 11",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14205,
+                        "en": "Nickel (and its compounds)",
+                        "fr": "Nickel (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.12,
+                    "offsiteTreatment": 0.01,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 12",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14207,
+                        "en": "Selenium (and its compounds)",
+                        "fr": "Sélénium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.0016,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 13",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14208,
+                        "en": "Silver (and its compounds)",
+                        "fr": "Argent (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.0019,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 5.73,
+                    "offsiteTreatment": 0.02,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 19",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14217,
+                        "en": "Hexavalent chromium (and its compounds)",
+                        "fr": "Chrome hexavalent (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.0009,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 22",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14220,
+                        "en": "Phosphorus (total)",
+                        "fr": "Phosphore (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 7.7104,
+                    "offsiteTreatment": 0.25,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 37",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14235,
+                        "en": "Thallium (and its compounds)",
+                        "fr": "Thallium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.0001,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.63,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.63,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2018,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 33.1,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 13.98,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7446-09-5",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13997,
+                        "en": "Sulphur dioxide",
+                        "fr": "Dioxyde de soufre"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.28,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 02",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14190,
+                        "en": "Arsenic (and its compounds)",
+                        "fr": "Arsenic (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 293.13,
+                    "offsiteTreatment": 11.17,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 03",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14192,
+                        "en": "Cadmium (and its compounds)",
+                        "fr": "Cadmium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 7.17,
+                    "offsiteTreatment": 0.13,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 751.39,
+                    "offsiteTreatment": 1.0,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "We based it upon measured values from the stack test rather than emission factors"
+                        }
+                    ],
+                    "releaseAir": 0.66,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "We based it upon measured values from the stack test rather than emission factors"
+                        }
+                    ],
+                    "releaseAir": 0.55,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2017,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 02",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14190,
+                        "en": "Arsenic (and its compounds)",
+                        "fr": "Arsenic (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "NA"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 213.67,
+                    "offsiteTreatment": 82.9,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 03",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14192,
+                        "en": "Cadmium (and its compounds)",
+                        "fr": "Cadmium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 5.941,
+                    "offsiteTreatment": 0.728,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 321.71,
+                    "offsiteTreatment": 9.79,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M08",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14238,
+                        "en": "Total particulate matter",
+                        "fr": "Matière particulaire totale"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 5.4,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.7,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.7,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2020,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "NOX increase due to increase in TOX operation"
+                        }
+                    ],
+                    "releaseAir": 16.13,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 13.36,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7446-09-5",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13997,
+                        "en": "Sulphur dioxide",
+                        "fr": "Dioxyde de soufre"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 5.12,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 02",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14190,
+                        "en": "Arsenic (and its compounds)",
+                        "fr": "Arsenic (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 193.16,
+                    "offsiteTreatment": 9.34,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 03",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14192,
+                        "en": "Cadmium (and its compounds)",
+                        "fr": "Cadmium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 33.27,
+                    "offsiteTreatment": 0.08,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 793.19,
+                    "offsiteTreatment": 0.5,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M08",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14238,
+                        "en": "Total particulate matter",
+                        "fr": "Matière particulaire totale"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 215,
+                                "en": "Reason why substance was added to the report ",
+                                "fr": "Raison pour laquelle la substance a été ajoutée au rapport "
+                            },
+                            "comment": "Replacing PM10 and PM2.5 as this matches how we track PM onsite but was not available in past years. "
+                        }
+                    ],
+                    "releaseAir": 2.69,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2021,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Due to equipment failure, the plant was offline for the bulk of 2021."
+                        }
+                    ],
+                    "releaseAir": 5.19,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Due to equipment failure, the site was offline for the bulk of 2021."
+                        }
+                    ],
+                    "releaseAir": 4.78,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7446-09-5",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13997,
+                        "en": "Sulphur dioxide",
+                        "fr": "Dioxyde de soufre"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Due to equipment failure, the plant was offline for the bulk of 2021."
+                        }
+                    ],
+                    "releaseAir": 0.09,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 02",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14190,
+                        "en": "Arsenic (and its compounds)",
+                        "fr": "Arsenic (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Due to equipment failure, the site was offline for the bulk of 2021."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 62.47,
+                    "offsiteTreatment": 8.49,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 03",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14192,
+                        "en": "Cadmium (and its compounds)",
+                        "fr": "Cadmium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Due to equipment failure, the site was offline for the bulk of 2021."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 7.37,
+                    "offsiteTreatment": 0.08,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Due to equipment failure, the site was offline for the bulk of 2021."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 231.67,
+                    "offsiteTreatment": 0.3,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M08",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14238,
+                        "en": "Total particulate matter",
+                        "fr": "Matière particulaire totale"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Due to equipment failure, the site was offline for the bulk of 2021."
+                        }
+                    ],
+                    "releaseAir": 0.74,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2023,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.88,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.57,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 02",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14190,
+                        "en": "Arsenic (and its compounds)",
+                        "fr": "Arsenic (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 85.75,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 03",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14192,
+                        "en": "Cadmium (and its compounds)",
+                        "fr": "Cadmium (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 1.45,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 44.3,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M08",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14238,
+                        "en": "Total particulate matter",
+                        "fr": "Matière particulaire totale"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.43,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2024,
+            "npriId": 29415,
+            "reportTypes": [
+                {
+                    "id": 3,
+                    "en": "NPRI DNMC",
+                    "fr": "NRPCD de l’INRP"
+                }
+            ],
+            "substanceSummary": []
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": false,
+        "reasonsForPlan": [],
+        "noticeType": [],
+        "planComment": null,
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": false,
+        "reasonsForNoActivities": [
+            {
+                "id": 18,
+                "en": "Other (please specify)",
+                "fr": "Autres (précisez dans le champ des commentaires)"
+            }
+        ],
+        "noActivitiesComment": "Due to site being offline in 2022, the plant is currently undergoing upgrades but this work was not completed in 2022. The plant will be restarting in 2023 and the impact of the changes will determine if a reduction in pollution was achieved.",
+        "activityCategories": []
+    },
+    "releases": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 0.0015,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        },
+        {
+            "substance": {
+                "cas": "630-08-0",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13873,
+                "en": "Carbon monoxide",
+                "fr": "Monoxyde de carbone"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 0.0019,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        },
+        {
+            "substance": {
+                "cas": "NA - M08",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14238,
+                "en": "Total particulate matter",
+                "fr": "Matière particulaire totale"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 0.0001,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        }
+    ],
+    "reportTypes": [
+        {
+            "id": 1,
+            "en": "NPRI Inventory",
+            "fr": "Inventaire de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-06-06T16:50:36.834816",
+    "substanceSummary": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [
+                {
+                    "type": {
+                        "id": 201,
+                        "en": "On-site releases comment",
+                        "fr": "Commentaire sur les rejets sur le site"
+                    },
+                    "comment": "Site was put into a preservation mode going into 2022 which reduced the total emissions further."
+                }
+            ],
+            "releaseAir": 0.0015,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "No",
+                "fr": "Non"
+            }
+        },
+        {
+            "substance": {
+                "cas": "630-08-0",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13873,
+                "en": "Carbon monoxide",
+                "fr": "Monoxyde de carbone"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [
+                {
+                    "type": {
+                        "id": 201,
+                        "en": "On-site releases comment",
+                        "fr": "Commentaire sur les rejets sur le site"
+                    },
+                    "comment": "Site was put into a preservation mode going into 2022 which reduced the total emissions further."
+                }
+            ],
+            "releaseAir": 0.0019,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "No",
+                "fr": "Non"
+            }
+        },
+        {
+            "substance": {
+                "cas": "NA - M08",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14238,
+                "en": "Total particulate matter",
+                "fr": "Matière particulaire totale"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [
+                {
+                    "type": {
+                        "id": 201,
+                        "en": "On-site releases comment",
+                        "fr": "Commentaire sur les rejets sur le site"
+                    },
+                    "comment": "Site was put into a preservation mode going into 2022 which reduced the total emissions further."
+                }
+            ],
+            "releaseAir": 0.0001,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "No",
+                "fr": "Non"
+            }
+        }
+    ]
+}

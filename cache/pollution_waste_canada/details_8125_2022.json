@@ -1,0 +1,1021 @@
+{
+    "comments": [
+        {
+            "type": {
+                "id": 205,
+                "en": "Reason the facility does not meet the criteria for NPRI",
+                "fr": "La raison pour laquelle cette installation ne rencontre pas les critères de déclaration de l'INRP"
+            },
+            "comment": "As per the Guide for Reporting to the National Pollutant Release Inventory 2022-2024, only filterable particulate matter is required to be reported.  In previous years, both filterable and condensable particulate matter were reported.  With the inclusion of condensable particulate matter, the limits for PM10 and PM2.5 reporting were met.  With the removal of the condensable particulate matter, and utilizing only an USEPA approved emission factor for filterable particulate matter only, reporting limits are no longer met and therefore, no reporting is required."
+        }
+    ],
+    "company": {
+        "businessNumber": "839391471",
+        "name": "Saint John LNG Limited Partnership",
+        "duns": "",
+        "tradeName": {
+            "en": "Saint John LNG",
+            "fr": ""
+        },
+        "website": "www.saintjohnlng.com",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "PoBox 2029 Post Office Box 2530 Red Head Road, Saint John, New Brunswick, E2L 3T5, Canada",
+                "fr": "B.P. 2029 Case postale 2530 Red Head Chemin, Saint John, Nouveau-Brunswick, E2L 3T5, Canada"
+            },
+            "address1": null,
+            "city": "Saint John",
+            "postalZip": "E2L 3T5",
+            "province": {
+                "en": "New Brunswick",
+                "fr": "Nouveau-Brunswick"
+            },
+            "country": ""
+        },
+        "parentCompanies": [
+            {
+                "name": "Repsol Canada Ltd.",
+                "businessNumber": "839863545",
+                "duns": "",
+                "percentageOwned": "100.0000",
+                "address": ""
+            }
+        ]
+    },
+    "contacts": [
+        {
+            "firstName": "Sergio",
+            "lastName": "Carvana",
+            "email": "sergio.carvana@saintjohnlng.com",
+            "phoneNumber": "506-638-1305",
+            "extension": "",
+            "position": "HSSE Manager",
+            "language": {
+                "code": "E",
+                "en": "English",
+                "fr": "Anglais"
+            }
+        }
+    ],
+    "disposalsTransfers": [],
+    "egus": [],
+    "facility": {
+        "npriId": 8125,
+        "ghgrpId": null,
+        "name": "Saint John LNG Marine Terminal & Multi-Purpose Pier",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 63,
+        "industry": {
+            "naics6Primary": {
+                "id": 221210,
+                "en": "Natural gas distribution",
+                "fr": "Distribution de gaz naturel"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 2212,
+                "en": "Natural gas distribution",
+                "fr": "Distribution de gaz naturel"
+            },
+            "naics2": {
+                "id": 22,
+                "en": "Utilities",
+                "fr": "Services publics"
+            },
+            "keyIndustrialSector": {
+                "en": "Oil and Gas Pipelines and Storage",
+                "fr": "Stockage et transport par gazoducs d'huile et de gaz\r\n"
+            }
+        },
+        "website": "",
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "2530 Red Head Road, Saint John, New Brunswick, E2L 3T5, Canada",
+                "fr": "2530 Red Head Chemin, Saint John, Nouveau-Brunswick, E2L 3T5, Canada"
+            },
+            "address1": "2530 Red Head Road",
+            "city": "Saint John",
+            "postalZip": "E2L 3T5",
+            "province": {
+                "en": "New Brunswick",
+                "fr": "Nouveau-Brunswick"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 45.2125,
+            "longitude": -65.9781,
+            "censusSubdivision": {
+                "en": "Saint John",
+                "fr": "Saint John"
+            },
+            "censusArea": {
+                "en": "Saint John",
+                "fr": "Saint John"
+            },
+            "economicArea": {
+                "en": "Saint John--St. Stephen",
+                "fr": "Saint John--St. Stephen"
+            },
+            "censusDivision": {
+                "en": "Saint John",
+                "fr": "Saint John"
+            },
+            "ecoZone": {
+                "en": "Atlantic Maritime",
+                "fr": "Maritime de l'Atlantique"
+            },
+            "drainageArea": {
+                "en": "Maritime Provinces Drainage Area",
+                "fr": "Aire de drainage des provinces Maritimes"
+            },
+            "datum": 1983,
+            "landsurvey": null,
+            "topograph": "A-059-L/021-H-4",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": null,
+        "activities": [],
+        "otherPrograms": [
+            {
+                "identifier": "G10594",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [
+            {
+                "permitNumber": "I-11592",
+                "issuingAgency": "New Brunswick Department of the Environment & Local Government "
+            }
+        ],
+        "formattedAddress": {
+            "en": "2530 Red Head Road, Saint John, New Brunswick, E2L 3T5, Canada",
+            "fr": "2530 Red Head Chemin, Saint John, Nouveau-Brunswick, E2L 3T5, Canada"
+        }
+    },
+    "ghgrpId": null,
+    "npriId": 8125,
+    "otherYears": [
+        {
+            "reportYear": 2015,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 202,
+                                "en": "Substance criteria comment",
+                                "fr": "Commentaire sur le statut de déclaration de la substance"
+                            },
+                            "comment": "Technical Contact, Company Coordinator: Fraser Forsythe SE Manager\nPlease be advised that the Emission Factor used to calculate the PM10 and PM 2.5 emissions are predicated on EPA document: “AP 42, Fifth Edition, Compilation of Air Pollutant Emission Factors, Volume 1: Stationary Point and Area Sources”; which is not based on the type of combustion process employed by the cryogenic heaters used by our process to re-gasify LNG. We wish therefore to reserve the right to revise the emission values reported based on further review of emissions from the submerged combustion methodology of water heating for vaporization of LNG.\n\nRegards,\n\nFraser\n"
+                        }
+                    ],
+                    "releaseAir": 0.92,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 202,
+                                "en": "Substance criteria comment",
+                                "fr": "Commentaire sur le statut de déclaration de la substance"
+                            },
+                            "comment": "Technical Contact, Company Coordinator: Fraser Forsythe SE Manager\nPlease be advised that the Emission Factor used to calculate the PM10 and PM 2.5 emissions are predicated on EPA document: “AP 42, Fifth Edition, Compilation of Air Pollutant Emission Factors, Volume 1: Stationary Point and Area Sources”; which is not based on the type of combustion process employed by the cryogenic heaters used by our process to re-gasify LNG. We wish therefore to reserve the right to revise the emission values reported based on further review of emissions from the submerged combustion methodology of water heating for vaporization of LNG.\n\nRegards,\n\nFraser\n"
+                        }
+                    ],
+                    "releaseAir": 0.92,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2014,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 202,
+                                "en": "Substance criteria comment",
+                                "fr": "Commentaire sur le statut de déclaration de la substance"
+                            },
+                            "comment": "This substance no longer meets the criteria as the installation of a fourth boil off gas compressor and high pressure booster compresssor (Sept 2013) allows the Terminal to operate at lower send out rates, and reduces air emissions.  "
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "This substance no longer meets the criteria as the installation of a fourth boil off gas compressor and high pressure booster compressor (Sept 2013) allows the Terminal to operate at lower send out rates, and reduces air emissions.  "
+                        }
+                    ],
+                    "releaseAir": 8.7131,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "This substance no longer meets the criteria as the installation of a fourth boil off gas compressor and high pressure booster compressor (Sept 2013)  allows the Terminal to operate at lower send out rates, and reduces air emissions.  "
+                        },
+                        {
+                            "type": {
+                                "id": 202,
+                                "en": "Substance criteria comment",
+                                "fr": "Commentaire sur le statut de déclaration de la substance"
+                            },
+                            "comment": "This substance no longer meets the criteria as the installation of a fourth boil off gas compressor and high pressure booster compressor (Sept 2013) allows the Terminal to operate at lower send out rates, and reduces air emissions.  "
+                        }
+                    ],
+                    "releaseAir": 3.3636,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2013,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Boil Off Gas (BOG) compressors shut-down to allow installation of new booster compressor and addition of fourth BOG compressor.  This increased the amount of flared gas in 2013.  The new Booster compressor will significantly reduce the amount of flaring in the future."
+                        }
+                    ],
+                    "releaseAir": 71.53,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Boil Off Gas (BOG) compressors shut-down to allow installation of new booster compressor and addition of fourth BOG compressor.  This increased the amount of flared gas in 2013.  The new Booster compressor will significantly reduce the amount of flaring in the future."
+                        }
+                    ],
+                    "releaseAir": 22.08,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2012,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 26.11,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2011,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "n/a"
+                        }
+                    ],
+                    "releaseAir": 41.53,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2016,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.62,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.62,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2017,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.52,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.52,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2018,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.5694,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.5694,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2010,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "The above field would not allow for the monthly percentages (came back with errors).  The below are the monthly percentages of total NOx releases.     January -16.68%  February -12.12%  March - 7.40%  April - 9.57%  May - 7.33%  June - 6.58%   July -5.68%"
+                        }
+                    ],
+                    "releaseAir": 26.0,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2019,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.8259,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.8259,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2020,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.04863,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.04863,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2021,
+            "npriId": 8125,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.8323,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.8323,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": false,
+        "reasonsForPlan": [],
+        "noticeType": [],
+        "planComment": null,
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": true,
+        "reasonsForNoActivities": [],
+        "noActivitiesComment": null,
+        "activityCategories": []
+    },
+    "releases": [],
+    "reportTypes": [
+        {
+            "id": 3,
+            "en": "NPRI DNMC",
+            "fr": "NRPCD de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-05-04T11:16:34.379315",
+    "substanceSummary": []
+}

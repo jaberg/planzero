@@ -1,0 +1,1919 @@
+{
+    "comments": [],
+    "company": {
+        "businessNumber": "861373645",
+        "name": "Enmax Generation Portfolio Inc",
+        "duns": "255051583",
+        "tradeName": {
+            "en": "",
+            "fr": ""
+        },
+        "website": "",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "141 50 Avenue Southeast, Calgary, Alberta, T2G 4S7, Canada",
+                "fr": "141 50 Avenue Sud-Est, Calgary, Alberta, T2G 4S7, Canada"
+            },
+            "address1": null,
+            "city": "Calgary",
+            "postalZip": "T2G 4S7",
+            "province": {
+                "en": "Alberta",
+                "fr": "Alberta"
+            },
+            "country": ""
+        },
+        "parentCompanies": [
+            {
+                "name": "Enmax Generation Portfolio Inc.",
+                "businessNumber": "861373645",
+                "duns": "255051583",
+                "percentageOwned": "100.0000",
+                "address": ""
+            }
+        ]
+    },
+    "contacts": [
+        {
+            "firstName": "Dave",
+            "lastName": "Reid",
+            "email": "dreid@enmax.com",
+            "phoneNumber": "403-514-3431",
+            "extension": "",
+            "position": "Environment Specialist ",
+            "language": {
+                "code": "E",
+                "en": "English",
+                "fr": "Anglais"
+            }
+        }
+    ],
+    "disposalsTransfers": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        },
+        {
+            "substance": {
+                "cas": "NA - M09",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14239,
+                "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                "fr": "PM10 - Matière particulaire <= 10 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        },
+        {
+            "substance": {
+                "cas": "NA - M10",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14240,
+                "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        }
+    ],
+    "egus": [],
+    "facility": {
+        "npriId": 23543,
+        "ghgrpId": "G10607",
+        "name": "Crossfield Energy Centre",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 3,
+        "industry": {
+            "naics6Primary": {
+                "id": 221112,
+                "en": "Fossil-fuel electric power generation",
+                "fr": "Production d'électricité à partir de combustibles fossiles"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 2211,
+                "en": "Electric power generation, transmission and distribution",
+                "fr": "Production, transport et distribution d'électricité"
+            },
+            "naics2": {
+                "id": 22,
+                "en": "Utilities",
+                "fr": "Services publics"
+            },
+            "keyIndustrialSector": {
+                "en": "Electricity",
+                "fr": "Électricité\r\n"
+            }
+        },
+        "website": "",
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "Crossfield, Alberta, T0M 0S0, Canada",
+                "fr": "Crossfield, Alberta, T0M 0S0, Canada"
+            },
+            "address1": "",
+            "city": "Crossfield",
+            "postalZip": "T0M 0S0",
+            "province": {
+                "en": "Alberta",
+                "fr": "Alberta"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 51.3994,
+            "longitude": -114.0049,
+            "censusSubdivision": {
+                "en": "Rocky View County",
+                "fr": "Rocky View County"
+            },
+            "censusArea": {
+                "en": "Calgary",
+                "fr": "Calgary"
+            },
+            "economicArea": {
+                "en": "Calgary",
+                "fr": "Calgary"
+            },
+            "censusDivision": {
+                "en": "Division No.  6",
+                "fr": "Division No.  6"
+            },
+            "ecoZone": {
+                "en": "Prairie",
+                "fr": "Prairies"
+            },
+            "drainageArea": {
+                "en": "Nelson River Drainage Area",
+                "fr": "Aire de drainage du fleuve Nelson"
+            },
+            "datum": 1983,
+            "landsurvey": "16-13-028-01-W5",
+            "topograph": "D-071-H/082-O-8",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": {
+            "mon": true,
+            "tue": true,
+            "wed": true,
+            "thu": true,
+            "fri": true,
+            "sat": true,
+            "sun": true,
+            "operatingHours": 5.43,
+            "startTime": "00:00",
+            "shutdownPeriods": []
+        },
+        "activities": [
+            {
+                "group": 1,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            },
+            {
+                "group": 2,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            }
+        ],
+        "otherPrograms": [
+            {
+                "identifier": "246216-00-00",
+                "url": null,
+                "en": "Alberta EPEA Approval number or Code of Practice Registration number",
+                "fr": "Numéro d'approbation de l'EPEA de l'Alberta ou Numéro d'enregistrement du code de pratique"
+            },
+            {
+                "identifier": "G10607",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [
+            {
+                "permitNumber": "24621600",
+                "issuingAgency": "Alberta Environment"
+            }
+        ],
+        "formattedAddress": {
+            "en": "16-13-028-01-W5,Crossfield,Alberta,T0M 0S0",
+            "fr": "16-13-028-01-W5,Crossfield,Alberta,T0M 0S0"
+        }
+    },
+    "ghgrpId": "G10607",
+    "npriId": 23543,
+    "otherYears": [
+        {
+            "reportYear": 2015,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 23.168,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2014,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 29.534,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "118-74-1",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 13544,
+                        "en": "Hexachlorobenzene",
+                        "fr": "Hexachlorobenzène"
+                    },
+                    "unitType": {
+                        "en": "grams",
+                        "fr": "grammes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - D/F",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 14236,
+                        "en": "Dioxins and furans - total",
+                        "fr": "Dioxines et furannes - totales"
+                    },
+                    "unitType": {
+                        "en": "g TEQ",
+                        "fr": "g ET"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2013,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 68.089,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "118-74-1",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 13544,
+                        "en": "Hexachlorobenzene",
+                        "fr": "Hexachlorobenzène"
+                    },
+                    "unitType": {
+                        "en": "grams",
+                        "fr": "grammes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - D/F",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 14236,
+                        "en": "Dioxins and furans - total",
+                        "fr": "Dioxines et furannes - totales"
+                    },
+                    "unitType": {
+                        "en": "g TEQ",
+                        "fr": "g ET"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Updated emission factor"
+                        }
+                    ],
+                    "releaseAir": 0.606,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Updated emission factor."
+                        }
+                    ],
+                    "releaseAir": 0.606,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2012,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 46.078,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "118-74-1",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 13544,
+                        "en": "Hexachlorobenzene",
+                        "fr": "Hexachlorobenzène"
+                    },
+                    "unitType": {
+                        "en": "grams",
+                        "fr": "grammes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - D/F",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 14236,
+                        "en": "Dioxins and furans - total",
+                        "fr": "Dioxines et furannes - totales"
+                    },
+                    "unitType": {
+                        "en": "g TEQ",
+                        "fr": "g ET"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.47,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.47,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2011,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Increased power generation."
+                        }
+                    ],
+                    "releaseAir": 55.931,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "118-74-1",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 13544,
+                        "en": "Hexachlorobenzene",
+                        "fr": "Hexachlorobenzène"
+                    },
+                    "unitType": {
+                        "en": "grams",
+                        "fr": "grammes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - D/F",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 14236,
+                        "en": "Dioxins and furans - total",
+                        "fr": "Dioxines et furannes - totales"
+                    },
+                    "unitType": {
+                        "en": "g TEQ",
+                        "fr": "g ET"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Increased power generation."
+                        }
+                    ],
+                    "releaseAir": 2.066,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Increased power generation"
+                        }
+                    ],
+                    "releaseAir": 2.066,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2019,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 50.68,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2017,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 24.45,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2016,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 7.876,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "No",
+                        "fr": "Non"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2018,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 54.21,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2009,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "118-74-1",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 13544,
+                        "en": "Hexachlorobenzene",
+                        "fr": "Hexachlorobenzène"
+                    },
+                    "unitType": {
+                        "en": "grams",
+                        "fr": "grammes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - D/F",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 14236,
+                        "en": "Dioxins and furans - total",
+                        "fr": "Dioxines et furannes - totales"
+                    },
+                    "unitType": {
+                        "en": "g TEQ",
+                        "fr": "g ET"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2010,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 215,
+                                "en": "Reason why substance was added to the report ",
+                                "fr": "Raison pour laquelle la substance a été ajoutée au rapport "
+                            },
+                            "comment": "Increased power generation."
+                        },
+                        {
+                            "type": {
+                                "id": 15,
+                                "en": "Inventory Program Change",
+                                "fr": ""
+                            },
+                            "comment": "Increased power generation."
+                        }
+                    ],
+                    "releaseAir": 37.704,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "118-74-1",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 13544,
+                        "en": "Hexachlorobenzene",
+                        "fr": "Hexachlorobenzène"
+                    },
+                    "unitType": {
+                        "en": "grams",
+                        "fr": "grammes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - D/F",
+                        "npriPart": [
+                            "3"
+                        ],
+                        "id": 14236,
+                        "en": "Dioxins and furans - total",
+                        "fr": "Dioxines et furannes - totales"
+                    },
+                    "unitType": {
+                        "en": "g TEQ",
+                        "fr": "g ET"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 215,
+                                "en": "Reason why substance was added to the report ",
+                                "fr": "Raison pour laquelle la substance a été ajoutée au rapport "
+                            },
+                            "comment": "Increased power generation"
+                        },
+                        {
+                            "type": {
+                                "id": 15,
+                                "en": "Inventory Program Change",
+                                "fr": ""
+                            },
+                            "comment": "Increased power generation"
+                        }
+                    ],
+                    "releaseAir": 1.398,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 215,
+                                "en": "Reason why substance was added to the report ",
+                                "fr": "Raison pour laquelle la substance a été ajoutée au rapport "
+                            },
+                            "comment": "Increased power generation"
+                        },
+                        {
+                            "type": {
+                                "id": 15,
+                                "en": "Inventory Program Change",
+                                "fr": ""
+                            },
+                            "comment": "Increased power generation"
+                        }
+                    ],
+                    "releaseAir": 1.398,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2020,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 20.68,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2021,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 74.729,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "630-08-0",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13873,
+                        "en": "Carbon monoxide",
+                        "fr": "Monoxyde de carbone"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 21.185,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.718,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.718,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2023,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 76.95,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.64,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.64,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2024,
+            "npriId": 23543,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 101.9,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.4,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": false,
+        "reasonsForPlan": [],
+        "noticeType": [],
+        "planComment": null,
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": false,
+        "reasonsForNoActivities": [
+            {
+                "id": 12,
+                "en": "Substance, process or technology alternatives are unknown or unavailable",
+                "fr": "Des substances, procédés ou technologies de rechange sont inconnues ou ne sont pas disponibles"
+            }
+        ],
+        "noActivitiesComment": null,
+        "activityCategories": []
+    },
+    "releases": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 60.61,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        },
+        {
+            "substance": {
+                "cas": "NA - M09",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14239,
+                "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                "fr": "PM10 - Matière particulaire <= 10 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 0.51,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        },
+        {
+            "substance": {
+                "cas": "NA - M10",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14240,
+                "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 0.51,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        }
+    ],
+    "reportTypes": [
+        {
+            "id": 1,
+            "en": "NPRI Inventory",
+            "fr": "Inventaire de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-06-01T18:58:35.301681",
+    "substanceSummary": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [],
+            "releaseAir": 60.61,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        },
+        {
+            "substance": {
+                "cas": "NA - M09",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14239,
+                "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                "fr": "PM10 - Matière particulaire <= 10 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [],
+            "releaseAir": 0.51,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        },
+        {
+            "substance": {
+                "cas": "NA - M10",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14240,
+                "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [],
+            "releaseAir": 0.51,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        }
+    ]
+}

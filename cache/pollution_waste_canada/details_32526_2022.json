@@ -1,0 +1,909 @@
+{
+    "comments": [],
+    "company": {
+        "businessNumber": "133027854",
+        "name": "RGMRM",
+        "duns": "",
+        "tradeName": {
+            "en": "",
+            "fr": ""
+        },
+        "website": "",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "800 AVENUE LEONARD-E.-SCHLEMM, BAIE-COMEAU, Quebec, G4Z 3B7, Canada",
+                "fr": "800 AVENUE LEONARD-E.-SCHLEMM, BAIE-COMEAU, Québec, G4Z 3B7, Canada"
+            },
+            "address1": null,
+            "city": "BAIE-COMEAU",
+            "postalZip": "G4Z 3B7",
+            "province": {
+                "en": "Quebec",
+                "fr": "Québec"
+            },
+            "country": ""
+        },
+        "parentCompanies": []
+    },
+    "contacts": [
+        {
+            "firstName": "Patrick",
+            "lastName": "Fortin",
+            "email": "patrick.fortin@regiemanicouagan.qc.ca",
+            "phoneNumber": "418-589-4557",
+            "extension": "223",
+            "position": "Coordonnateur Environnement",
+            "language": {
+                "code": "F",
+                "en": "French",
+                "fr": "Français"
+            }
+        }
+    ],
+    "disposalsTransfers": [
+        {
+            "substance": {
+                "cas": "NA - M09",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14239,
+                "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                "fr": "PM10 - Matière particulaire <= 10 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        }
+    ],
+    "egus": [],
+    "facility": {
+        "npriId": 32526,
+        "ghgrpId": null,
+        "name": "LET RAGUENEAU",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 10,
+        "industry": {
+            "naics6Primary": {
+                "id": 562210,
+                "en": "Waste treatment and disposal",
+                "fr": "Traitement et élimination des déchets"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 5622,
+                "en": "Waste treatment and disposal",
+                "fr": "Traitement et élimination des déchets"
+            },
+            "naics2": {
+                "id": 56,
+                "en": "Administrative and support, waste management and remediation services",
+                "fr": "Services administratifs, services de soutien, services de gestion des déchets et services d'assainissement"
+            },
+            "keyIndustrialSector": {
+                "en": "Waste Treatment and Disposal",
+                "fr": "Traitement et élimination des déchets\r\n"
+            }
+        },
+        "website": null,
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "5101 CHEMIN DE LA SCIERIE DES OUTARDES, RAGUENEAU, Quebec, G0H 1S0, Canada",
+                "fr": "5101 CHEMIN DE LA SCIERIE DES OUTARDES, RAGUENEAU, Québec, G0H 1S0, Canada"
+            },
+            "address1": "5101 CHEMIN DE LA SCIERIE DES OUTARDES",
+            "city": "RAGUENEAU",
+            "postalZip": "G0H 1S0",
+            "province": {
+                "en": "Quebec",
+                "fr": "Québec"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 49.16077,
+            "longitude": -68.48379,
+            "censusSubdivision": {
+                "en": "Ragueneau",
+                "fr": "Ragueneau"
+            },
+            "censusArea": {
+                "en": "Baie-Comeau",
+                "fr": "Baie-Comeau"
+            },
+            "economicArea": {
+                "en": "Côte-Nord",
+                "fr": "Côte-Nord"
+            },
+            "censusDivision": {
+                "en": "Manicouagan",
+                "fr": "Manicouagan"
+            },
+            "ecoZone": {
+                "en": "Boreal Shield",
+                "fr": "Bouclier boréal"
+            },
+            "drainageArea": {
+                "en": "St. Lawrence Drainage Area",
+                "fr": "Aire de drainage du Saint-Laurent"
+            },
+            "datum": 1983,
+            "landsurvey": "04-33-002-12-E8",
+            "topograph": "B-099-E/022-F-01",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": {
+            "mon": true,
+            "tue": true,
+            "wed": true,
+            "thu": true,
+            "fri": true,
+            "sat": true,
+            "sun": true,
+            "operatingHours": 8.0,
+            "startTime": "08:00",
+            "shutdownPeriods": []
+        },
+        "activities": [
+            {
+                "group": 1,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            },
+            {
+                "group": 2,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            }
+        ],
+        "otherPrograms": [
+            {
+                "identifier": "G11952",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [],
+        "formattedAddress": {
+            "en": "5101 CHEMIN DE LA SCIERIE DES OUTARDES, RAGUENEAU, Quebec, G0H 1S0, Canada",
+            "fr": "5101 CHEMIN DE LA SCIERIE DES OUTARDES, RAGUENEAU, Québec, G0H 1S0, Canada"
+        }
+    },
+    "ghgrpId": null,
+    "npriId": 32526,
+    "otherYears": [
+        {
+            "reportYear": 2016,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.23,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2018,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.23,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2017,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.19,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2014,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.1,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.31,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2015,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.91,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.29,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2013,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.04,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.3,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2019,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.84,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2020,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.95,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2021,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.29,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2023,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 2.155,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.4783,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2024,
+            "npriId": 32526,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - M09",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14239,
+                        "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                        "fr": "PM10 - Matière particulaire <= 10 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Pour les poussières de routes non pavées : mêmes équations utilisées que par le passé (U.S. EPA AP-42 chapitre 13). Certains paramètres de calcul ont été revalidés pour 2024 (Masse des camions, nombre de camions)"
+                        }
+                    ],
+                    "releaseAir": 4.069,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - M10",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 14240,
+                        "en": "PM2.5 - Particulate Matter <= 2.5 Micrometers",
+                        "fr": "PM2,5 - Matière particulaire <= 2,5 micromètres"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Pour les poussières de routes non pavées : mêmes équations utilisées que par le passé (U.S. EPA AP-42 chapitre 13). Certains paramètres de calcul ont été revalidés pour 2024 (Masse des camions, nombre de camions)"
+                        }
+                    ],
+                    "releaseAir": 0.687,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": false,
+        "reasonsForPlan": [],
+        "noticeType": [],
+        "planComment": null,
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": false,
+        "reasonsForNoActivities": [
+            {
+                "id": 14,
+                "en": "Insufficient capital to implement activities",
+                "fr": "Il n'y a pas suffisamment de capitaux pour exécuter les activités"
+            },
+            {
+                "id": 15,
+                "en": "Insufficient understanding of how to implement pollution prevention activities",
+                "fr": "Il n'y a pas suffisamment de compréhension par rapport à comment exécuter des activités de prévention de la pollution"
+            }
+        ],
+        "noActivitiesComment": null,
+        "activityCategories": []
+    },
+    "releases": [
+        {
+            "substance": {
+                "cas": "NA - M09",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14239,
+                "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                "fr": "PM10 - Matière particulaire <= 10 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": null,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": 2.22,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        }
+    ],
+    "reportTypes": [
+        {
+            "id": 1,
+            "en": "NPRI Inventory",
+            "fr": "Inventaire de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-05-03T11:54:36.237315",
+    "substanceSummary": [
+        {
+            "substance": {
+                "cas": "NA - M09",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 14239,
+                "en": "PM10 - Particulate Matter <= 10 Micrometers",
+                "fr": "PM10 - Matière particulaire <= 10 micromètres"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [],
+            "releaseAir": 2.22,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        }
+    ]
+}

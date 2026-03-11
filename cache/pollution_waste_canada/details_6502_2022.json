@@ -1,0 +1,1711 @@
+{
+    "comments": [
+        {
+            "type": {
+                "id": 225,
+                "en": "General comments about the facility",
+                "fr": "Commentaires généraux à propos de l'installation"
+            },
+            "comment": "Certifying Official:\r\nSam Rageh\r\nManager, Environment and Regulatory (Legal Services Department)\r\nEmail: Sam.Rageh@rmwb.ca\r\nPhone: 780-762-5381"
+        }
+    ],
+    "company": {
+        "businessNumber": "106930175",
+        "name": "Regional Municipality of Wood Buffalo",
+        "duns": "",
+        "tradeName": {
+            "en": "",
+            "fr": ""
+        },
+        "website": "www.woodbuffalo.ab.ca",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "General Delivery 9909 Franklin Avenue, Fort McMurray, Alberta, T9H 2K4, Canada",
+                "fr": "Poste restante 9909 Franklin Avenue, Fort McMurray, Alberta, T9H 2K4, Canada"
+            },
+            "address1": null,
+            "city": "Fort McMurray",
+            "postalZip": "T9H 2K4",
+            "province": {
+                "en": "Alberta",
+                "fr": "Alberta"
+            },
+            "country": ""
+        },
+        "parentCompanies": []
+    },
+    "contacts": [
+        {
+            "firstName": "Sam",
+            "lastName": "Rageh",
+            "email": "sam.rageh@rmwb.ca",
+            "phoneNumber": "780-838-7053",
+            "extension": "",
+            "position": "E&R Manager",
+            "language": {
+                "code": "E",
+                "en": "English",
+                "fr": "Anglais"
+            }
+        }
+    ],
+    "disposalsTransfers": [
+        {
+            "substance": {
+                "cas": "NA - 16",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14214,
+                "en": "Ammonia (total)",
+                "fr": "Ammoniac (total)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        },
+        {
+            "substance": {
+                "cas": "NA - 22",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14220,
+                "en": "Phosphorus (total)",
+                "fr": "Phosphore (total)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        }
+    ],
+    "egus": [],
+    "facility": {
+        "npriId": 6502,
+        "ghgrpId": "G11040",
+        "name": "Fort McMurray WWTP",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 28,
+        "industry": {
+            "naics6Primary": {
+                "id": 221320,
+                "en": "Sewage treatment facilities",
+                "fr": "Installations d'épuration des eaux usées"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 2213,
+                "en": "Water, sewage and other systems",
+                "fr": "Réseaux d'aqueduc et d'égout et autres"
+            },
+            "naics2": {
+                "id": 22,
+                "en": "Utilities",
+                "fr": "Services publics"
+            },
+            "keyIndustrialSector": {
+                "en": "Water and Wastewater Systems",
+                "fr": "Systèmes d'eau et des eaux usées\r\n"
+            }
+        },
+        "website": "www.woodbuffalo.ab.ca",
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "820 Memorial Drive, Fort McMurray, Alberta, T9K 0N9, Canada",
+                "fr": "820 Memorial Entrain, Fort McMurray, Alberta, T9K 0N9, Canada"
+            },
+            "address1": "820 Memorial Drive",
+            "city": "Fort McMurray",
+            "postalZip": "T9K 0N9",
+            "province": {
+                "en": "Alberta",
+                "fr": "Alberta"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 56.76454,
+            "longitude": -111.41481,
+            "censusSubdivision": {
+                "en": "Wood Buffalo",
+                "fr": "Wood Buffalo"
+            },
+            "censusArea": {
+                "en": "Wood Buffalo",
+                "fr": "Wood Buffalo"
+            },
+            "economicArea": {
+                "en": "Wood Buffalo--Cold Lake",
+                "fr": "Wood Buffalo--Cold Lake"
+            },
+            "censusDivision": {
+                "en": "Division No. 16",
+                "fr": "Division No. 16"
+            },
+            "ecoZone": {
+                "en": "Boreal PLain",
+                "fr": "Plaines boréales"
+            },
+            "drainageArea": {
+                "en": "Great Slave Lake Drainage Area",
+                "fr": "Aire de drainage du Grand lac des Esclaves"
+            },
+            "datum": 1983,
+            "landsurvey": "09-31-089-09-W4",
+            "topograph": "D-014-D/074-D-14",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": null,
+        "activities": [
+            {
+                "group": 1,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            },
+            {
+                "group": 2,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            }
+        ],
+        "otherPrograms": [
+            {
+                "identifier": "G11040",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [
+            {
+                "permitNumber": "689-02-00",
+                "issuingAgency": "Alberta Environment and Parks"
+            }
+        ],
+        "formattedAddress": {
+            "en": "820 Memorial Drive, Fort McMurray, Alberta, T9K 0N9, Canada",
+            "fr": "820 Memorial Entrain, Fort McMurray, Alberta, T9K 0N9, Canada"
+        }
+    },
+    "ghgrpId": "G11040",
+    "npriId": 6502,
+    "otherYears": [
+        {
+            "reportYear": 2015,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "In 2015 the plant received less hauled septage and reduced influent flow due to the economic down turn in Fort McMurray"
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Due to the economic change in Fort McMurray, the plant received less hauled septage and overall reduced loading."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 2.05,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2013,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Operation teams continue to work with consultants to reduce ammonia removal in final effluent. "
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Continuing to optimize new WWTP and population increase."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 6.79,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2012,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Continuing to optimize new wastewater treatment plant."
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Operations teams are continuing to work with our consultants to increase ammonia removal in our final effluent.\n"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 2.77,
+                    "releaseLand": null,
+                    "releaseAllMedia": 1.0,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2011,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Continuing to optimize new wastewater treatment plant."
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Anual WWTP Effluent flow was 8,827,469,000 L/year for 2010\n\nAnual WWTP Effluent flow was 8,431,500,000 L/Year for 2011"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 4.2,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2016,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Reduced effluent flows due to lower population in response to a recent economic down turn"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 1.16,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2017,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "No significant changes"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 1.16,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2018,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 3,
+                    "en": "NPRI DNMC",
+                    "fr": "NRPCD de l’INRP"
+                }
+            ],
+            "substanceSummary": []
+        },
+        {
+            "reportYear": 2009,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Decrease in Ammonia released from 2008 to 2009 a result of new waste water treamnet plant in operation."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 97.62,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2010,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "New BNR waste water treatment plant"
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "New BNR waste water treatment plant is fully operational and has significantly reduced ammonia."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 8.13,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2008,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "2004, 2005, 2006 reported in Kg and not in Tonnes"
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Increase from previous year a result of increase growth in Fort McMurray"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 254.15,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2007,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Possible error in data reporting previous year"
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Flows for the wastewater lagoons have increased over previous year.  New WWTP is under construction for completion in 2009."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 230.36,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2006,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Tremendous growth is being experienced in the community due to Oilsand development.  A new Tertiary Treatment plant is under construction and will operational by mod 2008."
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Fort McMurray is experiencing extreme rapid growth.  A new Tirtiary Treatment Plant is under construction and will be operational by mid 2008."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Due to growth of the community."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 267.5,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2005,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Rapid growth in the community.  50% of treatment capacity was put off line to accommodate the construction of the Tertiary Treatment Plant."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Ammonia is a natural by-product of waste water.  This material is not recyclable as previously reported."
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Fort McMurray is eperiening rapid growth.  New Tertiary Treatment Plant is under construction."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 181.3,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2004,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 104.8,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2003,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 104.8,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2002,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 91.8,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2001,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 71.96,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2000,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Fort McMurray's economy is booming at this point in time.  Also Fort McMurray will be required to remove nutrients within the next 5 - 10 years.  Knowing this, this is my best estimate for ammonia for the next few years.\r\n"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 106.6,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2020,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "No NPRI Report was submitted in 2019 and in 2018 it was reported as DNMC. "
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Not Applicable.  No disposals were reported in previous years."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Not Applicable.  No recycled quantities were reported in previous years."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 4.132,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 22",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14220,
+                        "en": "Phosphorus (total)",
+                        "fr": "Phosphore (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 215,
+                                "en": "Reason why substance was added to the report ",
+                                "fr": "Raison pour laquelle la substance a été ajoutée au rapport "
+                            },
+                            "comment": "This substance was not considered as reportable in the past."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 1.106,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2021,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "High ammonia concentration and quantities released in year 2020 are due to the flood that affected the biology in the bioreactors decreasing the effluent water quality.  However, the bioreactors were reseeded and in year 2021 the quality of treatment has been back to normal.   "
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Not Applicable. "
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Not Applicable.  No recycled quantities were reported in previous years."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 0.714209,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 22",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14220,
+                        "en": "Phosphorus (total)",
+                        "fr": "Phosphore (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "After the annual maintenance of bioreactors was completed in August 2021, phosphorous removal deteriorated for few months which resulted to higher phosphorous concentration and quantity (1.8 tonnes) of phosphorus released to the river in 2021 as compared to the previous year 2020 (1.1 tonnes).  This year (2022) phosphorous concentration in the effluent is back to normal."
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Not Applicable"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Not Applicable. No recycled quantities were reported in previous years."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 1.800006,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2023,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 16",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14214,
+                        "en": "Ammonia (total)",
+                        "fr": "Ammoniac (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "At the WWTP, several scheduled maintenance events occurred during the year that required diverting the influent to a storage lagoon within the facility until maintenance was completed. Naturally, due to storage and continuous biological reactions, biomass concentrations increase in wastewater.\r\nTherefore, once maintenance is completed, new and stored wastewater fluxes are mixed in varying proportions and returned to the plant for treatment. This resulted in increased concentration."
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Not Applicable"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Not Applicable"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 0.95,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 22",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14220,
+                        "en": "Phosphorus (total)",
+                        "fr": "Phosphore (total)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "At the WWTP, several scheduled maintenance events occurred during the year that required diverting the influent to a storage lagoon within the facility until maintenance was completed. Naturally, due to storage and continuous biological reactions, biomass concentrations increase in wastewater.\r\nTherefore, once maintenance is completed, new and stored wastewater fluxes are mixed in varying proportions and returned to the plant for treatment. This resulted in increased concentration."
+                        },
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Not Applicable"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Not Applicable"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 0.2,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2024,
+            "npriId": 6502,
+            "reportTypes": [
+                {
+                    "id": 3,
+                    "en": "NPRI DNMC",
+                    "fr": "NRPCD de l’INRP"
+                }
+            ],
+            "substanceSummary": []
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": true,
+        "reasonsForPlan": [
+            {
+                "en": "Plan was prepared or implemented for another government jurisdiction or Parliament (i.e. provincial government)",
+                "fr": "Plan préparé ou mis en œuvre pour une autre autorité gouvernementale (c.-à-d., autre ministère fédéral, province, municipalité)"
+            }
+        ],
+        "noticeType": [],
+        "planComment": "Alberta Environment",
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": true,
+        "reasonsForNoActivities": [],
+        "noActivitiesComment": null,
+        "activityCategories": []
+    },
+    "releases": [
+        {
+            "substance": {
+                "cas": "NA - 16",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14214,
+                "en": "Ammonia (total)",
+                "fr": "Ammoniac (total)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": null,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": 0.573,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        },
+        {
+            "substance": {
+                "cas": "NA - 22",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14220,
+                "en": "Phosphorus (total)",
+                "fr": "Phosphore (total)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": null,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": 1.3,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        }
+    ],
+    "reportTypes": [
+        {
+            "id": 1,
+            "en": "NPRI Inventory",
+            "fr": "Inventaire de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-05-31T19:36:19.798250",
+    "substanceSummary": [
+        {
+            "substance": {
+                "cas": "NA - 16",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14214,
+                "en": "Ammonia (total)",
+                "fr": "Ammoniac (total)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [
+                {
+                    "type": {
+                        "id": 201,
+                        "en": "On-site releases comment",
+                        "fr": "Commentaire sur les rejets sur le site"
+                    },
+                    "comment": "High ammonia concentration and quantities realized in previous years were due to the flood that affected the biology in the bioreactors. This has since been resolved (the bioreactors were reseeded and in year 2021) and  the quality of treatment is back to normal."
+                },
+                {
+                    "type": {
+                        "id": 204,
+                        "en": "Disposal comment",
+                        "fr": "Commentaire sur l'élimination "
+                    },
+                    "comment": "Not Applicable"
+                },
+                {
+                    "type": {
+                        "id": 203,
+                        "en": "Recycling comment",
+                        "fr": "Commentaire sur le recyclage "
+                    },
+                    "comment": "Not Applicable"
+                }
+            ],
+            "releaseAir": null,
+            "releaseWater": 0.573,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        },
+        {
+            "substance": {
+                "cas": "NA - 22",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14220,
+                "en": "Phosphorus (total)",
+                "fr": "Phosphore (total)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [
+                {
+                    "type": {
+                        "id": 201,
+                        "en": "On-site releases comment",
+                        "fr": "Commentaire sur les rejets sur le site"
+                    },
+                    "comment": "Results in previous year was higher (1.8 vs 1.3) because of the annual maintenance of the bioreactor. Concentrations are back to normal now and in line with previous years"
+                },
+                {
+                    "type": {
+                        "id": 204,
+                        "en": "Disposal comment",
+                        "fr": "Commentaire sur l'élimination "
+                    },
+                    "comment": "Not Applicable"
+                },
+                {
+                    "type": {
+                        "id": 203,
+                        "en": "Recycling comment",
+                        "fr": "Commentaire sur le recyclage "
+                    },
+                    "comment": "Not Applicable"
+                }
+            ],
+            "releaseAir": null,
+            "releaseWater": 1.3,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        }
+    ]
+}

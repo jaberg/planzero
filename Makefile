@@ -152,4 +152,39 @@ print_sectoral_emissions_gaps: .build
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero
+		python -m planzero print_max_gaps
+
+cache_pollution_waste_canada_report_details: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_pollution_waste_canada_report_details
+
+cache_petrinex_SK_2022: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_petrinex --year=2022 --PT=Saskatchewan
+
+cache_petrinex_SK_2023: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_petrinex --year=2023 --PT=Saskatchewan
+
+cache_petrinex_SK_2024: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_petrinex --year=2024 --PT=Saskatchewan
+
+cache_petrinex_SK_2025: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_petrinex --year=2025 --PT=Saskatchewan

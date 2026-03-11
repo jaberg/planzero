@@ -1,0 +1,4451 @@
+{
+    "comments": [],
+    "company": {
+        "businessNumber": "863521779",
+        "name": "Groupe des tréfileries Sivaco 2004",
+        "duns": "205664811",
+        "tradeName": {
+            "en": "",
+            "fr": ""
+        },
+        "website": "",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "Suburban Services 800 Ouellette Street, Marieville, Quebec, J3M 1P5, Canada",
+                "fr": "Service suburbain 800 Ouellette Rue, Marieville, Québec, J3M 1P5, Canada"
+            },
+            "address1": null,
+            "city": "Marieville",
+            "postalZip": "J3M 1P5",
+            "province": {
+                "en": "Quebec",
+                "fr": "Québec"
+            },
+            "country": ""
+        },
+        "parentCompanies": []
+    },
+    "contacts": [
+        {
+            "firstName": "Daniel",
+            "lastName": "Lessard",
+            "email": "dlessard@sivaco.com",
+            "phoneNumber": "450-658-8741",
+            "extension": "3219",
+            "position": "Gestionnaire environnemental",
+            "language": {
+                "code": "F",
+                "en": "French",
+                "fr": "Français"
+            }
+        }
+    ],
+    "disposalsTransfers": [
+        {
+            "substance": {
+                "cas": "7647-01-0",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14054,
+                "en": "Hydrochloric acid",
+                "fr": "Acide chlorhydrique"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": 1.3,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": 26.47
+        },
+        {
+            "substance": {
+                "cas": "NA - 08",
+                "npriPart": [
+                    "1b"
+                ],
+                "id": 14200,
+                "en": "Lead (and its compounds)",
+                "fr": "Plomb (et ses composés)"
+            },
+            "unitType": {
+                "en": "kg",
+                "fr": "kg"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": 133821.8,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": 1818.328,
+            "chemicalTreatment": 598.0,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        },
+        {
+            "substance": {
+                "cas": "NA - 14",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14210,
+                "en": "Zinc (and its compounds)",
+                "fr": "Zinc (et ses composés)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": 10.2248,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": 220.09,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        }
+    ],
+    "egus": [],
+    "facility": {
+        "npriId": 3812,
+        "ghgrpId": "G11128",
+        "name": "Sivaco Québec",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 317,
+        "industry": {
+            "naics6Primary": {
+                "id": 331222,
+                "en": "Steel wire drawing",
+                "fr": "Étirage de fils d'acier"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 3312,
+                "en": "Steel product manufacturing from purchased steel",
+                "fr": "Fabrication de produits en acier à partir d'acier acheté"
+            },
+            "naics2": {
+                "id": 33,
+                "en": "Manufacturing",
+                "fr": "Fabrication"
+            },
+            "keyIndustrialSector": {
+                "en": "Iron and Steel",
+                "fr": "Fer et acier\r\n"
+            }
+        },
+        "website": "",
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "800 Ouellette, Marieville, Quebec, J3M 1P5, Canada",
+                "fr": "800 Ouellette, Marieville, Québec, J3M 1P5, Canada"
+            },
+            "address1": "800 Ouellette",
+            "city": "Marieville",
+            "postalZip": "J3M 1P5",
+            "province": {
+                "en": "Quebec",
+                "fr": "Québec"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 45.429756,
+            "longitude": -73.167875,
+            "censusSubdivision": {
+                "en": "Marieville",
+                "fr": "Marieville"
+            },
+            "censusArea": {
+                "en": " ",
+                "fr": " "
+            },
+            "economicArea": {
+                "en": "Montérégie",
+                "fr": "Montérégie"
+            },
+            "censusDivision": {
+                "en": "Rouville",
+                "fr": "Rouville"
+            },
+            "ecoZone": {
+                "en": "MixedWood Plain",
+                "fr": "Plaines à forêts mixtes"
+            },
+            "drainageArea": {
+                "en": "St. Lawrence Drainage Area",
+                "fr": "Aire de drainage du Saint-Laurent"
+            },
+            "datum": 1983,
+            "landsurvey": null,
+            "topograph": "D-014-J/031-H-6",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": null,
+        "activities": [
+            {
+                "group": 1,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            },
+            {
+                "group": 2,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            }
+        ],
+        "otherPrograms": [
+            {
+                "identifier": "G11128",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [],
+        "formattedAddress": {
+            "en": "800 Ouellette, Marieville, Quebec, J3M 1P5, Canada",
+            "fr": "800 Ouellette, Marieville, Québec, J3M 1P5, Canada"
+        }
+    },
+    "ghgrpId": "G11128",
+    "npriId": 3812,
+    "otherYears": [
+        {
+            "reportYear": 1996,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.7,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 22.9,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 4.73,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 11.6,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.14,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.82,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.31,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 32.98,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 1995,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 109.0,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 4.73,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 10.3,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.14,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.7,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.31,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 43.3,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 1994,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 109.0,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 4.73,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 10.3,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.14,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.7,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 1993,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 4.3,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.88,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2015,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "La production a augmenté par rapport à 2014."
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Boues de bassins avec contenu d'acide évalué à 18% du poids.  "
+                        },
+                        {
+                            "type": {
+                                "id": 24,
+                                "en": "Nature of other releases to land",
+                                "fr": "Nature des autres rejets au sol"
+                            },
+                            "comment": "Boues d'acide chlorhydrique 18% du poids HCL"
+                        }
+                    ],
+                    "releaseAir": 3.629,
+                    "releaseWater": null,
+                    "releaseLand": 1.2,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 39.17,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Erreur de transcription vs l'année 2014."
+                        }
+                    ],
+                    "releaseAir": 203.41,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2420.0,
+                    "offsiteTreatment": 241.3,
+                    "offsiteRecycling": 110470.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.008,
+                    "releaseWater": 0.0035,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 7.6992,
+                    "offsiteRecycling": 279.32,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2014,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Boues de bassins  avec contenu d'aicide évalué à 18% du poids.  Quantité diminuer par apport à 2013 parce queles liquides sont filtrés pour diminuer ; la masse de rejets."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Les liquides sont retirés des boues par une membrane et traité à notre UTEP.  Les solides sont envoyé au recyclage."
+                        }
+                    ],
+                    "releaseAir": 3.668,
+                    "releaseWater": null,
+                    "releaseLand": 0.5,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 37.74,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 202.35,
+                    "releaseWater": 8.8,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2046.0,
+                    "offsiteTreatment": 294.8,
+                    "offsiteRecycling": 199.67,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Erreur de calcul 2013 aurait dû se lire 0..00619 t.m. au lieu de 0.0619 t.m."
+                        }
+                    ],
+                    "releaseAir": 0.008,
+                    "releaseWater": 0.0113,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 6.5495,
+                    "offsiteRecycling": 206.52,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2013,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.668,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 19.51,
+                    "offsiteRecycling": 18.29,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Meilleure évaluation des contenues de métaux et dans nosrejets."
+                        }
+                    ],
+                    "releaseAir": 202.35,
+                    "releaseWater": 5.73,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2890.0,
+                    "offsiteTreatment": 237.21,
+                    "offsiteRecycling": 79311.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Augmentation de la quantité de zinc recyclé hors-site"
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Fluctuations légères des opérations."
+                        }
+                    ],
+                    "releaseAir": 0.0078,
+                    "releaseWater": 0.0619,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.371,
+                    "offsiteTreatment": 0.298,
+                    "offsiteRecycling": 184.2,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2012,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.614,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 15.25,
+                    "offsiteRecycling": 21.45,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 154.0,
+                    "releaseWater": 2.12,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2495.09,
+                    "offsiteTreatment": 399.75,
+                    "offsiteRecycling": 101927.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Fluctuations légères des opérations."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Augmentation de la quantité de zinc recyclé hors-site"
+                        }
+                    ],
+                    "releaseAir": 0.0071,
+                    "releaseWater": 0.006,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.371,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 212.16,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2011,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.614,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 30.97,
+                    "offsiteRecycling": 23.35,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Fréquence d'entretien préventif augmenté"
+                        }
+                    ],
+                    "releaseAir": 152.3,
+                    "releaseWater": 1.811,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2495.09,
+                    "offsiteTreatment": 399.75,
+                    "offsiteRecycling": 97975.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Changement dans la méthode d'estimation : rejet dans l'air.\nIl y avait une erreur dans le facteur de conversion de milligrammes à tonnes métriques.  Les déclarations des années 2009 et 2010 seront corrigées.  "
+                        }
+                    ],
+                    "releaseAir": 0.0069,
+                    "releaseWater": 0.005,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 0.403,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 156.183,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2019,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Suite à un démantèlement d'un réservoir de chlorure ferreux en 2018, un nettoyage a été nécessaire générant plus de la boue."
+                        }
+                    ],
+                    "releaseAir": 3.609,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1.8,
+                    "offsiteRecycling": 25.59,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 184.223,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 4048.275,
+                    "offsiteTreatment": 2131.462,
+                    "offsiteRecycling": 84460.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.01,
+                    "releaseWater": 0.0072,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 6.3706,
+                    "offsiteRecycling": 260.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2017,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Boues de bassins avec contenu d'acide évalué à 18% du poids.  "
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "La production a augmenté par rapport à 2016."
+                        },
+                        {
+                            "type": {
+                                "id": 24,
+                                "en": "Nature of other releases to land",
+                                "fr": "Nature des autres rejets au sol"
+                            },
+                            "comment": "Boues d'acide chlorhydrique 18% du poids HCL"
+                        }
+                    ],
+                    "releaseAir": 3.648,
+                    "releaseWater": null,
+                    "releaseLand": 2.4,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 48.02,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 179.46,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 3323.23,
+                    "offsiteTreatment": 340.55,
+                    "offsiteRecycling": 110770.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.01,
+                    "releaseWater": 0.0044,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 10.296,
+                    "offsiteRecycling": 297.24,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2016,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Boues de bassins avec contenu d'acide évalué à 18% du poids.  "
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "La production a augmenté par rapport à 2014."
+                        },
+                        {
+                            "type": {
+                                "id": 24,
+                                "en": "Nature of other releases to land",
+                                "fr": "Nature des autres rejets au sol"
+                            },
+                            "comment": "Boues d'acide chlorhydrique 18% du poids HCL"
+                        }
+                    ],
+                    "releaseAir": 3.725,
+                    "releaseWater": null,
+                    "releaseLand": 3.0,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 41.01,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 201.91,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2636.0,
+                    "offsiteTreatment": 326.83,
+                    "offsiteRecycling": 130840.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.01,
+                    "releaseWater": 0.0065,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 8.3255,
+                    "offsiteRecycling": 207.51,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2018,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Suite à un démantèlement d'un réservoir de chlorure ferreux un nettoyage a été nécessaire, générant de la boue."
+                        }
+                    ],
+                    "releaseAir": 3.694,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 3.3,
+                    "offsiteRecycling": 25.91,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 203.087,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 3095.98,
+                    "offsiteTreatment": 277.16,
+                    "offsiteRecycling": 118800.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.01,
+                    "releaseWater": 0.0031,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 9.4957,
+                    "offsiteRecycling": 271.2,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2006,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "L'acide chlorhydrique est expédiée à Kemira Water Solutions pour être converti en sulphate ferrique  pour utilisation dans le traitement des eaux usées.  La quanité déclarée contient en moyenne 0,95% de HCL libre soit 4670850 kg X 0.95% =  44373kg."
+                        }
+                    ],
+                    "releaseAir": 2.52,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 98.61,
+                    "offsiteRecycling": 4850.85,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.17,
+                    "releaseWater": 3.1,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 5250.0,
+                    "offsiteRecycling": 44141.0,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.033,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 54.05,
+                    "offsiteRecycling": 97.75,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2010,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Pour les années 2009 et précédentes, la quantité déclarée ne représentait pas le HCL comme une substance pure.  Les substances transférée pour élimination contiennent 15% de HCL."
+                        },
+                        {
+                            "type": {
+                                "id": 15,
+                                "en": "Inventory Program Change",
+                                "fr": ""
+                            },
+                            "comment": "Aucun changement"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "La quantité transférée pour recyclage est à une faible concentration de HCL (concentration moyenne de HCL pour 2010 = 0.54%).  Pour les années 2009 et précédentes, la susbtance envoyée chez Kemira a été déclarée comme pure.  à partir de 2010, le HCL pure "
+                        }
+                    ],
+                    "releaseAir": 3.377,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 21.42,
+                    "offsiteRecycling": 21.54,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 15,
+                                "en": "Inventory Program Change",
+                                "fr": ""
+                            },
+                            "comment": "Aucun changement"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Modification dans les méthodes de travail.  Changement dans la séquence d'entretien."
+                        }
+                    ],
+                    "releaseAir": 160.7,
+                    "releaseWater": 2.557,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2059.0,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 67453.0,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "hausse de production de 20%"
+                        },
+                        {
+                            "type": {
+                                "id": 15,
+                                "en": "Inventory Program Change",
+                                "fr": ""
+                            },
+                            "comment": "Aucun changement"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Hausse de production 20%    Déclaration du zinc contenu dans le chlorure ferreux, selon analyse de Kemira."
+                        }
+                    ],
+                    "releaseAir": 7.169,
+                    "releaseWater": 0.0039,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 20.331,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 198.137,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2007,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Les quantitées recyclés sont sous la forme de Chlorure ferreux contenant environ 11% de fer.Ce résidus provient de notre procédé de décapage au HCL."
+                        }
+                    ],
+                    "releaseAir": 3.69,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 231.54,
+                    "offsiteRecycling": 4145.857,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7783-06-4",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14070,
+                        "en": "Hydrogen sulphide",
+                        "fr": "Sulfure d'hydrogène"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Cette substance ne rejette que des émissions atmopsphériques. Il n'y a rien à recycler ou éliminer."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Il n'y a aucun recylage possible."
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Suite à l'analyse de nos émissions atmosphériques réalisé en mai 2008."
+                        }
+                    ],
+                    "releaseAir": 0.02,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Inventaire de produit à recycler plus élevé à la fin de l'année 2007."
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Suite à l'analyse de nos émissions atmosphériques  en mai 2008."
+                        }
+                    ],
+                    "releaseAir": 201.11,
+                    "releaseWater": 12.45,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 3449.0,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 34021.0,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Niveau d'inventaire de produit à reycler plus élevé à la fin de l'année 2006."
+                        }
+                    ],
+                    "releaseAir": 0.01,
+                    "releaseWater": 0.16,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 34.45,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 90.96,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2009,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "La concentration en HCl des boues d'acide chlorhydrique éliminée sont de 18% (max)."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Un total de 3552520 kg de chlorure ferreux ont été expédiés chez Kemira.  La concentration moyenne était de 0.67% de HCL."
+                        }
+                    ],
+                    "releaseAir": 3.023,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 21.49,
+                    "offsiteRecycling": 23.8,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 152.29,
+                    "releaseWater": 8.375,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2200.0,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 108495.34,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.008,
+                    "releaseWater": 0.021,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 21.76,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 114.38,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2008,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Les quanités recyclées sont sous la forme de chlorure ferrique résultant de nos opérations de décapage hcl de fil d'acier.  Densité moyenne 1.294g/lml, % Fe tot. 11.1% w/w et 0.72% w/w HCL"
+                        }
+                    ],
+                    "releaseAir": 3.67,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 158.27,
+                    "offsiteRecycling": 4323.642,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7783-06-4",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14070,
+                        "en": "Hydrogen sulphide",
+                        "fr": "Sulfure d'hydrogène"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Il n'y a aucune quantité recyclée."
+                        }
+                    ],
+                    "releaseAir": 0.02,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 207.64,
+                    "releaseWater": 6.57,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 2490.0,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 129752.65,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.01,
+                    "releaseWater": 0.029,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 24.67,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 209.16,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2004,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Augmentation de la fréquence des entretiens préventifs. La quantité déclarée contient approximativement 10% p/p hcl."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "L'acide chlorhydrique est expédié à Eaglebrook pour être converti en sulphate ferrique utilisé dans le traitement des eaux usées. La quantité déclarée contient en moyenne 0,82% de hcl. Nous utilisons dans le traitement de nos eaux de procédé environ 180 t"
+                        }
+                    ],
+                    "releaseAir": 2.683,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 92.84,
+                    "offsiteRecycling": 5718.895,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Nous avons changé de technologie de décapage en passant de l'acide sulphurique à l'acide chlorhydrique."
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Nous n'utilisons plus d'acide sulphurique dans notre procédé."
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Il n'y a plus de consommation"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 0.0,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "L'usine de Noranda à Beldune a dû interrompre ses réceptions en 2003 à cause de surplus ce qui a fait monter nos stocks."
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Base de donnés plus complète pour analyse."
+                        }
+                    ],
+                    "releaseAir": 1.78,
+                    "releaseWater": 7.48,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 5996.0,
+                    "offsiteRecycling": 76417.0,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.071,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 62.211,
+                    "offsiteRecycling": 54.5,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2005,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "L'acide chlorhydrique est expédiée à Eaglebrook pour être converti en sulphate ferrique utilisé dans le traitement des eaux usées.  La quantité déclarée contient en moyenne 1.15% de hcl. Nous utilsons dans le traitement de nos eaux de procédé environ 180 "
+                        }
+                    ],
+                    "releaseAir": 2.478,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 91.63,
+                    "offsiteRecycling": 4938.021,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Résidu d'un réservoir.  L'acide sulphurique n'est plus utilisée dans nos opérations."
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Il n'ya plus de consommation"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 2.9,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 1.133,
+                    "releaseWater": 4.71,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 7820.0,
+                    "offsiteRecycling": 58751.08,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.063,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 86.4,
+                    "offsiteRecycling": 64.96,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2003,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Nous consommons 3097 t.m. d'acide chlorhydrique annuellement.  Ce produit est principalement retourné en citerne chez Eaglebook pour être convertit en chlorure ferreux servant dans le traitment  de l'épuration des eaux usées dans les usines de traitements"
+                        }
+                    ],
+                    "releaseAir": 3.238,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 18.73,
+                    "offsiteRecycling": 3277.762,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Nous n'utilisons plus dans nos procédés d'acide sulphurique et nous avons donc envoyé 16,53 tonnes pour élimination chez Stablex à Blainville.\r\n"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 16.53,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "L'usine de NORANDA à Beldune a dû arrêter les approvisionnements pendant plusieurs mois en 2003.\r\n"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Le recycleur (Noranda) nous a forcé a stocker nos matières recyclables (plomb) jusqu'en début 2004.  Notre quantité recyclé pour 2004 sera plus grande.\r\n"
+                        }
+                    ],
+                    "releaseAir": 2.0,
+                    "releaseWater": 51.9,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 25.0,
+                    "offsiteRecycling": 26380.0,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.119,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 37.4,
+                    "offsiteRecycling": 66.31,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2002,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "L'acide usée est vendu en chlorure ferreux\r\n"
+                        }
+                    ],
+                    "releaseAir": 2.14,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 9.1,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.9,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 8.75,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Amélioration d'un procédé réduisant la consommation de plomb\r\n"
+                        }
+                    ],
+                    "releaseAir": 2.0,
+                    "releaseWater": 6.0,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1473.0,
+                    "offsiteRecycling": 44820.0,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.054,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 20.45,
+                    "offsiteRecycling": 63.4,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2001,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "CHANGEMENT DANS UN PROCÉDÉ\r\n"
+                        },
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "LE PRODUIT SECONDAIRE GÉNÉRÉ EST DU CHLORURE FERREUX QUI N'EST PAS CONTRÔLÉ.\r\n"
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "AJOUT D'UN NOUVEAU PROCÉDÉ\r\n"
+                        }
+                    ],
+                    "releaseAir": 1.348,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 69.2,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "UNITÉ DE TRAITEMENT SUR LE SITE DÉFECTUEUX\r\n"
+                        },
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "TRANSFERT DE PRODUCTION SURE UNE AUTRE LIGNE.\r\n"
+                        }
+                    ],
+                    "releaseAir": 2.52,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 13.875,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "EN 2000 NOUS AVIONS CHANGÉ UN BASSIN QUI CONTENAIT APPROXIMATIVEMENT 19 TONNES DE COLLÉ DANS LE FOND.\r\n"
+                        }
+                    ],
+                    "releaseAir": 0.002,
+                    "releaseWater": 0.006,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 3.01,
+                    "offsiteRecycling": 41.27,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "BASÉ SUR L'ANALYSE DE 1 CONTENEUR DE BOUES DE FILTRATION\r\n"
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": 0.044,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 43.0,
+                    "offsiteRecycling": 83.79,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2000,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.7,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 14.724,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Problème de contamination\r\n"
+                        }
+                    ],
+                    "releaseAir": 4.73,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 24.848,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Modification d'un procédé qui dégage moins de poussière\r\n"
+                        }
+                    ],
+                    "releaseAir": 0.002,
+                    "releaseWater": 0.006,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1.5,
+                    "offsiteRecycling": 56.942,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.036,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 58.885,
+                    "offsiteRecycling": 82.77,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 1999,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Accumulation dans réservoir avant disposition\r\n"
+                        }
+                    ],
+                    "releaseAir": 0.7,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 17.158,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Moins de contamination\r\n"
+                        }
+                    ],
+                    "releaseAir": 4.73,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 5.89,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.015,
+                    "releaseWater": 0.006,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1.423,
+                    "offsiteRecycling": 51.939,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.024,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 58.634,
+                    "offsiteRecycling": 55.564,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 1998,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Problème de qualité de production\r\n"
+                        }
+                    ],
+                    "releaseAir": 0.7,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 27.196,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "Acide contaminée au glycol\r\n"
+                        }
+                    ],
+                    "releaseAir": 4.73,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 10.374,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.015,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1.597,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.039,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 65.917,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 1997,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.7,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 10.93,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "7664-93-9",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14056,
+                        "en": "Sulphuric acid",
+                        "fr": "Acide sulfurique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 204,
+                                "en": "Disposal comment",
+                                "fr": "Commentaire sur l'élimination "
+                            },
+                            "comment": "MEILLEUR ENTRETIEN DES ÉQUIPEMENTS.\r\n"
+                        }
+                    ],
+                    "releaseAir": 4.73,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.015,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1.09,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": null,
+                    "releaseWater": 0.039,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 45.0,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2020,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.338,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1.2,
+                    "offsiteRecycling": 24.86,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 152.57,
+                    "releaseWater": 2.1,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 3735.475,
+                    "offsiteTreatment": 2115.211,
+                    "offsiteRecycling": 98944.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.01,
+                    "releaseWater": 0.0041,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 5.954,
+                    "offsiteRecycling": 259.6,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2021,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.544,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 1.3,
+                    "offsiteRecycling": 32.06,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 203,
+                                "en": "Recycling comment",
+                                "fr": "Commentaire sur le recyclage "
+                            },
+                            "comment": "Remplacement de 2 bassins en 2020 contenant environ 10 tonnes de plomb résiduel."
+                        }
+                    ],
+                    "releaseAir": 25.667,
+                    "releaseWater": 1.1,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 5430.2,
+                    "offsiteTreatment": 1987.695,
+                    "offsiteRecycling": 88403.0,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.0096,
+                    "releaseWater": 0.003,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 8.6219,
+                    "offsiteRecycling": 250.52,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2023,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.672,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 0.9,
+                    "offsiteRecycling": 23.27,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 23.566,
+                    "releaseWater": 1.1,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 75881.0,
+                    "offsiteTreatment": 1840.574,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.008899,
+                    "releaseWater": 0.0042,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 8.8807,
+                    "offsiteRecycling": 175.74,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2024,
+            "npriId": 3812,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "7647-01-0",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14054,
+                        "en": "Hydrochloric acid",
+                        "fr": "Acide chlorhydrique"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 3.717,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": 25.45,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [],
+                    "releaseAir": 23.085,
+                    "releaseWater": 1.5,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 78023.0,
+                    "offsiteTreatment": 1483.008,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                },
+                {
+                    "substance": {
+                        "cas": "NA - 14",
+                        "npriPart": [
+                            "1a"
+                        ],
+                        "id": 14210,
+                        "en": "Zinc (and its compounds)",
+                        "fr": "Zinc (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 0.008693,
+                    "releaseWater": 0.0013,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": 8.0925,
+                    "offsiteRecycling": 182.47,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": false,
+        "reasonsForPlan": [],
+        "noticeType": [],
+        "planComment": null,
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": false,
+        "reasonsForNoActivities": [
+            {
+                "id": 13,
+                "en": "Activities were implemented in a previous year; additional activities are either unnecessary or unfeasible at this time",
+                "fr": "Des activités ont été mises en oeuvre lors d'une année précédente; des activités supplémentaires sont soit inutiles ou irréalisables actuellement"
+            }
+        ],
+        "noActivitiesComment": null,
+        "activityCategories": []
+    },
+    "releases": [
+        {
+            "substance": {
+                "cas": "7647-01-0",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14054,
+                "en": "Hydrochloric acid",
+                "fr": "Acide chlorhydrique"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 3.528,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        },
+        {
+            "substance": {
+                "cas": "NA - 08",
+                "npriPart": [
+                    "1b"
+                ],
+                "id": 14200,
+                "en": "Lead (and its compounds)",
+                "fr": "Plomb (et ses composés)"
+            },
+            "unitType": {
+                "en": "kg",
+                "fr": "kg"
+            },
+            "stackPoint": 24.668,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": 1.2,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        },
+        {
+            "substance": {
+                "cas": "NA - 14",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14210,
+                "en": "Zinc (and its compounds)",
+                "fr": "Zinc (et ses composés)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 0.0092,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": 0.0017,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        }
+    ],
+    "reportTypes": [
+        {
+            "id": 1,
+            "en": "NPRI Inventory",
+            "fr": "Inventaire de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-05-30T16:58:50.713813",
+    "substanceSummary": [
+        {
+            "substance": {
+                "cas": "7647-01-0",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14054,
+                "en": "Hydrochloric acid",
+                "fr": "Acide chlorhydrique"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [],
+            "releaseAir": 3.528,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": 1.3,
+            "offsiteRecycling": 26.47,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        },
+        {
+            "substance": {
+                "cas": "NA - 08",
+                "npriPart": [
+                    "1b"
+                ],
+                "id": 14200,
+                "en": "Lead (and its compounds)",
+                "fr": "Plomb (et ses composés)"
+            },
+            "unitType": {
+                "en": "kg",
+                "fr": "kg"
+            },
+            "comments": [],
+            "releaseAir": 24.668,
+            "releaseWater": 1.2,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": 133821.8,
+            "offsiteTreatment": 2416.328,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        },
+        {
+            "substance": {
+                "cas": "NA - 14",
+                "npriPart": [
+                    "1a"
+                ],
+                "id": 14210,
+                "en": "Zinc (and its compounds)",
+                "fr": "Zinc (et ses composés)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [],
+            "releaseAir": 0.0092,
+            "releaseWater": 0.0017,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": 10.2248,
+            "offsiteRecycling": 220.09,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        }
+    ]
+}

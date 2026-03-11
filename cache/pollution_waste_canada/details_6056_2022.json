@@ -1,0 +1,1389 @@
+{
+    "comments": [],
+    "company": {
+        "businessNumber": "119314938",
+        "name": "Nova Scotia Power Incorporated",
+        "duns": "",
+        "tradeName": {
+            "en": "Nova Scotia Power Incorporated",
+            "fr": ""
+        },
+        "website": "www.nspower.ca",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "PoBox 910 Post Office Box, Halifax, Nova Scotia, B3J 2W5, Canada",
+                "fr": "B.P. 910 Case postale, Halifax, Nouvelle-Écosse, B3J 2W5, Canada"
+            },
+            "address1": null,
+            "city": "Halifax",
+            "postalZip": "B3J 2W5",
+            "province": {
+                "en": "Nova Scotia",
+                "fr": "Nouvelle-Écosse"
+            },
+            "country": ""
+        },
+        "parentCompanies": [
+            {
+                "name": "Emera Incorporated",
+                "businessNumber": "868143132",
+                "duns": "",
+                "percentageOwned": "100.0000",
+                "address": ""
+            },
+            {
+                "name": "Emera Incorporated",
+                "businessNumber": "868143132",
+                "duns": "",
+                "percentageOwned": "100.0000",
+                "address": ""
+            }
+        ]
+    },
+    "contacts": [
+        {
+            "firstName": "Heather",
+            "lastName": "Holland",
+            "email": "heather.holland@nspower.ca",
+            "phoneNumber": "902-497-3637",
+            "extension": "",
+            "position": "Director, Environmental Services",
+            "language": {
+                "code": "E",
+                "en": "English",
+                "fr": "Anglais"
+            }
+        }
+    ],
+    "disposalsTransfers": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "landfill": null,
+            "treatment": null,
+            "undergroundInjection": null,
+            "offsiteLandFill": null,
+            "offsiteUndergroundInjection": null,
+            "offsiteLandApplicationFarming": null,
+            "storage": null,
+            "physicalTreatment": null,
+            "chemicalTreatment": null,
+            "biologicalTreatment": null,
+            "incineration": null,
+            "sewageTreatment": null,
+            "tailings": null,
+            "wasteRock": null,
+            "offsiteTailings": null,
+            "offsiteWasteRock": null,
+            "recoveryEnergy": null,
+            "recoverySolvents": null,
+            "recoveryOrganics": null,
+            "recoveryMetals": null,
+            "recoveryInOrganic": null,
+            "recoveryAcidBase": null,
+            "recoveryCatalyst": null,
+            "recoveryPollutionAbatementResidues": null,
+            "refiningReuseOil": null,
+            "recyclingOther": null
+        }
+    ],
+    "egus": [
+        {
+            "reportYear": 2022,
+            "unitName": "BT1",
+            "commissioningYear": 1976,
+            "capacity": 33.0,
+            "details": {
+                "fuelType": [
+                    {
+                        "id": 3,
+                        "en": "Diesel",
+                        "fr": "Diesel"
+                    }
+                ],
+                "combustionTechnologies": [
+                    {
+                        "id": 13,
+                        "en": "Turbine",
+                        "fr": "Turbine"
+                    }
+                ],
+                "generatingEquipment": [
+                    {
+                        "id": 20,
+                        "en": "Other (please specify)",
+                        "fr": "Autre (veuillez spécifier)"
+                    }
+                ],
+                "unitConfiguration": [
+                    {
+                        "id": 21,
+                        "en": "Simple cycle",
+                        "fr": "Cycle simple"
+                    }
+                ],
+                "nitrogenOxides": [],
+                "sulphurDioxide": [],
+                "particulateMatter": [],
+                "mercuryControls": [],
+                "meetsCriteria": true,
+                "comments": [
+                    {
+                        "type": {
+                            "id": 218,
+                            "en": "Generating equipment type(s) used (EGU) - additional information ",
+                            "fr": "Équipement de production utilisé (UPÉ) - renseignements supplémentaires"
+                        },
+                        "comment": "Combustion Turbine"
+                    }
+                ],
+                "hasDuctFiringEmissions": false
+            },
+            "releasesToAir": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "basisOfEstimate": {
+                        "en": "E2 - Published Emission Factors",
+                        "fr": "E2 - Facteurs d'émission publiés"
+                    },
+                    "quantity": 21.2
+                }
+            ]
+        },
+        {
+            "reportYear": 2022,
+            "unitName": "BT2",
+            "commissioningYear": 1976,
+            "capacity": 33.0,
+            "details": {
+                "fuelType": [
+                    {
+                        "id": 3,
+                        "en": "Diesel",
+                        "fr": "Diesel"
+                    }
+                ],
+                "combustionTechnologies": [
+                    {
+                        "id": 13,
+                        "en": "Turbine",
+                        "fr": "Turbine"
+                    }
+                ],
+                "generatingEquipment": [
+                    {
+                        "id": 20,
+                        "en": "Other (please specify)",
+                        "fr": "Autre (veuillez spécifier)"
+                    }
+                ],
+                "unitConfiguration": [
+                    {
+                        "id": 21,
+                        "en": "Simple cycle",
+                        "fr": "Cycle simple"
+                    }
+                ],
+                "nitrogenOxides": [],
+                "sulphurDioxide": [],
+                "particulateMatter": [],
+                "mercuryControls": [],
+                "meetsCriteria": true,
+                "comments": [
+                    {
+                        "type": {
+                            "id": 218,
+                            "en": "Generating equipment type(s) used (EGU) - additional information ",
+                            "fr": "Équipement de production utilisé (UPÉ) - renseignements supplémentaires"
+                        },
+                        "comment": "Combustion Turbine"
+                    }
+                ],
+                "hasDuctFiringEmissions": false
+            },
+            "releasesToAir": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "basisOfEstimate": {
+                        "en": "E2 - Published Emission Factors",
+                        "fr": "E2 - Facteurs d'émission publiés"
+                    },
+                    "quantity": 33.3
+                }
+            ]
+        },
+        {
+            "reportYear": 2022,
+            "unitName": "BT3",
+            "commissioningYear": 1976,
+            "capacity": 33.0,
+            "details": {
+                "fuelType": [
+                    {
+                        "id": 3,
+                        "en": "Diesel",
+                        "fr": "Diesel"
+                    }
+                ],
+                "combustionTechnologies": [
+                    {
+                        "id": 13,
+                        "en": "Turbine",
+                        "fr": "Turbine"
+                    }
+                ],
+                "generatingEquipment": [
+                    {
+                        "id": 20,
+                        "en": "Other (please specify)",
+                        "fr": "Autre (veuillez spécifier)"
+                    }
+                ],
+                "unitConfiguration": [
+                    {
+                        "id": 21,
+                        "en": "Simple cycle",
+                        "fr": "Cycle simple"
+                    }
+                ],
+                "nitrogenOxides": [],
+                "sulphurDioxide": [],
+                "particulateMatter": [],
+                "mercuryControls": [],
+                "meetsCriteria": true,
+                "comments": [
+                    {
+                        "type": {
+                            "id": 218,
+                            "en": "Generating equipment type(s) used (EGU) - additional information ",
+                            "fr": "Équipement de production utilisé (UPÉ) - renseignements supplémentaires"
+                        },
+                        "comment": "Combustion Turbine"
+                    }
+                ],
+                "hasDuctFiringEmissions": false
+            },
+            "releasesToAir": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "basisOfEstimate": {
+                        "en": "E2 - Published Emission Factors",
+                        "fr": "E2 - Facteurs d'émission publiés"
+                    },
+                    "quantity": 30.4
+                }
+            ]
+        },
+        {
+            "reportYear": 2022,
+            "unitName": "BT4",
+            "commissioningYear": 1976,
+            "capacity": 33.0,
+            "details": {
+                "fuelType": [
+                    {
+                        "id": 3,
+                        "en": "Diesel",
+                        "fr": "Diesel"
+                    }
+                ],
+                "combustionTechnologies": [
+                    {
+                        "id": 13,
+                        "en": "Turbine",
+                        "fr": "Turbine"
+                    }
+                ],
+                "generatingEquipment": [
+                    {
+                        "id": 20,
+                        "en": "Other (please specify)",
+                        "fr": "Autre (veuillez spécifier)"
+                    }
+                ],
+                "unitConfiguration": [
+                    {
+                        "id": 21,
+                        "en": "Simple cycle",
+                        "fr": "Cycle simple"
+                    }
+                ],
+                "nitrogenOxides": [],
+                "sulphurDioxide": [],
+                "particulateMatter": [],
+                "mercuryControls": [],
+                "meetsCriteria": true,
+                "comments": [
+                    {
+                        "type": {
+                            "id": 218,
+                            "en": "Generating equipment type(s) used (EGU) - additional information ",
+                            "fr": "Équipement de production utilisé (UPÉ) - renseignements supplémentaires"
+                        },
+                        "comment": "Combustion Turbine"
+                    }
+                ],
+                "hasDuctFiringEmissions": false
+            },
+            "releasesToAir": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "basisOfEstimate": {
+                        "en": "E2 - Published Emission Factors",
+                        "fr": "E2 - Facteurs d'émission publiés"
+                    },
+                    "quantity": 13.5
+                }
+            ]
+        }
+    ],
+    "facility": {
+        "npriId": 6056,
+        "ghgrpId": "G12113",
+        "name": "Burnside Combustion Turbines",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 6,
+        "industry": {
+            "naics6Primary": {
+                "id": 221112,
+                "en": "Fossil-fuel electric power generation",
+                "fr": "Production d'électricité à partir de combustibles fossiles"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 2211,
+                "en": "Electric power generation, transmission and distribution",
+                "fr": "Production, transport et distribution d'électricité"
+            },
+            "naics2": {
+                "id": 22,
+                "en": "Utilities",
+                "fr": "Services publics"
+            },
+            "keyIndustrialSector": {
+                "en": "Electricity",
+                "fr": "Électricité\r\n"
+            }
+        },
+        "website": "www.nspower.ca",
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "2 Vidito Drive, Dartmouth, Nova Scotia, B3P 1P9, Canada",
+                "fr": "2 Vidito Entrain, Dartmouth, Nouvelle-Écosse, B3P 1P9, Canada"
+            },
+            "address1": "2 Vidito Drive",
+            "city": "Dartmouth",
+            "postalZip": "B3P 1P9",
+            "province": {
+                "en": "Nova Scotia",
+                "fr": "Nouvelle-Écosse"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 44.712951,
+            "longitude": -63.611471,
+            "censusSubdivision": {
+                "en": "Halifax",
+                "fr": "Halifax"
+            },
+            "censusArea": {
+                "en": "Halifax",
+                "fr": "Halifax"
+            },
+            "economicArea": {
+                "en": "Halifax",
+                "fr": "Halifax"
+            },
+            "censusDivision": {
+                "en": "Halifax",
+                "fr": "Halifax"
+            },
+            "ecoZone": {
+                "en": "Atlantic Maritime",
+                "fr": "Maritime de l'Atlantique"
+            },
+            "drainageArea": {
+                "en": "Maritime Provinces Drainage Area",
+                "fr": "Aire de drainage des provinces Maritimes"
+            },
+            "datum": 1983,
+            "landsurvey": null,
+            "topograph": "C-059-I/011-D-12",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": {
+            "mon": true,
+            "tue": true,
+            "wed": true,
+            "thu": true,
+            "fri": true,
+            "sat": true,
+            "sun": true,
+            "operatingHours": 24.0,
+            "startTime": "00:00",
+            "shutdownPeriods": [
+                {
+                    "start": "2022-08-26T00:00:00",
+                    "end": "2022-10-10T00:00:00",
+                    "comments": "Burnside Unit 1 Annual Maintenance ",
+                    "sameTimeNextYear": false,
+                    "isPartial": true
+                },
+                {
+                    "start": "2022-10-10T00:00:00",
+                    "end": "2022-10-24T00:00:00",
+                    "comments": "Burnside Unit 2 Annual Maintenance ",
+                    "sameTimeNextYear": false,
+                    "isPartial": true
+                },
+                {
+                    "start": "2022-07-18T00:00:00",
+                    "end": "2022-08-08T00:00:00",
+                    "comments": "Burnside Unit 3 Annual Maintenance",
+                    "sameTimeNextYear": false,
+                    "isPartial": true
+                },
+                {
+                    "start": "2022-08-08T00:00:00",
+                    "end": "2022-10-31T00:00:00",
+                    "comments": "Burnside Unit 4 Annual Maintenance ",
+                    "sameTimeNextYear": false,
+                    "isPartial": true
+                }
+            ]
+        },
+        "activities": [
+            {
+                "group": 1,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            },
+            {
+                "group": 2,
+                "en": "None of the above",
+                "fr": "Aucune des réponses ci-dessus"
+            }
+        ],
+        "otherPrograms": [
+            {
+                "identifier": "G12113",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [
+            {
+                "permitNumber": "6056",
+                "issuingAgency": "CEPA and Applicable Regulations"
+            },
+            {
+                "permitNumber": "6056",
+                "issuingAgency": "NSEL Operating Approval #2001-021665"
+            },
+            {
+                "permitNumber": "6056",
+                "issuingAgency": "NS Environment Act and Associated Regulations"
+            }
+        ],
+        "formattedAddress": {
+            "en": "2 Vidito Drive, Dartmouth, Nova Scotia, B3P 1P9, Canada",
+            "fr": "2 Vidito Entrain, Dartmouth, Nouvelle-Écosse, B3P 1P9, Canada"
+        }
+    },
+    "ghgrpId": "G12113",
+    "npriId": 6056,
+    "otherYears": [
+        {
+            "reportYear": 2015,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 45.0,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2014,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 33.0,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2011,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 23.067,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2019,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 31.217,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2017,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 40.17,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2018,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 76.29,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2016,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 3,
+                    "en": "NPRI DNMC",
+                    "fr": "NRPCD de l’INRP"
+                }
+            ],
+            "substanceSummary": []
+        },
+        {
+            "reportYear": 2010,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Changes in NOx emissions reflect changes in annual operations.  A company wide cap for NOx emissions was in place for compliance in 2010."
+                        }
+                    ],
+                    "releaseAir": 40.22,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2009,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 60.084,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2007,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "Changes in NOx emissions reflect changes in annual operations.  A company wide cap for NOx emissions is in place for compliance in 2009."
+                        }
+                    ],
+                    "releaseAir": 35.91,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2008,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 3,
+                    "en": "NPRI DNMC",
+                    "fr": "NRPCD de l’INRP"
+                }
+            ],
+            "substanceSummary": []
+        },
+        {
+            "reportYear": 2003,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 160.33,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2005,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 33.919,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2004,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 164.074,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2002,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 201,
+                                "en": "On-site releases comment",
+                                "fr": "Commentaire sur les rejets sur le site"
+                            },
+                            "comment": "This is the first time reporting for these facilities.  The use of emission factors produces an number that is not consistent with historical performance of these units.  Nova Scotia Power will be re-assessing the production of NOX, but accepts the emissi"
+                        }
+                    ],
+                    "releaseAir": 111.88,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Unknown",
+                        "fr": "Inconnu"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2020,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 31.426,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2021,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 37.658,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2023,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 57.5,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        },
+        {
+            "reportYear": 2024,
+            "npriId": 6056,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "11104-93-1",
+                        "npriPart": [
+                            "4"
+                        ],
+                        "id": 13506,
+                        "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                        "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+                    },
+                    "unitType": {
+                        "en": "tonnes",
+                        "fr": "tonnes"
+                    },
+                    "comments": [],
+                    "releaseAir": 69.4,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": null,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": false,
+        "reasonsForPlan": [],
+        "noticeType": [],
+        "planComment": null,
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": false,
+        "reasonsForNoActivities": [
+            {
+                "id": 18,
+                "en": "Other (please specify)",
+                "fr": "Autres (précisez dans le champ des commentaires)"
+            }
+        ],
+        "noActivitiesComment": "NSPI is fully compliant with regulations for emissions and management of materials related to its operations. In producing safe and reliable electricity at the lowest cost for Nova Scotians, NSPI considers efficiency of operations among other factors in achieving sustainable business solutions.",
+        "activityCategories": []
+    },
+    "releases": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "stackPoint": 98.4,
+            "storageHandling": null,
+            "fugitive": null,
+            "airSpills": null,
+            "airOther": null,
+            "roadDust": null,
+            "directDischarges": null,
+            "waterSpills": null,
+            "waterLeaks": null,
+            "landSpills": null,
+            "landLeaks": null,
+            "landOther": null,
+            "allMedia": null
+        }
+    ],
+    "reportTypes": [
+        {
+            "id": 1,
+            "en": "NPRI Inventory",
+            "fr": "Inventaire de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-05-31T07:03:31.138822",
+    "substanceSummary": [
+        {
+            "substance": {
+                "cas": "11104-93-1",
+                "npriPart": [
+                    "4"
+                ],
+                "id": 13506,
+                "en": "Nitrogen oxides (expressed as nitrogen dioxide)",
+                "fr": "Oxydes d'azote (exprimés en dioxyde d'azote)"
+            },
+            "unitType": {
+                "en": "tonnes",
+                "fr": "tonnes"
+            },
+            "comments": [],
+            "releaseAir": 98.4,
+            "releaseWater": null,
+            "releaseLand": null,
+            "releaseAllMedia": null,
+            "onsiteDisposal": null,
+            "offsiteDisposal": null,
+            "offsiteTreatment": null,
+            "offsiteRecycling": null,
+            "threshold": {
+                "en": "Yes",
+                "fr": "Oui"
+            }
+        }
+    ]
+}

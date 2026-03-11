@@ -1,0 +1,226 @@
+{
+    "comments": [
+        {
+            "type": {
+                "id": 205,
+                "en": "Reason the facility does not meet the criteria for NPRI",
+                "fr": "La raison pour laquelle cette installation ne rencontre pas les critères de déclaration de l'INRP"
+            },
+            "comment": "The water quality data for the material disposal was updated for 2022, which yielded much lower concentration of the disposed materials."
+        }
+    ],
+    "company": {
+        "businessNumber": "835255597",
+        "name": "GCT Canada Limited Partnership",
+        "duns": "",
+        "tradeName": {
+            "en": "",
+            "fr": ""
+        },
+        "website": "www.globalterminalscanada.com",
+        "mailingAddress": {
+            "fullAddress": {
+                "en": "1285 Franklin Street, Vancouver, British Columbia, V6A 1J9, Canada",
+                "fr": "1285 Franklin Rue, Vancouver, Colombie-Britannique, V6A 1J9, Canada"
+            },
+            "address1": null,
+            "city": "Vancouver",
+            "postalZip": "V6A 1J9",
+            "province": {
+                "en": "British Columbia",
+                "fr": "Colombie-Britannique"
+            },
+            "country": ""
+        },
+        "parentCompanies": []
+    },
+    "contacts": [
+        {
+            "firstName": "Jennifer",
+            "lastName": "Perih",
+            "email": "jperih@globalterminals.com",
+            "phoneNumber": "604-267-5239",
+            "extension": "",
+            "position": "Corporate Affairs Manager ",
+            "language": {
+                "code": "E",
+                "en": "English",
+                "fr": "Anglais"
+            }
+        }
+    ],
+    "disposalsTransfers": [],
+    "egus": [],
+    "facility": {
+        "npriId": 33084,
+        "ghgrpId": null,
+        "name": "GCT Deltaport",
+        "portable": false,
+        "isCase3": false,
+        "isCase4": false,
+        "numberOfEmployees": 1701,
+        "industry": {
+            "naics6Primary": {
+                "id": 488320,
+                "en": "Marine cargo handling",
+                "fr": "Manutention du fret maritime"
+            },
+            "naics6Secondary": null,
+            "naics6Tertiary": null,
+            "naics4": {
+                "id": 4883,
+                "en": "Support activities for water transportation",
+                "fr": "Activités de soutien au transport par eau"
+            },
+            "naics2": {
+                "id": 48,
+                "en": "Transportation and warehousing",
+                "fr": "Transport et entreposage"
+            },
+            "keyIndustrialSector": {
+                "en": "Other (Except Manufacturing)",
+                "fr": "Autres (sauf fabrication)\r\n"
+            }
+        },
+        "website": null,
+        "physicalAddress": {
+            "fullAddress": {
+                "en": "2 Roberts Bank Way, Delta, British Columbia, V4M 4G2, Canada",
+                "fr": "2 Roberts Bank Voie, Delta, Colombie-Britannique, V4M 4G2, Canada"
+            },
+            "address1": "2 Roberts Bank Way",
+            "city": "Delta",
+            "postalZip": "V4M 4G2",
+            "province": {
+                "en": "British Columbia",
+                "fr": "Colombie-Britannique"
+            },
+            "country": ""
+        },
+        "geographicAddress": {
+            "latitude": 49.02197,
+            "longitude": -123.16172,
+            "censusSubdivision": {
+                "en": "Delta",
+                "fr": "Delta"
+            },
+            "censusArea": {
+                "en": "Vancouver",
+                "fr": "Vancouver"
+            },
+            "economicArea": {
+                "en": "Lower Mainland--Southwest / Lower Mainland--Sud-ouest",
+                "fr": "Lower Mainland--Southwest / Lower Mainland--Sud-ouest"
+            },
+            "censusDivision": {
+                "en": "Greater Vancouver",
+                "fr": "Greater Vancouver"
+            },
+            "ecoZone": {
+                "en": "Pacific Maritime",
+                "fr": "Maritime du Pacifique"
+            },
+            "drainageArea": {
+                "en": "Pacific Drainage Area",
+                "fr": "Aire de drainage du Pacifique"
+            },
+            "datum": 1983,
+            "landsurvey": "09-08-001-09-W7",
+            "topograph": "C-023-B/092-G-03",
+            "additionalInformation": ""
+        },
+        "operatingSchedule": null,
+        "activities": [],
+        "otherPrograms": [
+            {
+                "identifier": "G12353",
+                "url": null,
+                "en": "GHGRP Identification Number",
+                "fr": "Numéro d'identification PDGES"
+            }
+        ],
+        "permits": [],
+        "formattedAddress": {
+            "en": "2 Roberts Bank Way, Delta, British Columbia, V4M 4G2, Canada",
+            "fr": "2 Roberts Bank Voie, Delta, Colombie-Britannique, V4M 4G2, Canada"
+        }
+    },
+    "ghgrpId": null,
+    "npriId": 33084,
+    "otherYears": [
+        {
+            "reportYear": 2021,
+            "npriId": 33084,
+            "reportTypes": [
+                {
+                    "id": 1,
+                    "en": "NPRI Inventory",
+                    "fr": "Inventaire de l’INRP"
+                }
+            ],
+            "substanceSummary": [
+                {
+                    "substance": {
+                        "cas": "NA - 08",
+                        "npriPart": [
+                            "1b"
+                        ],
+                        "id": 14200,
+                        "en": "Lead (and its compounds)",
+                        "fr": "Plomb (et ses composés)"
+                    },
+                    "unitType": {
+                        "en": "kg",
+                        "fr": "kg"
+                    },
+                    "comments": [
+                        {
+                            "type": {
+                                "id": 202,
+                                "en": "Substance criteria comment",
+                                "fr": "Commentaire sur le statut de déclaration de la substance"
+                            },
+                            "comment": "Oily sludge material disposed off-site contains lead."
+                        }
+                    ],
+                    "releaseAir": null,
+                    "releaseWater": null,
+                    "releaseLand": null,
+                    "releaseAllMedia": null,
+                    "onsiteDisposal": null,
+                    "offsiteDisposal": 78.9532,
+                    "offsiteTreatment": null,
+                    "offsiteRecycling": null,
+                    "threshold": {
+                        "en": "Yes",
+                        "fr": "Oui"
+                    }
+                }
+            ]
+        }
+    ],
+    "p2Plan": {
+        "hasP2Plan": false,
+        "reasonsForPlan": [],
+        "noticeType": [],
+        "planComment": null,
+        "recentlyUpdated": false,
+        "planTargets": [],
+        "hasActivities": true,
+        "reasonsForNoActivities": [],
+        "noActivitiesComment": null,
+        "activityCategories": []
+    },
+    "releases": [],
+    "reportTypes": [
+        {
+            "id": 3,
+            "en": "NPRI DNMC",
+            "fr": "NRPCD de l’INRP"
+        }
+    ],
+    "reportYear": 2022,
+    "scpDetails": [],
+    "submissionDate": "2023-06-01T12:59:28.666870",
+    "substanceSummary": []
+}

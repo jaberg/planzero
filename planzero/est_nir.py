@@ -967,12 +967,12 @@ class EstFugitive_OilandNaturalGas_Venting(object):
         arguably_venting = (
             #EmissionSource.StationaryFuelCombustion, this is not fugitive emissions
             EmissionSource.Waste,
-            EmissionSource.Leakage,
+            #EmissionSource.Leakage,
             EmissionSource.Venting,
-            #EmissionSource.Flaring, # Flaring is broken out separately
+            #EmissionSource.Flaring,
             EmissionSource.IndustrialProcess,
             EmissionSource.Wastewater,
-            EmissionSource.Unspecified,
+            #EmissionSource.Unspecified, # probably stationary fuel combustion?
         )
 
         self.emissions_by_label['Registered facilities (GHGRP)'] = nse[:, oil_and_gas, arguably_venting].sum(2).sum(1)
@@ -998,6 +998,83 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             self.emissions_by_label[label] = self.ch4_emission(
                 sts.with_default_zero(ch4_vt, self.years * u.years))
 
+    def init_petrinex_SK(self):
+        from planzero.petrinex import (
+            ActivityID,
+            ProductID,
+            petrinex_SK)
+        venting_products = (
+            ProductID.MethaneMix,
+            ProductID.AcidGas,
+            ProductID.CO2,
+            ProductID.CO2Mix,
+            ProductID.Condensate,
+            ProductID.EntrainedGas,
+            ProductID.Gas,
+            ProductID.CrudeOil)
+
+        factors = objtensor.empty(enums.GHG, venting_products)
+        for ghg in enums.GHG:
+            factors[ghg] = 0 * kt_by_ghg[ghg] / u.m3
+
+        factors[GHG.CH4, ProductID.MethaneMix] = (
+            .440295 * 1000 # convert liquid methane to equivalent volume worth of gas at standard pressure
+            * .6785 * u.kg_CH4 / u.m3) # mass at standard pressure
+
+        factors[GHG.CO2, ProductID.AcidGas] = (
+            .5 # Gemini thinks the molar fraction of CO2 in acid gas ranges from .05 to .95 (!?)
+            * 1.861 * u.kg_CO2 / u.m3)
+
+        factors[GHG.CO2, ProductID.CO2] = (
+            1.861 * u.kg_CO2 / u.m3)
+
+        factors[GHG.CO2, ProductID.CO2Mix] = (
+            .440295 * 1000 # convert liquid CO2 to gas at standard pressure
+            * 1.861 * u.kg_CO2 / u.m3)
+
+        factors[GHG.CO2, ProductID.Condensate] = (
+            .370213 * 1000 # Gemini suggested this number for how many m3 of standard pressure gas would flash out of a m3 of liquid
+            * .03 # a guess at the molar fraction of CO2 in the flashed gas
+            * 1.861 * u.kg_CO2 / u.m3) # mass at standard pressure
+
+        factors[GHG.CH4, ProductID.Condensate] = (
+            .370213 * 1000 # Gemini suggested this number for how many m3 of standard pressure gas would flash out of a m3 of liquid
+            * .6 # a guess at the molar fraction of methane in the flashed gas
+            * .6785 * u.kg_CH4 / u.m3) # mass at standard pressure
+
+        factors[GHG.CH4, ProductID.Gas] = (
+            .9 # a guess at the molar fraction of methane in the gas
+            * .6785 * u.kg_CH4 / u.m3) # mass at standard pressure
+
+        factors[GHG.CO2, ProductID.EntrainedGas] = (
+            .1 # a guess at the molar fraction of CO2 in the gas
+            * 1.861 * u.kg_CO2 / u.m3) # mass at standard pressure
+
+        factors[GHG.CH4, ProductID.EntrainedGas] = (
+            .8 # a guess at the molar fraction of methane in the gas
+            * .6785 * u.kg_CH4 / u.m3) # mass at standard pressure
+
+        factors[GHG.CO2, ProductID.CrudeOil] = (
+            .380780 * 1000 # Gemini suggested this number for how many m3 of standard pressure gas would flash out of a m3 of liquid
+            * .03 # a guess at the molar fraction of CO2 in the flashed gas
+            * 1.861 * u.kg_CO2 / u.m3) # mass at standard pressure
+
+        factors[GHG.CH4, ProductID.CrudeOil] = (
+            .380780 * 1000 # Gemini suggested this number for how many m3 of standard pressure gas would flash out of a m3 of liquid
+            * .6 # a guess at the molar fraction of methane in the flashed gas
+            * .6785 * u.kg_CH4 / u.m3) # mass at standard pressure
+
+        self.petrinex_SK = petrinex_SK()
+        # I don't really know what all the activities mean
+        # but Vent may be the only emission type for the IPCC Venting category
+        vSK = self.petrinex_SK[venting_products, ActivityID.Vent]
+        self.emissions_by_label['Petrinex Vent (Saskatchewan)'] = (
+            factors * vSK).sum(1)
+
+        #sSK = self.petrinex_SK[venting_products, ActivityID.Shrinkage]
+        #self.emissions_by_label['Petrinex Shrinkage (Saskatchewan)'] = (
+        #    factors * vSK).sum(1)
+
     @staticmethod
     def ch4_emission(amount):
         rval = objtensor.empty(GHG)
@@ -1008,14 +1085,15 @@ class EstFugitive_OilandNaturalGas_Venting(object):
 
     def init_abandoned_wells(self):
         self.abandoned_wells_co2e = eccc_nir.table3_11()
+        assert self.years[33] == 2023
         self.emissions_by_label['Abandoned Wells (National total, NIR)'] = self.ch4_emission(
-            self.abandoned_wells_co2e[eccc_nir.Table3_11_Rows.Total].interp(self.years[:37] * u.years)
+            self.abandoned_wells_co2e[eccc_nir.Table3_11_Rows.Total].interp(self.years[:34] * u.years)
             / GWP_100[GHG.CH4])
 
     def init_post_meter(self):
         self.post_meter_co2e = eccc_nir.table3_12()
         self.emissions_by_label['Post-Meter Fugitive Natural Gas (National total, NIR)'] = self.ch4_emission(
-            self.post_meter_co2e[eccc_nir.Table3_12_Rows.Total].interp(self.years[:37] * u.years)
+            self.post_meter_co2e[eccc_nir.Table3_12_Rows.Total].interp(self.years[:34] * u.years)
             / GWP_100[GHG.CH4])
 
     def init_modelling_gap(self):
@@ -1050,31 +1128,23 @@ class EstFugitive_OilandNaturalGas_Venting(object):
         self.emissions_by_label = {}
         self.years = ipcc_canada.echart_years()
         self.init_st60b()
-        self.init_abandoned_wells()
-        self.init_post_meter()
         self.init_ghgrp()
+        self.init_petrinex_SK()
+
+        # This multiplication is justified by
+        # (a) The 2017 paper by Johnson et al. that said gov estimates of the
+        # day (based on the *kinds* of data we're using here) underestimated emissions by a factor of 2.5
+        # (b) The fact that the estimator is only getting about 45% of the NIR total
+        for label in self.emissions_by_label:
+            self.emissions_by_label[label] *= 2.5
+
+        # I had these at first, but now I'm thinking they aren't venting, they should go into
+        # other categories of fugitive emissions
+        #self.init_abandoned_wells()
+        #self.init_post_meter()
+
+        # don't also multiply this by 2 (!?)
         self.init_modelling_gap()
-
-        if 0:
-            inv = ipcc_canada.inv
-            self.ab_non_agg = inv[ (inv['Region'] == 'Alberta') & (inv['Total'] != 'y')]
-
-
-        if 0:
-            # approximating this as a constant does not do justice to the technology and policy work on acid gas injection
-            # There is data on acid gas in ST13 (see aer.py)
-            # but I can't work out how to use it better than
-            # just sticking a number in here.
-            self.alberta_fugitive_CO2 = 8 * u.Mt_CO2
-
-        if 0:
-            # this is simply trying to line up the bitumen production from st98
-            # with the NIR Annex 10 spreadsheet that says in situ oil sands
-            # mining was responsible for 1.8 Mt of Venting emissions in 2023
-            self.st98_crude_bitumen_production = aer.st98_crude_bitumen_production()
-            self.co2e_from_in_situ = (
-                self.st98_crude_bitumen_production[aer.BitumenProductionType.InSitu]
-                * (.064 * u.Mt_CO2e / (u.kilo_m3_crude_bitumen / u.day)))
 
     def update_A9_emissions(self, emissions_sectoral_pt):
         for label, emissions in self.emissions_by_label.items():
@@ -1109,11 +1179,11 @@ class EstFugitive_OilandNaturalGas_Venting(object):
                     lineStyle=EChartLineStyle(color='#303030'),
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=values),
-                EChartSeriesBase(
-                    name='NIR Sector Total (Alberta only)',
-                    lineStyle=EChartLineStyle(color='#303030'),
-                    itemStyle=EChartItemStyle(color='#303030'),
-                    data=ab_values),
+                #EChartSeriesBase(
+                #    name='NIR Sector Total (Alberta only)',
+                #    lineStyle=EChartLineStyle(color='#303030'),
+                #    itemStyle=EChartItemStyle(color='#303030'),
+                #    data=ab_values),
             ])
 
     def echart_st60b(self):
