@@ -216,5 +216,8 @@ default_context = dict(
     stakeholders=planzero.strategies.stakeholders,
     discount_rate=.02,
     planzero=planzero,
+    CO2=planzero.blog.latex(r'\mathrm{CO}_2'),
+    N2O=planzero.blog.latex(r"\mathrm N_2 \mathrm O"),
+    CO2e=planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
     )
 
