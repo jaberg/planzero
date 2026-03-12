@@ -20,15 +20,20 @@ Table of Contents:
             <li><a href="#why2.5">Why I multiplied data totals by 2.5</a></li>
         </ul>
     </li>
-    <li><a href="#summary">Summary</a></li>
+    <li><a href="#summary">Summary</a>
+        <ul>
+            <li><a href="#csfs">Critial Success Factors</a></li>
+            <li><a href="#barriers">Barriers</a></li>
+            <li><a href="#strategies">Strategies</a></li>
+            <li><a href="#conclusion">Conclusion</a></li>
+        </ul>
+    </li>
 </ul>
 </p>
 
 <h2 id="h2_intro">Introduction</h2>
 
 <p>
-<!--The previous (2nd) post looked at <a href="/blog/2026-02-22-forest-hwp">Forest Land and Harvested Wood Products</a>.-->
-<!--This one looks at emissions from the oil and gas sector.-->
 It is well known that burning oil and gas leads to greenhouse gas emissions.
 It is perhaps less-well known that the activity of extracting and processing those fuels, and transporting them to customers, is also an enormous source of emissions.
 Even so, I, for at least one, was astonished that the largest single-IPCC-sector contributor to emissions from oil and gas in 2005
@@ -37,16 +42,11 @@ was the deliberate direct transfer of methane and carbon dioxide into the atmosp
 continues the series looking at Canada's emissions in terms of IPCC sectors in order of decreasing contribution to the 2005 total (Canada's baseline year for net-zero targets).
 Annual emissions of vented fugitive gases have fallen to about half of their peak (75 Mt in 2014),
 but still (as of the 2023 data) this category accounted for 40 Mt CO2e, or about 6% of Canada's national total.
+This post also introduces a new IPCC Sector summary page to planzero:
+<a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">IPCC Sector / Fugitive Sources / Oil and Natural Gas / Venting</a>.
 </p>
 
 <p>
-<!--
-Candidly, when I started working on this post, I had a lot to learn.
-I started with a completely inadequate understanding of how oil and gas is extracted from the ground,
-refined into marketable fuels, and transported to points of sale.
-
-For example, I had to learn that 
--->
 There are many reasons and sources for vented emissions in the oil and gas sector.
 One introductory example, is <i>casing gas</i>.
 Underground, deposits of fossil carbon occur in any (or all) of solid, liquid, and gaseous forms.
@@ -181,7 +181,13 @@ but see the section below (<a href="#why2.5">Why I ...</a>) before dismissing th
 The result, below, is an estimator that ends up being relatively accurate, at least for recent years.
 </p>
 
-{{blog.est_nir.EstFugitive_OilandNaturalGas_Venting().echart_venting() | safe}}
+<p>
+A static figure and link to what's now an interactive infographic at
+<a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">IPCC Sector / Fugitive Sources / Oil and Natural Gas / Venting</a>:
+</p>
+<a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">
+<img src="/images/2026-03-02-venting.png" alt="" class="image main"/>
+</a>
 
 <h3 id="ghgrp">Canada's Greenhouse Gas Reporting Program (GHGRP)</h3>
 
@@ -341,7 +347,7 @@ It estimates venting emissions for recent years well (37Mt of 42Mt in 2023),
 although it completely misses the historical rise and fall of emissions that peaked at about 75Mt in 2014.
 </p>
 
-<h3>Critical Success Factors</h3>
+<h3 id="csfs">Critical Success Factors</h3>
 <p>
 The main factors contributing to emissions in this sector are now summarized on the 
 planzero page <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">IPCC Sector / Fugitive Sources / Oil and Natural Gas / Venting</a>:
@@ -356,7 +362,7 @@ planzero page <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Ventin
 </ul>
 </p>
 
-<h3>Barriers</h3>
+<h3 id="barriers">Barriers</h3>
 <p>
 The challenges to making these reductions start with the reality that
 domestic and international demand for oil and gas
@@ -386,14 +392,17 @@ operated by a many independent operators, so the process of rolling out
 emissions reduction changes can be expected to take many years.
 </p>
 
-<h3>Strategies</h3>
+<h3 id="strategies">Strategies</h3>
 
 <p>
-There are some relatively easy wins in this sector, such as flaring casing gas that's currently vented,
+There are some relatively easy opportunities for reductions in this sector,
+such as flaring casing gas that's currently vented,
 and replacing gas-powered pneumatic equipment with electric equivalents.
-These changes have been mandated by e.g. Alberta Energy Regulator's Directive 060, and
-have driven the enormous drop in venting emissions from 75Mt/year in 2014 to 42Mt/year in 2023.
+These changes have helped drive the enormous drop in venting emissions from 75Mt/year in 2014 to 42Mt/year in 2023.
+The Alberta Energy Regulator's Directive 060 has come into force in 2023, and, among other changes,
+requires as of 2023 that pneumatic equipment be upgraded to electric equipment when repairs are required (replace on fail).
 </p>
+
 <p>Another huge, if contentious, strategy for reducing venting emissions,
 is the practice of re-injecting the CO2 stripped from formation gas back into the ground
 for the purpose of enhancing oil recovery.
@@ -415,7 +424,7 @@ but as far as I know the technology and products are at earlier stages of
 technology and commercial readiness.
 </p>
 
-<h3>Conclusion</h3>
+<h3 id="conclusion">Conclusion</h3>
 <p>
 This concludes the post and modelling update on the topic of vented fugitive emissions from the oil and gas sector.
 I learned a lot, but I have to acknowledge that it certainly took me longer than the week-per-post time-boxing
