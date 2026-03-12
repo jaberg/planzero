@@ -24,11 +24,11 @@
 						<!-- Posts -->
 							<section class="posts">
                                 {% for blog in blogs_sorted_by_date %}
-                                {% if blog.published %}
+                                {% if blog.published or unpublished %}
 								<article>
 									<header>
                                         <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
-                                        <h2><a href="/blog/{{blog.url_filename}}">{{blog.title}}</a></h2>
+                                        <h2><a href="/blog/{{blog.url_filename}}">{%if not blog.published %}[Draft] {% endif %}{{blog.title}}</a></h2>
 									</header>
                                     <!--
 									<a href="#" class="image fit"><img src="images/pic02.jpg" alt="" /></a>

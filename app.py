@@ -176,7 +176,7 @@ async def get_about(request: Request):
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
-async def get_index(request: Request):
+async def get_index(request: Request, unpublished:bool=False):
     return templates.TemplateResponse(
         request=request,
         name="blog.html",
@@ -187,6 +187,7 @@ async def get_index(request: Request):
             blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
             peval=get_peval(),
+            unpublished=unpublished,
             ),
     )
 
