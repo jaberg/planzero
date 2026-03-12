@@ -36,10 +36,10 @@ def request_all_planzero_pages(args):
     class SiteClient(object):
         def get(self, path):
             t0 = time.time()
-            rval = requests.get(f'https://planzero.ca{path}')
+            rval = requests.get(f'https://planzero.ca{path}')#, timeout=30)
             t1 = time.time()
             self.last_get_time = t1 - t0
-            return rval
+            return rval.status_code
 
     client = SiteClient()
     for path in [
@@ -48,20 +48,20 @@ def request_all_planzero_pages(args):
         '/strategies/',
         '/about/',
     ]:
-        response = client.get(path)
-        print(response.status_code, '{:.2f}'.format(client.last_get_time), path)
+        status_code = client.get(path)
+        print(status_code, '{:.2f}'.format(client.last_get_time), path)
 
     from . import ipcc_canada
     for catpath in ipcc_canada.catpaths:
         path = f'/ipcc-sectors/{catpath}/'
-        response = client.get(path)
-        print(response.status_code, '{:.2f}'.format(client.last_get_time), path)
+        status_code = client.get(path)
+        print(status_code, '{:.2f}'.format(client.last_get_time), path)
 
     from . import blog
     for url_filename in blog._blogs_by_url_filename:
         path = f'/blog/{url_filename}/'
-        response = client.get(path)
-        print(response.status_code, '{:.2f}'.format(client.last_get_time), path)
+        status_code = client.get(path)
+        print(status_code, '{:.2f}'.format(client.last_get_time), path)
 
 
 if __name__ == '__main__':
