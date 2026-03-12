@@ -1,6 +1,6 @@
 import enum
 
-class NAICS(int, enum.Enum):
+class NAICS6(int, enum.Enum):
     Cannabis_grown_under_cover = 111412
     Other_Food_Crops_Grown_Under_Cover = 111419
     Floriculture_Production = 111422

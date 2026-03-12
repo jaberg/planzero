@@ -8,7 +8,7 @@ from .est_nir_util import (
     _rstrip_data,
     _echart_years,
     )
-from .ghgvalues import GWP_100
+from .ghgvalues import GWP_100, GHG_zero_kg
 from .ureg import (u, kg_by_ghg,
                    kilotonne_by_coal_type,
                    kt_by_ghg)
@@ -439,7 +439,7 @@ class EstAnnex13ElectricityFromOther(object):
                + (self.fuel_consumed_pt[FT2.OtherGaseous].apply(self.support_years) * (1 * u.m3_stillgas / u.m3))))
 
     def __init__(self):
-        NAICS = enums.NAICS
+        NAICS6 = enums.NAICS6
         self.prov_consumption, self.national_consumption = \
                 sc_np.Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility()
 
@@ -447,7 +447,7 @@ class EstAnnex13ElectricityFromOther(object):
         self.epgfc_pt, self.epgfc_ca = \
                 sc_25_10_0084_01.electric_power_generation_fuel_consumed_cost_of_fuel()
         self.fuel_consumed_pt = self.epgfc_pt[
-            sc_25_10_0084_01.MetaFuelType.Fuel_Consumed, :, NAICS.Electricity_Producers__Utilities]
+            sc_25_10_0084_01.MetaFuelType.Fuel_Consumed, :, NAICS6.Electricity_Producers__Utilities]
 
         self.support_years = functools.partial(sts.with_default_zero, times=est_nir_years)
         self.cutover = sts.STS.one_zero(2019.5 * u.years)
@@ -573,15 +573,15 @@ class EstFugitive_OilandNaturalGas_Venting(object):
     def init_ghgrp(self):
         nse = ghgrp.GHG_NAICS_source_emissions_backfilled()
 
-        NAICS = naics.NAICS
+        NAICS6 = naics.NAICS6
         oil_and_gas = (
-            NAICS.Oil_and_gas_extraction__except_oil_sands,
-            NAICS.Conventional_Oil_and_Gas_Extraction,
-            NAICS.NonConventional_Oil_Extraction,
-            NAICS.Insitu_oil_sands_extraction,
-            NAICS.Mined_oil_sands_extraction,
-            NAICS.Pipeline_Transportation_of_Crude_Oil,
-            NAICS.Pipeline_Transportation_of_Natural_Gas,
+            NAICS6.Oil_and_gas_extraction__except_oil_sands,
+            NAICS6.Conventional_Oil_and_Gas_Extraction,
+            NAICS6.NonConventional_Oil_Extraction,
+            NAICS6.Insitu_oil_sands_extraction,
+            NAICS6.Mined_oil_sands_extraction,
+            NAICS6.Pipeline_Transportation_of_Crude_Oil,
+            NAICS6.Pipeline_Transportation_of_Natural_Gas,
         )
         EmissionSource = ghgrp.EmissionSource
         # these are "arguably venting" because looking at Annex 10, it seems that all of the
@@ -861,24 +861,52 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
     def init_ghgrp(self):
         nse = ghgrp.GHG_NAICS_source_emissions_backfilled()
 
-        NAICS = naics.NAICS
+        NAICS6 = naics.NAICS6
         oil_and_gas = (
-            NAICS.Oil_and_gas_extraction__except_oil_sands,
-            NAICS.Conventional_Oil_and_Gas_Extraction,
-            NAICS.NonConventional_Oil_Extraction,
-            NAICS.Insitu_oil_sands_extraction,
-            NAICS.Mined_oil_sands_extraction,
-            NAICS.Pipeline_Transportation_of_Crude_Oil,
-            NAICS.Pipeline_Transportation_of_Natural_Gas,
+            NAICS6.Oil_and_gas_extraction__except_oil_sands,
+            NAICS6.Conventional_Oil_and_Gas_Extraction,
+            NAICS6.NonConventional_Oil_Extraction,
+            NAICS6.Insitu_oil_sands_extraction,
+            NAICS6.Mined_oil_sands_extraction,
         )
         EmissionSource = ghgrp.EmissionSource
 
         self.emissions_by_label['Registered facilities (GHGRP)'] = nse[:, oil_and_gas, EmissionSource.StationaryFuelCombustion].sum(1)
 
+    def init_petrinex_SK(self):
+        from planzero.petrinex import (
+            ActivityID,
+            ProductID,
+            petrinex_SK)
+
+        self.petrinex_SK = petrinex_SK()
+        pSK = self.petrinex_SK[ProductID.Gas, ActivityID.Fuel]
+        emissions = GHG_zero_kg()
+        factor = 2441
+        assert all(val == factor for val in eccc_nir_annex6.data_a6_1_2['SK'])
+        emissions[GHG.CO2] = pSK * (factor * u.g_CO2 / u.m3)
+
+        idx = 2
+        assert eccc_nir_annex6.df_a6_1_3["Emission Factor Source"][idx]\
+                == "Producer Consumption (Non-marketable)"
+        emissions[GHG.CH4] = (
+            pSK
+            * (eccc_nir_annex6.df_a6_1_3["CH4 (g/m3)"][idx]
+                * u.g_CH4 / u.m3))
+
+        emissions[GHG.N2O] = (
+            pSK
+            * (eccc_nir_annex6.df_a6_1_3["N2O (g/m3)"][idx]
+                * u.g_N2O / u.m3))
+
+        self.emissions_by_label['Petrinex Fuel (Saskatchewan)']\
+                = emissions
+
     def __init__(self):
         self.emissions_by_label = {}
         self.years = ipcc_canada.echart_years()
         self.init_ghgrp()
+        self.init_petrinex_SK()
         # TODO: ST60B Petrinex data has FUEL rows
 
     def update_A9_emissions(self, emissions_sectoral_pt):

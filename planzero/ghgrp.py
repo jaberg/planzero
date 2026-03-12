@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from .ureg import u, kt_by_ghg
-from .naics import NAICS
+from .naics import NAICS6
 from .enums import GHG
 from .ghgvalues import GWP_100
 from . import objtensor
@@ -272,7 +272,7 @@ def facilities_by_NAICS():
     df = _read_emissions()
     for naics, ndf in _read_emissions().groupby(EKey.NAICS_Code):
         try:
-            rval[NAICS(naics)] = list(sorted(ndf[EKey.GHGRP_ID].unique()))
+            rval[NAICS6(naics)] = list(sorted(ndf[EKey.GHGRP_ID].unique()))
         except ValueError :
             desc, = ndf[EKey.NAICS_Code_Description_En].unique()
             print(desc.replace(' ', '_').replace('(', '_').replace(')', '').replace(',', ''), '=', naics)
@@ -285,7 +285,7 @@ def _NAICS_source_emission_dict(nan_value_as_zero):
     tmp = {} # naics -> emissions source -> eskey -> year -> (sum of facility values)
     err = False
     for row in _read_emissions_sources().iloc:
-        naics = NAICS(row[ESKey.NAICS_Code])
+        naics = NAICS6(row[ESKey.NAICS_Code])
         try:
             emission_source = EmissionSource(row[ESKey.Emission_Source])
         except ValueError:
@@ -339,7 +339,7 @@ def GHG_NAICS_source_emissions(
     This is better for emissions accounting than facility_source_emissions in
     principle because a facility's NAICS code may change from year to year.
     """
-    rval = objtensor.empty(GHG, NAICS, EmissionSource)
+    rval = objtensor.empty(GHG, NAICS6, EmissionSource)
     for ghg in GHG:
         rval[ghg].fill(0 * kt_by_ghg[ghg])
     source_emission_dict = source_emission_dict or _NAICS_source_emission_dict(nan_value_as_zero)
@@ -373,7 +373,7 @@ def NAICS_emissions(ekey):
     min_year_inclusive = 2004
     max_year_exclusive = 2024
     for row in _read_emissions().iloc:
-        naics = NAICS(row[EKey.NAICS_Code])
+        naics = NAICS6(row[EKey.NAICS_Code])
 
         year = int(row[EKey.Year])
         assert min_year_inclusive <= year < max_year_exclusive
@@ -384,7 +384,7 @@ def NAICS_emissions(ekey):
         tmp.setdefault(naics, {})
         tmp[naics].setdefault(year, 0)
         tmp[naics][year] += value
-    rval = objtensor.empty(NAICS)
+    rval = objtensor.empty(NAICS6)
     rval.fill(0 * v_unit_by_EKey[ekey])
     basis_years = list(range(min_year_inclusive, max_year_exclusive))
     for naics in tmp:
@@ -454,7 +454,7 @@ def GHG_NAICS_source_emissions_backfilled():
             continue
 
         fid = row[EKey.GHGRP_ID]
-        naics = NAICS(row[EKey.NAICS_Code])
+        naics = NAICS6(row[EKey.NAICS_Code])
         for eskey in ESKeyGHGs:
             value = float(row[eskey])
             if value != value:

@@ -59,6 +59,24 @@ class HTML_Matplotlib_Figure(HTML_element):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
+class IPCC_SCS_OilAndGas_Exploration(BlogPost):
+    """Fourth in the sector-by-sector series on the National Greenhouse Gas Inventory computation:
+    stationary combustion sources involved in the extraction of oil and gas.
+    """
+    est_nir:object
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 3, 11),
+            title='Stationary Combustion to Extract Oil and Gas: Emissions Calculations',
+            url_filename="2026-03-11-og-extraction",
+            author="James Bergstra",
+            published=False,
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.SCS__Oil_and_Gas_Extraction,
+                 },
+            est_nir=est_nir,
+            )
+
 class IPCC_VentingNaturalGas(BlogPost):
     """Third in the sector-by-sector series on the National Greenhouse Gas Inventory computation:
     the venting of emissions from oil and gas systems.
