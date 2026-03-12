@@ -123,9 +123,3 @@ kilotonne_by_coal_type = {
     enums.CoalType.ImportedBituminous: u.kilotonne_coal_bit,
     enums.CoalType.ImportedSubbituminous: u.kilotonne_coal_subbit,
 }
-
-m3_by_roundwood_species_group = {
-    enums.RoundwoodSpeciesGroup.Unspecified: u.m3_wood,
-    enums.RoundwoodSpeciesGroup.Softwoods: u.m3_softwood,
-    enums.RoundwoodSpeciesGroup.Hardwoods: u.m3_hardwood,
-}

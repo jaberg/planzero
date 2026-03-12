@@ -273,6 +273,9 @@ def init_blogs_by_url_filename():
         _blogs_sorted_by_date.append(obj)
     _blogs_sorted_by_date.sort(key=lambda x: x.date, reverse=True)
 
+# TODO: handle this in the metaclass, update the _blogs_sorted_by_date on access
+init_blogs_by_url_filename()
+
 def blogs_by_tag(tag):
     for blog in _blogs_sorted_by_date:
         if tag in blog.tags:
