@@ -11,15 +11,41 @@ import pandas as pd
 
 from . import ureg as u, enums
 from . import objtensor, sts
-from .ureg import m3_by_roundwood_species_group
+
+
+class RoundwoodSpeciesGroup(str, enum.Enum):
+    Unspecified = 'Unspecified'
+    Softwoods = 'Softwoods'
+    Hardwoods = 'Hardwoods'
+
+
+class RoundwoodProductCategory(str, enum.Enum):
+    Logs_and_Bolts = 'Logs and bolts'
+    Other_Industrial_Roundwood = 'Other industrial roundwood'
+    Fuelwood_and_Firewood = 'Fuelwood*b and firewood*c'
+    Pulpwood = 'Pulpwood'
+
+
+class RoundwoodTenure(str, enum.Enum):
+    Unspecified = 'Unspecified'
+    Private_Land = 'Private land'
+    Federal_Land = 'Federal land'
+    Provincial_Land = 'Provincial land'
+
+
+m3_by_roundwood_species_group = {
+    RoundwoodSpeciesGroup.Unspecified: u.m3_wood,
+    RoundwoodSpeciesGroup.Softwoods: u.m3_softwood,
+    RoundwoodSpeciesGroup.Hardwoods: u.m3_hardwood,
+}
 
 
 @functools.cache
 def net_merchantable_volume_harvested():
     rval = objtensor.empty(
-        enums.RoundwoodSpeciesGroup,
-        enums.RoundwoodProductCategory,
-        enums.RoundwoodTenure,
+        RoundwoodSpeciesGroup,
+        RoundwoodProductCategory,
+        RoundwoodTenure,
         enums.PT)
 
     nfd_roundwood_harvested = pd.read_csv(
@@ -34,9 +60,9 @@ def net_merchantable_volume_harvested():
         year = row.Year
         min_year = min(year, min_year)
         max_year = max(year, max_year)
-        species_group = enums.RoundwoodSpeciesGroup(row['Species group'])
-        product_category = enums.RoundwoodProductCategory(row['Category'])
-        tenure = enums.RoundwoodTenure(row['Tenure (En)'])
+        species_group = RoundwoodSpeciesGroup(row['Species group'])
+        product_category = RoundwoodProductCategory(row['Category'])
+        tenure = RoundwoodTenure(row['Tenure (En)'])
         volume_m3 = row['Volume (cubic metres) (En)']
         jurisdiction = enums.PT(row.Jurisdiction)
         if math.isnan(volume_m3) or volume_m3 < 10:
@@ -51,7 +77,7 @@ def net_merchantable_volume_harvested():
             assert tv_by_key[key][u_year] == u_val, (key, u_year, u_val, tv_by_key[key][u_year])
 
     # fill in missing values as 0 in empty slots
-    for species_group in enums.RoundwoodSpeciesGroup:
+    for species_group in RoundwoodSpeciesGroup:
         rval[species_group] = 0 * m3_by_roundwood_species_group[species_group]
     # ... and in empty years
     assert min_year < 2000

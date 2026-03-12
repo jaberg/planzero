@@ -21,7 +21,6 @@ import planzero.blog
 import planzero.ipcc_home
 import planzero.est_nir
 
-planzero.blog.init_blogs_by_url_filename()
 u = planzero.ureg
 
 _peval = None
@@ -190,16 +189,6 @@ async def get_index(request: Request):
             peval=get_peval(),
             ),
     )
-
-if 0:
-    @app.get("/foo/", response_class=HTMLResponse)
-    async def get_about(request: Request):
-        return templates.TemplateResponse(
-            request=request,
-            name="foo.html",
-            context=dict(
-                ),
-        )
 
 default_context = dict(
     int=int,

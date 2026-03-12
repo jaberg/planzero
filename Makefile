@@ -188,3 +188,10 @@ cache_petrinex_SK_2025: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero cache_petrinex --year=2025 --PT=Saskatchewan
+
+request_all_planzero_pages: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero request_all_pages

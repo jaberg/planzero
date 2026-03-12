@@ -29,6 +29,40 @@ def cache_petrinex(args):
     from . import petrinex
     petrinex.main_build_cache(args)
 
+def request_all_planzero_pages(args):
+    import requests
+    import time
+
+    class SiteClient(object):
+        def get(self, path):
+            t0 = time.time()
+            rval = requests.get(f'https://planzero.ca{path}')
+            t1 = time.time()
+            self.last_get_time = t1 - t0
+            return rval
+
+    client = SiteClient()
+    for path in [
+        '/',
+        '/ipcc-sectors/',
+        '/strategies/',
+        '/about/',
+    ]:
+        response = client.get(path)
+        print(response.status_code, '{:.2f}'.format(client.last_get_time), path)
+
+    from . import ipcc_canada
+    for catpath in ipcc_canada.catpaths:
+        path = f'/ipcc-sectors/{catpath}/'
+        response = client.get(path)
+        print(response.status_code, '{:.2f}'.format(client.last_get_time), path)
+
+    from . import blog
+    for url_filename in blog._blogs_by_url_filename:
+        path = f'/blog/{url_filename}/'
+        response = client.get(path)
+        print(response.status_code, '{:.2f}'.format(client.last_get_time), path)
+
 
 if __name__ == '__main__':
 
@@ -50,6 +84,9 @@ if __name__ == '__main__':
     parser_cache_petrinex.add_argument('--PT', help='report year')
     parser_cache_petrinex.add_argument('--include_ghgrp', default=False, help='include contributions from ghgrp-listed facilities')
     parser_cache_petrinex.set_defaults(func=cache_petrinex)
+
+    parser_request_all_pages = subparsers.add_parser('request_all_pages')
+    parser_request_all_pages.set_defaults(func=request_all_planzero_pages)
 
     args = parser.parse_args()
     args.func(args)
