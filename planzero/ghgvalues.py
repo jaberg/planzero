@@ -1,6 +1,6 @@
 from .enums import GHG
 from . import objtensor
-from .ureg import u
+from .ureg import u, kg_by_ghg
 
 
 # TODO: these values can change over time, consider using STS instead of
@@ -13,3 +13,8 @@ GWP_100 = objtensor.from_dict({
     GHG.PFCs: 6_630.0 * u.kg_CO2e / u.kg_PFC,
     GHG.SF6: 23_500.0 * u.kg_CO2e / u.kg_SF6,
     GHG.NF3: 16_100.0 * u.kg_CO2e / u.kg_NF3})
+
+
+def GHG_zero_kg():
+    return objtensor.from_dict(
+        {ghg: 0 * kg for ghg, kg in kg_by_ghg.items()})

@@ -235,7 +235,7 @@ class VolumeSummary(pydantic.BaseModel):
 
 
 @functools.cache
-def petrinex_SK():
+def petrinex_SK(include_ghgrp=False):
     rval = objtensor.empty(ProductID, ActivityID)
     pt = PT.SK
     tmp = {}
@@ -243,7 +243,7 @@ def petrinex_SK():
     for year in basis_years:
         for month in Month:
             vsum = VolumeSummary.load_cached(
-                year, month, pt, include_ghgrp=False)
+                year, month, pt, include_ghgrp=include_ghgrp)
             for aid in vsum.volume_by_activity:
                 tmp.setdefault(aid, {})
                 for pid, amt in vsum.volume_by_activity[aid].items():
