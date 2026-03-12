@@ -48,7 +48,7 @@ def jupyter_display_metadata(metadata):
 
 
 def zip_table_to_dataframe(
-    table: str, path: pathlib.Path | None = None
+    table: str, path: pathlib.Path | str | None = "cache/stats_can"
 ) -> pd.DataFrame:
     """Read a StatsCan table into a pandas DataFrame.
 
