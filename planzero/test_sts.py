@@ -144,3 +144,14 @@ def test_decay():
     assert a.sum() == 3 * u.m
     assert b.values[1] == 0.25
     assert 2.99 * u.m <= b.sum() <= 3 * u.m
+
+
+def test_setdefault_zero():
+    a = annual_report(
+        times=[10 * u.years, 12 * u.years],
+        values=[1 * u.m, 2 * u.m])
+
+    b = a.setdefault_zero([1 * u.years, 6 * u.months, 10 * u.years])
+    assert b is a
+    assert b.times == array.array('d', [.5, 1, 10, 12])
+    assert b.values[1:] == array.array('d', [0, 0, 1, 2])
