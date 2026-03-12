@@ -323,6 +323,7 @@ class STS(BaseModel):
         self.times = array.array('d', times)
         self.values = array.array('d', self.values[:1])
         self.values.extend(values)
+        return self
 
     def setdefault_zero(self, times):
         # Consider also setdefault_one and setdefault_nan

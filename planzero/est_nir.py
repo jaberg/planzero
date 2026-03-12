@@ -1138,6 +1138,12 @@ class EstFugitive_OilandNaturalGas_Venting(object):
         for label in self.emissions_by_label:
             self.emissions_by_label[label] *= 2.5
 
+        for label in self.emissions_by_label:
+            for key, off in self.emissions_by_label[label].ravel_keys_offsets():
+                val = self.emissions_by_label[label].buf[off]
+                if isinstance(val, sts.STS):
+                    val.setdefault_zero([yy * u.years for yy in self.years])
+
         # I had these at first, but now I'm thinking they aren't venting, they should go into
         # other categories of fugitive emissions
         #self.init_abandoned_wells()
