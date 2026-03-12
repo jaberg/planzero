@@ -137,11 +137,11 @@ Firewood and fuelwood was modelled as being combusted in the year of harvest.
 
 <p>
 The quality of fit of this model is acceptable to me at this point, but it is admittedly imperfect.
-My estimation of net HWP emissions is too low by a few MtCO2e in the mid-1990s, and too
+My estimation of net HWP emissions is too low by a few Mt{{CO2e|safe}} in the mid-1990s, and too
 high by various amounts since 2001,
 suggesting that at least some of the Logs and Bolts volume should be modelled as being released a little more slowly.
 The time constants provided in <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/D-Emission-Factors?lang=en">Annex 6 Table 5-3 of the 2025 NIR</a> indicate lumber exported to the US does tend to last longer, but I don't yet incorporate data on how much lumber was exported.
-The jagged shape of CO2e associated with Logs and Bolts harvest vs. the smooth
+The jagged shape of {{CO2e|safe}} associated with Logs and Bolts harvest vs. the smooth
 shape of the reference total from the national inventory data is, candidly, troubling,
 and I wish I could explain it.
 Still, the overall shape of the net HWP emissions estimate matches the reference
@@ -160,7 +160,7 @@ recall that we were looking at
 the HWP sector because it was one of the easiest-to-track drivers of carbon
 removal from Forest Land.
 How much progress have we made in modelling emissions for Forest Land, simply by
-counting the carbon content of harvested lumber as being emitted as CO2e?
+counting the carbon content of harvested lumber as being emitted as {{CO2e|safe}}?
 </p>
 
 {{blog.est_nir.EstForestAndHarvestedWoodProducts().echart_forest_land() | safe}}
@@ -168,7 +168,7 @@ counting the carbon content of harvested lumber as being emitted as CO2e?
 <p>
 Unsurprisingly, perhaps even reassuringly, the fit to the reference emissions curve for Forest Land is neither terrible nor great.
 The removal of HWP carbon is certainly better than the implicit constant 0 that we would have without any modelling:
-the mean is only about 20 MtCO2e off,
+the mean is only about 20 Mt {{CO2e|safe}} off,
 both curves have a sharp dip in 2008, and the overall trend over the last 30 years
 is qualitatively similar.
 Still, this approximation is missing almost everything about forests,
@@ -191,7 +191,7 @@ Physically, emissions from HWP come from product decay over time,
 and in the model, per-product-category carbon pools decay by a constant factor from year to year. 
 In the model, the HWP pools are topped up by the carbon that has been removed from Forest Land by the harvesting of trees.
 The PlanZero approximation to net HWP emissions does not account for different decay rates for exported lumber,
-and does not account for the smoothness of the reference value, but is usually within 10 Mt CO2e.
+and does not account for the smoothness of the reference value, but is usually within 10 Mt {{CO2e|safe}}.
 I have updated the <a href="/ipcc-sectors/Harvested_Wood_Products/">IPCC Sectors / Harvested Wood Products</a> page with the figure developed in this post and a sector overview.
 </p>
 <p>
