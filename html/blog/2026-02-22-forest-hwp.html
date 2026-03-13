@@ -25,7 +25,7 @@ greenhouse gas emissions,
 and estimated Public Electricity and Heat emissions from Statistics Canada data.
 This post continues that replication effort for the next-largest source of emissions in 2005: Forest Land.
 As it turns out, Forest Land emissions are tightly coupled to emissions of the Harvested Wood Products sector, so this post looks at both.
-On the technical side, this post
+The material from this post
 refreshes the <a href="/ipcc-sectors/Forest_Land/">IPCC Sectors / Forest Land</a> page,
 introduces a <a href="/ipcc-sectors/Harvested_Wood_Products/">IPCC Sectors / Harvested Wood Products</a> page,
 and introduces emissions estimates for both sectors based on data from Canada's <a href="http://nfdp.ccfm.org/">National Forestry Database</a>.
@@ -84,9 +84,10 @@ The National Forest Inventory data sets available from the
 wood supply, forest fires, insect outbreaks, harvest, regeneration, revenues and pest control.
 (These datasets are supposed to have been moved to zenodo, but zenodo is currently suffering from
 a <a href="https://blog.zenodo.org/2026/01/28/2026-01-28-improvements-and-support-expectations/">service interruption</a>, so I'll have to check back later for newer data.)
-In this post I'm going to focus just on harvest, because it's a major driver of the annual emissions calculation, and it covers an additional IPCC sector called Harvested Wood Products, which helps accelerate the pace through the set of all 71 sectors that Canada uses.
-The result of this focus will be an relatively accurate replication of emissions calculations relating to
-Harvested Wood Products, and a step toward accurate replication of the emissions calculation for Forest Land.
+In this post I'm going to focus just on harvest, because it's a major driver of the annual emissions calculation, and it covers an additional IPCC sector called Harvested Wood Products.
+The result is a relatively accurate replication of emissions calculations relating to
+Harvested Wood Products, and a less-accurate but better-than-nothing step toward
+replication of the emissions calculation for Forest Land.
 </p>
 
 <h2 id="hwp">Harvested Wood Products</h2>
@@ -114,7 +115,8 @@ My PlanZero estimate of HWP emissions is shown in the following figure:
 Estimated HWP emissions were calculated in terms of carbon
 (a) captured by the HWP pool, shown as negative values in the figure,
 and (b) carbon released by the HWP pool, shown as positive values in the figure.
-The net HWP emissions are shown as the solid grey line, and the reference NIR emissions for the sector
+The net HWP emissions are shown as the solid grey line, and the reference
+emissions for the sector (from the 2025 National Inventory Report, NIR)
 are shown by the solid black.
 </p>
 <p>
@@ -134,6 +136,7 @@ specifically from Table 5-3.  Logs, bolts, and other industrial roundwood were m
 the longest (T=35), and pulp and paper lasting only a short time (T=2).
 Firewood and fuelwood was modelled as being combusted in the year of harvest.
 </p>
+<!-- TODO: diagram? chart? table? K said this para above was hard to follow -->
 
 <p>
 The quality of fit of this model is acceptable to me at this point, but it is admittedly imperfect.
@@ -145,7 +148,7 @@ The jagged shape of {{CO2e|safe}} associated with Logs and Bolts harvest vs. the
 shape of the reference total from the national inventory data is, candidly, troubling,
 and I wish I could explain it.
 Still, the overall shape of the net HWP emissions estimate matches the reference
-better than the implicit constant-0 I had before modelling,
+better than nothing (which I started with),
 so I feel progress has been made toward understanding emissions in the sector.
 I have updated the <a href="/ipcc-sectors/Harvested_Wood_Products/">IPCC Sectors / Harvested Wood Products</a> page with this graph
 and a sector overview.
@@ -155,7 +158,7 @@ and a sector overview.
 <h2 id="forest_land_via_hwp">Approximating Forest Land with Harvested Wood Products</h2>
 
 <p>
-Coming back to the post's original purpose, of estimating Forest Land emissions,
+Coming back to the post's original purpose of estimating Forest Land emissions,
 recall that we were looking at 
 the HWP sector because it was one of the easiest-to-track drivers of carbon
 removal from Forest Land.
@@ -202,12 +205,12 @@ It seems from the national inventory report
 that forests are modelled in terms of geography (ecozones, provincial
 boundaries), ecology (soil at various depths, carbon content of root
 systems, bark, branches, leaves), and time (rates of growth, carbon transfer matrices in response to various disturbances).
-Perhaps in future, PlanZero can be integrated with the <a href="https://github.com/moja-global/moja.canada">GCBM open-source software developed by NRCan</a>
+Perhaps at some point, PlanZero can be integrated with the <a href="https://github.com/moja-global/moja.canada">GCBM open-source software developed by NRCan</a>
 to incorporate the reference model directly.
 For now, I have updated the <a href="/ipcc-sectors/Forest_Land">IPCC Sectors / Forest Land</a> page with the HWP approximation, such as it is.
 </p>
 
-<h3>P.S. Forests and Harvested Wood Products Are Net Emitters</h3>
+<h3>Non-Fun Fact: Forests and Harvested Wood Products Are Net Emitters</h3>
 
 <p>Forest Land and Harvested Wood Products represent a carbon cycle through the logging industry.
 Their net effect over the last 30+ years in terms of emissions has been to transfer carbon from forests into the atmosphere.

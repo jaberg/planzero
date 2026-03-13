@@ -439,7 +439,7 @@ class EstAnnex13ElectricityFromOther(object):
                + (self.fuel_consumed_pt[FT2.OtherGaseous].apply(self.support_years) * (1 * u.m3_stillgas / u.m3))))
 
     def __init__(self):
-        NAICS6 = enums.NAICS6
+        NAICS = enums.NAICS
         self.prov_consumption, self.national_consumption = \
                 sc_np.Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility()
 
@@ -447,7 +447,7 @@ class EstAnnex13ElectricityFromOther(object):
         self.epgfc_pt, self.epgfc_ca = \
                 sc_25_10_0084_01.electric_power_generation_fuel_consumed_cost_of_fuel()
         self.fuel_consumed_pt = self.epgfc_pt[
-            sc_25_10_0084_01.MetaFuelType.Fuel_Consumed, :, NAICS6.Electricity_Producers__Utilities]
+            sc_25_10_0084_01.MetaFuelType.Fuel_Consumed, :, NAICS.Electricity_Producers__Utilities]
 
         self.support_years = functools.partial(sts.with_default_zero, times=est_nir_years)
         self.cutover = sts.STS.one_zero(2019.5 * u.years)
@@ -603,7 +603,7 @@ class EstFugitive_OilandNaturalGas_Venting(object):
 
     def init_st60b(self):
         # st60b is the report on emissions from Alberta facilities that are not in the GHGRP
-        self.st60b = aer.st60b() # volumes
+        self.st60b = aer.st60b_2024_OneStop() # volumes
         self.avg_methane_content_of_vented_gas = .85
         self.methane_mass_per_volume = (
             .6785
@@ -884,7 +884,9 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
         emissions = GHG_zero_kg()
         factor = 2441
         assert all(val == factor for val in eccc_nir_annex6.data_a6_1_2['SK'])
-        emissions[GHG.CO2] = pSK * (factor * u.g_CO2 / u.m3)
+        emissions[GHG.CO2] = (
+            pSK.setdefault_zero([yy * u.years for yy in self.years])
+            * (factor * u.g_CO2 / u.m3))
 
         idx = 2
         assert eccc_nir_annex6.df_a6_1_3["Emission Factor Source"][idx]\
@@ -892,14 +894,14 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
         emissions[GHG.CH4] = (
             pSK
             * (eccc_nir_annex6.df_a6_1_3["CH4 (g/m3)"][idx]
-                * u.g_CH4 / u.m3))
+                * u.g_CH4 / u.m3)).setdefault_zero([yy * u.years for yy in self.years])
 
         emissions[GHG.N2O] = (
             pSK
             * (eccc_nir_annex6.df_a6_1_3["N2O (g/m3)"][idx]
-                * u.g_N2O / u.m3))
+                * u.g_N2O / u.m3)).setdefault_zero([yy * u.years for yy in self.years])
 
-        self.emissions_by_label['Petrinex Fuel (Saskatchewan)']\
+        self.emissions_by_label['Small Facilities (Saskatchewan)']\
                 = emissions
 
     def __init__(self):

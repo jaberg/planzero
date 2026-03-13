@@ -409,12 +409,12 @@ class EstForestAndHarvestedWoodProducts(object):
             stacked_series=[],
             other_series=[
                 EChartSeriesBase(
-                    name='Forest Land (NIR)',
+                    name='Forest Land (from NIR)',
                     lineStyle=EChartLineStyle(color='#303030', type='dashed'),
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=forest_land_values),
                 EChartSeriesBase(
-                    name='Harvested Wood Products (NIR)',
+                    name='Harvested Wood Products (from NIR)',
                     lineStyle=EChartLineStyle(color='#303030', type='dotted'),
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=HWP_values),
