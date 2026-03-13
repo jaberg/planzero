@@ -102,14 +102,13 @@ class IPCC_ForestAndHWP(BlogPost):
     Harvested Wood Products and Forest Land.
     Data from Natural Resources Canada on harvested wood volume
     supports a satisfactory estimate of Harvested Wood Products emissions,
-    and a first step toward a Forest Land estimate. Modelling
-    forests more accurately may require different data, techniques and/or software.
+    and a first step toward a Forest Land estimate.
     """
     est_nir:object
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 2, 22),
-            title='Emissions calculations Harvested Wood Products and implications for Forest Land',
+            title='Emissions calculations for Harvested Wood Products and Forest Land',
             url_filename="2026-02-22-forest-hwp",
             author="James Bergstra",
             tags={BlogTag.NIR_Modelling,

@@ -1,0 +1,37 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#h2_intro">Introduction</a></li>
+    <li><a href="#extraction">Oil and Gas Extraction</a></li>
+    <li><a href="#estimation">Estimating Emissions</a></li>
+    <li><a href="#summary">Summary</a></li>
+</ul>
+</p>
+
+<h2 id="h2_intro">Introduction</h2>
+
+<h2 id="extraction">Oil and Gas Extraction</h2>
+
+<h2 id="estimation">Estimating Stationary Combustion Emissions from Oil and Gas Extraction</h2>
+
+{{blog.est_nir.Est_Energy_SCS_OilAndGas_Extraction().echart() | safe}}
+
+<h2 id="summary">Summary</h2>
+
+<h3>Critical Success Factors</h3>
+<h3>Barriers</h3>
+<h3>Strategies</h3>
+<h3>Conclusion</h3>
+
+</section>
+</div>
+{% include "post-main.html" %}
