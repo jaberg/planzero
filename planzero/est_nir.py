@@ -47,6 +47,12 @@ CoalType = enums.CoalType
 est_nir_years = np.arange(1995, 2025) * u.years
 
 
+def GHG_PT_zeros():
+    rval = objtensor.empty(GHG, PT)
+    rval[:] = GHG_zero_kg()[:, None]
+    return rval
+
+
 class EstAnnex13ElectricityFromCoal(object):
     """Return CO2e by PT"""
     def __init__(self):
@@ -584,19 +590,11 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             NAICS6.Pipeline_Transportation_of_Natural_Gas,
         )
         EmissionSource = ghgrp.EmissionSource
-        # these are "arguably venting" because looking at Annex 10, it seems that all of the
-        # emissions from oil & gas facilities seem to reported in the IPCC "energy sector" categories
-        # even if things like "Wastewater" and "Industrial Processes" match other top-level IPCC areas.
-        # In particular, oil sands upgrading is not listed as having any "Industrial Process" emissions.
         arguably_venting = (
-            #EmissionSource.StationaryFuelCombustion, this is not fugitive emissions
             EmissionSource.Waste,
-            #EmissionSource.Leakage,
             EmissionSource.Venting,
-            #EmissionSource.Flaring,
             EmissionSource.IndustrialProcess,
             EmissionSource.Wastewater,
-            #EmissionSource.Unspecified, # probably stationary fuel combustion?
         )
 
         self.emissions_by_label['Registered facilities (GHGRP)'] = nse[:, oil_and_gas, arguably_venting].sum(2).sum(1)
@@ -619,8 +617,10 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             new_times = list(range(2004, 2020))
             ch4_vt.times[0:0] = array.array('d', new_times)
             ch4_vt.values[1:1] = array.array('d', [ch4_vt.values[1]] * len(new_times))
-            self.emissions_by_label[label] = self.ch4_emission(
-                sts.with_default_zero(ch4_vt, self.years * u.years))
+            emissions = GHG_PT_zeros()
+            emissions[GHG.CH4, PT.AB] = sts.with_default_zero(
+                ch4_vt, self.years * u.years)
+            self.emissions_by_label[label] = emissions
 
     def init_petrinex_SK(self):
         from planzero.petrinex import (
@@ -692,35 +692,11 @@ class EstFugitive_OilandNaturalGas_Venting(object):
         # I don't really know what all the activities mean
         # but Vent may be the only emission type for the IPCC Venting category
         vSK = self.petrinex_SK[venting_products, ActivityID.Vent]
-        self.emissions_by_label['Petrinex Vent (Saskatchewan)'] = (
-            factors * vSK).sum(1)
+        emissions = GHG_PT_zeros()
+        emissions[:, PT.SK] = (factors * vSK).sum(1)
+        self.emissions_by_label['Petrinex Vent (Saskatchewan)'] = emissions
 
-        #sSK = self.petrinex_SK[venting_products, ActivityID.Shrinkage]
-        #self.emissions_by_label['Petrinex Shrinkage (Saskatchewan)'] = (
-        #    factors * vSK).sum(1)
-
-    @staticmethod
-    def ch4_emission(amount):
-        rval = objtensor.empty(GHG)
-        for ghg in kt_by_ghg:
-            rval[ghg] = 0 * kt_by_ghg[ghg]
-        rval[GHG.CH4] += amount # += ensures units match
-        return rval
-
-    def init_abandoned_wells(self):
-        self.abandoned_wells_co2e = eccc_nir.table3_11()
-        assert self.years[33] == 2023
-        self.emissions_by_label['Abandoned Wells (National total, NIR)'] = self.ch4_emission(
-            self.abandoned_wells_co2e[eccc_nir.Table3_11_Rows.Total].interp(self.years[:34] * u.years)
-            / GWP_100[GHG.CH4])
-
-    def init_post_meter(self):
-        self.post_meter_co2e = eccc_nir.table3_12()
-        self.emissions_by_label['Post-Meter Fugitive Natural Gas (National total, NIR)'] = self.ch4_emission(
-            self.post_meter_co2e[eccc_nir.Table3_12_Rows.Total].interp(self.years[:34] * u.years)
-            / GWP_100[GHG.CH4])
-
-    def init_modelling_gap(self):
+    def init_abandoned_modelling_gap(self):
         # I'm working through sectors on a time-boxed basis, and the data at time of writing
         # only got me about 2/7 of the way to the 2005 target, and 1/2 of the
         # way to the 2023 target.
@@ -739,14 +715,16 @@ class EstFugitive_OilandNaturalGas_Venting(object):
         # Semantically, it corresponds to "fugitive emissions for which there
         # isn't data in planzero, which appear to have been addressed by 2023"
 
-        self.emissions_by_label['Historical modelling gap'] = self.ch4_emission(
-            sts.annual_report2(
-                years=[
-                    1990, 1997, 2003, 2004, 2015, 2023],
-                values=[(vv - 20) / 28 for vv in [
-                    40,   67,   67,   48,   50,   20]],  # just eyeballing the missing data
-                v_unit=u.Mt_CH4,
-                ).interp(times=[tt * u.years for tt in range(1990, 2024)],))
+        # just eyeballing the missing data
+        emission = GHG_PT_zeros()
+        emission[GHG.CH4, PT.AB] = sts.annual_report2(
+            years=[
+                1990, 1997, 2003, 2004, 2015, 2023],
+            values=[(vv - 20) / 28 for vv in [
+                40,   67,   67,   48,   50,   20]],
+            v_unit=u.Mt_CH4,
+            ).interp(times=[tt * u.years for tt in range(1990, 2024)],)
+        self.emissions_by_label['Historical modelling gap'] = emission
 
     def __init__(self):
         self.emissions_by_label = {}
@@ -757,37 +735,26 @@ class EstFugitive_OilandNaturalGas_Venting(object):
 
         # This multiplication is justified by
         # (a) The 2017 paper by Johnson et al. that said gov estimates of the
-        # day (based on the *kinds* of data we're using here) underestimated emissions by a factor of 2.5
-        # (b) The fact that the estimator is only getting about 45% of the NIR total
-        unreported = GHG_zero_kg()
-        for label in self.emissions_by_label:
-            for ghg in GHG:
-                if isinstance(self.emissions_by_label[label][ghg], objtensor.ObjectTensor):
-                    raise NotImplementedError()
-                elif isinstance(self.emissions_by_label[label][ghg], sts.STS):
-                    unreported[ghg] += (self.emissions_by_label[label][ghg] * 1.5).setdefault_zero([yy * u.years for yy in self.years])
-                else:
-                    pass
-        self.emissions_by_label['Estimated Unreported'] = unreported
+        # day (based on the *kinds* of data we're using here) underestimated
+        # emissions by a factor of 2.5 (1.5 more than estimated)
+        # (b) The fact that the estimator is only getting about 40% of the NIR total
+        unreported = GHG_PT_zeros()
 
         for label in self.emissions_by_label:
             for key, off in self.emissions_by_label[label].ravel_keys_offsets():
+                ghg, pt = key
                 val = self.emissions_by_label[label].buf[off]
                 if isinstance(val, sts.STS):
                     val.setdefault_zero([yy * u.years for yy in self.years])
+                    unreported[ghg] += val * 1.5
 
-        # I had these at first, but now I'm thinking they aren't venting, they should go into
-        # other categories of fugitive emissions
-        #self.init_abandoned_wells()
-        #self.init_post_meter()
+        self.emissions_by_label['Estimated Unreported'] = unreported
 
-        # don't also multiply this by 2 (!?)
-        self.init_modelling_gap()
+        self.init_abandoned_modelling_gap()
 
     def update_A9_emissions(self, emissions_sectoral_pt):
         for label, emissions in self.emissions_by_label.items():
-            # TODO: upgrade ghgrp to return results by province
-            emissions_sectoral_pt[:, IPCC.Fugitive__Venting, PT.AB] += emissions
+            emissions_sectoral_pt[:, IPCC.Fugitive__Venting, :] += emissions
 
     def echart_venting(self):
         non_agg = ipcc_canada.non_agg
@@ -807,7 +774,9 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             xAxis=EChartXAxis(data=years),
             yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
             stacked_series=[
-                EChartSeriesStackElem(name=label, data=_rstrip_data((GWP_100 @ emissions).to(u.Mt_CO2e)))
+                EChartSeriesStackElem(
+                    name=label,
+                    data=_rstrip_data((GWP_100 @ emissions).sum(PT).to(u.Mt_CO2e)))
                 for label, emissions in self.emissions_by_label.items()
                 if label != 'Historical modelling gap'
             ],
@@ -817,50 +786,6 @@ class EstFugitive_OilandNaturalGas_Venting(object):
                     lineStyle=EChartLineStyle(color='#303030'),
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=values),
-                #EChartSeriesBase(
-                #    name='NIR Sector Total (Alberta only)',
-                #    lineStyle=EChartLineStyle(color='#303030'),
-                #    itemStyle=EChartItemStyle(color='#303030'),
-                #    data=ab_values),
-            ])
-
-    def echart_st60b(self):
-        non_agg = ipcc_canada.non_agg
-        years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
-
-        inv = ipcc_canada.inv
-        ab_non_agg = inv[ (inv['Region'] == 'Alberta') & (inv['Total'] != 'y')]
-        ab_values = ab_non_agg[ab_non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
-
-        return StackedAreaEChart(
-            div_id='ipcc_chart_venting_st60b',
-            title=EChartTitle(
-                text='Emissions from Venting (Fugitive Sources / Oil and Natural Gas)',
-                subtext='Hover over data points to see emissions by usage,'
-                ' click through to source file est_nir.py'),
-            xAxis=EChartXAxis(data=years),
-            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
-            stacked_series=[
-                EChartSeriesStackElem(
-                    name=vt.value,
-                    data=_rstrip_data(
-                        sts.with_default_zero(
-                            self.co2e_st60b[vt].to(u.Mt_CO2e),
-                            years * u.years)))
-                for vt in aer.VentingType
-            ],
-            other_series=[
-                EChartSeriesBase(
-                    name='NIR Sector Total',
-                    lineStyle=EChartLineStyle(color='#303030'),
-                    itemStyle=EChartItemStyle(color='#303030'),
-                    data=values),
-                EChartSeriesBase(
-                    name='NIR Sector Total (Alberta only)',
-                    lineStyle=EChartLineStyle(color='#303030'),
-                    itemStyle=EChartItemStyle(color='#303030'),
-                    data=ab_values),
             ])
 
 
@@ -889,22 +814,22 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
 
         self.petrinex_SK = petrinex_SK()
         pSK = self.petrinex_SK[ProductID.Gas, ActivityID.Fuel]
-        emissions = GHG_zero_kg()
+        emissions = GHG_PT_zeros()
         factor = 2441
         assert all(val == factor for val in eccc_nir_annex6.data_a6_1_2['SK'])
-        emissions[GHG.CO2] = (
+        emissions[GHG.CO2, PT.SK] = (
             pSK.setdefault_zero([yy * u.years for yy in self.years])
             * (factor * u.g_CO2 / u.m3))
 
         idx = 2
         assert eccc_nir_annex6.df_a6_1_3["Emission Factor Source"][idx]\
                 == "Producer Consumption (Non-marketable)"
-        emissions[GHG.CH4] = (
+        emissions[GHG.CH4, PT.SK] = (
             pSK
             * (eccc_nir_annex6.df_a6_1_3["CH4 (g/m3)"][idx]
                 * u.g_CH4 / u.m3)).setdefault_zero([yy * u.years for yy in self.years])
 
-        emissions[GHG.N2O] = (
+        emissions[GHG.N2O, PT.SK] = (
             pSK
             * (eccc_nir_annex6.df_a6_1_3["N2O (g/m3)"][idx]
                 * u.g_N2O / u.m3)).setdefault_zero([yy * u.years for yy in self.years])
@@ -922,7 +847,7 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
     def update_A9_emissions(self, emissions_sectoral_pt):
         for label, emissions in self.emissions_by_label.items():
             # TODO: upgrade ghgrp to return results by province
-            emissions_sectoral_pt[:, IPCC.SCS__Oil_and_Gas_Extraction, PT.AB] += emissions
+            emissions_sectoral_pt[:, IPCC.SCS__Oil_and_Gas_Extraction] += emissions
 
     def echart(self):
         non_agg = ipcc_canada.non_agg
@@ -938,7 +863,9 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
             xAxis=EChartXAxis(data=years),
             yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
             stacked_series=[
-                EChartSeriesStackElem(name=label, data=_rstrip_data((GWP_100 @ emissions).to(u.Mt_CO2e)))
+                EChartSeriesStackElem(
+                    name=label,
+                    data=_rstrip_data((GWP_100 @ emissions).sum(PT).to(u.Mt_CO2e)))
                 for label, emissions in self.emissions_by_label.items()
             ],
             other_series=[

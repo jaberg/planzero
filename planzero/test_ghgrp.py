@@ -25,7 +25,7 @@ def test_perfect_double_counting():
     nse = ghgrp.GHG_NAICS_source_emissions(nan_value_as_zero=True)
     ne = ghgrp.NAICS_emissions(ghgrp.EKey.TotalEmissions_tCO2e)
 
-    nse_sum = (ghgrp.GWP_100[:, None, None] * nse).sum()
+    nse_sum = (ghgrp.GWP_100[:, None, None, None] * nse).sum()
     ne_sum = ne.sum()
 
     # if this test fails, update the comments on NAICS_source_emissions and NAICS_emissions
