@@ -18,7 +18,7 @@ import pandas as pd
 
 from .ureg import u, kt_by_ghg
 from .naics import NAICS6
-from .enums import GHG
+from .enums import GHG, PT
 from .ghgvalues import GWP_100
 from . import objtensor
 from . import sts
@@ -282,10 +282,15 @@ def facilities_by_NAICS():
 
 
 def _NAICS_source_emission_dict(nan_value_as_zero):
-    tmp = {} # naics -> emissions source -> eskey -> year -> (sum of facility values)
+    # (naics, emission source, eskey of ghg, pt) -> year -> (sum of facility values)
+    rval = {}
     err = False
     for row in _read_emissions_sources().iloc:
         naics = NAICS6(row[ESKey.NAICS_Code])
+        if row[ESKey.Province] != row[ESKey.Province]: # nan
+            pt = PT.XX
+        else:
+            pt = PT(row[ESKey.Province])
         try:
             emission_source = EmissionSource(row[ESKey.Emission_Source])
         except ValueError:
@@ -295,8 +300,8 @@ def _NAICS_source_emission_dict(nan_value_as_zero):
         year = int(row[ESKey.Year])
 
         eskey_co2e_sum = 0
-        for eskey, eskey_tCO2e in zip(ESKeyGHGs, ESKeyGHGs_tCO2e):
-            value = float(row[eskey])
+        for es_ghg, eskey_tCO2e in zip(ESKeyGHGs, ESKeyGHGs_tCO2e):
+            value = float(row[es_ghg])
             if nan_value_as_zero and value != value:
                 value = 0
 
@@ -308,11 +313,10 @@ def _NAICS_source_emission_dict(nan_value_as_zero):
             if value_tCO2e == 0:
                 assert value == 0
 
-            tmp.setdefault(naics, {})
-            tmp[naics].setdefault(emission_source, {})
-            tmp[naics][emission_source].setdefault(eskey, {})
-            tmp[naics][emission_source][eskey].setdefault(year, 0)
-            tmp[naics][emission_source][eskey][year] += value
+            key = (naics, emission_source, es_ghg, pt)
+
+            rval.setdefault(key, {}).setdefault(year, 0)
+            rval[key][year] += value
         target = row[ESKey.TotalEmissionsFromSource_tCO2e]
         if not np.allclose(eskey_co2e_sum, target):
             assert emission_source == EmissionSource.Unspecified
@@ -320,12 +324,10 @@ def _NAICS_source_emission_dict(nan_value_as_zero):
             # a facility has reported emissions without identifying which gases they were
             # or for what reason they were emitted.
             # Here, we need to associate the emissions with a gas.
-            # For convenience, we'll pick CO2 because the same number will do.
-            tmp[naics][emission_source][ESKey.CO2][year] += target
-            #print(emission_source, eskey_co2e_sum, target, row[ESKey.GHGRP_ID], row[ESKey.Name])
-            #err = True
+            # For convenience, we'll pick CO2
+            rval[naics, emission_source, ESKey.CO2, pt][year] += target
     assert not err
-    return tmp
+    return rval
 
 
 def GHG_NAICS_source_emissions(
@@ -339,25 +341,25 @@ def GHG_NAICS_source_emissions(
     This is better for emissions accounting than facility_source_emissions in
     principle because a facility's NAICS code may change from year to year.
     """
-    rval = objtensor.empty(GHG, NAICS6, EmissionSource)
+    rval = objtensor.empty(GHG, NAICS6, EmissionSource, PT)
     for ghg in GHG:
         rval[ghg].fill(0 * kt_by_ghg[ghg])
     source_emission_dict = source_emission_dict or _NAICS_source_emission_dict(nan_value_as_zero)
     basis_years = list(range(min_year_inclusive, max_year_exclusive))
-    for naics in source_emission_dict:
-        for esrc in source_emission_dict[naics]:
-            for es_ghg in source_emission_dict[naics][esrc]:
-                dd = source_emission_dict[naics][esrc][es_ghg]
-                for yy in basis_years:
-                    dd.setdefault(yy, 0)
-                years, values = zip(*sorted(dd.items()))
-                assert min_year_inclusive <= years[0]
-                assert max_year_exclusive > years[-1]
-                quant = quant_by_ESKey[es_ghg]
-                rval[ESKeyGHGs[es_ghg], naics, esrc] = sts.annual_report2(
-                    years=years,
-                    values=[vv * quant.magnitude for vv in values],
-                    v_unit=quant.u)
+    for (naics, em_src, es_ghg, pt), val_by_year in source_emission_dict.items():
+        val_by_year = dict(val_by_year) # copy
+        for yy in basis_years:
+            val_by_year.setdefault(yy, 0) # update the copy in-place
+        years, values = zip(*sorted(val_by_year.items()))
+        assert min_year_inclusive <= years[0]
+        assert max_year_exclusive > years[-1]
+        # normally the pattern is just to get unit by ghg, but
+        # we need magnitude and unit in this case
+        quant = quant_by_ESKey[es_ghg]
+        rval[ESKeyGHGs[es_ghg], naics, em_src, pt] = sts.annual_report2(
+            years=years,
+            values=[vv * quant.magnitude for vv in values],
+            v_unit=quant.u)
     return rval
 
 
@@ -455,18 +457,21 @@ def GHG_NAICS_source_emissions_backfilled():
 
         fid = row[EKey.GHGRP_ID]
         naics = NAICS6(row[EKey.NAICS_Code])
-        for eskey in ESKeyGHGs:
-            value = float(row[eskey])
+        if row[EKey.Province] != row[EKey.Province]: # nan
+            pt = PT.XX
+        else:
+            pt = PT(row[EKey.Province])
+        for es_ghg in ESKeyGHGs:
+            value = float(row[es_ghg])
             if value != value:
                 # is there a more-appropriate way to handle nan here?
                 value = 0
             props = fid_props.get(fid, default_props)
-            source_emission_dict.setdefault(naics, {})
-            for es, esprop in props.items():
-                source_emission_dict[naics].setdefault(es, {})
-                source_emission_dict[naics][es].setdefault(eskey, {})
-                source_emission_dict[naics][es][eskey].setdefault(year, 0)
-                source_emission_dict[naics][es][eskey][year] += value * esprop
+            for em_src, esprop in props.items():
+                key = (naics, em_src, es_ghg, pt)
+                source_emission_dict.setdefault(key, {})
+                source_emission_dict[key].setdefault(year, 0)
+                source_emission_dict[key][year] += value * esprop
     return GHG_NAICS_source_emissions(
         nan_value_as_zero=True,
         source_emission_dict=source_emission_dict,
