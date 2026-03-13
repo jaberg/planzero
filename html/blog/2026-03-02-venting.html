@@ -16,8 +16,8 @@ Table of Contents:
         <ul>
             <li><a href="#ghgrp">Canada's Greenhouse Gas Reporting Program (GHGRP)</a></li>
             <li><a href="#st60b">Alberta Energy Regulator Statistical Report ST60B</a></li>
-            <li><a href="#petrinex">Petrinex (source for Saskatchewan data)</a></li>
-            <li><a href="#why2.5">Why I multiplied data totals by 2.5</a></li>
+            <li><a href="#petrinex">Petrinex</a></li>
+            <li><a href="#why2.5">Unreported Emissions: Why I multiplied data totals by 2.5</a></li>
         </ul>
     </li>
     <li><a href="#summary">Summary</a>
@@ -36,19 +36,19 @@ Table of Contents:
 <p>
 It is well known that burning oil and gas leads to greenhouse gas emissions.
 It is perhaps less-well known that the activity of extracting and processing those fuels, and transporting them to customers, is also an enormous source of emissions.
-Even so, I, for at least one, was astonished that the largest single-IPCC-sector contributor to emissions from oil and gas in 2005
+Even so, I was astonished that the largest single-IPCC-sector contributor to emissions from oil and gas in 2005
 was the deliberate direct transfer of methane and carbon dioxide into the atmosphere, without any combustion at all.
 <i>Vented fugitive emissions</i>, especially of methane, are the focus of this post, which
 continues the series looking at Canada's emissions in terms of IPCC sectors in order of decreasing contribution to the 2005 total (Canada's baseline year for net-zero targets).
 Annual emissions of vented fugitive gases have fallen to about half of their peak (75 Mt in 2014),
 but still (as of the 2023 data) this category accounted for 40 Mt {{CO2e|safe}}, or about 6% of Canada's national total.
-This post also introduces a new IPCC Sector summary page to planzero:
+This post also introduces a new IPCC Sector summary page to PlanZero:
 <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">IPCC Sector / Fugitive Sources / Oil and Natural Gas / Venting</a>.
 </p>
 
 <p>
 There are many reasons and sources for vented emissions in the oil and gas sector.
-One introductory example, is <i>casing gas</i>.
+One example, is <i>casing gas</i>.
 Underground, deposits of fossil carbon occur in any (or all) of solid, liquid, and gaseous forms.
 There is usually gas, because fossil deposits are created by high pressure (think of the enormous weight of the earth's crust above!),
 and gas dissolves more readily in liquid under higher pressure.
@@ -62,6 +62,8 @@ both inside the well tube (<i>produced, wet gas</i>), and between the well tube 
 <p>
 Casing gas can be an inconvenience to an oil well operator, because
 it contains methane but it may not be profitable to capture that methane and bring it to market.
+The gas cannot simply be sealed in the well, because it's the relatively low pressure within the well bore that draws oil and gas into the well;
+the casing gas needs to come out.
 In the unprofitable case, the question then faces the well operator, of what to do with the flow of casing gas?
 There are two standard practices: to release it (producing <i>venting</i> emissions), or to burn it (producing <i>flaring</i> emissions).
 Burning it requires more equipment, but it is considered better for the environment because
@@ -77,10 +79,10 @@ This post is about venting emissions from oil and gas: deliberate or engineered 
 from all sources across the oil and gas industry.
 The casing gas discussed above is one source, but there are many more,
 such as the release of gas from equipment and piping for maintenance purposes, the release of gas that evaporates from
-oil in pipes and holding tanks, even the release of gas from sewage flows and tailings ponds.
+oil in pipes and holding tanks, even the release of gas from oil production <i>sewage</i> flows and the tailings ponds to which the sewage drains.
 The post is organized as a brief review of the definition of venting according to the IPCC (which isn't always identical to the 
 definitions used in industry), a review of sources of venting emissions in Canada (and their accounting),
-and then my own attempt to replicate the NIR venting emissions total.
+and then my own attempt to replicate the National Greenhouse Gas Inventory Report (NIR) venting emissions total.
 I end up presenting an accurate estimator, but only by multiplying many of the emissions totals in source data
 by a factor of 2.5 (spoiler: there are justifications, but they will not be totally satisfying).
 The post closes with some thoughts on how to improve the estimator, and a look forward
@@ -100,12 +102,14 @@ system begins at the well head, or oil and gas source, and ends at the final sal
 </i>" Fugitive emissions are the catch-all. They are are defined as all emissions from the oil and gas systems,
 minus a few exceptions:
 <ul>
-    <li>Combustion for useful heat or energy by stationary or mobile sources (which are counted in relation to the reason for stationary or mobile combustion)</li>
-    <li>Fugitive emissions from carbon capture and storage projects (which are counted in relation {{CO2|safe}} management)</li>
+    <li>Combustion for useful heat or energy by stationary or mobile sources
+        (counted across many <a href="/blog/2026-02-12-public-electricity#ipcc_sectors">IPCC sectors</a> depending on the reason: driving cars, building heating, etc.)</li>
+    <li>Fugitive emissions from carbon capture and storage projects
+        (which are counted in relation {{CO2|safe}} management, <a href="/blog/2026-02-12-public-electricity#ipcc_sectors">the last category in the Energy category</a>)</li>
     <li>Fugitive emissions that occur at industrial facilities <i>other
-            than oil and gas facilities</i> (which are counted in the Industrial Processes and Process Use, rather than within Energy)</li>
+            than oil and gas facilities</i> (which are counted in the <a href="/blog/2026-02-12-public-electricity#ipcc_sectors">Industrial Processes and Process Use</a> sectors, rather than within Energy)</li>
     <li>Fugitive emissions from waste disposal activities outside of
-        the oil and gas industry (these are counted in Waste sectors rather
+        the oil and gas industry (these are counted in <a href="/blog/2026-02-12-public-electricity#ipcc_sectors">Waste</a> sectors rather
         than within the Energy sector)
     </li>
 </ul>
@@ -118,13 +122,15 @@ as much as that makes sense, and reporting fugitive emissions relating to each a
     <li>IPCC code 1.B.2.{a,b}.ii for <i>Flaring</i> of emissions from oil systems (a) and natural gas systems (b)</li>
     <li>IPCC code 1.B.2.{a,b}.iii for <i>All Other</i> fugitive emissions from oil systems (a) and natural gas systems (b) such as exploration, production, upgrading, transport, refining, distribution, and anything else along the way.</li>
 </ul>
-Canada's NIR has tracked emissions in way, except, as we'll see in the next section, by combining the venting and flaring emissions
+Canada's NIR has tracked emissions in this way, except, as we'll see in the next section, by combining the venting and flaring emissions
 of oil systems and natural gas sytems.
 </p>
 
 <h3 id="venting">Venting Emissions</h3>
 
 <p>
+The previous section was about fugitive emissions generally, but this post is about a specific type of fugitie emissions called <i>vented</i> emissions,
+so we need to go through a few more definitions.
 Venting is an industry term for the controlled release of non-combusted gases into the atmosphere.
 The 2006 IPCC reporting guideline defines venting as comprising
 <i>all engineered or intentional discharges of waste gas streams and process by-products to the atmosphere, including emergency discharges.</i>
@@ -143,9 +149,9 @@ When some or all vented gas can be captured for storage and utilization, the 200
 should include only the net emissions to the atmosphere.
 </p>
 <p>
-Venting does not include exhaust streams from combustion;
-if combustion was for energy then exhaust is counted as a mobile or stationary combustion emission,
-if the combustion was not for energy then its exhaust is counted as a flaring emission.
+Venting does not include exhaust streams from combustion.
+If there's been combustion for energy, then the exhaust is counted as a mobile or stationary combustion emission.
+If there's been combustion that was not for energy then its exhaust is counted as a flaring emission.
 Venting also does not include accidental releases due to e.g. leaks or catastrophic equipment failure.
 Still, the IPCC guideline defines venting relatively broadly.
 The definition is important for my purpose here,
@@ -161,7 +167,7 @@ These categories do not seem to exactly match the meaning of the IPCC codes name
 because there isn't e.g. venting-from-oil separately from venting-from-gas.
 I believe what the NIR labels "Venting"
 refers to the sum of the two IPCC categories relating to venting in oil and natural gas systems (1.B.2.a.i, and 1.B.2.b.i respectively).
-The estimator that I have added to planzero is implemented with this assumption in mind;
+The estimator that I have added to PlanZero is implemented with this assumption in mind;
 I have not attempted to delineate the venting emissions of oil systems from natural gas systems.
 </p>
 
@@ -178,16 +184,17 @@ and Petrinex.
 Details on how I used these data sets follows below, after the figure.
 The hack is that I just multiplied many of the emissions in the data by 2.5,
 but see the section below (<a href="#why2.5">Why I ...</a>) before dismissing the technique outright.
-The result, below, is an estimator that ends up being relatively accurate, at least for recent years.
+The result, below, is an estimator that accounts for about 90% of emissions in very-recent years (2022-2023),
+about 50% venting emissions for less-recent years (e.g. 2004-2014),
+and 0% of the emissions prior to 2004.
 </p>
 
 <p>
-A static figure and link to what's now an interactive infographic at
+The following figure shows the PlanZero venting estimator.
 <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">IPCC Sector / Fugitive Sources / Oil and Natural Gas / Venting</a>:
 </p>
-<a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">
-<img src="/images/2026-03-02-venting.png" alt="" class="image main"/>
-</a>
+
+{{blog.est_nir.EstFugitive_OilandNaturalGas_Venting().echart_venting() | safe}}
 
 <h3 id="ghgrp">Canada's Greenhouse Gas Reporting Program (GHGRP)</h3>
 
@@ -196,7 +203,7 @@ The first data set used to estimate Venting emissions was from the Greenhouse Ga
 Since 2004, this program has collected annual information from individual facilities
 (see e.g. <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/facility-reporting/overview-2023.html">2023 overview</a>).
 It can be considered a large-emitters registry, because facilities that emit 10 kt {{CO2e|safe}} or more in any given year
-must report those emissions via the program to ECCC.
+must report those emissions via the program to Environment and Climate Change Canada (ECCC).
 More recently, since 2022, facilities are further required to categorize emissions by source category:
 Stationary Fuel Combustion, Industrial Process, On-site Transportation, Waste, Wastewater, Venting, Flaring, and Leakage.
 Environment and Climate Change Canada (ECCC) collects the data, publishes a report, and fortunately for our purposes, also publishes the data itself
@@ -244,8 +251,8 @@ a more physically-plausible category, but this has also not been done.
 <h3 id="st60b">Alberta Energy Regulator Statistical Report ST60B</h3>
 
 <p>
-The second data set used to build the planzero FOGV estimator was
-the most-recent Statistical Report 60 B from Alberta's Energy Regulator (AER-ST60B).
+The second data set used to build the PlanZero FOGV estimator was
+the most recent Statistical Report 60 B from Alberta's Energy Regulator (AER-ST60B).
 The "Upstream Petroleum Industry Emissions Report" for year ending Dec 31, 2024
 (<a href="https://static.aer.ca/prd/documents/sts/ST60-B-2025.pdf">pdf</a>)
 includes a spreadsheet with data from two industry reporting systems:
@@ -263,12 +270,12 @@ OneStop-reported emissions is numerically larger than the sum of Petrinex-report
 which should not be possible.
 I understand that there are ongoing efforts to align these data sources,
 and that starting in 2026 Petrinex will be recognized as the sole source of truth.
-For now, the planzero FOGV estimator uses the OneStop emissions from AIR-ST60B as the source of truth
+For now, the PlanZero FOGV estimator uses the OneStop emissions from AIR-ST60B as the source of truth
 for venting emissions from non-GHGRP, Oil and Gas operations in Alberta.
 </p>
 
 
-<h3 id="petrinex">Petrinex (source for Saskatchewan data)</h3>
+<h3 id="petrinex">Petrinex</h3>
 <p>
 The third data set I used to build the FOGV estimator was Petrinex
 (specifically the <a href="https://www.petrinex.ca/PD/Pages/SPD.aspx">Saskatchewan Public Data site</a>).
@@ -277,69 +284,67 @@ how various substances move through their network of facilities and pipelines.
 Petrinex offers monthly data as direct public downloads for the provinces of Alberta and Saskatchewan.
 (The <a href="https://www.petrinex.ca/PD/Pages/APD.aspx">Alberta Public Data site</a>
 has more information than the Petrinex tab of the AER's ST60B spreadsheet, an uncompressed one-month report for Alberta in csv format is about 125MB.)
-Petrinex direct-download data covers a larger set of activities than just venting
+Petrinex direct-download monthly data sets cover a larger set of activities than just venting
 (see full <a href="https://www.petrinex.gov.ab.ca/bbreportsSK/PRAActivityCodes.htm">Activity Codes</a>)
 and about 50 substances related to oil and gas (see full <a href="https://www.petrinex.gov.ab.ca/bbreportsSK/PRAProductCodes.htm">Product List</a>).
 </p>
 
 <p>
-To use the Saskatchewan petrinex data I had to identify which activities qualified as IPCC-Venting,
+To use the Saskatchewan Petrinex data I had to identify which activities qualified as IPCC-Venting,
 what the GHG impact of various products was, and which facilities weren't already counted by the GHGRP.
 From the Petrinex activities list, I included "VENT" because it was literally venting.
-I almost decided to include "SHR" for shrinkage but decided against it because it seemed neither deliberate nor engineered (lack of maintenance didn't count, to my mind, as engineering).
-For the GHG impact of various products I copied various conversion constants
-from Google Gemini queries and put them into code in <a href="https://github.com/jaberg/planzero/blob/main/planzero/eccc_nir.py">est_nir.py</a>.
+(I elected not to include "SHR" (shrinkage) but admittedly, without much confidence.)
+The various conversion factors for as methane mix, acid gas, condensate, entrained gas, gas, {{CO2|safe}}, {{CO2|safe}} mix, and crude oil are
+ listed on github (<a href="https://github.com/jaberg/planzero/blob/c4ce75aab51752cace5edcc5a90f65f426e90695/planzero/est_nir.py#L625">est_nir.py permalink</a>).
 To filter out GHGRP-registered facilities,
 I queried an undocumented API hosted by Pollution and Waste Canada
-that's normally used by the <a href="https://pollution-waste.canada.ca/national-release-inventory/">National Pollutant Release Inventory data search</a> and recorded all GHGRP-registered facilities that also had petrinex identifiers, in order to skip these facilities in Petrinex data.
+that's normally used by the <a href="https://pollution-waste.canada.ca/national-release-inventory/">National Pollutant Release Inventory data search</a> and recorded all GHGRP-registered facilities that also had Petrinex identifiers, in order to skip these facilities in Petrinex data.
 </p>
 
 
-<h3 id="why2.5">Why I multiplied by data totals by 2.5</h3>
+<h3 id="why2.5">Unreported Emissions: Why I multiplied data totals by 2.5</h3>
 <p>
-The vented emissions that I extracted from GHGRP data, ST60B data, and Saskatchewan Petrinex data,
-which all had data for 2023, totalled about 18Mt of the 42Mt CO2e reported by Canada for the Vented Oil and Gas emissions sector in 2023.
-The NIR totals are almost entirely from Alberta and Saskatchewan, just like my data, and
+The vented emissions total that I extracted from GHGRP data, ST60B data, and Saskatchewan Petrinex data,
+which all had data for 2023, totalled about 18Mt of the 42Mt {{CO2e|safe}} reported by Canada for the Vented Oil and Gas emissions sector in 2023.
+The NIR total (42 Mt) is almost entirely from Alberta and Saskatchewan, just like my data, and
 after adding up the facility-reported emissions I was simply only 40% of the way there.
 As it happens, the factor you need to use to get from 40% to 100% is 2.5,
 and 2.5 is the factor found by 
 <a href="https://pubs.acs.org/doi/10.1021/acs.est.7b03525">Johnson et al. (2017)</a>
-to get from bottom-up fugitive emissions estimates (which the government was using circa 2016)
-to atmospheric emissions estimates (which those authors published in that paper).
+to get from facility-based fugitive emissions estimates (which the government was using circa 2016)
+to atmospheric emissions estimates (measured by a spectrometer on an airplane, which those authors published in that paper).
 So I went ahead and multiplied my emissions totals by 2.5.
 </p>
 
 <p>
 It is, admittedly, not generally recognized as good accounting practice to multiply a number that you have, that you do not want,
 by an arbitrary factor in order to get a number that you do want.
-In this instance, however, there is some justification, although I am still hoping that it is just a mistake;
-perhaps after adding up totals for the
-rest of the oil and gas sector I'll find some extra emissions in need of a category and I can bring them in here as legit additional summands.
-The justifications, such as they are:
-<ul>
-    <li>
-        The emissions estimates from GHGRP-listed facilities do not appear, in the data available today, to have risen as a response
-        to this 2017 finding, although the NIR protocols have adjusted in reponse.
-    </li>
-    <li>The <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/G-Additional-NIR-Annexes?lang=en">NIR methodology annex on fugitive emissions</a>
-    has added the use of atmospheric estimates in their methodology.
-    I don't have that data, and I don't know how to use it, but presumably it would add some additive or multiplicative term.</li>
-    <li>The NIR methodology as well as the emissions methodology used by the AER in the ST60B report
-        relies on more granular data (on facility component counts) than I've used so far, for estimators such as e.g. NIR methodology annex Equations A3.2-12 and A3.2-13.
-        I'm not sure the data to use such estimators is all public, or how the estimates relate to
-        reported vent and leak volumes in e.g. Petrinex and OneStop.
-        It's possible that
-        planzero is missing a big part of the picture of the sector by not having such estimators yet,
-        and I've added a <a href="https://github.com/jaberg/planzero/issues/40">github issue</a> as a reminder to investigate.
-    </li>
-</ul>
+In this instance, however, there is some justification.
+I expect there will always be some amount of unreported emissions from venting, leaking, and flaring,
+and the question from an accounting perspective is how much.
+The finding of <a href="https://pubs.acs.org/doi/10.1021/acs.est.7b03525">Johnson et al. (2017)</a>
+was that unreported emissions were not only more than the reported emissions, but
+were likely 2.5 times the total estimate of futigitive emissions that the government was using at the time,
+which was based on facility counts, component-by-facility averages, and formation gas content on a township-by-township basis across Alberta and Saskatchewan.
+Since 2017, the NIR has adopted the use of atmospheric estimates in their methodology for estimating fugitive emissions.
+</p>
+<p>
+The PlanZero estimator does not yet implement a facility-count, and component-by-facility based estimator.
+Such an estimator is used in the NIR (<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/G-Additional-NIR-Annexes?lang=en">see methodology annex on fugitive emissions</a>).
+I am not sure if there's public data to support such an estimator, but there is at least facility-type and facility-count via in Petrinex,
+as well as processing volumes, and the 2006 IPCC guideline publishes coefficients to use in the absence of regional ones
+(<a href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_4_Ch4_Fugitive_Emissions.pdf">Ch 4, Fugitive Emissions</a>).
+It's possible that such an estimator could offer an alternate, and better-justified account of
+what I'm currently calling "Unreported" emissions, although it would be silly if it simply turned out to double-count the way
+facilities were already submitting their emissions to Petrinex.
+I've created a <a href="https://github.com/jaberg/planzero/issues/40">github issue</a> as a reminder to investigate.
 </p>
 
 <h2 id="summary">Summary</h2>
 
 <p>
 Vented fugitive emissions are a large contributor to the national GHG total,
-and with this post, planzero now includes a vented emissions estimator.
+and with this post, PlanZero now includes a vented emissions estimator.
 That estimator is based on three data sets of reported emissions,
 and a multiplicative factor of 2.5 to account for unreported emissions.
 It estimates venting emissions for recent years well (37Mt of 42Mt in 2023),
@@ -349,7 +354,8 @@ although it completely misses the historical rise and fall of emissions that pea
 <h3 id="csfs">Critical Success Factors</h3>
 <p>
 The main factors contributing to emissions in this sector are now summarized on the 
-planzero page <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">IPCC Sector / Fugitive Sources / Oil and Natural Gas / Venting</a>:
+PlanZero page <a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">IPCC Sector / Fugitive Sources / Oil and Natural Gas / Venting</a>.
+To reduce emissions, it is required to:
 <ul>
     <li>Reduce the venting of casing gas from oil and gas wells</li>
     <li>Reduce the number of oil and gas wells</li>
@@ -389,6 +395,19 @@ and ultimately markets (<a href="https://publications.gc.ca/collections/collecti
 Emissions are vented for various reasons at a large number of disparate facilities,
 operated by a many independent operators, so the process of rolling out
 emissions reduction changes can be expected to take many years.
+</p>
+
+<p>
+Finally, there's the issue of unreported emissions in accounting, which probably contributes to uncertainty and doubt in decision-making.
+The NIR emissions estimate for the sector is about 2.5 times higher
+than the sum of reported emissions in Petrinex and the GHGRP.
+At a high level, it's helpful to know, in aggregate, that actual emissions are greater than measured emissions. (It's a start!)
+But when it comes to driving behaviour change, it's more helpful to be able to say with confidence from data, that e.g.:
+<ul><li>a probably-bad-though-tempting choice is, in fact, definitely bad</li>
+    <li>a maybe-highly-emitting venting process is, in fact, definitely emitting a specific and problematically large amount.</li>
+</ul>
+The present scale of unreported emissions is so large that it can cast legitimate doubt on the effectiveness of
+policies aimed at reducing reported emissions.
 </p>
 
 <h3 id="strategies">Strategies</h3>

@@ -82,13 +82,13 @@ class IPCC_VentingNaturalGas(BlogPost):
     the venting of emissions from oil and gas systems.
     Venting refers to the intentional or engineered release of greenhouse gases across within the oil and gas sector.
     The re-engineering of the sector to avoid such releases is well underway, but venting still accounts for 5.5%
-    of Canada's annual CO2e total, at least as of 2023.
+    of Canada's annual emissions total, at least as of 2023.
     """
     est_nir:object
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 3, 2),
-            title='Oil and Natural Gas Venting Emissions: Emissions Calculations',
+            title='Oil and Natural Gas Venting: Emissions Calculations',
             url_filename="2026-03-02-venting",
             author="James Bergstra",
             tags={BlogTag.NIR_Modelling,

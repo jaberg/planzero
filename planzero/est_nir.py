@@ -759,8 +759,16 @@ class EstFugitive_OilandNaturalGas_Venting(object):
         # (a) The 2017 paper by Johnson et al. that said gov estimates of the
         # day (based on the *kinds* of data we're using here) underestimated emissions by a factor of 2.5
         # (b) The fact that the estimator is only getting about 45% of the NIR total
+        unreported = GHG_zero_kg()
         for label in self.emissions_by_label:
-            self.emissions_by_label[label] *= 2.5
+            for ghg in GHG:
+                if isinstance(self.emissions_by_label[label][ghg], objtensor.ObjectTensor):
+                    raise NotImplementedError()
+                elif isinstance(self.emissions_by_label[label][ghg], sts.STS):
+                    unreported[ghg] += (self.emissions_by_label[label][ghg] * 1.5).setdefault_zero([yy * u.years for yy in self.years])
+                else:
+                    pass
+        self.emissions_by_label['Estimated Unreported'] = unreported
 
         for label in self.emissions_by_label:
             for key, off in self.emissions_by_label[label].ravel_keys_offsets():
