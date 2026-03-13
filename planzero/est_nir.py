@@ -979,5 +979,5 @@ class EstSectorEmissions(object):
             if max_gap is None:
                 max_gap = gap
             if gap.magnitude > thresh_Mt:
-                print(gap, sector)
+                print(f'{gap:.2f} {sector}')
         return max_gap
