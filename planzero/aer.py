@@ -43,14 +43,6 @@ def st60b_2024_OneStop():
     return rval
 
 
-@functools.cache
-def st60b_2024_Petrinex():
-    petrinex = pd.read_excel(
-        'data/ST60B_2024.xlsx',
-        sheet_name="Petrinex", header=4)
-    raise NotImplementedError()
-
-
 # Data extracted from Alberta Energy Regulator (AER) Report VPR6301, Page 6
 # https://static.aer.ca/prd/documents/sts/st13/st13a_2024_summary.pdf
 # Units: 1000m3 for Gas/Gas equivalent, m3 for Liquids, MTS for Sulphur
