@@ -5,145 +5,29 @@
     <header class="major">
         <h1>Stationary Combustion/<br />Oil and Gas Extraction</h1>
         <p>
-        Emissions from the processes and equipment that extract oil from the ground
-        is Canada's largest emissions sector, and it is one of the few that is rising.
-        This sector is tragic from an environmental perspective, because the extraction of bitumen from oil
-        sands is devastating to the surface ecology, demanding of energy,
-        and the result of the extraction is oil destined to be combusted into greenhouse gases.
-        Emissions could potentially be reduced by scrubbing exhaust from gas turbines,
-        I'm not sure if is done already.
+        Oil and gas extraction requires energy.
+        That energy is conventionally provided by the
+        combustion of some fraction of the extracted oil and gas.
+        The bitumen in oil sands requires more processing (and energy)
+        than crude oil from wells before it is ready for refining.
+        Refining
+        is a <a href="/ipcc-sectors/Stationary_Combustion_Sources/Petroleum_Refining_Industries">separate category</a>.
         </p>
     </header>
 
-<div id="mychart" style="width: 600px; height: 400px; margin: 0 auto;"></div>
-<script>
-var myChart = echarts.init(document.getElementById('mychart'));
-var option;
-
-option = {
-  title: {
-      text: 'Emissions: {{catpath}}',
-      left: 'center', // Align: 'left', 'center', or 'right'
-  },
-  xAxis: {
-      name: 'Year', // The label text
-      nameLocation: 'middle', // Places it in the center (default is 'end')
-      nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ ipcc_canada.echart_years() }},
-  },
-  yAxis: {
-      name: 'Emissions (Mt CO2e)', // The label text
-      nameLocation: 'middle',
-      nameGap: 40,
-  },
-  series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath)) | safe }},
-  ],
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    },
-    formatter: '{a}',
-  },
-};
-
-option && myChart.setOption(option);
-window.addEventListener('resize', function() {
-  myChart.resize();
-});
-
-
-</script>
 <div>
-    <p>
-    Emissions from the extraction of oil and gas have risen steadily and enormously
-    over the past three decades.
-    </p>
-
-    <h2>Google Gemini's assessment of what causes these emissions</h2>
-
-    <p>
-    This can be a confusing part of the report because "extraction" sounds like a purely mechanical process (digging or drilling), but in Canada, it is actually a massive <em>thermal</em> (heat-based) process.
-    </p>
-
-    <p>
-    <em>Stationary Combustion</em> in this context refers to burning fossil fuels (usually natural gas or diesel) in fixed equipment to generate <em>heat</em> or <em>power</em> necessary to run the extraction operations.
-    </p>
-
-    <p>
-It is distinct from "Mobile Combustion" (trucks, excavators) and "Fugitive/Flaring" emissions (leaks or burning waste gas).
-    </p>
-
-    <p>
-Here is a breakdown of the specific processes and why combustion is required for them.
-    </p>
-
-    <h3>
-    1. Generating Steam for "In-Situ" Oil Sands (The Largest Source)
-    </h3>
-    <p>
-This is likely the single biggest driver of stationary combustion numbers in Canada's report.
-<ul>
-    <li> <b>The Problem:</b> A huge portion of Canada’s oil (bitumen) is underground but is too thick and heavy to flow like normal crude oil. It has the consistency of peanut butter or hockey pucks.</li>
-    <li> <b>The Combustion Solution:</b> Companies use massive gas-fired <em>boilers</em> to turn water into high-pressure steam.</li>
-    <li> <b>The Process:</b> This steam is injected underground (processes like SAGD - Steam Assisted Gravity Drainage). The heat from the steam melts the bitumen, lowering its viscosity so it can be pumped to the surface.</li>
-    <li> <b>Why it counts:</b> You have to burn a significant amount of natural gas to create enough steam to melt the oil. This is why "extraction" has such high combustion emissions.</li>
-</ul>
+{{est_nir.Est_Energy_SCS_OilAndGas_Extraction().echart() | safe}}
 <p>
-
-<h3>
-2. Driving Compressors and Pumps
-</h3>
-<p>
-Oil and gas sites are often in remote areas without access to the electrical grid. To move fluids and gases, they need massive mechanical power.
-<ul>
-    <li><b>The Combustion Solution:</b> Instead of electric motors, they use large stationary internal combustion engines (similar to a giant car engine) or gas turbines (similar to a jet engine bolted to the ground).</li>
-    <li><b>The Process:</b>
-        <ul>
-            <li><b>Gas Extraction:</b> Natural gas doesn't always flow out of the well at high enough pressure to enter a pipeline. Huge compressors, driven by gas-fired engines, suck the gas out of the ground and compress it for transport.</li>
-            <li><b>Oil Extraction:</b> Pumps (like "pump jacks") need power to lift oil to the surface.</li>
-        </ul>
-    </li>
-    <li><b>Why it counts:</b> These engines run 24/7, usually burning the raw natural gas produced at the site (field gas) to keep the operation moving.</li>
-</ul>
+Emissions from the extraction of oil and gas have risen steadily and enormously
+over the past three decades.
+Emissions are dominated by GHGRP-registered facilities located in
+Alberta, British Columbia, and Saskatchewan.
+The NAICS classification of these large emitters changed in 2020 from
+two-way distinction (conventional vs. non-conventional oil extraction)
+to three-way one (conventional vs. surface-mined oil sands vs. in-situ oil
+sands).
 </p>
 
-<h3>
-3. "Heater Treaters" and Separation
-</h3>
-<p>
-Once oil and gas reach the surface, they are usually a messy mixture of oil, gas, water, and sand. They cannot be put into a sales pipeline in this state.
-<ul>
-    <li><b>The Combustion Solution:</b> The mixture is passed through <em>Heater Treaters</em> or <em>Separators</em>. These are large vessels with a fire-tube inside (burning natural gas).</li>
-    <li><b>The Process:</b>
-        <ul>
-            <li><b>Separation:</b> Heat helps break the emulsion of oil and water (like separating salad dressing) so the water can be removed.</li>
-            <li><b>Flow Assurance:</b> In Canada's cold climate, the fluids would freeze or turn into a slush without heat. Combustors keep the oil hot enough to flow through the pipes at the surface facility.</li>
-            <li><b>Dehydration:</b> Natural gas often comes up "wet" (saturated with water). Glycol dehydrators use a gas burner to boil water out of the glycol solution so it can absorb more moisture from the gas.</li>
-        </ul>
-    </li>
-</ul>
-</p>
-
-<h3>
-Summary of Equipment
-</h3>
-<p>
-When you see "Stationary Combustion" in that report, visualize these specific pieces of hardware sitting at the well sites or processing plants:
-</p>
-
-<table>
-    <tr><th>Equipment</th><th>Fuel Source</th><th>Purpose</th></tr>
-    <tr><td> Steam Boilers / Generators </td><td> Natural Gas </td><td> Creating steam to inject underground to melt bitumen (Oil Sands). </td></tr>
-    <tr><td> Reciprocating Engines </td><td> Field Gas / Diesel </td><td> Powering compressors to push gas through pipelines or lift oil. </td></tr>
-    <tr><td> Gas Turbines </td><td> Natural Gas </td><td> Generating electricity for the site or driving large compressors. </td></tr>
-    <tr><td> Process Heaters </td><td> Natural Gas </td><td> Heating crude oil to separate out water and sand. </td></tr>
-    <tr><td> Glycol Reboilers </td><td> Natural Gas </td><td> Boiling off water to dry natural gas. </td></tr>
-</table>
 
 <h2>
     How might Canada reduce oil and gas extraction emissions to zero?
@@ -153,90 +37,61 @@ When you see "Stationary Combustion" in that report, visualize these specific pi
     Critical Success Factors
 </h3>
 
+<p>To reduce stationary combustion emissions from oil and gas extraction,
+it is required to do some combination of the following:
 <ul>
-    <li>extract less oil and gas, especially from oil sands</li>
-    <li>use more-efficient extraction equipment, processes</li>
+    <li>Reduce the rate of oil and gas extraction (reduce demand, reduce price, or cap production)</li>
+    <li>Use alternative low-emission energy sources to extract oil and gas</li>
+    <li>Capture the emissions from fossil fuel combustion</li>
+    <li>Raise the energy efficiency of oil and gas extraction</li>
 </ul>
+</p>
 
 <h3>
     Barriers
 </h3>
 
+<p>
+It is challenging to make progress on the critical success factors above for several reasons:
+
 <ul>
-    <li>Oil sands extraction operations are high-capital long-duration projects (e.g. ballpark 40 years), for which considerable future extraction is required to pay back sunk-cost investments. Google Gemini estimates that existing extraction facilities can be operated profitably so long as the price of oil is above $25-$35 a barrel (WTI).</li>
-    <li>Global demand for oil and natural gas remains high.
-        Global oil consumption does not appear to have peaked (see e.g. <a href="https://ourworldindata.org/grapher/oil-consumption-by-country?tab=line&country=USA~AUS~GBR~CAN~ZAF~NOR~CHN~OWID_WRL">our world in data</a>).
-        As long as prices remain above about $60/barrel (WTI), it is potentially profitable
-        to create new oil sands mines and expand production. (Gemini estimate)
+    <li>Alignment: Oil and gas continue to see enormous, and
+        <a href="https://ourworldindata.org/grapher/oil-consumption-by-country?tab=line&country=USA~AUS~GBR~CAN~ZAF~NOR~CHN~OWID_WRL">still-rising</a>, market demand at prices well above the break-even point of oil and gas extraction operations in Canada.</li>
+    <li>Geopolitics: Comparable oil and gas operators in the US are scaling <i>up</i> under policies of the Trump administration.</li>
+    <li>Geopolitics: Canadian federal ambition is to position Canada as an energy superpower by exporting fossil fuels.</li>
+    <li>Lock-in: Extraction facilities, especially for oil sands,
+        are high-capital (billions) that require decades of operation to pay off.</li>
+    <li>Cost: Carbon capture technologies exist, but it's costly and unproductive (carbon capture and utilization is less-unproductive, so to speak).
+        The cost for deploying this technology must be borne by some combination of customers,
+        investors, and citizens of various levels of government, without benefit.
     </li>
     <li>
-        Alberta's oil sands operations leverage relatively cheap energy and already use it cleverly as well.
-        The heat required to melt bitumen to oil already sometimes comes from a co-generation process
+        Maturity: The energy efficiency of oil and gas extraction has been
+        improved by decades of engineering.
+        For example, the heat required to melt bitumen to oil already sometimes comes from a co-generation process
         in which gas turbines generate electricy and their heat exhaust melts the oil.
-        Not only does this power the site operation, such sites actually sell electricity via the provincial grid.
+        Not only does this power the site's operations, such sites also sell electricity via the provincial grid.
+    </li>
+    <li>Scale: Emissions in this sector are over 100Mt/yr, and rising.
+        For a sense of scale, the carbon capture and storage projects in Alberta
+        have been operating at <a href="https://www.aer.ca/data-and-performance-reports/statistical-reports/alberta-energy-outlook-st98/carbon-capture-utilization-and-storage-ccus">1-2 Mt/yr since 2016.</a>
+
     </li>
 </ul>
-
-<h3>
-    Key Stakeholder Groups
-</h3>
-<ul>
-    {% for sg_name, sg in sorted(stakeholders.ss.items()) %}
-    {% if catpath in sg.ipcc_catpaths %}
-    <li>{{ sg.full_name }}</li>
-    {% endif %}
-    {% endfor %}
-</ul>
-
-<h3>
-    Possible Strategies (feel free to help flesh these out, contribute more)
-</h3>
-
-<table>
-    <thead>
-        <tr>
-            <th>Who</td>
-            <th>What</td>
-            <th>For Whom</td>
-            <th>Cost / tonne {{CO2e|safe}}</td>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-{% for idea in stakeholders.ideas_by_catpath(catpath) %}
-        <tr>
-            <td>{{idea.who.full_name}}</td>
-            <td>
-                {% if idea.name in peval.comparisons %}
-                <a href="/strategies/{{idea.name}}/">{{idea.descr}}</a>
-                {% else %}
-                {{idea.descr}}
-                {% endif %}
-            </td>
-            <td>
-                {% for sg in idea.for_whom %}
-                {{sg.full_name}}{% if not loop.last %},{% endif %}
-                {% endfor %}
-            </td>
-            <td>
-                {% if idea.name in peval.comparisons %}
-                <a href="/strategies/{{idea.name}}/">{{ "{:.2f}".format(peval.comparisons[idea.name].cost_per_ton_CO2e(base_rate=1-discount_rate)) }}</a>
-                {% endif %}
-            </td>
-        </tr>
-{% endfor %}
-</table>
-
-<p>
-Note: I'm not including here ideas of the form "reduce domestic demand for fuel by doing X".
-It is not necessarily the case that reducing domestic demand will lead to a reduction in oil and gas extraction.
-Current federal policy seems open to elevating Canada's oil and natural gas exports (ostensibly to offset economic headwinds from reduced trade with the U.S.).
-Even with reductions in domestic demand, this sector may expand to serve the international market.
-I would be open to including ideas of the form "reduce both domestic and international demand for fuel by doing X",
-although such ideas would belong foremost as reducing emissions in other IPCC sectors.
 </p>
 
+
+{% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Oil and Gas Extraction") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
 </div>
+
 </section>
 </div>
 
