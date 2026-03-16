@@ -29,6 +29,7 @@ def cache_petrinex(args):
     from . import petrinex
     petrinex.main_build_cache(args)
 
+
 def request_all_planzero_pages(args):
     import requests
     import time
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     parser_cache_petrinex = subparsers.add_parser('cache_petrinex')
     parser_cache_petrinex.add_argument('--year', help='report year')
     parser_cache_petrinex.add_argument('--PT', help='report year')
-    parser_cache_petrinex.add_argument('--include_ghgrp', default=False, help='include contributions from ghgrp-listed facilities')
+    parser_cache_petrinex.add_argument('--include_ghgrp', action='store_true', help='include contributions from ghgrp-listed facilities')
     parser_cache_petrinex.set_defaults(func=cache_petrinex)
 
     parser_request_all_pages = subparsers.add_parser('request_all_pages')

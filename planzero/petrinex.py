@@ -118,11 +118,15 @@ class ProductID(str, enum.Enum):
     CrudeOil = 'OIL'
     Polymer = 'POLYMER'
     Sand = 'SAND'
+    SulphurBasepad = 'SBASE'
+    SulphurBlock = 'SBLOC'
+    SulphurSprilled = 'SPRILL'
     Solvent = 'SOLV'
     Steam = 'STEAM'
+    Sulphur = 'SUL'
     SyntheticCrude = 'SYNCRD'
     Waste = "WASTE"
-    Waater = "WATER"
+    Water = "WATER"
 
 
 UoM_by_ProdId = {
@@ -137,9 +141,32 @@ UoM_by_ProdId = {
 }
 
 
+class FacilityType(str, enum.Enum):
+    Battery = 'BT'
+    CustomTreating = 'CT'
+    GasPlant = 'GP'
+    GasGatheringSystem = 'GS'
+    InjectionFacillity = 'IF'
+    Pipeline = 'PL'
+    TankTerminal = 'TM'
+    FreshFormationWaterSource = 'WT'
+
+
 def read_volume_csv(year, month, pt):
-    path = f'data/petrinex/Vol_{year}-{month.value}-{pt.two_letter_code()}.csv.zip'
-    return pd.read_csv(path)
+    possible_paths = [
+        f'data/petrinex/Vol_{year}-{month.value}-{pt.two_letter_code()}.csv.zip',
+        f'data/petrinex/Vol_{year}-{month.value}-{pt.two_letter_code()}.CSV',
+    ]
+    for path in possible_paths:
+        try:
+            return pd.read_csv(
+                path,
+                converters = {
+                    'Hours': lambda x: float('nan') if x == '***' or x == '' else float(x),
+                })
+        except IOError:
+            continue
+    raise IOError('no path match')
 
 
 @functools.cache
@@ -183,7 +210,7 @@ class VolumeSummary(pydantic.BaseModel):
     month: Month
     pt: PT
     includes_ghgrp: bool
-    volume_by_activity: dict[ActivityID, dict[ProductID, float]]
+    volume_by_activity: dict[ActivityID, dict[ProductID, dict[FacilityType, float]]]
 
     @classmethod
     def new_from_df(cls, year, month, pt, df, gid_by_pid=None):
@@ -198,16 +225,20 @@ class VolumeSummary(pydantic.BaseModel):
                 if prod_id != prod_id: # nan
                     continue
                 prod_id = ProductID(prod_id)
-                volume_by_activity[aid].setdefault(prod_id, 0)
-                for pid, fdf in pdf.groupby('ReportingFacilityID'):
-                    if pid in gid_by_pid:
-                        continue
-                    try:
-                        volume_by_activity[aid][prod_id] += float(
-                            fdf.Volume.sum())
-                    except ValueError as exc:
-                        print('Warning, skipping volume', fdf)
-                        continue
+                volume_by_activity[aid].setdefault(prod_id, {})
+                for ft, ftdf in pdf.groupby('ReportingFacilityType'):
+                    ft = FacilityType(ft)
+                    volume_by_activity[aid][prod_id].setdefault(ft, 0)
+                    for row in ftdf.iloc:
+                        if row.ReportingFacilityID in gid_by_pid:
+                            continue
+                        try:
+                            assert row.Volume == row.Volume
+                            volume_by_activity[aid][prod_id][ft] += float(row.Volume)
+                        except (AssertionError, ValueError) as exc:
+                            # volume could be e.g. "***"
+                            print('Warning, skipping volume', fdf)
+                            continue
         return cls(
             year=year,
             month=month,
@@ -235,9 +266,8 @@ class VolumeSummary(pydantic.BaseModel):
 
 
 @functools.cache
-def petrinex_SK(include_ghgrp=False):
-    rval = objtensor.empty(ProductID, ActivityID)
-    pt = PT.SK
+def petrinex_annual_summary(pt, include_ghgrp=False):
+    rval = objtensor.empty(ProductID, ActivityID, FacilityType)
     tmp = {}
     basis_years = [2022, 2023, 2024]
     for year in basis_years:
@@ -245,24 +275,30 @@ def petrinex_SK(include_ghgrp=False):
             vsum = VolumeSummary.load_cached(
                 year, month, pt, include_ghgrp=include_ghgrp)
             for aid in vsum.volume_by_activity:
-                tmp.setdefault(aid, {})
-                for pid, amt in vsum.volume_by_activity[aid].items():
-                    tmp[aid].setdefault(pid, {})
-                    tmp[aid][pid].setdefault(year, 0)
-                    tmp[aid][pid][year] += amt * UoM_by_ProdId.get(pid, u.m3)
+                for pid in vsum.volume_by_activity[aid]:
+                    tmp.setdefault(aid, {}).setdefault(pid, {})
+                    for ft, amt in vsum.volume_by_activity[aid][pid].items():
+                        tmp[aid][pid].setdefault(ft, {})
+                        tmp[aid][pid][ft].setdefault(year, 0 * UoM_by_ProdId.get(pid, u.m3))
+                        tmp[aid][pid][ft][year] += amt * UoM_by_ProdId.get(pid, u.m3)
     for pid in ProductID:
         rval[pid] = 0 * UoM_by_ProdId.get(pid, u.m3)
     for aid in tmp:
         for pid in tmp[aid]:
-            for year in basis_years:
-                tmp[aid][pid].setdefault(year, 0 * UoM_by_ProdId.get(pid, u.m3))
-            years, values = zip(*sorted(tmp[aid][pid].items()))
-            v_unit = values[0].u
-            rval[pid, aid] = sts.annual_report2(
-                years=years,
-                values=[vv.to(v_unit).magnitude for vv in values],
-                v_unit=v_unit)
+            for ft in tmp[aid][pid]:
+                #for year in basis_years:
+                    #tmp[aid][pid][ft].setdefault(year, 0 * UoM_by_ProdId.get(pid, u.m3))
+                years, values = zip(*sorted(tmp[aid][pid][ft].items()))
+                v_unit = values[0].u
+                rval[pid, aid, ft] = sts.annual_report2(
+                    years=years,
+                    values=[vv.to(v_unit).magnitude for vv in values],
+                    v_unit=v_unit)
     return rval
+
+
+def petrinex_SK(include_ghgrp=False):
+    return petrinex_annual_summary(pt=PT.SK, include_ghgrp=include_ghgrp)
 
 
 def main_build_cache(args):
