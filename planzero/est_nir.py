@@ -626,7 +626,8 @@ class EstFugitive_OilandNaturalGas_Venting(object):
         from planzero.petrinex import (
             ActivityID,
             ProductID,
-            petrinex_SK)
+            FacilityType,
+            petrinex_annual_summary)
         venting_products = (
             ProductID.MethaneMix,
             ProductID.AcidGas,
@@ -688,7 +689,8 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             * .6 # a guess at the molar fraction of methane in the flashed gas
             * .6785 * u.kg_CH4 / u.m3) # mass at standard pressure
 
-        self.petrinex_SK = petrinex_SK()
+        self.petrinex_SK = petrinex_annual_summary(
+            PT.SK, include_ghgrp=False).sum(FacilityType)
         # I don't really know what all the activities mean
         # but Vent may be the only emission type for the IPCC Venting category
         vSK = self.petrinex_SK[venting_products, ActivityID.Vent]
@@ -815,10 +817,21 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
         from .petrinex import (
             ActivityID,
             ProductID,
-            petrinex_SK)
+            FacilityType,
+            petrinex_annual_summary)
 
-        self.petrinex_SK = petrinex_SK()
-        pSK = self.petrinex_SK[ProductID.Gas, ActivityID.Fuel]
+        extraction_facility_types = [
+            FacilityType.Battery,
+            FacilityType.GasPlant,
+            FacilityType.GasGatheringSystem,
+            FacilityType.CustomTreating,
+            FacilityType.TankTerminal, # is this extraction??
+            FacilityType.FreshFormationWaterSource,
+        ]
+
+        self.petrinex_SK = petrinex_annual_summary(PT.SK, include_ghgrp=False)
+        pSK = self.petrinex_SK[ProductID.Gas, ActivityID.Fuel, extraction_facility_types].sum(
+            extraction_facility_types)
         emissions = GHG_PT_zeros()
         factor = 2441
         assert all(val == factor for val in eccc_nir_annex6.data_a6_1_2['SK'])
@@ -842,6 +855,48 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
                 * u.g_N2O / u.m3)).setdefault_zero(self.years_u)
 
         self.emissions_by_label['Small Facilities (Saskatchewan)'] = emissions
+
+    def init_petrinex_AB(self):
+        from .petrinex import (
+            ActivityID,
+            ProductID,
+            FacilityType,
+            petrinex_annual_summary)
+
+        extraction_facility_types = [
+            FacilityType.Battery,
+            FacilityType.GasPlant,
+            FacilityType.GasGatheringSystem]
+
+        self.petrinex_AB = petrinex_annual_summary(pt=PT.AB)
+        pAB = self.petrinex_AB[ProductID.Gas, ActivityID.Fuel, extraction_facility_types].sum(
+            extraction_facility_types)
+        emissions = GHG_PT_zeros()
+        co2_factors = sts.annual_report2(
+            years=eccc_nir_annex6.df_a6_1_2.Year,
+            values=eccc_nir_annex6.df_a6_1_2.AB,
+            v_unit=u.g_CO2 / u.m3) # gas / NG_nmk is implicit
+        emissions[GHG.CO2, PT.AB] = sts.with_default_zero(pAB * co2_factors, self.years_u)
+
+        ch4_factors = sts.annual_report2(
+            years=eccc_nir_annex6.df_a6_1_4.Year,
+            values=eccc_nir_annex6.df_a6_1_4.AB,
+            v_unit=u.g_CH4 / u.m3)
+        emissions[GHG.CH4, PT.AB] = sts.with_default_zero(pAB * ch4_factors, self.years_u)
+
+        idx = 2
+        assert eccc_nir_annex6.df_a6_1_3["Emission Factor Source"][idx]\
+                == "Producer Consumption (Non-marketable)"
+        emissions[GHG.N2O, PT.AB] = (
+            pAB
+            * (eccc_nir_annex6.df_a6_1_3["N2O (g/m3)"][idx]
+                * u.g_N2O / u.m3)).setdefault_zero(self.years_u)
+
+        self.emissions_by_label['Small Facilities (Alberta)'] = emissions
+
+        # TODO: injection:
+        # *do* count the fuel used for injection
+        # and also count the removed carbon that's injected
 
     def init_bc(self):
         from .bc_pi import bc_provincial_inventory, Sector as BC_Sector
@@ -870,7 +925,7 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
         self.init_ghgrp()
         self.init_petrinex_SK()
         self.init_bc()
-        # TODO: try adding in the full 1GB/yr petrinex data
+        self.init_petrinex_AB()
 
     def update_A9_emissions(self, emissions_sectoral_pt):
         for label, emissions in self.emissions_by_label.items():

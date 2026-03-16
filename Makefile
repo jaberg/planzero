@@ -161,12 +161,28 @@ cache_pollution_waste_canada_report_details: .build
 		-it --rm $(target) \
 		python -m planzero cache_pollution_waste_canada_report_details
 
+petrinex_unzip_download:
+	# when you download using petrinex website it gives you a download.zip
+	# file with whatever months you asked for, for whatever provinces you
+	# asked for
+	(cd data/petrinex && unzip ~/Downloads/download.zip)
+
+petrinex_rm_download:
+	rm ~/Downloads/download.zip
+
 cache_petrinex_SK_2022: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero cache_petrinex --year=2022 --PT=Saskatchewan
+
+cache_petrinex_AB_2022: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_petrinex --year=2022 --PT=Alberta
 
 cache_petrinex_SK_2023: .build
 	docker run \
@@ -175,12 +191,26 @@ cache_petrinex_SK_2023: .build
 		-it --rm $(target) \
 		python -m planzero cache_petrinex --year=2023 --PT=Saskatchewan
 
+cache_petrinex_AB_2023: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_petrinex --year=2023 --PT=Alberta
+
 cache_petrinex_SK_2024: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero cache_petrinex --year=2024 --PT=Saskatchewan
+
+cache_petrinex_AB_2024: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero cache_petrinex --year=2024 --PT=Alberta
 
 cache_petrinex_SK_2025: .build
 	docker run \

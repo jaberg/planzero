@@ -465,6 +465,8 @@ class ObjectTensor(object):
             for ii, dim in enumerate(self.dims):
                 if dim == sum_dim_d:
                     return self.sum(ii)
+                if set(dim.keys()) == set(sum_dim):
+                    return self.sum(ii)
             raise IndexError(sum_dim)
 
     def t_units(self):
