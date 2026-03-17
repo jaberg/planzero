@@ -3,6 +3,7 @@ from .enums import PT
 from .ureg import u
 from . import est_nir
 from . import eccc_nir_annex13
+from . import sts
 
 def test_small_delta_natural_gas_for_electricity_2005():
     est = est_nir.EstAnnex13ElectricityFromNaturalGas()
@@ -70,3 +71,20 @@ def test_annex13_electricity_from_other():
 
 def test_smoke_max_gap_2005():
     est_nir.EstSectorEmissions().max_gap_2005()
+
+
+def test_venting_sk():
+    from planzero.petrinex import ProductID
+    obj = est_nir.EstFugitive_OilandNaturalGas_Venting(init=False)
+    obj.init_petrinex_SK()
+    checked = False
+    for vp in obj.SK_venting_products:
+        print(vp, obj.vSK[vp])
+        if isinstance(obj.vSK[vp], sts.STS):
+            assert list(obj.vSK[vp].times) == [2022, 2023, 2024]
+        if vp == ProductID.Gas:
+            assert 171981 < obj.vSK[vp].values[1] < 171982
+            assert 160825 < obj.vSK[vp].values[2] < 160826
+            assert 137444 < obj.vSK[vp].values[3] < 137445
+            checked = True
+    assert checked

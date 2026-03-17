@@ -286,8 +286,8 @@ def petrinex_annual_summary(pt, include_ghgrp=False):
     for aid in tmp:
         for pid in tmp[aid]:
             for ft in tmp[aid][pid]:
-                #for year in basis_years:
-                    #tmp[aid][pid][ft].setdefault(year, 0 * UoM_by_ProdId.get(pid, u.m3))
+                for year in basis_years:
+                    tmp[aid][pid][ft].setdefault(year, 0 * UoM_by_ProdId.get(pid, u.m3))
                 years, values = zip(*sorted(tmp[aid][pid][ft].items()))
                 v_unit = values[0].u
                 rval[pid, aid, ft] = sts.annual_report2(
