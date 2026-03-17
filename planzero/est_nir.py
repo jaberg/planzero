@@ -628,7 +628,7 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             ProductID,
             FacilityType,
             petrinex_annual_summary)
-        venting_products = (
+        self.SK_venting_products = (
             ProductID.MethaneMix,
             ProductID.AcidGas,
             ProductID.CO2,
@@ -638,7 +638,7 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             ProductID.Gas,
             ProductID.CrudeOil)
 
-        factors = objtensor.empty(enums.GHG, venting_products)
+        factors = objtensor.empty(enums.GHG, self.SK_venting_products)
         for ghg in enums.GHG:
             factors[ghg] = 0 * kt_by_ghg[ghg] / u.m3
 
@@ -693,9 +693,9 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             PT.SK, include_ghgrp=False).sum(FacilityType)
         # I don't really know what all the activities mean
         # but Vent may be the only emission type for the IPCC Venting category
-        vSK = self.petrinex_SK[venting_products, ActivityID.Vent]
+        self.vSK = self.petrinex_SK[self.SK_venting_products, ActivityID.Vent]
         emissions = GHG_PT_zeros()
-        emissions[:, PT.SK] = (factors * vSK).sum(1)
+        emissions[:, PT.SK] = (factors * self.vSK).sum(1)
         self.emissions_by_label['Petrinex Vent (Saskatchewan)'] = emissions
 
     def init_abandoned_modelling_gap(self):
@@ -728,9 +728,11 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             ).interp(times=[tt * u.years for tt in range(1990, 2024)],)
         self.emissions_by_label['Historical modelling gap'] = emission
 
-    def __init__(self):
+    def __init__(self, init=True):
         self.emissions_by_label = {}
         self.years = ipcc_canada.echart_years()
+        if not init:
+            return
         self.init_st60b()
         self.init_ghgrp()
         self.init_petrinex_SK()
@@ -748,7 +750,7 @@ class EstFugitive_OilandNaturalGas_Venting(object):
                 val = self.emissions_by_label[label].buf[off]
                 if isinstance(val, sts.STS):
                     val.setdefault_zero([yy * u.years for yy in self.years])
-                    unreported[ghg] += val * 1.5
+                    unreported[ghg, pt] += val * 1.5
 
         self.emissions_by_label['Estimated Unreported'] = unreported
 
@@ -878,6 +880,14 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
             v_unit=u.g_CO2 / u.m3) # gas / NG_nmk is implicit
         emissions[GHG.CO2, PT.AB] = sts.with_default_zero(pAB * co2_factors, self.years_u)
 
+        # hack in some old emissions. We know they weren't zero, so how about back-filling
+        # the same number as from 2022
+        idx_2022, valid_2022 = emissions[GHG.CO2, PT.AB]._idx_of_time(2022 * u.years)
+        assert valid_2022
+        assert idx_2022 > 2
+        emissions[GHG.CO2, PT.AB].values[1:idx_2022] \
+                = array.array('d', [emissions[GHG.CO2, PT.AB].values[idx_2022]] * (idx_2022 - 1))
+
         ch4_factors = sts.annual_report2(
             years=eccc_nir_annex6.df_a6_1_4.Year,
             values=eccc_nir_annex6.df_a6_1_4.AB,
@@ -922,10 +932,10 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
         self.emissions_by_label = {}
         self.years = ipcc_canada.echart_years()
         self.years_u = [yy * u.years for yy in self.years]
-        self.init_ghgrp()
+        self.init_petrinex_AB()
         self.init_petrinex_SK()
         self.init_bc()
-        self.init_petrinex_AB()
+        self.init_ghgrp()
 
     def update_A9_emissions(self, emissions_sectoral_pt):
         for label, emissions in self.emissions_by_label.items():

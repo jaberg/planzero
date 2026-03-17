@@ -112,8 +112,6 @@ class STS(BaseModel):
         else:
             return default_value.u
 
-
-
     def __len__(self):
         return len(self.times)
 
