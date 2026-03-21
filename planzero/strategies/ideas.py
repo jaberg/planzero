@@ -652,12 +652,12 @@ ideas.require_gas_turbine_exhaust_scrubbers = RegulationIdea(
 
 ss.Oil_and_Gas_Project_Developers = Stakeholders()
 
-ideas.extract_oil_with_renewable_electricity = NewcoIdea(
-    who=ss.Oil_and_Gas_Project_Developers.new_org(),
-    descr="Design and implement an oil sands project based on renewable process energy",
+
+ideas.electrify_og_equipment = NewcoIdea(
+    descr="Electrify e.g. pumps and compressors",
     for_whom=[ss.Oil_and_Gas_Extraction_Companies],
     ipcc_catpaths=[
-        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction',
     ])
 
 ideas.ban_oil_sands_mining = RegulationIdea(
@@ -679,7 +679,7 @@ ideas.limit_oil_and_gas_exports = RegulationIdea(
 ss.Methane_Pyrolysis_Companies = Stakeholders() # is this actually a stakeholder group?
 ideas.power_oil_sands_extraction_via_methane_pyrolysis = NewcoIdea(
     who=ss.Methane_Pyrolysis_Companies.new_org(),
-    descr="Generate heat and electricity via methane pyrolysis and hydrogen fuel cells",
+    descr="Generate heat and hydrogen via methane pyrolysis",
     for_whom=[ss.Oil_and_Gas_Extraction_Companies],
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # gas turbines used in oil sands projects

@@ -13,93 +13,141 @@ Table of Contents:
     <li><a href="#h2_intro">Introduction</a></li>
     <li><a href="#extraction">Oil and Gas Extraction</a></li>
     <li><a href="#estimation">Estimating Emissions</a></li>
-    <li><a href="#summary">Summary</a></li>
+    <li><a href="#summary">Summary</a>
+        <ul>
+            <li></li>
+            <li></li>
+            <li></li>
+        </ul>
+    </li>
 </ul>
 </p>
 
 <h2 id="h2_intro">Introduction</h2>
 
-<h2 id="extraction">Oil and Gas Extraction</h2>
-
-    <p>
-    This can be a confusing part of the report because "extraction" sounds like a purely mechanical process (digging or drilling), but in Canada, it is actually a massive <em>thermal</em> (heat-based) process.
-    </p>
-
-    <p>
-    <em>Stationary Combustion</em> in this context refers to burning fossil fuels (usually natural gas or diesel) in fixed equipment to generate <em>heat</em> or <em>power</em> necessary to run the extraction operations.
-    </p>
-
-    <p>
-It is distinct from "Mobile Combustion" (trucks, excavators) and "Fugitive/Flaring" emissions (leaks or burning waste gas).
-    </p>
-
-    <p>
-Here is a breakdown of the specific processes and why combustion is required for them.
-    </p>
-
-    <h3>
-    1. Generating Steam for "In-Situ" Oil Sands (The Largest Source)
-    </h3>
-    <p>
-This is likely the single biggest driver of stationary combustion numbers in Canada's report.
-<ul>
-    <li> <b>The Problem:</b> A huge portion of Canada’s oil (bitumen) is underground but is too thick and heavy to flow like normal crude oil. It has the consistency of peanut butter or hockey pucks.</li>
-    <li> <b>The Combustion Solution:</b> Companies use massive gas-fired <em>boilers</em> to turn water into high-pressure steam.</li>
-    <li> <b>The Process:</b> This steam is injected underground (processes like SAGD - Steam Assisted Gravity Drainage). The heat from the steam melts the bitumen, lowering its viscosity so it can be pumped to the surface.</li>
-    <li> <b>Why it counts:</b> You have to burn a significant amount of natural gas to create enough steam to melt the oil. This is why "extraction" has such high combustion emissions.</li>
-</ul>
 <p>
+The extraction of oil and gas from under the ground requires energy.
+Historically, that energy has been provided by the combustion of some fraction of the extracted oil and gas.
+The bitumen in oil sands requires more processing (and energy)
+than crude oil from wells before it is ready for refining.
+This post is about the use of fossil energy to produce the electricity and heat required to
+extract oil and gas.
+Emissions from stationary combustion sources for the purpose of extracting oil and gas
+have risen sharply in recent years, and now exceed 100 Mt annually.
+This is now Canada's largest single reporting sector, accounting for about 15% of the total
+national emissions.
+According to Canada's National Greenhouse Gas Inventory,
+nearly all oil and gas extraction takes place in Alberta and Saskatchewan.
+</p>
 
-<h3>
-2. Driving Compressors and Pumps
-</h3>
 <p>
-Oil and gas sites are often in remote areas without access to the electrical grid. To move fluids and gases, they need massive mechanical power.
-<ul>
-    <li><b>The Combustion Solution:</b> Instead of electric motors, they use large stationary internal combustion engines (similar to a giant car engine) or gas turbines (similar to a jet engine bolted to the ground).</li>
-    <li><b>The Process:</b>
-        <ul>
-            <li><b>Gas Extraction:</b> Natural gas doesn't always flow out of the well at high enough pressure to enter a pipeline. Huge compressors, driven by gas-fired engines, suck the gas out of the ground and compress it for transport.</li>
-            <li><b>Oil Extraction:</b> Pumps (like "pump jacks") need power to lift oil to the surface.</li>
-        </ul>
-    </li>
-    <li><b>Why it counts:</b> These engines run 24/7, usually burning the raw natural gas produced at the site (field gas) to keep the operation moving.</li>
-</ul>
+This is the fourth post in the sector-by-sector series developing a replica of 
+Canada's National Greenhouse Gas Inventory Report (NIR).
+It introduces PlanZero's first estimator for this sector,
+and refreshes the <a href="/ipcc-sectors/Stationary_Combustion_Sources/Oil_and_Gas_Extraction">IPCC / Stationary Combustion / Oil and Gas Extraction</a>
+to feature this estimator, as well as updated
+critical success factors and barriers to those success factors.
 </p>
 
 
-<h3>
-3. "Heater Treaters" and Separation
-</h3>
+<h2 id="extraction">Stationary Combustion in Oil and Gas Extraction</h2>
+
+<h3>Conventional Oil Extraction</h3>
+
 <p>
-Once oil and gas reach the surface, they are usually a messy mixture of oil, gas, water, and sand. They cannot be put into a sales pipeline in this state.
-<ul>
-    <li><b>The Combustion Solution:</b> The mixture is passed through <em>Heater Treaters</em> or <em>Separators</em>. These are large vessels with a fire-tube inside (burning natural gas).</li>
-    <li><b>The Process:</b>
-        <ul>
-            <li><b>Separation:</b> Heat helps break the emulsion of oil and water (like separating salad dressing) so the water can be removed.</li>
-            <li><b>Flow Assurance:</b> In Canada's cold climate, the fluids would freeze or turn into a slush without heat. Combustors keep the oil hot enough to flow through the pipes at the surface facility.</li>
-            <li><b>Dehydration:</b> Natural gas often comes up "wet" (saturated with water). Glycol dehydrators use a gas burner to boil water out of the glycol solution so it can absorb more moisture from the gas.</li>
-        </ul>
-    </li>
-</ul>
+<em>Stationary Combustion</em> in the context of oil and gas extraction refers
+to burning fossil fuels (usually natural gas or diesel) in fixed equipment to generate
+<em>heat</em>, <em>mechanical power</em> and sometimes <em>electricity</em>
+necessary for extraction operations.
+Conventional wells and oil sands use this energy differently.
+In conventional wells, the work to be done is for pumps to raise oil to the surface
+and for heaters to ensure the crude oil remains fluid.
+Even if some of this equipment is electric, if the electricity is
+generated by the producer's own oil or gas as fuel,
+then the emissions from that fuel combustion are counted toward the total for
+oil and gas extraction.
 </p>
 
-<h4>
-Summary of Equipment
-</h4>
 <p>
-When you see "Stationary Combustion" in that report, visualize these specific pieces of hardware sitting at the well sites or processing plants:
+Energy is also used by <i>heat treaters</i> and <i>separators</i>.
+These are large vessels with a fire-tube inside (burning natural gas).
+Oil and water comes up from a well as an emulsion, a bit like salad dressing;
+Heat helps break the emulsion so that the water can be removed.
+Natural gas typically also comes up "wet", that is, saturated with water.
+Glycol dehydrators use a gas burner to boil water out of the glycol solution so it
+can continuously absorb more moisture from the flow of gas.
 </p>
 
-<table>
-    <tr><th>Equipment</th><th>Fuel Source</th><th>Purpose</th></tr>
-    <tr><td> Steam Boilers / Generators </td><td> Natural Gas </td><td> Creating steam to inject underground to melt bitumen (Oil Sands). </td></tr>
-    <tr><td> Reciprocating Engines </td><td> Field Gas / Diesel </td><td> Powering compressors to push gas through pipelines or lift oil. </td></tr>
-    <tr><td> Gas Turbines </td><td> Natural Gas </td><td> Generating electricity for the site or driving large compressors. </td></tr>
-    <tr><td> Process Heaters </td><td> Natural Gas </td><td> Heating crude oil to separate out water and sand. </td></tr>
-    <tr><td> Glycol Reboilers </td><td> Natural Gas </td><td> Boiling off water to dry natural gas. </td></tr>
-</table>
+<h3>Surface Oil Sands Mining</h3>
+<p>
+In surface oil sands operations, the process of getting oil is not like a conventional oil well.
+The oil in oil sands is <a href="https://thecanadianencyclopedia.ca/en/article/bitumen">bitumen</a>,
+which is chemically similar to crude oil but different in two important ways:
+it is typically higher in various impurities (nitrogen, sulfur, heavy metals),
+and it does not flow at room temperature (viscosity can range from peanut butter to hockey puck rubber).
+Mined oil sands normally contain
+<a href="https://www.oilsandsmagazine.com/technical/mining">7 to 13%</a> bitumen by weight.
+Making useful fuel from oil sands generally requires two major steps:
+extracting relatively pure bitumen from the sandy rock in which it is found,
+and then upgrading that bitumen to <i>synthetic crude oil</i> (SCO) that can be
+processed by petroleum refineries.
+The sub-steps of getting from oil sands to bitumen is illustrated by this graphic from Oil Sands Magazine:
+</p>
+<a href="https://www.oilsandsmagazine.com/technical/mining">
+<img
+    src="https://static1.squarespace.com/static/52abb9b9e4b0cb06a591754d/t/57fbeb3bcd0f68d0e17f66fa/1476127547969/bitumen-production-mined-oilsands.png"
+    width="100%" />
+</a>
+
+<p>
+Some bitumen can be processed directly by refineries, but if it is too rich in carbon (poor in hydrogen),
+the bitumen needs to be upgraded to SCO first.
+This upgrading is energy-intensive and emission-intensive.
+Chemically speaking, there are two ways to upgrade bitumen: remove carbon, or add hydrogen.
+There are methods in practice for doing both.
+Carbon can be removed by <i>coking</i>: heating the bitumen to over 400 {{degrees|safe}}C, at which point
+the carbon starts to form <i>petroleum coke</i> and drop out of the fluid.
+Petroleum coke is valued as a fuel in its own right, it can be used in place of coal.
+Hydrogen can be added by <i>hydroconversion</i>: at high pressures, hydrogen gas can break down
+bitumen molecules into smaller ones with greater relative hydrogen content.
+</p>
+<p>
+Both coking and hydroconversion are energy intensive,
+and in practice, the required energy typically comes from the combustion of natural gas.
+Hydroconversion requires about twice as much energy as coking per volume of bitumen;
+while it produces more oil per volume of bitumen, it is considered more expensive than coking.
+This upgrading may sometimes be classified in terms of IPCC sectors
+as part of the extraction process,
+and sometimes as part of a subsequent Petroleum Refinement step, I'm not sure yet
+what delineates the two, but to the extent that upgrading is classified as part of extraction,
+it helps explain the rapid rise in emissions from this sector as oil sands production has ramped up.
+</p>
+
+<h3>In-situ Oil Sands Mining</h3>
+<p>
+When oil sands are found deep underground, open pit mining is not a practical excavation method,
+and instead the oil sands are mined <i>in-situ</i>.
+In-situ mining, as the name suggests, does not involve transporting oil sands to the surface.
+Instead, steam is injected into the oil sands to add water and heat to the deposit, so that the
+bitumen starts to flow.
+This is called <i>steam-assisted gravity drainage</i> (SAGD).
+An in-situ bitumen flow is like the slurry of sand, warm water, and bitumen that moves
+by pipe in the "hydro transport" step in the figure above for open pit operations.
+The subsequent steps are the same for surface and in-situ operations.
+In-situ operations conventionally rely on stationary combustion of natural gas
+to produce heat for steam, and electricity for pumps.
+</p>
+
+<p>
+This IPCC Sector excludes other emissions related to oil and gas extraction,
+such as the trucks and excavation equipment used in mining (those emissions 
+are categorized as Mobile Combustion / Off-Road Mining)
+and the upgrading of crude oil (categorized as Industrial Processes / Petroleum Refinement.
+This sector also distinct from fugitive emissions, such as the
+<a href="/ipcc-sectors/Fugitive_Sources/Oil_and_Natural_Gas/Venting/">venting emissions</a>
+covered in a
+<a href="./2026-03-02-venting/">previous post</a>.
+</p>
 
 
 <h2 id="estimation">Estimating Stationary Combustion Emissions from Oil and Gas Extraction</h2>
@@ -109,8 +157,22 @@ When you see "Stationary Combustion" in that report, visualize these specific pi
 <h2 id="summary">Summary</h2>
 
 <h3>Critical Success Factors</h3>
+<p>
+<ul>
+    <li>Reduce oil and gas production, especially from oil sands (reduce demand, reduce pricec, or cap production)</li>
+    <li>Increase rate of exhaust capture to long-term {{CO2|safe}} injection and storage</li>
+    <li>Reduce emissions from energy to provide process heat for e.g. extracting bitumen,
+        processing crude oil, drying gas, and maintaining fluidity in cold weather.</li> 
+    <li>Reduce emissions from electric energy to power compressors and other
+        processing equipment.
+    </li>
+</ul>
+</p>
+
 <h3>Barriers</h3>
+
 <h3>Strategies</h3>
+
 <h3>Conclusion</h3>
 
 </section>
