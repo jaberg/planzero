@@ -175,42 +175,42 @@ cache_petrinex_SK_2022: .build
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero cache_petrinex --year=2022 --PT=Saskatchewan
+		python -m planzero cache_petrinex --year=2022 --PT=Saskatchewan --large-emitter-cutoff-monthly=5
 
 cache_petrinex_AB_2022: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero cache_petrinex --year=2022 --PT=Alberta
+		python -m planzero cache_petrinex --year=2022 --PT=Alberta --large-emitter-cutoff-monthly=5
 
 cache_petrinex_SK_2023: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero cache_petrinex --year=2023 --PT=Saskatchewan
+		python -m planzero cache_petrinex --year=2023 --PT=Saskatchewan --large-emitter-cutoff-monthly=5
 
 cache_petrinex_AB_2023: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero cache_petrinex --year=2023 --PT=Alberta
+		python -m planzero cache_petrinex --year=2023 --PT=Alberta --large-emitter-cutoff-monthly=5
 
 cache_petrinex_SK_2024: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero cache_petrinex --year=2024 --PT=Saskatchewan
+		python -m planzero cache_petrinex --year=2024 --PT=Saskatchewan --large-emitter-cutoff-monthly=5
 
 cache_petrinex_AB_2024: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero cache_petrinex --year=2024 --PT=Alberta
+		python -m planzero cache_petrinex --year=2024 --PT=Alberta --large-emitter-cutoff-monthly=5
 
 cache_petrinex_SK_2025: .build
 	docker run \

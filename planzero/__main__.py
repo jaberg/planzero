@@ -84,6 +84,9 @@ if __name__ == '__main__':
     parser_cache_petrinex.add_argument('--year', help='report year')
     parser_cache_petrinex.add_argument('--PT', help='report year')
     parser_cache_petrinex.add_argument('--include_ghgrp', action='store_true', help='include contributions from ghgrp-listed facilities')
+    parser_cache_petrinex.add_argument('--large-emitter-cutoff-monthly',
+                                       type=float,
+                                       default=None, help='kt_CO2e')
     parser_cache_petrinex.set_defaults(func=cache_petrinex)
 
     parser_request_all_pages = subparsers.add_parser('request_all_pages')

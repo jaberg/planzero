@@ -146,7 +146,7 @@ class FacilityType(str, enum.Enum):
     CustomTreating = 'CT'
     GasPlant = 'GP'
     GasGatheringSystem = 'GS'
-    InjectionFacillity = 'IF'
+    InjectionFacility = 'IF'
     Pipeline = 'PL'
     TankTerminal = 'TM'
     FreshFormationWaterSource = 'WT'
@@ -174,7 +174,9 @@ def ghgrp_id_by_petrinex_id(report_year=2022):
     df = ghgrp._read_emissions_sources() # 2022 & 2023
     npri_ids = df[ghgrp.ESKey.NPRI_ID]
     rval = {}
+    n_skips = 0
     for npri_id in sorted(npri_ids.unique()):
+        import requests
         if npri_id > 0:
             try:
                 details = pwc.report_details(
@@ -184,24 +186,39 @@ def ghgrp_id_by_petrinex_id(report_year=2022):
                     fetch=False,
                     write_cache=False)
             except pwc.NoDetailsAvailable as err:
-                print(err)
+                # TODO: log level
+                #print('No details available', npri_id, err)
+                n_skips += 1
+                continue
+            except requests.HTTPError as err:
+                # TODO: log level
+                #print('HTTP Error', npri_id, err)
+                n_skips += 1
                 continue
             gids = details.facility.ghgrp_ids()
             if gids:
                 gid, = gids
                 for pid in details.facility.petrinex_ids():
                     rval[pid] = gid
+    if n_skips:
+        print(f'ghgrp_id_by_petrinex_id skipped {n_skips} NPRI facilities mentioned in GHGRP')
     return rval
 
 
 cache_dir = 'cache/petrinex'
 
 
-def cache_path(year, month, pt, include_ghgrp):
+def cache_path(year, month, pt, include_ghgrp, large_emitter_cutoff):
     if include_ghgrp:
-        rval = Path(cache_dir) / f"volume-summary_{year}-{month.value}-{pt.two_letter_code()}.json"
+        if large_emitter_cutoff is None:
+            rval = Path(cache_dir) / f"volume-summary_{year}-{month.value}-{pt.two_letter_code()}.json"
+        else:
+            rval = Path(cache_dir) / f"volume-summary_cutoff-{large_emitter_cutoff}_{year}-{month.value}-{pt.two_letter_code()}.json"
     else:
-        rval = Path(cache_dir) / f"volume-summary-noghgrp_{year}-{month.value}-{pt.two_letter_code()}.json"
+        if large_emitter_cutoff is None:
+            rval = Path(cache_dir) / f"volume-summary-noghgrp_{year}-{month.value}-{pt.two_letter_code()}.json"
+        else:
+            rval = Path(cache_dir) / f"volume-summary-noghgrp_cutoff-{large_emitter_cutoff}_{year}-{month.value}-{pt.two_letter_code()}.json"
     return rval
 
 
@@ -211,9 +228,10 @@ class VolumeSummary(pydantic.BaseModel):
     pt: PT
     includes_ghgrp: bool
     volume_by_activity: dict[ActivityID, dict[ProductID, dict[FacilityType, float]]]
+    large_emitter_cutoff: float | None = None
 
     @classmethod
-    def new_from_df(cls, year, month, pt, df, gid_by_pid=None):
+    def new_from_df(cls, year, month, pt, df, gid_by_pid=None, large_emitter_cutoff=None):
         gid_by_pid = gid_by_pid or {}
         volume_by_activity = {}
         for aid, adf in df.groupby('ActivityID'):
@@ -244,13 +262,17 @@ class VolumeSummary(pydantic.BaseModel):
             month=month,
             pt=pt,
             includes_ghgrp=not bool(gid_by_pid),
-            volume_by_activity=volume_by_activity)
+            volume_by_activity=volume_by_activity,
+            large_emitter_cutoff=large_emitter_cutoff,
+            )
 
     @property
     def cache_path(self):
         return cache_path(
             self.year, self.month, self.pt,
-            include_ghgrp=self.includes_ghgrp)
+            include_ghgrp=self.includes_ghgrp,
+            large_emitter_cutoff=self.large_emitter_cutoff,
+            )
 
     def cache(self):
         os.makedirs(cache_dir, exist_ok=True)
@@ -258,22 +280,26 @@ class VolumeSummary(pydantic.BaseModel):
             f.write(self.model_dump_json(indent=4))
 
     @classmethod
-    def load_cached(cls, year, month, pt, include_ghgrp):
-        path = cache_path(year, month, pt, include_ghgrp=include_ghgrp)
+    def load_cached(cls, year, month, pt, include_ghgrp, large_emitter_cutoff=None):
+        path = cache_path(year, month, pt,
+                          include_ghgrp=include_ghgrp,
+                          large_emitter_cutoff=large_emitter_cutoff)
         with open(path, "r", encoding="utf-8") as f:
             cached_data = json.load(f)
             return cls.model_validate(cached_data)
 
 
 @functools.cache
-def petrinex_annual_summary(pt, include_ghgrp=False):
+def petrinex_annual_summary(pt, include_ghgrp, large_emitter_cutoff=None):
     rval = objtensor.empty(ProductID, ActivityID, FacilityType)
     tmp = {}
     basis_years = [2022, 2023, 2024]
     for year in basis_years:
         for month in Month:
             vsum = VolumeSummary.load_cached(
-                year, month, pt, include_ghgrp=include_ghgrp)
+                year, month, pt,
+                include_ghgrp=include_ghgrp,
+                large_emitter_cutoff=large_emitter_cutoff)
             for aid in vsum.volume_by_activity:
                 for pid in vsum.volume_by_activity[aid]:
                     tmp.setdefault(aid, {}).setdefault(pid, {})
@@ -301,6 +327,23 @@ def petrinex_SK(include_ghgrp=False):
     return petrinex_annual_summary(pt=PT.SK, include_ghgrp=include_ghgrp)
 
 
+def est_large_emitters(df, thresh):
+    # TODO: try to estimate *all* facility emissions, including flaring and
+    # venting
+    rval = {}
+    gas_fuel_df = df[(df['ActivityID'] == 'FUEL') & (df['ProductID'] == 'GAS')]
+    for fac_id, fdf in gas_fuel_df.groupby('ReportingFacilityID'):
+        # gas can come from different sources,
+        # although I'm basically crossing my fingers that the *only* thing we're
+        # summing over here is the FromToID / FromToIDIdentifier
+        total_burned_volume_1e3m3 = fdf.Volume.sum()
+        approx_g_CO2 = total_burned_volume_1e3m3 * 1e3 * 2441
+        approx_kt_CO2e = approx_g_CO2 * 1e-9 * u.kt_CO2e
+        if approx_kt_CO2e > thresh:
+            rval[fac_id] = 'Unknown GHGRP Identifier'
+    return rval
+
+
 def main_build_cache(args):
     # My implementation assumes that facilities are either always
     # GHGRP-registered or never GHGRP-registered, it undercounts if e.g.
@@ -312,8 +355,23 @@ def main_build_cache(args):
         gid_by_pid = ghgrp_id_by_petrinex_id()
     pt = PT(args.PT)
     for month in Month:
-        print('building cache file for', args.year, month, pt, 'include_ghgrp', args.include_ghgrp)
+        print('building cache file for', args.year, month, pt,
+              'include_ghgrp', args.include_ghgrp,
+              'exclude large-emitters above', args.large_emitter_cutoff_monthly)
         df = read_volume_csv(args.year, month, pt)
-        vsum = VolumeSummary.new_from_df(
-            args.year, month, pt, df, gid_by_pid)
+        # *remove* large estimators from the total
+        # because they're supposed to be in the GHGRP data
+        # even if we don't have all the tables for matching up facility IDs
+        if args.large_emitter_cutoff_monthly is not None:
+            thresh = args.large_emitter_cutoff_monthly * u.kt_CO2e
+            by_pid = est_large_emitters(df, thresh)
+            by_pid.update(gid_by_pid)
+            unknowns = 0
+            for pid, gid in by_pid.items():
+                if gid == 'Unknown GHGRP Identifier':
+                    unknowns += 1
+            print(f'Ignoring {unknowns} unknown large emitters above monthly cutoff of {args.large_emitter_cutoff_monthly} kt CO2e/mo')
+        else:
+            by_pid = gid_by_pid
+        vsum = VolumeSummary.new_from_df(args.year, month, pt, df, by_pid, args.large_emitter_cutoff_monthly)
         vsum.cache()

@@ -831,7 +831,9 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
             FacilityType.FreshFormationWaterSource,
         ]
 
-        self.petrinex_SK = petrinex_annual_summary(PT.SK, include_ghgrp=False)
+        self.petrinex_SK = petrinex_annual_summary(PT.SK,
+                                                   include_ghgrp=False,
+                                                   large_emitter_cutoff=5.0)
         pSK = self.petrinex_SK[ProductID.Gas, ActivityID.Fuel, extraction_facility_types].sum(
             extraction_facility_types)
         emissions = GHG_PT_zeros()
@@ -868,9 +870,13 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
         extraction_facility_types = [
             FacilityType.Battery,
             FacilityType.GasPlant,
-            FacilityType.GasGatheringSystem]
+            FacilityType.GasGatheringSystem,
+            FacilityType.InjectionFacility,
+        ]
 
-        self.petrinex_AB = petrinex_annual_summary(pt=PT.AB)
+        self.petrinex_AB = petrinex_annual_summary(pt=PT.AB,
+                                                   include_ghgrp=False,
+                                                   large_emitter_cutoff=5.0)
         pAB = self.petrinex_AB[ProductID.Gas, ActivityID.Fuel, extraction_facility_types].sum(
             extraction_facility_types)
         emissions = GHG_PT_zeros()

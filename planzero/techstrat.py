@@ -134,3 +134,15 @@ class Zero_Bleed_Equipment_For_Natural_Gas(TechStrat):
             urls={
                 Scale: ['https://www.google.com/search?q=zero+bleed+pneumatic+controller&oq=zero+bleed+pneumatic+controller&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTINCAEQABiGAxiABBiKBTINCAIQABiGAxiABBiKBTIHCAMQABjvBTIKCAQQABiABBiiBDIHCAUQABjvBdIBCDY0MThqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:7e5ea2bf,vid:PqXb8fGuVT0,st:789'],
             })
+
+class Vertical_Panel_Agrivoltaics(TechStrat):
+    """Install vertical bifacial panels in fields to augment yield with
+    electricity production.
+    """
+    def __init__(self):
+        super().__init__(
+            urls={
+                Scale: [
+                    'https://harvestingthesuntwice.org/', # h/t Paul Bird on LinkedIn
+                ]
+            )

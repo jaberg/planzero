@@ -11,13 +11,26 @@
 Table of Contents:
 <ul>
     <li><a href="#h2_intro">Introduction</a></li>
-    <li><a href="#extraction">Oil and Gas Extraction</a></li>
-    <li><a href="#estimation">Estimating Emissions</a></li>
+    <li><a href="#extraction">Oil and Gas Extraction</a>
+        <ul>
+            <li><a href="#conventional">Conventional Extraction</a></li>
+            <li><a href="#surface">Oil Sands Mining</a></li>
+            <li><a href="#in-situ">In-Situ Oil Sands Extraction</a></li>
+        </ul>
+    </li>
+    <li><a href="#estimation">Estimating Emissions</a>
+        <ul>
+            <li><a href="#ghgrp">Greenhouse Gas Reporting Program (GHGRP)</a></li>
+            <li><a href="#petrinex">Petrinex for Alberta and Saskatchewan</a></li>
+            <li><a href="#bcnir">British Columbia's Greenhouse Gas Inventory</a></li>
+        </ul>
+    </li>
     <li><a href="#summary">Summary</a>
         <ul>
-            <li></li>
-            <li></li>
-            <li></li>
+            <li><a href="#csfs">Critical Success Factors</a></li>
+            <li><a href="#barriers">Barriers</a></li>
+            <li><a href="#strategies">Potential Strategies</a></li>
+            <li><a href="#conclusions">Conclusions</a></li>
         </ul>
     </li>
 </ul>
@@ -123,11 +136,11 @@ what delineates the two, but to the extent that upgrading is classified as part 
 it helps explain the rapid rise in emissions from this sector as oil sands production has ramped up.
 </p>
 
-<h3>In-situ Oil Sands Mining</h3>
+<h3>In-situ Extraction of Bitumen from Oil Sands</h3>
 <p>
 When oil sands are found deep underground, open pit mining is not a practical excavation method,
-and instead the oil sands are mined <i>in-situ</i>.
-In-situ mining, as the name suggests, does not involve transporting oil sands to the surface.
+and instead the bitumen can be extracted from oil sands <i>in-situ</i>.
+In-situ extraction, as the name suggests, does not involve transporting oil sands to the surface.
 Instead, steam is injected into the oil sands to add water and heat to the deposit, so that the
 bitumen starts to flow.
 This is called <i>steam-assisted gravity drainage</i> (SAGD).
@@ -152,11 +165,97 @@ covered in a
 
 <h2 id="estimation">Estimating Stationary Combustion Emissions from Oil and Gas Extraction</h2>
 
+<p>
+To estimate the NIR emissions for this sector I gathered data from three sources:
+<ol>
+    <li>Canada's Greenhouse Gas Reporting Program for larger emitters nationwide</li>
+    <li>Petrinex for smaller emitters in Alberta and Saskatchewan</li>
+    <li>British Columbia's provincial greenhouse gas inventory report</li>
+</ol>
+</p>
+
 {{blog.est_nir.Est_Energy_SCS_OilAndGas_Extraction().echart() | safe}}
+
+<h3 id="ghgrp">Greenhouse Gas Reporting Program (GHGRP)</h3>
+
+<p>
+Facilities that emit more than 10 kt {{CO2e|safe}} annually
+are required to report annual emissions of each of the seven greenhouse gases via
+<a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/facility-reporting.html">Canada's Greenhouse Gas Reporting Program (GHGRP)</a>, 
+and have been required to do so since 2004.
+Since 2022, such facilities have furthermore been required to report their emissions in terms of
+the reason, or source, such as on-site transportation, waste, leakage, or &mdash; of particular relevance
+to the emission estimate developed for this post &mdash; stationary fuel combustion.
+The GHGRP component of this sector's estimator for years 2022 and 2023 was
+formed by adding the stationary fuel combustion emissions
+from facilities whose NAICS6 codes started with 2111, which meant any of
+"Oil and Gas Extraction (except oil sands)",
+"Conventional Oil and Gas Extraction",
+"Non-Conventional Oil Extraction",
+"In-situ oil sands extraction",
+and "Mined oil sands extraction".
+These category labels overlap because the nomenclature changed in 2017:
+the two-way Conventional vs. Non-conventional distinction was replaced
+with the three-way differentiation of conventional extraction vs. in-situ vs. mined oil sands.
+</p>
+
+<p>
+For years prior to 2022, the GHGRP reported emissions are not listed by emission source.
+Facility totals are reported back to 2004, but emissions from stationary combustion
+prior to 2022 are not listed separately from e.g. on-site transportation, waste, leakage, or any of the other reasons.
+The PlanZero estimator for these prior years is based on a backfilling heuristic:
+that the proporation of each facility total that should be counted as coming from stationary combustion,
+can be taken to be the same in prior years as it was in 2022 (if the facility was still operating in 2022).
+If a facility was no longer running in 2022, then the proportion of each year's facility total to be counted
+as stationary combustion was estimated &mdash; admittedly arbitrarily &mdash; to be 80%.
+</p>
+
+<p>
+Using this method of counting, GHGRP-registered emitters in the business of oil and gas extraction
+contributed over 90 Mt CO2e in recent years from stationary combustion alone. This 90Mt is about 85%
+of the emissions from this IPCC sector, and over 10% of the entire national GHG emissions total.
+</p>
+
+<h3 id="petrinex">Petrinex</h3>
+
+<p>
+Petrinex is used in both Alberta and Saskatchewan, but is used differently in the two provinces. 
+The databases records have slightly different semantics.
+</p>
+
+<h4>Petrinex: Alberta</h4>
+
+<p>
+In <a href="https://www.petrinex.ca/PD/Pages/APD.aspx">Alberta's Petrinex data</a>,
+all upstream oil and gas facilities' monthly movements of material (by Product ID)
+and by activity (Activity ID) are available for public download.
+Facility names and addresses are in the data files, as well as their type and subtype.
+Alberta used four facility types as of January 2023:
+<ul>
+    <li> battery &mdash; a single accounting unit corresponding to a well or group of wells,
+        co-located physical tanks, and related equipment;
+    </li>
+    <li> gas gathering system &mdash; a set of pipelines, pumps, and compressors that aggregate gas from gas batteries;
+    </li>
+    <li> gas plant &mdash; a facility for e.g. separating and sweetening the gas received from a gas gathering system;
+    </li>
+    <li> injection/disposal facility &mdash; a site that primarily disposes of product from the network, rather than e.g. re-selling it.
+    </li>
+</ul>
+</p>
+
+<p>
+</p>
+
+<h4>Petrinex: Saskatchewan</h4>
+In <a href="https://www.petrinex.ca/PD/Pages/SPD.aspx">Saskatchewan's Petrinex data</a>
+
+<h3>British Columbia Provinvial Greenhouse Gas Inventory</h3>
+
 
 <h2 id="summary">Summary</h2>
 
-<h3>Critical Success Factors</h3>
+<h3 id="csfs">Critical Success Factors</h3>
 <p>
 <ul>
     <li>Reduce oil and gas production, especially from oil sands (reduce demand, reduce pricec, or cap production)</li>
@@ -169,11 +268,11 @@ covered in a
 </ul>
 </p>
 
-<h3>Barriers</h3>
+<h3 id="barriers">Barriers</h3>
 
-<h3>Strategies</h3>
+<h3 id="strategies">Strategies</h3>
 
-<h3>Conclusion</h3>
+<h3 id="conclusion">Conclusion</h3>
 
 </section>
 </div>
