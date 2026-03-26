@@ -59,9 +59,35 @@ class HTML_Matplotlib_Figure(HTML_element):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
+
+class IPCC_SCS_Residential(BlogPost):
+    """Fifth in the sector-by-sector National Greenhouse Gas Inventory series:
+    residential stationary combustion sources. Energy from stationary combustion
+    within residential buildings is used predominantly to heat living spaces
+    and provide hot water.
+    Heat-pumps and ongoing insulation improvements
+    promise a viable pathway to decarbonization in this sector.
+    """
+    est_nir: object
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 3, 26),
+            title='Residential Stationary Combustion Sources: Emissions Calculations',
+            url_filename="2026-03-26-scs-residential",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.SCS__Residential,
+                 },
+            est_nir=est_nir,
+            )
+
+
 class IPCC_SCS_OilAndGas_Exploration(BlogPost):
     """Fourth in the sector-by-sector series on the National Greenhouse Gas Inventory computation:
     stationary combustion sources involved in the extraction of oil and gas.
+    Energy from stationary combustion is used directly and indirectly to drive pumps,
+    compressors, separators, and diverse aspects of conventional wells, gathering systems, gas plants, and
+    bitumen upgrading operations.
     """
     est_nir:object
     def __init__(self):
@@ -70,7 +96,6 @@ class IPCC_SCS_OilAndGas_Exploration(BlogPost):
             title='Stationary Combustion to Extract Oil and Gas: Emissions Calculations',
             url_filename="2026-03-11-og-extraction",
             author="James Bergstra",
-            published=False,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.SCS__Oil_and_Gas_Extraction,
                  },

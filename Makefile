@@ -225,3 +225,10 @@ request_all_planzero_pages: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero request_all_pages
+
+demo_neud: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero.neud

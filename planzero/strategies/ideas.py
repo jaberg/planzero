@@ -686,30 +686,6 @@ ideas.power_oil_sands_extraction_via_methane_pyrolysis = NewcoIdea(
     ])
 
 
-ss.Heat_Pump_Installation_Companies = Stakeholders()
-
-ideas.heat_pumps_for_homes = NewcoIdea(
-    who=ss.Heat_Pump_Installation_Companies.new_org(),
-    descr="Reduce demand for furnace oil and natural gas by deploying heat pumps for homes",
-    for_whom=[
-        ss.Domestic_Fuel_Customers_Heating_Oil,
-        ss.Domestic_Fuel_Customers_Natural_Gas,
-    ],
-    ipcc_catpaths=[
-        #'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # reduce some domestic demand
-    ])
-
-ideas.heat_pumps_for_commercial = NewcoIdea(
-    who=ss.Heat_Pump_Installation_Companies.new_org(),
-    descr="Reduce demand for heating oil and natural gas by deploying heat pump technology for condominiums and commercial buildings",
-    for_whom=[
-        ss.Domestic_Fuel_Customers_Heating_Oil,
-        ss.Domestic_Fuel_Customers_Natural_Gas,
-    ],
-    ipcc_catpaths=[
-        #'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # reduce some domestic demand
-    ])
-
 ss.Chinese_Car_Companies = Stakeholders()
 
 ss.Light_Duty_Vehicle_Owners = Stakeholders(
@@ -1113,6 +1089,15 @@ ideas.electric_gas_equipment = NewcoIdea(
         'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
     ])
 
+ideas.upgrade_bitumen_with_green_hydrogen = NewcoIdea(
+    descr='Anything-but-gray hydrogen for the hydroconversion of bitumen',
+    for_whom=[],
+    urls=[],
+    ipcc_catpaths=[
+        'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
+        'Stationary_Combustion_Sources/Oil_and_Gas_Extraction',
+    ])
+
 ideas.enhanced_oil_recovery = NewcoIdea(
     descr='Reinject carbon dioxide back into gas-bearing formations',
     for_whom=[],
@@ -1144,6 +1129,49 @@ ideas.huge_tents_over_oil_sands = NewcoIdea(
     ipcc_catpaths=[
         'Fugitive_Sources/Oil_and_Natural_Gas/Venting',
     ])
+
+ideas.deploy_residential_heat_pumps = NewcoIdea(
+    descr="Deploy residential heat pumps",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Residential',
+    ])
+
+ideas.residential_thermal_efficiency_misc = NewcoIdea(
+    descr="Upgrade windows, doors, walls, roofs to improve thermal efficiency of residences",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Residential',
+    ])
+
+ideas.deploy_grid_interactive_water_heating = NewcoIdea(
+    descr="Deploy grid-interactive water heating (balance grid load, use hot water as thermal battery)",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Residential',
+    ])
+
+ideas.deploy_integrated_smart_heat_pump_water_heater = NewcoIdea(
+    descr="Deploy heat-pump based water heaters",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Residential',
+    ])
+
+ideas.deploy_tankless_water_heaters = NewcoIdea(
+    descr="Deploy tankless electric water heaters",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Residential',
+    ])
+
+ideas.heat_pumps_for_commercial = NewcoIdea(
+    descr="Deploy heat pump technology for condominiums and commercial buildings",
+    for_whom=[],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Commercial_and_Institutional',
+    ])
+
 
 # Tidal power:
 # https://www.orbitalmarine.com/

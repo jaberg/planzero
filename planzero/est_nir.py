@@ -940,7 +940,7 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
         self.years_u = [yy * u.years for yy in self.years]
         self.init_petrinex_AB()
         self.init_petrinex_SK()
-        self.init_bc()
+        #self.init_bc() # this is based on NIR, possibly double-counts GHGRP facilities
         self.init_ghgrp()
 
     def update_A9_emissions(self, emissions_sectoral_pt):
@@ -973,6 +973,78 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=values),
             ])
+
+
+class Est_SCS_Residential(object):
+
+    def init_natural_gas(self):
+        self.prov_consumption_b, self.national_consumption_b = \
+                sc_2510003001.supply_and_demand_of_primary_and_secondary_energy()
+        SDC = sc_2510003001.Supply_And_Demand_Characteristics
+        fuels = [
+            sc_2510003001.Fuel_Type.Natural_Gas,
+            sc_2510003001.Fuel_Type.Kerosene,
+            sc_2510003001.Fuel_Type.Light_Fuel_Oil,
+        ]
+        for fuel in fuels:
+            support_years = functools.partial(sts.with_default_zero, times=est_nir_years)
+            usage = self.prov_consumption_b[fuel, SDC.Residential].apply(support_years)
+            if fuel == sc_2510003001.Fuel_Type.Natural_Gas:
+                emissions = GHG_PT_zeros()
+                emissions[GHG.CO2, :] =  usage * annex6_np.A6_1_1()
+                self.emissions_by_label['NG'] = emissions
+            else:
+                print(fuel, usage[PT.ON])
+
+    def init_neud_end_use(self):
+        from . import neud
+        co2e_by_end_use = neud.ghg_emissions_excl_electricity_by_end_use()
+        for end_use in [
+            neud.EndUse.WaterHeating,
+            neud.EndUse.SpaceHeating,
+        ]:
+            emissions = GHG_PT_zeros()
+            emissions[GHG.CO2] = co2e_by_end_use[end_use] * (1 * u.Mt_CO2 / u.Mt_CO2e)
+            self.emissions_by_label[end_use.value] = emissions
+
+    def __init__(self):
+        self.emissions_by_label = {}
+        self.years = ipcc_canada.echart_years()
+        self.years_u = [yy * u.years for yy in self.years]
+        #self.init_natural_gas()
+        self.init_neud_end_use()
+
+    def update_A9_emissions(self, emissions_sectoral_pt):
+        for label, emissions in self.emissions_by_label.items():
+            emissions_sectoral_pt[:, IPCC.SCS__Residential] += emissions
+
+    def echart(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Residential']['CO2eq'].values / 1000
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_scs_residential',
+            title=EChartTitle(
+                text='Residential (Stationary Combustion Sources)',
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=label,
+                    data=_rstrip_data((GWP_100 @ emissions).sum(PT).to(u.Mt_CO2e)))
+                for label, emissions in self.emissions_by_label.items()
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+            ])
+
 
 class EstSectorEmissions(object):
 

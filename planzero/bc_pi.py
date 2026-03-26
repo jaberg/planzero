@@ -1,5 +1,8 @@
 """
 British Columbia Provincial Inventory
+
+Seems useful, but maybe isn't as it appears to be simply extracted from the
+National Inventory Report, rather than contributing to it.
 """
 
 import enum
