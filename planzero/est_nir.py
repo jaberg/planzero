@@ -977,25 +977,6 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
 
 class Est_SCS_Residential(object):
 
-    def init_natural_gas(self):
-        self.prov_consumption_b, self.national_consumption_b = \
-                sc_2510003001.supply_and_demand_of_primary_and_secondary_energy()
-        SDC = sc_2510003001.Supply_And_Demand_Characteristics
-        fuels = [
-            sc_2510003001.Fuel_Type.Natural_Gas,
-            sc_2510003001.Fuel_Type.Kerosene,
-            sc_2510003001.Fuel_Type.Light_Fuel_Oil,
-        ]
-        for fuel in fuels:
-            support_years = functools.partial(sts.with_default_zero, times=est_nir_years)
-            usage = self.prov_consumption_b[fuel, SDC.Residential].apply(support_years)
-            if fuel == sc_2510003001.Fuel_Type.Natural_Gas:
-                emissions = GHG_PT_zeros()
-                emissions[GHG.CO2, :] =  usage * annex6_np.A6_1_1()
-                self.emissions_by_label['NG'] = emissions
-            else:
-                print(fuel, usage[PT.ON])
-
     def init_neud_end_use(self):
         from . import neud
         co2e_by_end_use = neud.ghg_emissions_excl_electricity_by_end_use()
@@ -1006,12 +987,16 @@ class Est_SCS_Residential(object):
             emissions = GHG_PT_zeros()
             emissions[GHG.CO2] = co2e_by_end_use[end_use] * (1 * u.Mt_CO2 / u.Mt_CO2e)
             self.emissions_by_label[end_use.value] = emissions
+            # XXX
+            # This data appears to add emissions from wood combustion,
+            # which it should perhaps not, if we aren't counting firewood as a negative emission in HWP.
+            # Subtracting off wood emissions is a small fraction, and does not appear trivial to do
+            # based on the formatting of data in the NEUD.
 
     def __init__(self):
         self.emissions_by_label = {}
         self.years = ipcc_canada.echart_years()
         self.years_u = [yy * u.years for yy in self.years]
-        #self.init_natural_gas()
         self.init_neud_end_use()
 
     def update_A9_emissions(self, emissions_sectoral_pt):
@@ -1057,6 +1042,7 @@ class EstSectorEmissions(object):
         EstForestAndHarvestedWoodProducts().update_A9_emissions(self.sectoral_emissions)
         EstFugitive_OilandNaturalGas_Venting().update_A9_emissions(self.sectoral_emissions)
         Est_Energy_SCS_OilAndGas_Extraction().update_A9_emissions(self.sectoral_emissions)
+        Est_SCS_Residential().update_A9_emissions(self.sectoral_emissions)
 
     def max_gap_2005(self, thresh_Mt=1000):
         a9_2005_total = eccc_nir_annex9.emissions_by_IPCC_sector(2005, 'Total_CO2e')
