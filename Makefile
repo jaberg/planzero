@@ -137,9 +137,9 @@ local: .build
 
 prodlike: .build
 	docker run \
-		-p 127.0.0.1:8012:8012 \
+		-p 127.0.0.1:8015:8015 \
 		-it --rm $(target) \
-		fastapi run --port=8012 --host=0.0.0.0
+		fastapi run --port=8015 --host=0.0.0.0
 
 deploy:
 	fly deploy
@@ -154,12 +154,12 @@ print_sectoral_emissions_gaps: .build
 		-it --rm $(target) \
 		python -m planzero print_max_gaps
 
-cache_pollution_waste_canada_report_details: .build
+cache_ghgrp_by_petrinex: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero cache_pollution_waste_canada_report_details
+		python -m planzero cache_ghgrp_by_petrinex
 
 petrinex_unzip_download:
 	# when you download using petrinex website it gives you a download.zip

@@ -1,4 +1,5 @@
 import datetime
+import functools
 import json
 import os
 
@@ -121,3 +122,18 @@ def report_details(npri_id, report_year,
             f.write(details_obj.model_dump_json(indent=4))
 
     return details_obj
+
+
+class GHGRP_by_Petrinex_Mapping(pydantic.BaseModel):
+    year: int
+    ghgrp_id_by_petrinex_id: dict[str, str]
+
+
+@functools.cache
+def ghgrp_id_by_petrinex_id(report_year=2022):
+    # see __main__.py cache_ghgrp_by_petrinex for function that writes this file
+    cache_path = Path(cache_dir) / f"ghgrp_id_by_petrinex_id_{report_year}.json"
+    with open(cache_path, "r", encoding="utf-8") as f:
+        cached_data = json.load(f)
+        #print(f"Loading NPRI {npri_id} ({report_year}) from cache...")
+        return GHGRP_by_Petrinex_Mapping.model_validate(cached_data)
