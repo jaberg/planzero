@@ -1,0 +1,102 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+<section class="post">
+    <header class="major">
+        <h1>Stationary Combustion/<br />Residential</h1>
+        <p>
+        Residential stationary combustion sources are the furnaces,
+        boilers, and ovens across the country that use natural gas and
+        fuel oils to produce heat.
+        Cost-competitive electric alternative technologies exist
+        and the sector is in a phase of electrification.
+        </p>
+    </header>
+
+<div>
+{{est_nir.Est_SCS_Residential().echart() | safe}}
+<p>
+While Canada's population has been rising,
+emissions from this sector has been declining, due primarily to
+improvements in space-heating efficiency.
+The data for this sector are from Natural Resources Canada's
+<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm">National Energy Use Database</a>, which
+also hosts a great
+<a href="https://oee.nrcan.gc.ca/publications/statistics/trends/2020/residential.cfm">mini-site overview of drivers and solutions for this sector circa 2020</a>.
+</p>
+
+
+<h2>
+    How might Canada reduce residential stationary combustion emissions?
+</h2>
+
+<h3>
+    Critical Success Factors
+</h3>
+
+<p>To reduce residential stationary combustion emissions,
+it seems required to do some combination of the following:
+<ul>
+    <li>Reduce the number of residences relying on combustion for space and water heating</li>
+    <li>Increase the energy efficiency of these combustion-heated spaces and hot water systems.</li>
+    <li>Capture {{CO2|safe}} emissions from residential combustion (impractical, as far as I know).</li>
+    <li>Replace fossil fuels with renewable replacements.</li>
+</ul>
+</p>
+
+<h3>
+    Barriers
+</h3>
+
+<p>
+It is challenging to make progress on the critical success factors above for several reasons:
+
+<ul>
+    <li>
+        <b>Upfront Cost, Long ROI</b>:
+        upgrading a building to be more energy-efficient or to
+        use a different heating technology can save money over time, but upgrades require
+        cash up front. The payback period for home upgrades is typically many years.
+    </li>
+    <li><b>Confusion re: Heat Pumps</b>:
+        Heat pumps are a new technology compared to e.g. oil furnaces.
+        Natural Resources Canada has developed a
+        <a href="https://natural-resources.canada.ca/energy-efficiency/electric-heat-pumps">mini-site
+            about heat pump technologies</a>, explaining e.g.
+        <a href="https://natural-resources.canada.ca/energy-efficiency/electric-heat-pumps/heat-pump-basics">the basics</a>, and
+        <a href="https://natural-resources.canada.ca/energy-efficiency/electric-heat-pumps/find-facts-about-electric-heat-pumps">addressing myths</a>.
+    </li>
+    <li><b>Distributed Decision-Making</b>:
+        residential heating technology is controlled by the buying decisions of the general
+        Canadian public.  Convincing homeowners to take action takes time.
+        (This barrier has a positive flip-side, that there can be early adoption as soon as
+        any homeowners are ready to try new technology.)
+    </li>
+    <li><b>Infrequent Upgrade Opportunities</b>:
+        upgrades to owner-managed residences are more-frequently motivated
+        by the failure of a home element, as compared with professionally managed buildings.
+        After failure, there may be time pressure, cashflow pressure,
+        and fewer options than for a planned upgrade.
+        A rushed replacement of an oil-burning furnace may regretably lock in decades
+        of future emissions, which could have been avoided by a planned heat pump upgrade.
+        (Statistics Canada's 2025/2026 Households and the Environment Survey (HES) specifically added questions to track "Planned" vs "Emergency" replacements to better understand this behavior.)
+    </li>
+</ul>
+</p>
+
+
+{% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Residential") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
+</div>
+
+</section>
+</div>
+
+{% include "post-main.html" %}
