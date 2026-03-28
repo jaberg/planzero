@@ -46,10 +46,9 @@ This post is about the use of fossil energy to produce the electricity and heat 
 extract oil and gas.
 Emissions from stationary combustion sources for extracting oil and gas
 have risen sharply in recent years, and now exceed 100 Mt annually.
-As of 2023 data, this is Canada's largest single reporting sector, accounting for about 15% of the total
+This series has been progressing in descending order of 2005 emissions; the sector was fourth
+in 2005, but as of 2023 this is Canada's largest single reporting sector, accounting for about 15% of the total
 national emissions.
-<!--According to Canada's National Greenhouse Gas Inventory,
-    nearly all oil and gas extraction emissions are attributed to Alberta and Saskatchewan.-->
 </p>
 
 <p>
@@ -57,8 +56,9 @@ This is the fourth post in the sector-by-sector series developing a replica of
 Canada's National Greenhouse Gas Inventory Report (NIR).
 It introduces PlanZero's first estimator for this sector,
 and refreshes the <a href="/ipcc-sectors/Stationary_Combustion_Sources/Oil_and_Gas_Extraction">IPCC / Stationary Combustion / Oil and Gas Extraction</a>
-to feature this estimator, as well as updated
-critical success factors and barriers to those success factors.
+to feature this estimator.
+It also updates critical success factors and barriers to emissions reductions in this area.
+There is some preliminary thinking about strategies but I do not believe there is clarity or concensus on decarbonization pathways for this sector.
 </p>
 
 <p>
@@ -95,11 +95,11 @@ oil and gas extraction.
 <p>
 Energy is also used by <i>heat treaters</i> and <i>separators</i>.
 These are large vessels with a fire-tube inside (burning natural gas).
-Oil and water comes up from a well as an emulsion, a bit like salad dressing;
-Heat helps break the emulsion so that the water can be removed.
+Oil and water comes up from a well mixed together as an emulsion;
+heat helps break the emulsion so that the water can be removed.
 Natural gas typically also comes up "wet", that is, saturated with water.
-Glycol dehydrators use a gas burner to boil water out of the glycol solution so it
-can continuously absorb more moisture from the flow of gas.
+Glycol dehydrators use a gas-powered burner to boil water out of a glycol solution so the glycol
+can be recycled to absorb more moisture from the flow of wet gas from the well.
 </p>
 
 <h3>Surface Oil Sands Mining</h3>
@@ -108,7 +108,7 @@ In surface oil sands operations, the process of getting oil is different from a 
 The oil in oil sands is <a href="https://thecanadianencyclopedia.ca/en/article/bitumen">bitumen</a>,
 which is chemically similar to crude oil but different in two important ways:
 it is typically higher in various impurities (nitrogen, sulfur, heavy metals),
-and it does not flow at room temperature (viscosity can range from peanut butter to hockey puck rubber).
+and it does not flow at room temperature.
 Mined oil sands normally contain
 <a href="https://www.oilsandsmagazine.com/technical/mining">7 to 13%</a> bitumen by weight.
 Making useful fuel from oil sands generally requires two major steps:
@@ -128,10 +128,10 @@ Some bitumen can be processed directly by refineries, but if it is too rich in c
 then the bitumen needs to be upgraded to SCO first.
 This upgrading is energy-intensive and emission-intensive.
 Chemically speaking, there are two ways to upgrade bitumen: remove carbon, or add hydrogen.
-There are methods in practice for doing both.
+There are methods for doing both.
 Carbon can be removed by <i>coking</i>: heating the bitumen to over 400 {{degrees|safe}}C, at which point
 the carbon starts to form <i>petroleum coke</i> and drop out of the fluid.
-Petroleum coke is valued as a fuel in its own right, it can be used in place of coal.
+Petroleum coke is valued as a fuel in its own right; it can be used in place of coal.
 Hydrogen can be added by <i>hydroconversion</i>: at high pressures, hydrogen gas can break down
 bitumen molecules into smaller ones with greater relative hydrogen content.
 Both coking and hydroconversion are energy intensive,
@@ -181,13 +181,14 @@ which is based on Statistics Canada tables
 <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002601">25-10-0026-01 Supply and demand of natural gas liquids</a>,
 and <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510008501">25-10-0085-01 Estimated additions to still gas, diesel and petroleum coke</a>
 but it seems to get the same result, at least for recent years.
-The advantage of the methodology presented here is that the petrinex data and GHGRP data is
-updated more frequently, and the petrinex data may be more actionable in that emissions are listed
+The advantage of the methodology presented here is that the Petrinex data and GHGRP data is
+updated more frequently, and the Petrinex data may be more actionable in that emissions are listed
 by facility type, and even by specific facility.
-The disadvantage of the methodology here is of course that it does not
-extend as far back in time: petrinex downloads are only available as far back as 2022.
-Future work on PlanZero could certainly add an estimator based on these Statistics Canada tables
+The disadvantage of the methodology here is that it does not
+extend as far back in time: Petrinex downloads are only available as far back as 2022.
+Future work on PlanZero could extend the estimator to use the Statistics Canada tables, especially for older data
 (<a href="https://github.com/jaberg/planzero/issues/46">github issue</a>).
+For now, Petrinex emission estimates for prior years are simply copied from 2022.
 </p>
 
 {{blog.est_nir.Est_Energy_SCS_OilAndGas_Extraction().echart() | safe}}
@@ -216,19 +217,21 @@ with the three-way differentiation of conventional extraction vs. in-situ vs. mi
 </p>
 
 <p>
-For years prior to 2022, the GHGRP reported emissions are not listed by emission source.
+For years prior to 2022, the GHGRP-reported emissions are not listed by emission source.
 Facility totals are reported back to 2004, but emissions from stationary combustion
 prior to 2022 are not listed separately from e.g. on-site transportation, waste, leakage, or any of the other reasons.
-The PlanZero estimator for these prior years is based on a backfilling heuristic:
-that the proporation of each facility total that should be counted as coming from stationary combustion,
-can be taken to be the same in prior years as it was in 2022 (if the facility was still operating in 2022).
-If a facility was no longer running in 2022, then the proportion of each year's facility total to be counted
-as stationary combustion was estimated &mdash; admittedly arbitrarily &mdash; to be 80%.
+Since this sector is only supposed to be stationary combustion, a backfilling heuristic
+was implemented to estimate the stationary combustion emissions of these prior years 2004-2021.
+The heuristic was to look up the facility's stationary combustion emissions as a proportion of total emissions in 2022,
+and then apply that same proportion to the facility's total emissions from each of the prior years.
+Some facilities were no longer operating in 2022; for these, the proportion was assumed to be 80%.
+Future work could use data to estimate this proportion from data on similar facilities
+(<a href="https://github.com/jaberg/planzero/issues/48">github issue</a>).
 </p>
 
 <p>
 Using this method of counting, GHGRP-registered emitters in the business of oil and gas extraction
-contributed over 90 Mt CO2e in recent years from stationary combustion alone. This 90Mt is about 85%
+contributed over 90 Mt {{CO2e|safe}} in recent years from stationary combustion alone. This 90Mt is about 85%
 of the emissions from this IPCC sector, and over 10% of the entire national GHG emissions total.
 </p>
 
@@ -242,7 +245,7 @@ The databases records have slightly different semantics.
 <h4>Petrinex: Alberta</h4>
 
 <p>
-<a href="https://www.petrinex.ca/PD/Pages/APD.aspx">Alberta's Petrinex data</a>,
+<a href="https://www.petrinex.ca/PD/Pages/APD.aspx">Alberta's Petrinex data</a>
 makes all upstream oil and gas facilities' monthly movements of material (by Product ID)
 and by activity (Activity ID) available for public download.
 Facility names and addresses are in the data files, as well as their type and subtype.
@@ -270,7 +273,7 @@ and then the standard GWP multipliers to get a single annual total in {{CO2e|saf
 </p>
 
 <p>
-Alberta's petrinex data covers some facilities that also appear in the GHGRP data,
+Alberta's Petrinex data covers some facilities that also appear in the GHGRP data,
 but each system has its own set of identifiers: GHGRP lists facilities by GHGRP Identifier,
 and Petrinex lists facilities by Petrinex identifier.
 The boundaries of a single "facility" aren't necessarily the same for Petrinex and the GHGRP,
@@ -278,12 +281,12 @@ and the best alignment table I found was the undocumented API hosted by
 Pollution and Waste Canada that's intended for the National Pollutant Release Inventory data search.
 Cross-referencing facilities by their pollution registry ID accounted for most GHGRP facilities,
 but 71 remained un-accounted-for.
-In order to make a good estimate, I ignored petrinex facilities that emitted over 5 kt {{CO2e|safe}}/mo.
+In order to skip over about 71 facilities I ignored Petrinex facilities in Alberta and Saskatchewan that emitted over 5 kt {{CO2e|safe}}/mo.
 The result of this filtering procedure was to filter about 60-70 facilities from each monthly data dump
 that were not already identified as being GHGRP-registered facilities.
 Facilities that emit even 1 kt {{CO2e|safe}} monthly are required to register with the GHGRP,
-so my thinking was that these facilities emitting over 5 kt should certainly be registered, and
-my hope is that these &gt;5kt facilities are mostly indeed the ones that have registered
+so these facilities emitting over 5 kt should certainly have been registered;
+I hope these &gt;5kt facilities are indeed the ones that have registered as GHGRP facilities and
 and I just don't have their corresponding Petrinex IDs.
 Details of this heuristic can be found in the source code of
 <a href="https://github.com/jaberg/planzero/blob/5c3b0b744a02331c6567b9cc9a073e841688d109/planzero/est_nir.py#L863">est_nir.py</a>
@@ -335,7 +338,7 @@ it seems required to do some combination of the following:
 <ul>
     <li>Reduce the rate of oil and gas extraction (reduce demand, reduce price, or cap production)</li>
     <li>Increase the rate of exhaust capture to long-term {{CO2|safe}} storage.</li>
-    <li>Reduce emissions releated to process heat for e.g. creating steam,
+    <li>Reduce emissions related to process heat for e.g. creating steam,
         upgrading bitumen to synthetic crude oil, drying gas, and maintaining fluidity in cold weather.</li> 
     <li>Reduce emissions related to mechanical energy, powering e.g. compressors and pumps.</li>
 </ul>
@@ -349,7 +352,7 @@ It is challenging to make progress on the critical success factors above for sev
     <li><b>Alignment</b>: Oil and gas continue to see enormous, and
         <a href="https://ourworldindata.org/grapher/oil-consumption-by-country?tab=line&country=USA~AUS~GBR~CAN~ZAF~NOR~CHN~OWID_WRL">still-rising</a>, market demand at prices well above the break-even point of oil and gas extraction operations in Canada.</li>
     <li><b>Geopolitics</b>: Comparable oil and gas operators in the US are scaling <i>up</i> under policies of the Trump administration.</li>
-    <li>Geopolitics</b>: Canadian federal ambition is to position Canada as an energy superpower by exporting fossil fuels.</li>
+    <li><b>Geopolitics</b>: Canadian federal ambition is to position Canada as an energy superpower by exporting fossil fuels.</li>
     <li><b>Lock-in</b>: Extraction facilities, especially for oil sands,
         are high-capital (billions) that require decades of operation to pay off.</li>
     <li><b>Cost</b>: Carbon capture technologies exist, but it's costly and unproductive (carbon capture and utilization is less-unproductive, so to speak).
@@ -382,19 +385,21 @@ The most net-zero-aligned strategy to reduce emissions in this sector is to redu
 production, because of course the produced oil and gas is mostly destined to be burned as fuel and release greenhouse gases.
 Production may be reduced either by
 reducing demand, reducing price, or capping production via regulation.
-Canada's output-based pricing scheme reduces at least the take-home price
-for relatively high-emission facilities;
+Canada's <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/pricing-pollution-how-it-will-work/output-based-pricing-system.html">output-based pricing system</a> (aka industrial carbon tax) reduces the take-home price
+for the products from facilities whose emissions are higher than others producing the same product;
 International and domestic electrification may reduce demand eventually;
 and capping production has been tried, and proved politically infeasible so far.
 </p>
 
-<p>If we focus only on the emissions of this sector, strategies for emissions reduction
-must deliver cost-effective means of creating process heat and mechanical energy
-from zero-emissions energy sources.
-Those energy sources could be firewood, sunlight, wind, nuclear,
+<p>That said, it should be possible to reduce the emissions associated with oil and gas extraction,
+without reducing the quantity of extracted oil and gas. Indeed, if less gas is used to drive extraction equipment,
+perhaps even more gas could be brought to market.
+Maybe energy sources such as firewood, sunlight, wind, nuclear,
 or even alternative non-combustion energy extraction methods from fossil fuels,
-such as the pyrolysis of methane.
-The evaluation of the feasibility of these alternative energy sources for oil and gas extraction is left for future work.
+such as the pyrolysis of methane, could power extraction operations.
+These alternate energy sources are, at least in principle, capable of providing process heat and mechanical energy.
+Maybe it can even be cost-effective, especially if some operations could be intermittent, following the availability of e.g. wind and solar power.
+Research into the feasibility and viability of such alternative energy sources for oil and gas extraction is left for future work.
 </p>
 
 
