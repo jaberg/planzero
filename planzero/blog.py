@@ -45,7 +45,7 @@ import matplotlib.pyplot as plt
 from . import ipcc_canada
 
 
-def latex(latex, display='inline'):
+def latex(latex, display='inline'): # display inline or block
     return HTML_Math_Latex(latex=latex, display=display).as_html()
 
 
@@ -58,6 +58,33 @@ class HTML_Matplotlib_Figure(HTML_element):
         plt.close()
         svg_string = svg_buffer.getvalue()
         return svg_string
+
+
+class IPCC_MCS_LightGasolineTrucks(BlogPost):
+    """Sixth in the sector-by-sector National Greenhouse Gas Inventory series:
+    energy to power light-duty gasoline trucks, SUVs and vans.
+    Emissions in this sector have doubled since the mid 1990s as
+    Canadians have taken to driving larger vehicles.
+    A transition to EVs seems to be the sector's clearest pathway to decarbonization.
+    """
+    est_nir: object
+    terms: dict[str, str]
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 3, 30),
+            title='Light-Duty Gasoline Trucks: Emissions Calculations',
+            url_filename="2026-03-30-light-duty-gasoline-trucks",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Trucks,
+                 },
+            est_nir=est_nir,
+            terms=dict(
+                gas_combustion=latex(
+                    r"2 \mathrm C_8 \mathrm H_{18} + 25\mathrm O_2 \rightarrow 16\mathrm C \mathrm O_2 + 18 \mathrm H_2 \mathrm O",
+                    display='block'),
+                ),
+            )
 
 
 class IPCC_SCS_Residential(BlogPost):

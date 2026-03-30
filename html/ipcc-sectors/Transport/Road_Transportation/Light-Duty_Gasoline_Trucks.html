@@ -7,139 +7,111 @@
         <p>
         The operation of light-duty gasoline trucks is Canada's third-largest
         emissions sector.
-        While engine efficiency continues to improve, Canada's population continues to grow,
-        and larger vehicles such as SUVs have become more popular.
-        Crossover SUVs, SUVs, and minivans are included in this emissions sector.
-        The technology of plug-in hybrid and EV alternatives to internal combustion engines offers a promising
-        pathway for emissions reduction.
+        While engine efficiency continues to improve, Canada's population continues to grow
+        and larger vehicles such as SUVs have become more popular relative to smaller vehicles.
+        Crossover vehicles, SUVs, and minivans are included in this emissions sector,
+        as well as pickup trucks and cargo vans. The sector does not differentiate
+        commercial and personal use.
         </p>
     </header>
 
-<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
-<script>
-var myChart = echarts.init(document.getElementById('mychart'));
-var option;
+{{est_nir.Est_Transport_LightDutyGasoline().echart() | safe}}
 
-option = {
-  title: {
-      text: 'Emissions: {{catpath}}',
-      left: 'center', // Align: 'left', 'center', or 'right'
-  },
-  xAxis: {
-      name: 'Year', // The label text
-      nameLocation: 'middle', // Places it in the center (default is 'end')
-      nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ peval.comparisons.ComboA.years_as_list() }},
-  },
-  yAxis: {
-      name: 'Emissions (Mt CO2e)', // The label text
-      nameLocation: 'middle',
-      nameGap: 40,
-  },
-  series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath, name="Historical")) | safe }},
-      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("A", catpath, name="With Combo-A Strategies")) | safe }},
-      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
-  ],
-  legend: {
-      show: true,
-      data: ['Historical', "Baseline", "With Combo-A Strategies"],
-      top: 30,
-      //left: 'center',
-  },
-  grid: {
-      top: 60,
-    },
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    },
-    formatter: '{a}',
-  },
-};
-
-option && myChart.setOption(option);
-window.addEventListener('resize', function() {
-  myChart.resize();
-});
-
-
-</script>
 <div>
-    <p>
-    In the chart,
-    the Historical values come from Environment Canada,
-    the Baseline projection is that emissions in this sector remain proportional to Canada's population (projected to grow geometrically), and the
-    Combo-A Strategies curve represents a prediction based on the adoption of all <a href="/strategies/ComboA/">Combo A strategies</a>, which may or may not include any with impact to this sector.
-    </p>
 
 <h2>Causes of Emissions</h2>
 
 <p>
 This sector measures emissions from the combustion of gasoline from vehicles such as
 <ul>
-    <li>SUVs / Crossovers: (e.g., Ford Explorer, Toyota RAV4, Honda CR-V)</li>
-    <li>Minivans: (e.g., Dodge Caravan, Honda Odyssey)</li>
     <li>Pickup Trucks: (e.g., Ford F-150, Chevy Silverado)</li>
+    <li>SUVs / Crossovers: (e.g., Ford Explorer, Toyota RAV4, Honda CR-V)</li>
     <li>Commercial Vans: (e.g., Ford Transit Connect)</li>
+    <li>Minivans: (e.g., Dodge Caravan, Honda Odyssey)</li>
 </ul>
-
-Definition of this class of vehicles:
-Vehicles with a GVWR of less than 3,900 kg (8,500 lbs) that are designed for off-road operation,
-or have a certain cargo capacity that places them above light-duty gasoline <em>vehicles</em>,
-which is a separate IPCC emissions sector focused on sedans, hatchbacks, and coupes.
+These are road vehicles with a gross vehicle weight rating (GVWR) of up to 3960 kg (8500 lbs),
+designed with greater off-road or cargo capability relative to cars
+(sedans, hatchbacks, coupes, summarized here:
+<a href="/ipcc-sectors/Transport/Road_Transportation/Light-Duty_Gasoline_Trucks">Transport / Road Transportation / Light-Duty Gasoline Vehicles</a>).
 </p>
-
-<p>
-The reasons for the utilization vehicles in this class are numerous (TODO:
-enumerate and quantify segments).
-</p>
-
 
 <h2>
-    How might Canada reduce these emissions to zero?
+    How might Canada reduce emissions in this sector?
 </h2>
 
 <h3>
     Critical Success Factors
 </h3>
 
-The arithmetic of emissions in this sector is such that there are two ways to reduce emissions:
+<p>
+The arithmetic of emissions in this sector is such some combination of the following is required:
 <ol>
-    <li>Reduce vehicle distance travelled</li>
-    <li>Reduce average emissions per vehicle distance travelled</li>
+    <li>Reduce number of gasoline vehicles of this class</li>
+    <li>Reduce distance travelled by this class of vehicle under gasoline power</li>
+    <li>Improve gasoline engine efficiency</li>
 </ol>
+</p>
 
 <h3>
     Barriers
 </h3>
 
+<p>
+Before we get into barriers, it must be stated that the obvious and preeminent
+strategy for emissions reduction in this sector is a transition to EVs.
 <ul>
-    <li>People like to drive, and they like to drive at high speeds, in relative privacy inside spacious personal vehicles</li>
-    <li>Vehicle usage patterns have become an integral part of many people's work roles and domestic lifestyles. People struggle to trade convenience and habit for the sake of incremental cost reduction or environmental impact.</li>
-    <li>Vehicles are only replaced on average every 10 years (TODO: verify).</li>
-    <li>The total cost of ownership comparison for EVs and PHEVs vs. ICE vehicles depends on several factors, not all of which are top-of-mind for buyers, and the technology keeps improving (which discourages mainstream and late-adopters).</li>
-    <li>The sale price for EVs is higher than ICE vehicles, except for current possibly-illegally-subsidized Chinese EVs.</li>
-    <li>EVs are slower to charge, have less range than ICE vehicles, and can be charged at fewer places.</li>
+    <li><b>Comfort</b>: People like to drive, and they like to drive at high speeds,
+        in relative privacy inside large, spacious personal vehicles.
+        This requires additional energy.
+    </li>
+    <li><b>Identity</b>:
+        Brand marketing plays a strong role in car puchasing decisions.
+        Vehicle choices have become an integral part of many people's professional and personal image.
+    </li>
+    <li><b>Longevity</b>: Vehicles sales in this class account for about 10% of the number of vehicle registrations. It could take decades to change the technology mix within this sector.
+    </li>
+    <li><b>EV Range</b>: 
+        Battery power density is such that EVs cannot yet match the range that's possible using
+        a large gasoline tank. Charging a battery isn't as convenient as refilling a tank.
+    </li>
+    <li><b>EV Sticker Price</b>:
+        Non-hybrid internal combustion vehicles are cheaper than hybrid and EV variants, similar models.
+    </li>
+    <li><b>EV Cost Complexity</b>:
+        The total cost of ownership comparison for EVs and PHEVs
+        is less than ICE vehicles in many use cases, but the calculation depends on several factors,
+        not all of which are top-of-mind or even well-known to buyers.
+    </li>
+    <li><b>EV Pace of Deprecation</b>:
+        The relatively rapidly evolving technology in EVs may
+        discourage some buyers (holding out for e.g. better range at lower cost next year),
+        and some sellers (who wish their mid-life EVs commanded higher resale prices).
+    </li>
+    <li><b>EV Range Anxiety</b>:
+        Managing a battery charge level is different from keeping a gasoline tank full.
+        In some cases it's easier, but in some cases it's more difficult.
+        EV charging infrastructure lags gasoline refuelling infrastructure by most of a century; charging an EV on the road can be an inconvenience, or a real challenge.
+    </li>
+    <li><b>Lithium batteries degrade in cold temperatures</b>:
+        Cold temperatures degrade lithium-ion battery performance quite badly, and more than gasoline engine performance.
+        Sodium ion batteries are more robust to cold, may help in future designs.
+    </li>
+    <li><b>Gasoline engine efficiency is hard to improve</b>:
+        Gasoline engines have already been refined over almost a century of intense engineering.
+        Higher fuel efficiency
+        <a href="https://global.honda/en/tech/motorsports/Formula-1/Powertrain_Combustion_Efficiency/">is possible</a>, but such engines are expensive relative to their fuel savings.
+    </li>
 </ul>
-
-<h3>
-    Key Stakeholder Groups
-</h3>
-
-<ul>
-    {% for sg_name, sg in sorted(stakeholders.ss.items()) %}
-    {% if catpath in sg.ipcc_catpaths %}
-    <li>{{ sg.full_name }}</li>
-    {% endif %}
-    {% endfor %}
-</ul>
+</p>
 
 {% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Light-Duty Gasoline Trucks") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
 
 </div>
 </section>

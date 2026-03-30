@@ -704,6 +704,16 @@ ideas.sell_chinese_EVs = NewcoIdea(
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', # reduce some domestic demand
     ])
 
+ideas.improve_batteries_for_EVs = NewcoIdea(
+    descr="Improve EV batteries for EVs",
+    for_whom=[
+        ss.Light_Duty_Vehicle_Owners,
+    ],
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
+    ])
+
 ideas.combo_a = Idea(
     descr="Combo A: a set of promising projects.")
 
@@ -751,12 +761,13 @@ ideas.embed_wireless_chargers_in_roads = NewcoIdea(
         # TODO: heavy vehicles, diesel, trucks, all road vehicles
     ])
 
-ideas.incentivize_EVs_indefinitely = RegulationIdea(
+ideas.retail_gasoline_carbon_tax = RegulationIdea(
     who=orgs.Canada,
-    descr="Subsidize EV and EV-charger purchases indefinitely with a gasoline tax",
+    descr="Bring back a carbon tax on retail gasoline",
     for_whom=[ss.People_Desiring_Net_Zero],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
     ])
 
 ideas.force_government_fleet_to_go_green = RegulationIdea(
@@ -773,6 +784,14 @@ ideas.force_military_fleet_to_go_green = RegulationIdea(
     for_whom=[ss.People_Desiring_Net_Zero],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+    ])
+
+ideas.force_government_buildings_to_install_heat_pumps = RegulationIdea(
+    who=orgs.Canada,
+    descr="Force federal, provincial, and municipal buildings to transition replace their boilers with heat pumps",
+    for_whom=[ss.People_Desiring_Net_Zero],
+    ipcc_catpaths=[
+        'Stationary_Combustion_Sources/Commercial_and_Institutional',
     ])
 
 
@@ -1234,3 +1253,7 @@ ideas.heat_pumps_for_commercial = NewcoIdea(
 # Here are a couple of links about biochar for carbon sequestration, and how cows can spread it:
 # https://www.anthropocenemagazine.org/2026/02/scientists-fed-biochar-to-cows-heres-what-happened/
 # https://link.springer.com/article/10.1007/s11027-005-9007-4
+
+
+# An only-cold-weather lithium ion battery with amazing energy density
+# https://interestingengineering.com/energy/chinas-ev-battery-double-range

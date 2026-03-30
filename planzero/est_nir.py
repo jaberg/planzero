@@ -1031,6 +1031,71 @@ class Est_SCS_Residential(object):
             ])
 
 
+class Est_Transport_LightDutyGasoline(object):
+
+    # All 
+
+    # Active registrations by vehicle type 2017-2024
+    # https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2310030801
+
+    # Road-grade Fuel sold
+    # https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2310006601
+
+    # New motor vehicle sales
+    # https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2010008601
+
+    def init_neud_transportation_mode(self):
+        from . import neud
+        co2e_by_tmode = neud.ghg_emissions_by_transportation_mode()
+        for tmode in [
+            neud.TransportationMode.FreightLightTrucks, # stable, echart show below
+            neud.TransportationMode.PassengerLightTrucks, # increasing, echart show above
+        ]:
+            emissions = GHG_PT_zeros()
+            emissions[GHG.CO2] = co2e_by_tmode[tmode] * (1 * u.Mt_CO2 / u.Mt_CO2e)
+            self.emissions_by_label[tmode.value] = emissions
+            # XXX this table doesn't break out light trucks by fuel
+            # so it includes some diesel light trucks
+
+    def __init__(self):
+        self.emissions_by_label = {}
+        self.years = ipcc_canada.echart_years()
+        self.years_u = [yy * u.years for yy in self.years]
+        self.init_neud_transportation_mode()
+
+    def update_A9_emissions(self, emissions_sectoral_pt):
+        for label, emissions in self.emissions_by_label.items():
+            emissions_sectoral_pt[:, IPCC.Transport__Road__Light_Duty_Gasoline_Trucks] += emissions
+
+    def echart(self):
+        non_agg = ipcc_canada.non_agg
+        years = ipcc_canada.echart_years()
+        values = non_agg[non_agg['CategoryPathWithWhitespace'] \
+                         == 'Transport/Road Transportation/Light-Duty Gasoline Trucks']['CO2eq'].values / 1000
+
+        return StackedAreaEChart(
+            div_id='ipcc_chart_scs_residential',
+            title=EChartTitle(
+                text='Light-Duty Trucks (Mobile Combustion Sources)',
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=label,
+                    data=_rstrip_data((GWP_100 @ emissions).sum(PT).to(u.Mt_CO2e)))
+                for label, emissions in self.emissions_by_label.items()
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+            ])
+
+
 class EstSectorEmissions(object):
 
     def __init__(self):
@@ -1043,6 +1108,7 @@ class EstSectorEmissions(object):
         EstFugitive_OilandNaturalGas_Venting().update_A9_emissions(self.sectoral_emissions)
         Est_Energy_SCS_OilAndGas_Extraction().update_A9_emissions(self.sectoral_emissions)
         Est_SCS_Residential().update_A9_emissions(self.sectoral_emissions)
+        Est_Transport_LightDutyGasoline().update_A9_emissions(self.sectoral_emissions)
 
     def max_gap_2005(self, thresh_Mt=1000):
         a9_2005_total = eccc_nir_annex9.emissions_by_IPCC_sector(2005, 'Total_CO2e')
