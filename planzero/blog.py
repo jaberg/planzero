@@ -59,6 +59,24 @@ class HTML_Matplotlib_Figure(HTML_element):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
+class IPCC_EntericFermentation(BlogPost):
+    """Seventh in the sector-by-sector National Greenhouse Gas Inventory series:
+    enteric fermentation, the emission of methane from the digestive systems of ruminants.
+    """
+    est_nir: object
+    terms: dict[str, str]
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 3, 31),
+            title='Enteric Fermentation: Emissions Calculations',
+            url_filename="2026-03-31-enteric",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.Enteric_Fermentation,
+                 },
+            est_nir=est_nir,
+            terms=dict(),
+            )
 
 class IPCC_MCS_LightGasolineCarsAndTrucks(BlogPost):
     """Sixth in the sector-by-sector National Greenhouse Gas Inventory series:

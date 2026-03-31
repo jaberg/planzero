@@ -127,3 +127,12 @@ def CNZEAA_targets():
         [baseline, baseline * .6, baseline * .525, 0.0])
     rval[:15] = net_emissions[:15]
     return rval
+
+
+def annual_sector_Mt_CO2e_by_year(catpathww):
+    df = non_agg[non_agg['CategoryPathWithWhitespace'] == catpathww]
+    values = df['CO2eq'].values / 1000
+    years = df['Year']
+    rval = {int(year): float(val) for year, val in zip(years, values)}
+    assert rval, catpathww
+    return rval

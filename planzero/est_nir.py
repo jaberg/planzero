@@ -7,6 +7,7 @@ import numpy as np
 from .est_nir_util import (
     _rstrip_data,
     _echart_years,
+    _echart_reference_NIR_values,
     )
 from .ghgvalues import GWP_100, GHG_zero_kg
 from .ureg import (u, kg_by_ghg,
@@ -1124,6 +1125,57 @@ class Est_Transport_LightDutyGasolineVehicles(Est_Transport):
             emissions_sectoral_pt[:, IPCC.Transport__Road__Light_Duty_Gasoline_Vehicles] += emissions
 
 
+class Est_EntericFermentation(object):
+    def __init__(self):
+        from .sc_3210013001 import (
+            FarmType, Livestock, Livestock_nonsums, SurveyDate,
+            number_of_cattle_by_class_and_farm_type)
+        from .eccc_nir_annex3p4 import table_A3p4_11
+        self.emissions_by_label = {}
+        self.cattle_pt, self.cattle_ca = number_of_cattle_by_class_and_farm_type()
+        emfac = table_A3p4_11()
+        for livestock in Livestock_nonsums:
+            cattle_jan1 = self.cattle_pt[SurveyDate.Jan1, livestock, FarmType.AllCattle]
+            cattle_jul1 = self.cattle_pt[SurveyDate.Jul1, livestock, FarmType.AllCattle]
+            emissions = GHG_PT_zeros()
+            emissions[GHG.CH4] += .5 * cattle_jan1 * emfac[livestock, None]
+            emissions[GHG.CH4] += .5 * cattle_jul1 * emfac[livestock, None]
+            self.emissions_by_label[livestock.value] = emissions
+        self.echart_div_id = 'echart_div_enteric_fermentation'
+        self.echart_title = 'Enteric Fermentation'
+
+    def update_A9_emissions(self, emissions_sectoral_pt):
+        for label, emissions in self.emissions_by_label.items():
+            emissions_sectoral_pt[:, IPCC.Enteric_Fermentation] += emissions
+
+    def echart(self):
+        years = ipcc_canada.echart_years()
+        values = _echart_reference_NIR_values('Enteric Fermentation')
+
+        return StackedAreaEChart(
+            div_id=self.echart_div_id,
+            title=EChartTitle(
+                text=self.echart_title,
+                subtext='Hover over data points to see emissions by usage,'
+                ' click through to source file est_nir.py'),
+            xAxis=EChartXAxis(data=years),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=label,
+                    data=_rstrip_data((GWP_100 @ emissions).sum(PT).to(u.Mt_CO2e)))
+                for label, emissions in self.emissions_by_label.items()
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=values),
+            ])
+
+
+
 class EstSectorEmissions(object):
 
     def __init__(self):
@@ -1138,6 +1190,7 @@ class EstSectorEmissions(object):
         Est_SCS_Residential().update_A9_emissions(self.sectoral_emissions)
         Est_Transport_LightDutyGasolineTrucks().update_A9_emissions(self.sectoral_emissions)
         Est_Transport_LightDutyGasolineVehicles().update_A9_emissions(self.sectoral_emissions)
+        Est_EntericFermentation().update_A9_emissions(self.sectoral_emissions)
 
     def max_gap_2005(self, thresh_Mt=1000):
         a9_2005_total = eccc_nir_annex9.emissions_by_IPCC_sector(2005, 'Total_CO2e')

@@ -7,8 +7,8 @@
         <p>
         Enteric fermentation is the production of methane by the digestive systems of beef and dairy cattle.
         A feed additive called Bovaer can reduce this emission per bovine head,
-        but otherwise there appears to be no scalable emission reduction approach
-        other than reducing the size of the national herd.
+        by about 40%,
+        other technological means to reduce emissions in the sector are more speculative.
         </p>
     </header>
 
@@ -72,15 +72,9 @@ window.addEventListener('resize', function() {
 
 <h2>Causes of Emissions</h2>
 
-<p>
-"Enteric Fermentation" is the technical term for the digestive process in animals that produces methane.
-In Canada's inventory, cattle are responsible for roughly 96–97% of these emissions.
-Cattle belch out the gas, which is created in the first of their four stomachs.
-</p>
 
 <h3>Sources</h3>
 <p>
-While cattle are the main event, the IPCC category covers all livestock. However, the biology of the animal dictates how much methane it produces.
 <ul>
     <li>The Ruminants (The Heavy Hitters): These animals have a four-chambered stomach (including a "rumen") specifically designed to ferment tough plant fibers. This fermentation creates massive amounts of methane as a by-product.
         <ul>
@@ -118,7 +112,7 @@ While cattle are the main event, the IPCC category covers all livestock. However
 </p>
 
 <h2>
-    How might Canada reduce enteric fermentation emissions to zero?
+    How might we reduce enteric fermentation emissions to zero?
 </h2>
 
 <h3>
@@ -126,8 +120,9 @@ While cattle are the main event, the IPCC category covers all livestock. However
 </h3>
 
 <ul>
-    <li>fewer cattle</li>
-    <li>less methane emitted to atmosphere per head</li>
+    <li>reduce the number of bovine animals, particularly cattle and sheep</li>
+    <li>reduce methane emitted to per head</li>
+    <li>reduce outdoor time, capture methane emitted indoors</li>
 </ul>
 
 <h3>
@@ -135,24 +130,25 @@ While cattle are the main event, the IPCC category covers all livestock. However
 </h3>
 
 <ul>
-    <li>Owners of herds do not want to reduce their herds, and neither do their customers or suppliers.</li>
-    <li>Domestic and international demand for beef and milk products is high, and expected to rise with population.</li>
-    <li>Change in farming practices can take decades.</li>
-    <li>The voting population likes cattle: they're picturesque, iconic, and widely considered to be tasty.</li>
-</ul>
-
-<h3>
-    Key Stakeholder Groups
-</h3>
-<ul>
-    {% for sg_name, sg in sorted(stakeholders.ss.items()) %}
-    {% if catpath in sg.ipcc_catpaths %}
-    <li>{{ sg.full_name }}</li>
-    {% endif %}
-    {% endfor %}
+    <li><b>Alignment</b>: Owners of herds do not want to reduce their herds, and neither do their customers or suppliers.</li>
+    <li><b>Demand</b>: Domestic and international demand for beef and milk products is high,
+        and expected to rise with increasing global population and increasing global wealth.</li>
+    <li><b>Culture</b>: The voting population likes cattle: they're picturesque, iconic, and widely considered to be tasty and nutritious.</li>
+    <li><b>Animal Welfare</b>:
+        Engineering animals' digestive systems and living environments to e.g. reduce methane emissions
+        runs counter to the spirit of e.g. free-range farming practices, and
+        may come at the expense of animal welfare measures.
+    </li>
 </ul>
 
 {% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Enteric Fermentation") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
 
 </div>
 </section>

@@ -92,7 +92,6 @@ def df_transportation_table8():
     for xlspath in glob.glob(file_pattern):
         prefix = 'data/neud/tran_'
         pt_letters = xlspath.split('_')[1]
-        print(prefix, pt_letters)
         if pt_letters == 'bct':
             # The data is for BC and all territories, so technically
             # the emissions should be assigned to XX, even if they

@@ -15,3 +15,14 @@ def _rstrip_data(ts, years=_echart_years):
          'url': url_est_nir}
          for vv in vals]
     return rval
+
+
+def _echart_reference_NIR_values(catpathww, years=_echart_years):
+    v_by_yr = ipcc_canada.annual_sector_Mt_CO2e_by_year(catpathww)
+    values = []
+    for yr in years:
+        try:
+            values.append(v_by_yr[yr])
+        except KeyError:
+            break
+    return values

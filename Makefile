@@ -232,3 +232,10 @@ demo_neud: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero.neud
+
+demo_sc_32_10_0130_01: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero.sc_3210013001
