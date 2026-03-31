@@ -38,7 +38,7 @@ The preeminent over-arching strategy for carbon reduction in these sectors is a 
 <p>
 I'm not exactly sure where the line is between the two IPCC sectors treated in this post.
 Admittedly, I think of it as "cars" and "bigger car/truck type things".
-Examples are probably more helpful:
+Examples are probably more helpful, although there are debatable edge cases:
 <ul>
     <li><b>Light-Duty Gasoline Vehicles</b>
 <ul>
@@ -57,18 +57,16 @@ Examples are probably more helpful:
 </li>
 </ul>
 All of these are road vehicles with a gross vehicle weight rating (GVWR) of up to 3960 kg (8500 lbs).
-The ones in the lower set are designed with greater off-road or cargo capability in mind.
+The ones in the lower set ("Trucks") are designed with greater off-road or cargo capabilities in mind.
 </p>
 
 <p>
-The emissions from gasoline-burning engines are an inevitable consequence of the combustion
-process that powers gasoline engines.
 Combustion produces more mass in {{CO2|safe}} from the tailpipe than is put into the fuel tank as gasoline.
-Gasoline is almost entirely made up of hydrogen and carbon atoms;
-it is a mixture of e.g.
-Octane, with 8 carbon atoms and 18 hydrogen atoms,
-heptane has 7 and 16 respectively,
-and benzene with 6 of each.
+Gasoline is made up almost entirely of hydrogen and carbon atoms.
+It is a mixture of many <i>hydrocarbon</i> molecules of various configurations, such as
+octane (8 carbon atoms and 18 hydrogen atoms),
+heptane (7 and 16),
+and benzene (6 and 6).
 When gasoline combusts in the presence of oxygen,
 it produces carbon dioxide ({{CO2|safe}}) and water vapour in a reaction like this (for octane):
 </p>
@@ -78,14 +76,14 @@ it produces carbon dioxide ({{CO2|safe}}) and water vapour in a reaction like th
 </p>
 
 <p>
-Twenty five oxygen molecules are required to combust 2 octane molecules!
+In other words, twenty five oxygen molecules are required to combust 2 octane molecules.
 Although gasoline is a somewhat variable mixture of octane and other molecules,
 typically about 2.3 to 2.65 kg of pure oxygen is required to combust a litre of gasoline.
 This is equivalent to roughly 9,000 liters of air at standard temperature and pressure.
 The reason the emissions weigh more than the fuel is that
 most of the mass of the {{CO2|safe}} emissions are from the oxygen, not the gasoline.
 The emission factor for gasoline used in the NIR is 2.307 kg {{CO2|safe}} / litre (<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/D-Emission-Factors?lang=en">NIR Annex 6: Emission Factors</a>).
-Burning a standard tank of gas in Canada, say 65 litres, produces, about 150 kg of {{CO2|safe}} emissions.
+Burning a standard tank of gas, say 65 litres, produces, about 150 kg of {{CO2|safe}} emissions.
 </p>
 
 
@@ -127,15 +125,22 @@ The estimator should be at least slightly wrong because it isn't supposed to inc
 the small number of diesel-powered light truck vehicles, but it currently does.
 However, if we imagine removing the emissions contributions from diesel vehicles from the PlanZero estimator,
 then the estimator would be lower, and it would be more-wrong for years 2006 to 2010.
-I do not know what might be added in to this estimator to put things right for those years.
+Another possible source of the discrepancy is accounting around ethanol:
+it represents 5-10% of fuel, and produces {{CO2|safe}}, but it is not a fossil fuel.
+A third possibility is the reclassification of vehicles within either the NIR, or the NEUD, or both,
+because car makers have blurred the line between cars, crossover vehicles, and SUVs.
 Still, the estimator is relatively accurate, at least by the standards of this PlanZero first pass.
 </p>
 
 <p>
 With regards to Light-Duty Gasoline Vehicles, it seems only to correspond to the NEUD's "cars"
-transportation mode. Future work will have to investigate why the "Cars" data is somewhat
+transportation mode. The "Cars" data is somewhat
 consistently 2-3 Mt {{CO2e|safe}} higher than the NIR total for years 2000-2021, and then
-crosses to be lower.
+crosses to be lower by up to 2 Mt {{CO2e|safe}} in 2023.
+Again, diesel use, accounting around ethanol blending, and vehicle classifications may all contribute
+to the discrepancy.
+Still, this is close enough for my first pass,
+so the investigation of the discrepancy is left for future work.
 </p>
 
 <h2 id="csfs">Critical Success Factors</h2>
@@ -203,12 +208,11 @@ strategy for emissions reduction in this sector is a transition to EVs.
 
 <p>
 The overarching strategy for emissions reduction in this sector is a transition to EVs.
-EV makers appear to be able to provide drop-in replacement vehicles for the gasoline vehicles
-that dominate this sector today.
-Many operational light-duty trucks could be replaced with EVs (battery electric or plug-in hybrid)
+EV makers provide drop-in replacement vehicles for many roles currently carried out by gasoline vehicles.
+Many operational light-duty trucks could be replaced with EVs
 of today's price and capability when they're due for replacement,
 in such a way that the replacements would provide equivalent or better functionality at
-a lower cost of ownership.
+a lower total cost of ownership.
 The strategies required to eliminate direct emissions from light-duty trucks
 are incentives that encourage individuals and fleet managers to buy the EVs already for sale.
 </p>
@@ -216,31 +220,37 @@ are incentives that encourage individuals and fleet managers to buy the EVs alre
 <p>
 That said, there are operational roles that EVs still struggle with:
 for vehicles that aren't driven enough, an EV won't save enough on fuel to achieve a lower cost of ownership;
-and for vehicles that are driven too much; an EV risks inconveniencing its drivers
+for vehicles that are driven too much, an EV risks inconveniencing its driver
 by needing to be charged (slowly) while en-route rather than while parked overnight.
 Research in better batteries may address these challenges,
 although more radical ideas have been proposed,
 such as providing inductive charging capabilities underneath roadways,
 or charging lines that hang down from overhead. 
 Such radical proposals would probably never be justified for only light-duty passenger vehicles,
-but radical solutions might be required to eliminate emissions from heavy-duty trucks,
-for which EV capability readiness lags significantly behind that of light-duty truck EVs.
-If such systems are developed for heavy-duty trucks, they may be useful to light-duty ones as well.
+but radical solutions might be required to eliminate emissions from heavy-duty trucks
+(heavy-duty EV trucks today are not as close to performance parity with diesel ones,
+compared to what we see in light-duty cars and trucks).
+If such systems are developed for heavy-duty trucks, they may be useful to light-duty vehicles as well.
 </p>
 
 <h2 id="conclusion">Conclusion</h2>
 
 <p>
-The IPCC categories of Light-Duty Gasoline Vehicles and Light-Duty Gasoline Trucks
-are a big one for Canada because
-Canadians drive a lot, and increasingly, they like to drive SUVs and pickups.
-Combined, the sectors account for about 11% of Canada's net emissions.
-Historically, these vehicles have been almost universally gasoline-powered.
+Canadians live far apart, drive a lot, and increasingly, they like to drive SUVs and pickups.
+Combined, emissions in these sectors are on the rise and account for about 11% of Canada's net emissions.
+Historically, vehicles in this class have been universally powered by fossil fuels.
 More recently, plug-in hybrids and purely battery-electric vehicles have been
-brought to market in this category.
+brought to market in this category, and accounted for about 16% of new vehicle sales in 2024
+(<a href="https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=2010008601">link</a>).
 I think it's likely that these EVs can and will replace the gasoline models over time,
 although I expect consumers will continue to push for better power-to-weight batteries than
 the ones in today's new vehicles.
+Cars are getting so reliable that some of the 1.5 million gasoline-powered vehicles sold in 2024
+could still be on the road in 2050.
+That said, most cars are used for only 10-15 years.
+It remains to be seen how quickly EVs improve,
+and how much government intervention would be required
+to substantially eliminate emissions from this sector by 2050.
 </p>
 
 <p>

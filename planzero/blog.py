@@ -80,7 +80,7 @@ class IPCC_MCS_LightGasolineCarsAndTrucks(BlogPost):
             est_nir=est_nir,
             terms=dict(
                 gas_combustion=latex(
-                    r"2 \mathrm C_8 \mathrm H_{18} + 25\mathrm O_2 \rightarrow 16\mathrm C \mathrm O_2 + 18 \mathrm H_2 \mathrm O",
+                    r"2~\mathrm C_8 \mathrm H_{18} + 25~\mathrm O_2 \rightarrow 16~\mathrm C \mathrm O_2 + 18 ~\mathrm H_2 \mathrm O",
                     display='block'),
                 ),
             )
