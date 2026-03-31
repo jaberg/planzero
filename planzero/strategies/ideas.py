@@ -581,6 +581,7 @@ ss.Domestic_Fuel_Customers_Gasoline = Stakeholders(
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Oil_and_Gas_Extraction', # end-customers of these activities
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
     ])
 
 ss.Domestic_Fuel_Customers_Heating_Oil = Stakeholders(
@@ -602,6 +603,7 @@ ss.International_Fuel_Customers = Stakeholders(
 ss.Domestic_Fuel_Vendors_Gasoline = Stakeholders(
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
     ],
     notable_members=[
         orgs.Imperial_Oil,
@@ -702,6 +704,7 @@ ideas.sell_chinese_EVs = NewcoIdea(
     ],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', # reduce some domestic demand
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles', # reduce some domestic demand
     ])
 
 ideas.improve_batteries_for_EVs = NewcoIdea(
@@ -758,6 +761,7 @@ ideas.embed_wireless_chargers_in_roads = NewcoIdea(
     urls=["https://www.purdue.edu/newsroom/2025/Q4/first-highway-segment-in-u-s-wirelessly-charges-electric-heavy-duty-truck-while-driving/"],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
         # TODO: heavy vehicles, diesel, trucks, all road vehicles
     ])
 
@@ -776,6 +780,7 @@ ideas.force_government_fleet_to_go_green = RegulationIdea(
     for_whom=[ss.People_Desiring_Net_Zero],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
     ])
 
 ideas.force_military_fleet_to_go_green = RegulationIdea(
@@ -784,6 +789,7 @@ ideas.force_military_fleet_to_go_green = RegulationIdea(
     for_whom=[ss.People_Desiring_Net_Zero],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
     ])
 
 ideas.force_government_buildings_to_install_heat_pumps = RegulationIdea(

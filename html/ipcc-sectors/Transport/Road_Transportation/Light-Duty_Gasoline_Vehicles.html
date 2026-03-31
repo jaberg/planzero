@@ -3,26 +3,22 @@
 <div id="main">
 <section class="post">
     <header class="major">
-        <h1>Transport/<br />Road Transportation<br />Light Duty Gasoline Trucks</h1>
+        <h1>Transport/<br />Road Transportation<br />Light Duty Gasoline Vehicles</h1>
         <p>
-        The operation of light-duty gasoline trucks is Canada's third-largest
-        emissions sector.
-        While engine efficiency continues to improve, Canada's population continues to grow
-        and larger vehicles such as SUVs have become more popular relative to smaller vehicles.
-        Crossover vehicles, SUVs, and minivans are included in this emissions sector,
-        as well as pickup trucks and cargo vans.
-        The IPCC accounting sector does not differentiate
-        commercial and personal use.
+        Emissions from Light-Duty Gasoline Vehicles (cars) are on the decline.
+        Partly this is because of improvements in efficiency, partly it is because
+        of a transition to EVs,
+        and partly because of a trend to using larger vehicles which are classified
+        by a different accounting sector (<a href="./Light-Duty_Gasoline_Trucks">Light-Duty Trucks</a>).
+        The IPCC accounting sector does not differentiate commercial and personal use.
         </p>
     </header>
 
-{{est_nir.Est_Transport_LightDutyGasolineTrucks().echart() | safe}}
+{{est_nir.Est_Transport_LightDutyGasolineVehicles().echart() | safe}}
 <p>
 In black: the reference values from Environment and Climate Change Canada's
 <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html">National Greenhouse Gas Inventory Report (NIR)</a>.
-In the shaded region, the emissions from "Passenger Light-Duty Trucks"
-and "Freight Light-Duty Trucks"
-in the Natural Resource Canada's
+In the shaded region, the emissions from "Cars" in the Natural Resource Canada's
 <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm">National Energy Use Database (NEUD)</a>.
 </p>
 
@@ -33,15 +29,13 @@ in the Natural Resource Canada's
 <p>
 This sector measures emissions from the combustion of gasoline from vehicles such as
 <ul>
-    <li>Pickup Trucks: (e.g., Ford F-150, Chevy Silverado)</li>
-    <li>SUVs / Crossovers: (e.g., Ford Explorer, Toyota RAV4, Honda CR-V)</li>
-    <li>Commercial Vans: (e.g., Ford Transit Connect)</li>
-    <li>Minivans: (e.g., Dodge Caravan, Honda Odyssey)</li>
+    <li>Sedans: (e.g., Nissan Altima, Honda Accord)</li>
+    <li>Hatchbacks: (e.g., Volkswagen Golf)</li>
+    <li>Coupes: (e.g., Mazda Miata)</li>
 </ul>
 These are road vehicles with a gross vehicle weight rating (GVWR) of up to 3960 kg (8500 lbs),
-designed with greater off-road or cargo capability relative to cars
-(sedans, hatchbacks, coupes, summarized here:
-<a href="/ipcc-sectors/Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles">Transport / Road Transportation / Light-Duty Gasoline Vehicles</a>).
+designed with less off-road or cargo capability relative to trucks, minivans, and SUVs,
+which are classified as <a href="/ipcc-sectors/Transport/Road_Transportation/Light-Duty_Gasoline_Trucks">Transport / Road Transportation / Light-Duty Gasoline Trucks</a>.
 </p>
 
 <h2>
@@ -69,10 +63,6 @@ Some combination of the following is required:
 Before we get into barriers, it must be stated that the obvious and preeminent
 strategy for emissions reduction in this sector is a transition to EVs.
 <ul>
-    <li><b>Comfort</b>: People like to drive, and they like to drive at high speeds,
-        in relative privacy inside large, spacious personal vehicles.
-        This requires additional energy.
-    </li>
     <li><b>Identity</b>:
         Brand marketing plays a strong role in car puchasing decisions.
         Vehicle choices have become an integral part of many people's professional and personal image.
@@ -117,7 +107,7 @@ strategy for emissions reduction in this sector is a transition to EVs.
 
 <h2>Posts developing this page</h2>
 <ul>
-{% for blog in blogs_by_tag("Light-Duty Gasoline Trucks") %}
+{% for blog in blogs_by_tag("Light-Duty Gasoline Vehicles") %}
 <li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>

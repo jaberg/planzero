@@ -60,11 +60,9 @@ class HTML_Matplotlib_Figure(HTML_element):
         return svg_string
 
 
-class IPCC_MCS_LightGasolineTrucks(BlogPost):
+class IPCC_MCS_LightGasolineCarsAndTrucks(BlogPost):
     """Sixth in the sector-by-sector National Greenhouse Gas Inventory series:
-    energy to power light-duty gasoline trucks, SUVs and vans.
-    Emissions in this sector have doubled since the mid 1990s as
-    Canadians have taken to driving larger vehicles.
+    energy to power light-duty gasoline cars and trucks (including SUVs, minivans, and cargo vans).
     A transition to EVs seems to be the sector's clearest pathway to decarbonization.
     """
     est_nir: object
@@ -72,11 +70,12 @@ class IPCC_MCS_LightGasolineTrucks(BlogPost):
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 3, 30),
-            title='Light-Duty Gasoline Trucks: Emissions Calculations',
+            title='Cars and Trucks: Emissions Calculations',
             url_filename="2026-03-30-light-duty-gasoline-trucks",
             author="James Bergstra",
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Trucks,
+                  enums.IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Vehicles,
                  },
             est_nir=est_nir,
             terms=dict(
@@ -89,7 +88,7 @@ class IPCC_MCS_LightGasolineTrucks(BlogPost):
 
 class IPCC_SCS_Residential(BlogPost):
     """Fifth in the sector-by-sector National Greenhouse Gas Inventory series:
-    residential stationary combustion sources. Energy from stationary combustion
+    residential stationary combustion. Energy from stationary combustion
     within residential buildings is used predominantly to heat living spaces
     and provide hot water.
     Heat-pumps and ongoing insulation improvements
