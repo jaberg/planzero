@@ -538,9 +538,8 @@ class EstAnnex13ElectricityEmissionsTotal(object):
         plt.xlim(2004, max(max(estimate.times), max(target.times)) + 1)
 
     def echart_by_utilities(self):
-        non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Public Electricity and Heat Production']['CO2eq'].values / 1000
+        values = _echart_reference_NIR_values('Stationary Combustion Sources/Public Electricity and Heat Production')
 
         sts_coal = self.from_coal.co2e.sum(enums.PT).to(u.megatonne_CO2e)
         sts_ng = self.from_ng.co2e_by_ep[
@@ -762,13 +761,8 @@ class EstFugitive_OilandNaturalGas_Venting(object):
             emissions_sectoral_pt[:, IPCC.Fugitive__Venting, :] += emissions
 
     def echart_venting(self):
-        non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
-
-        inv = ipcc_canada.inv
-        ab_non_agg = inv[ (inv['Region'] == 'Alberta') & (inv['Total'] != 'y')]
-        ab_values = ab_non_agg[ab_non_agg['CategoryPathWithWhitespace'] == 'Fugitive Sources/Oil and Natural Gas/Venting']['CO2eq'].values / 1000
+        values = _echart_reference_NIR_values('Fugitive Sources/Oil and Natural Gas/Venting')
 
         return StackedAreaEChart(
             div_id='ipcc_chart_venting',
@@ -949,9 +943,8 @@ class Est_Energy_SCS_OilAndGas_Extraction(object):
             emissions_sectoral_pt[:, IPCC.SCS__Oil_and_Gas_Extraction] += emissions
 
     def echart(self):
-        non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Oil and Gas Extraction']['CO2eq'].values / 1000
+        values = _echart_reference_NIR_values('Stationary Combustion Sources/Oil and Gas Extraction')
 
         return StackedAreaEChart(
             div_id='ipcc_chart_scs_oilandgas_extraction',
@@ -1005,9 +998,8 @@ class Est_SCS_Residential(object):
             emissions_sectoral_pt[:, IPCC.SCS__Residential] += emissions
 
     def echart(self):
-        non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Stationary Combustion Sources/Residential']['CO2eq'].values / 1000
+        values = _echart_reference_NIR_values('Stationary Combustion Sources/Residential')
 
         return StackedAreaEChart(
             div_id='ipcc_chart_scs_residential',
@@ -1041,10 +1033,8 @@ class Est_Transport(object):
         self.init_neud_transportation_mode()
 
     def echart(self):
-        non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] \
-                         == self.catpath_with_whitespace]['CO2eq'].values / 1000
+        values = _echart_reference_NIR_values(self.catpath_with_whitespace)
 
         return StackedAreaEChart(
             div_id=self.echart_div_id,
@@ -1173,7 +1163,6 @@ class Est_EntericFermentation(object):
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=values),
             ])
-
 
 
 class EstSectorEmissions(object):

@@ -3,7 +3,7 @@ import functools
 import matplotlib.pyplot as plt
 
 from .enums import PT, GHG, IPCC_Sector as IPCC
-from .est_nir_util import _rstrip_data
+from .est_nir_util import _rstrip_data, _echart_reference_NIR_values
 from .ghgvalues import GWP_100
 from .html import (
     EChartTitle,
@@ -326,9 +326,8 @@ class EstForestAndHarvestedWoodProducts(object):
                 += self.HWP_emissions
 
     def echart_forest_land(self):
-        non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Forest Land']['CO2eq'].values / 1000
+        values = _echart_reference_NIR_values('Forest Land')
 
         forest_co2e = GWP_100 @ self.forest_emissions.sum(PT)
 
@@ -354,9 +353,8 @@ class EstForestAndHarvestedWoodProducts(object):
             ])
 
     def echart_HWP(self):
-        non_agg = ipcc_canada.non_agg
         years = ipcc_canada.echart_years()
-        values = non_agg[non_agg['CategoryPathWithWhitespace'] == 'Harvested Wood Products']['CO2eq'].values / 1000
+        values = _echart_reference_NIR_values('Harvested Wood Products')
 
         ts_dict = {
             (rpc, 'captured'): -GWP_100 @ self.HWP_captured[:, rpc].sum(PT)
