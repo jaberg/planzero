@@ -12,117 +12,18 @@
         </p>
     </header>
 
-<div id="mychart" style="width: 800px; height: 500px; margin: 0 auto;"></div>
-<script>
-var myChart = echarts.init(document.getElementById('mychart'));
-var option;
+{{est_nir.Est_EntericFermentation().echart() | safe}}
 
-option = {
-  title: {
-      text: 'Emissions: {{catpath}}',
-      left: 'center', // Align: 'left', 'center', or 'right'
-  },
-  xAxis: {
-      name: 'Year', // The label text
-      nameLocation: 'middle', // Places it in the center (default is 'end')
-      nameGap: 30, // Distance from the axis line (pixel count)
-      data: {{ peval.comparisons.ComboA.years_as_list() }},
-      type: 'category',
-  },
-  yAxis: {
-      name: 'Emissions (Mt CO2e)', // The label text
-      nameLocation: 'middle',
-      nameGap: 40,
-      type: 'value',
-  },
-  series: [
-      {{ json.dumps(ipcc_canada.echart_series_Mt(catpath, name="Historical")) | safe }},
-      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("A", catpath, name="With Projects")) | safe }},
-      {{ json.dumps(peval.comparisons.ComboA.echart_series_Mt("B", catpath, name="Baseline")) | safe }},
-  ],
-  legend: {
-      show: true,
-      data: ['Historical', "Baseline", "With Projects"],
-      top: 30,
-      //left: 'center',
-  },
-  grid: {
-      top: 60,
-    },
-  tooltip: {
-    trigger: 'item',
-    axisPointer: {
-      type: 'cross',
-      label: {
-        backgroundColor: '#6a7985'
-      }
-    },
-    formatter: '{a}',
-  },
-};
-
-option && myChart.setOption(option);
-window.addEventListener('resize', function() {
-  myChart.resize();
-});
-
-
-</script>
-<div>
-
-<h2>Causes of Emissions</h2>
-
-
-<h3>Sources</h3>
-<p>
-<ul>
-    <li>The Ruminants (The Heavy Hitters): These animals have a four-chambered stomach (including a "rumen") specifically designed to ferment tough plant fibers. This fermentation creates massive amounts of methane as a by-product.
-        <ul>
-            <li>Beef Cattle: The overwhelming majority of emissions (due to the sheer size of the herd in provinces like Alberta and Saskatchewan).</li>
-
-            <li>Dairy Cattle: High per-animal emissions (because they eat a lot to produce milk), but there are fewer of them than beef cattle.</li>
-
-            <li>Others: Bison, Sheep, Goats, and Elk. These are also ruminants, but their total population in Canada is small compared to the millions of cows.</li>
-        </ul>
-    </li>
-
-    <li>The Monogastrics (The Minor Players): These animals have a simple single stomach (like humans). They produce very little enteric methane.
-        <ul>
-            <li>Pigs and Horses: They are included in the math, but their contribution is negligible compared to cattle.</li>
-        </ul>
-    </li>
-</ul>
-</p>
-
-<h3>Factors: What "Drives" the Emissions? (Why do they go up or down?)</h3>
-<p>
-<ol>
-    <li>Herd Population (The biggest driver): The total emissions correlate almost perfectly with the total number of cattle in Canada. When the beef herd shrinks (as it has in some recent years due to drought or market prices), this emissions category drops significantly.</li>
-    <li>Feed Quality (The "Digestibility" Factor): What the animal eats changes how much methane it produces.
-        <ul>
-            <li>Forage/Grass (High Methane): Cows eating rough, fibrous grass on open pasture produce more methane per calorie because the gut has to work harder to break it down.</li>
-            <li>Grain/Corn (Lower Methane): Cows in a feedlot eating processed grain produce less methane per calorie. Paradoxically, the "industrial" feedlot phase is often more carbon-efficient (per kg of meat) than the grass-fed phase.</li>
-        </ul>
-    </li>
-    <li> Animal Size and Genetics: We have bred cows to be much larger today than they were 30 years ago. A larger animal eats more and ferments more.
-    That said, while a modern cow produces more methane than a 1990 cow, it also produces significantly more meat or milk. The intensity (emissions per litre of milk) has actually gone down, even if the total emissions are high.
-    </li>
-</ol>
-
-</p>
-
-<h2>
-    How might we reduce enteric fermentation emissions to zero?
-</h2>
 
 <h3>
     Critical Success Factors
 </h3>
 
 <ul>
-    <li>reduce the number of bovine animals, particularly cattle and sheep</li>
-    <li>reduce methane emitted to per head</li>
-    <li>reduce outdoor time, capture methane emitted indoors</li>
+    <li>reduce the number of bovine animals, particularly ruminants e.g. cattle and sheep</li>
+    <li>reduce the rate of methane emitted, per head</li>
+    <li>increase the rate of food production, per head</li>
+    <li>increase the rate of methane capture</li>
 </ul>
 
 <h3>
@@ -133,7 +34,12 @@ window.addEventListener('resize', function() {
     <li><b>Alignment</b>: Owners of herds do not want to reduce their herds, and neither do their customers or suppliers.</li>
     <li><b>Demand</b>: Domestic and international demand for beef and milk products is high,
         and expected to rise with increasing global population and increasing global wealth.</li>
-    <li><b>Culture</b>: The voting population likes cattle: they're picturesque, iconic, and widely considered to be tasty and nutritious.</li>
+    <li><b>Culture</b>: The voting population likes cattle: they're
+        picturesque, iconic, and beef is part of many traditional
+        cuisines.</li>
+    <li><b>Nutrition</b>: beef and dairy products are nutritious foods, high in protein.
+        Beef is an excellent source of iron and B12; cow milk is an excellent source of calcium.
+    </li>
     <li><b>Animal Welfare</b>:
         Engineering animals' digestive systems and living environments to e.g. reduce methane emissions
         runs counter to the spirit of e.g. free-range farming practices, and

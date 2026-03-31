@@ -207,6 +207,7 @@ default_context = dict(
     discount_rate=.02,
     planzero=planzero,
     CO2=planzero.blog.latex(r'\mathrm{CO}_2'),
+    CH4=planzero.blog.latex(r'\mathrm{CH}_4'),
     N2O=planzero.blog.latex(r"\mathrm N_2 \mathrm O"),
     CO2e=planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
     degrees=planzero.blog.latex(r'^\circ'),

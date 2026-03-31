@@ -61,7 +61,8 @@ class HTML_Matplotlib_Figure(HTML_element):
 
 class IPCC_EntericFermentation(BlogPost):
     """Seventh in the sector-by-sector National Greenhouse Gas Inventory series:
-    enteric fermentation, the emission of methane from the digestive systems of ruminants.
+    enteric fermentation, the emission of methane from the digestive systems of all
+    livestock, but especially ruminants, and most especially cattle.
     """
     est_nir: object
     terms: dict[str, str]
