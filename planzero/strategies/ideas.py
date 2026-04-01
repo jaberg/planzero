@@ -41,7 +41,7 @@ class Idea(object):
         self.descr = descr
         self.ipcc_catpaths = set(ipcc_catpaths)
         for catpath in self.ipcc_catpaths:
-            assert catpath in ipcc_canada.catpaths
+            assert catpath in ipcc_canada.catpaths, catpath
         self.urls = urls
         self.name = None
         self._full_name = full_name
@@ -757,12 +757,17 @@ ss.Parking_Lot_Owners = Stakeholders(
     ])
 
 ideas.embed_wireless_chargers_in_roads = NewcoIdea(
-    descr="Embed wireless chargers in roads",
-    urls=["https://www.purdue.edu/newsroom/2025/Q4/first-highway-segment-in-u-s-wirelessly-charges-electric-heavy-duty-truck-while-driving/"],
+    descr='Placeholder for various "electric roads" (conductive rails, inductive transfer, and overhead lines)',
+    urls=["https://www.purdue.edu/newsroom/2025/Q4/first-highway-segment-in-u-s-wirelessly-charges-electric-heavy-duty-truck-while-driving/",
+          "https://en.wikipedia.org/wiki/Electric_road",
+          "https://www.trucknews.com/sustainability/groupe-morneau-to-test-swedish-rail-charging-technology/1003193296/", # one to be tested in Quebec for Volvo
+         ],
     ipcc_catpaths=[
         'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
         'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
-        # TODO: heavy vehicles, diesel, trucks, all road vehicles
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
     ])
 
 ideas.retail_gasoline_carbon_tax = RegulationIdea(
@@ -1195,6 +1200,64 @@ ideas.heat_pumps_for_commercial = NewcoIdea(
     for_whom=[],
     ipcc_catpaths=[
         'Stationary_Combustion_Sources/Commercial_and_Institutional',
+    ])
+
+
+ideas.develop_1000Wh_per_kg_batteries_for_heavy_trucks = NewcoIdea(
+    descr="Develop 1000Wh/kg batteries for heavy-duty trucks",
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Gasoline_Trucks',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+        'Transport/Marine/Domestic_Navigation',
+    ])
+
+ideas.scale_up_renewable_diesel = NewcoIdea(
+    descr="Scale up production of renewable diesel",
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+        'Transport/Marine/Domestic_Navigation',
+    ])
+
+ideas.scale_up_hydrogen_fuel_cell_freight = NewcoIdea(
+    descr="Scale up production and use of hydrogen-powered freight trucks",
+    # Has been tried by Nikolai and others, so far failed, timing is key?
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+        'Transport/Marine/Domestic_Navigation',
+    ])
+
+ideas.scale_up_emethanol = NewcoIdea(
+    descr="Scale up production and use of e-methanol freight trucks",
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+        'Transport/Marine/Domestic_Navigation',
+    ])
+
+ideas.scale_up_dme = NewcoIdea(
+    descr="Scale up production and use of DME (dimethyl ether) for freight trucks",
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+        'Transport/Marine/Domestic_Navigation',
+    ])
+
+ideas.scale_up_rng = NewcoIdea(
+    descr="Scale up production and use of renewable natural gas for freight trucks",
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+        'Transport/Marine/Domestic_Navigation',
     ])
 
 

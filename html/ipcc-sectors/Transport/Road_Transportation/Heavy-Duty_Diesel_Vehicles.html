@@ -21,30 +21,9 @@
     <i>Shaded regions</i>:
     data from
     <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm">National Energy Use Database (NEUD)</a> of emissions from diesel-burning medium and heavy trucks, reduced in recent years by rising use of biodiesel and renewable diesel.
+    The top of the stacked shaded regions  should match the NIR total,
+    and I don't know why they don't match more closely.
     </p>
-
-<h2>Causes of Emissions</h2>
-
-<p>
-The Heavy-Duty Diesel Vehicle (HDDV) category covers all on-road diesel vehicles with
-a Gross Vehicle Weight Rating of over 3865kg (8500 lbs). In Canada's National Inventory Report,
-these are broken down by weight class:
-<ul>
-    <li><b>Heavy Heavy-Duty Vehicles (Class 8)</b>: These are the primary
-        contributors. They include "semi" trucks or tractor-trailers used for
-        long-haul freight. They have a GVWR exceeding 14,969 kg (33,000 lbs).</li>
-    <li><b>Medium Heavy-Duty Vehicles (Classes 6–7)</b>: Includes vehicles
-        like school buses, large delivery trucks, and "straight" trucks. Their
-        weights range from 8,846 kg to 14,969 kg.  </li>
-    <li><b>Light Heavy-Duty Vehicles (Classes 2B–5)</b>: This includes
-        heavy-duty pickup trucks (e.g., Ford F-250/350 diesel versions), large
-        vans, and smaller vocational trucks used in construction or local
-        delivery. </li>
-</ul>
-Although "heavy-duty" often implies freight transportation, this IPCC category also includes other diesel-powered vehicle types such as municipal garbage trucks, fire trucks, and public transit buses.
-</p>
-
-
 
 <h2>
     How might Canada reduce these emissions to zero?
@@ -54,38 +33,69 @@ Although "heavy-duty" often implies freight transportation, this IPCC category a
     Critical Success Factors
 </h3>
 
-The arithmetic of emissions in this sector is such that there are two ways to reduce emissions:
+<p>The largest application, by far, of heavy-duty diesel vehicles
+is the movement of freight by road.
+The reduction of emissions from heavy-duty diesel vehicles requires some combination
+of the following:
 <ol>
-    <li>Reduce vehicle distance travelled</li>
-    <li>Reduce average emissions per vehicle distance travelled</li>
+    <li>Reduce demand for road freight (perhaps by shifting it to marine or rail)</li>
+    <li>Reduce the mass of freight or the distance it must travel (already a major consideration in logistics)</li>
+    <li>Reduce use of fossil fuels for heavy-duty vehicle applications (use other fuels, energy sources)</li>
+    <li>Increase energy efficiency of heavy-duty vehicles (e.g. via electric motors)</li>
 </ol>
+</p>
 
 <h3>
     Barriers
 </h3>
 
 <ul>
-    <li>People like to drive, and they like to drive at high speeds, in relative privacy inside spacious personal vehicles</li>
-    <li>Vehicle usage patterns have become an integral part of many people's work roles and domestic lifestyles. People struggle to trade convenience and habit for the sake of incremental cost reduction or environmental impact.</li>
-    <li>Vehicles are only replaced on average every 10 years (TODO: verify).</li>
-    <li>The total cost of ownership comparison for EVs and PHEVs vs. ICE vehicles depends on several factors, not all of which are top-of-mind for buyers, and the technology keeps improving (which discourages mainstream and late-adopters).</li>
-    <li>The sale price for EVs is higher than ICE vehicles, except for current possibly-illegally-subsidized Chinese EVs.</li>
-    <li>EVs are slower to charge, have less range than ICE vehicles, and can be charged at fewer places.</li>
-</ul>
-
-<h3>
-    Key Stakeholder Groups
-</h3>
-
-<ul>
-    {% for sg_name, sg in sorted(stakeholders.ss.items()) %}
-    {% if catpath in sg.ipcc_catpaths %}
-    <li>{{ sg.full_name }}</li>
-    {% endif %}
-    {% endfor %}
+    <li><b>Technology Gap</b>:
+        Freight movement is energy intensive, in that it is almost purely
+        the conversion of energy into propulsion to move materials from one
+        point to another. Diesel is an affordable fuel with high energy density,
+        there is no obvious replacement.
+    </li>
+    <li><b>Renewable Diesel</b>:
+        Renewable diesel fuel (e.g. B99 or B100) can currently replace diesel
+        at a price premium of only about 25%, can be made from canola or
+        waste cooking oil. The catch is that to make enough of it
+        to power all heavy vehicles would require something like twice
+        Canada's current amount of farmland, and it may not be the best
+        use of that land.
+    </li>
+    <li><b>Batteries</b>:
+        Today's EV battery technology cannot carry enough charge, at low
+        enough weight, or low enough cost, or recharge quickly enough,
+        to support today's trucking practices
+        without operational changes that would hurt operational efficiency.
+    </li>
+    <li><b>Grid Readiness</b>:
+        Although Canada produced about 560 terawatt hours of electricity in 2022 and 2023
+        (<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">StatsCan</a>), the freight industry used about 263 terawatt hours of energy in those years
+        in the form of diesel fuel
+        (<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=36&page=0">NEUD</a>).
+        Although electric propulsion is more energy-efficient than
+        diesel by a factor of roughly 3x, moving 2022's freight work by electricity
+        would have required producing and distributing an extra 100 terawatt
+        hours or so, or almost 20% more electricity than was produced that year.
+    </li>
+    <li><b>Asset Life</b>:
+        Heavy freight trucks are only replaced on average every 15-20 years
+        (see <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=60&page=0">stock/sales ratio, NEUD</a>).
+        Even compelling new technology would likely take decades to roll out
+        across the sector.
+    </li>
 </ul>
 
 {% include "ipcc-sectors-strategy-ideas-table.html" %}
+
+<h2>Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("Heavy-Duty Diesel Vehicles") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
 
 </div>
 </section>

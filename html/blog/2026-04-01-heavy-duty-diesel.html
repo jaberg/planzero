@@ -1,0 +1,182 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#qual">Heavy-Duty Diesel Trucking</a></li>
+    <li><a href="#quant">An Emission Estimator</a></li>
+    <li><a href="#csfs">Critical Success Factors</a></li>
+    <li><a href="#barriers">Barriers</a></li>
+    <li><a href="#strategies">Potential Strategies</a></li>
+    <li><a href="#conclusions">Conclusions</a></li>
+</ul>
+</p>
+
+<h2 id="qual">Heavy-Duty Diesel Trucking</h2>
+
+<p>
+This is the eighth post in the sector-by-sector series replicating
+Canada's <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html">National Greenhouse Gas Inventory Report (NIR)</a>.
+It refreshes PlanZero's
+<a href="/ipcc-sectors/Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles">Heavy-Duty Diesel Vehicles</a>
+ipcc summary page,
+updates the NIR estimation, and refreshes
+the critical success factors and barriers.
+</p>
+
+<p>
+<i>Heavy-duty diesel trucks</i> are a familiar site on roads across Canada.
+The large trucks that pull trailers full of cargo across the country
+are, nearly without exception, diesel-burning vehicles.
+There are an estimated 532 thousand of these class-8 trucks in Canada,
+and they travelled an average of about 80 thousand kilometres per year in recent years (<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=60&page=0">NEUD</a>).
+</p>
+
+<h2>Causes of Emissions</h2>
+
+<p>
+The Heavy-Duty Diesel Vehicle (HDDV) category covers all on-road diesel vehicles with
+a Gross Vehicle Weight Rating of over 3865kg (8500 lbs). In Canada's National Inventory Report,
+these are broken down by weight class:
+<ul>
+    <li><b>Heavy Heavy-Duty Vehicles (Class 8)</b>: These are the primary
+        contributors. They include "semi" trucks or tractor-trailers used for
+        long-haul freight. They have a GVWR exceeding 14,969 kg (33,000 lbs).</li>
+    <li><b>Medium Heavy-Duty Vehicles (Classes 6–7)</b>: Includes vehicles
+        like school buses, large delivery trucks, and "straight" trucks. Their
+        weights range from 8,846 kg to 14,969 kg.  </li>
+    <li><b>Light Heavy-Duty Vehicles (Classes 2B–5)</b>: This includes
+        heavy-duty pickup trucks (e.g., Ford F-250/350 diesel versions), large
+        vans, and smaller vocational trucks used in construction or local
+        delivery. </li>
+</ul>
+Although "heavy-duty" often implies freight transportation, this IPCC category also includes other diesel-powered vehicle types such as municipal garbage trucks, fire trucks, and public transit buses.
+</p>
+
+
+
+
+
+<p>
+Buses count in this sector, but their emissions were only
+1.5 - 3Mt in 2023, so I didn't add them on the chart
+(<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=33&page=0">NEUD</a>).
+</p>
+
+<p>
+Ruminants
+(from <a href="https://en.wikipedia.org/wiki/Ruminant">wikipedia</a>)
+are "herbivorous grazing or browsing artiodactyls belonging to the suborder Ruminantia that are able to acquire nutrients from plant-based food by fermenting it in a specialized stomach prior to digestion, principally through microbial actions.
+The process, which takes place in the front part of the digestive system and therefore is called foregut fermentation, typically requires the fermented ingesta (known as cud) to be regurgitated and chewed again. The process of rechewing the ingesta to further break down plant matter and stimulate digestion is called rumination or chewing the cud."
+The fermentation, (the enteric fermentation), that happens in this first stomach produces methane,
+which cattle release through their mouths when they regurgitate cud.
+There are many ruminant species; ruminants includes all domestic and wild bovines (including dairy and beef cattle), goats, sheep, as well as many species that aren't farmed at significant scale.
+</p>
+
+
+<h2 id="quant">Residential Stationary Combustion Sources</h2>
+
+{{blog.est_nir.Est_EntericFermentation().echart() | safe}}
+
+<p>
+The NIR methodology regarding agriculture
+(Annex 3.4 <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/G-Additional-NIR-Annexes?lang=en"></a>) describes how Environment and Climate Change Canada (ECCC) determined the emission factors for Canada's cattle.
+It is fundamentally an energy accounting method:
+the total energy of various food sources is estimated, as is the energy in outputs of milk and dung, as is the energy required for staying warm in various environments, growing, producing milk, producing baby calves and so on.
+The energy estimation leads to an imbalance: cattle take in more than they put out in these variou ways.
+The energy imbalance is assumed to be the lost methane formed by enteric fermentation.
+</p>
+<p>
+For my purposes, I appreciate that NIR Annex 3.4 includes Table A3.4-11 (<a href="https://data-donnees.az.ec.gc.ca/api/file?path=%2Fsubstances%2Fmonitor%2Fcanada-s-official-greenhouse-gas-inventory%2FG-Additional-NIR-Annexes%2FEN_Annex3.4_Methodologies_Agriculture.pdf">pdf</a>),
+which lists emission factors per heads of cattle of various types, at selected years since 1990.
+For example in 2023: dairy cows are assessed as producing an average of 145.6 kg {{CH4|safe}}/yr;
+beef cows, 121.5 kg {{CH4|safe}}/yr; calves just 44 kg {{CH4|safe}}/yr.
+The emission factors for fully-grown animals numbers have risen since 1990 because
+the animals on farms have gotten bigger. Although the emission factors per head of cattle
+are higher now than in 1990, the emission factors per unit of food, at least for dairy output, would be lower
+now because today's dairy cattle are more productive.
+</p>
+<p>
+Multiplying these emission factors by the cattle populations in Statistics Canada Table 32-10-0130-01 (<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210013001">Number of cattle, by class and farm type</a>) yielded one of the better-fitting sectoral estimators in PlanZero.
+(Happily, it also extends two years ahead of the NIR, because StatsCan has updated the cattle population tables more recently.)
+</p>
+<p>
+Future work can add the populations of other livestock, especially sheep because they are also ruminants, but also chickens and swine. I believe their emissions impact is relatively small
+because their populations are smaller, and non-ruminants don't produce significant amounts of methane.
+</p>
+
+<h2 id="csfs">Critical Success Factors</h2>
+
+<p> The reduction of enteric fermentation emissions
+requires some combination of the following:
+<ul>
+    <li>reduce the number of bovine animals, particularly ruminants e.g. cattle and sheep</li>
+    <li>reduce the rate of methane emitted, per head</li>
+    <li>increase the rate of food production, per head</li>
+    <li>increase the rate of methane capture (not currently practical, as far as I know)</li>
+</ul>
+</p>
+
+
+<h3 id="barriers">Barriers</h3>
+<p>
+<ul>
+    <li><b>Alignment</b>: Owners of herds do not want to reduce their herds, and neither do their customers or suppliers.</li>
+    <li><b>Demand</b>: Domestic and international demand for beef and milk products is high,
+        and expected to rise with increasing global population and increasing global wealth.</li>
+    <li><b>Culture</b>: The voting population likes cattle: they're picturesque, iconic, and widely considered to be tasty and nutritious.</li>
+    <li><b>Animal Welfare</b>:
+        So-called "factory farming" methods appear to generate the least methane per unit food,
+        because wild grasses are the hardest to digest, and require the most fermentation.
+    </li>
+</ul>
+</p>
+
+<h3 id="strategies">Strategies</h3>
+
+<p>
+Active strategies for emissions reduction in this sector include
+adjusting feed mixtures, selective breeding for more-efficient cattle,
+and administring feed additives such as Bovaer.
+<a href="https://www.dsm-firmenich.com/anh/products-and-services/products/methane-inhibitors/bovaer.html">Bovaer</a> is approved for use in 60+ countries as an additive
+that changes the chemistry in the first ruminant stomach to produce hydrogen
+instead of methane.
+It is not a silver bullet for the sector, but Bovaer can reduce methane emissions by
+30% for dairy cows and 45% for beef cattle.
+Without a technological breakthrough that allows low-cost methane capture from
+cattle barns, or a feed mixture that significantly reduces the need for enteric fermentation,
+the only way to reduce emissions in this sector to zero would
+be to somehow reduce the number of cattle.
+</p>
+
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>
+This post has introduced a relatively accurate estimator of enteric fermentation emissions
+based on emission factors from the NIR and data from Statistics Canada.
+The <a href="/ipcc-sectors/Enteric_Fermentation">IPCC / Enteric Fermentation</a>
+page has been refreshed to feature this estimator, as well as updated
+critical success factors,
+barriers to those success factors,
+and strategies.
+The next post in this series replicating the NIR will look at
+heavy-duty diesel-burning trucks.
+</p>
+<p>
+Until then,
+</p>
+<p>
+- James Bergstra
+</p>
+
+</section>
+</div>
+{% include "post-main.html" %}

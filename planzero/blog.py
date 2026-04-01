@@ -59,6 +59,26 @@ class HTML_Matplotlib_Figure(HTML_element):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
+class IPCC_HeavyDutyDieselVehicles(BlogPost):
+    """Eighth in the sector-by-sector National Greenhouse Gas Inventory series:
+    heavy-duty diesel vehicles, such as medium and large freight vehicles,
+    buses, and municipal refuse trucks.
+    """
+    est_nir: object
+    terms: dict[str, str]
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 4, 1),
+            title='Heavy-Duty Diesel Vehicles: Emissions Calculations',
+            url_filename="2026-04-01-heavy-duty-diesel",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,
+                  enums.IPCC_Sector.Transport__Road__Heavy_Duty_Diesel_Vehicles,
+                 },
+            est_nir=est_nir,
+            terms=dict(),
+            )
+
 class IPCC_EntericFermentation(BlogPost):
     """Seventh in the sector-by-sector National Greenhouse Gas Inventory series:
     enteric fermentation, the emission of methane from the digestive systems of all
