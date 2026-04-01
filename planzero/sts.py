@@ -240,9 +240,14 @@ class STS(BaseModel):
     def __add__(self, other):
         if isinstance(other, pint.Quantity):
             if other.magnitude == 0:
-                # TODO: check units
+                # TODO: check units, call add_scalar
                 return self * 1
             raise NotImplementedError()
+        elif isinstance(other, (float, int)):
+            if self.v_unit != u.dimensionless:
+                raise TypeError(other)
+            return add_scalar(self, other)
+
         self_nointerp = (self.interpolation == InterpolationMode.no_interpolation)
         other_nointerp = (other.interpolation == InterpolationMode.no_interpolation)
 
@@ -512,6 +517,20 @@ def add_nointerp_interp(self, other):
         unit=v_unit,
         identifier=None,
         interpolation=InterpolationMode.no_interpolation)
+    return rval
+
+def add_scalar(self, other):
+    # other may be number or pint quantity
+    to_add = (0 * self.v_unit) + other
+    assert to_add.u == self.v_unit
+    mag = to_add.magnitude
+    # This operation does not change self.v_unit
+    rval = STS(
+        times=array.array('d', self.times),
+        values=array.array('d', [v + mag for v in self.values]),
+        t_unit=self.t_unit,
+        v_unit=self.v_unit,
+        interpolation=self.interpolation)
     return rval
 
 

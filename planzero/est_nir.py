@@ -1115,6 +1115,47 @@ class Est_Transport_LightDutyGasolineVehicles(Est_Transport):
             emissions_sectoral_pt[:, IPCC.Transport__Road__Light_Duty_Gasoline_Vehicles] += emissions
 
 
+class Est_Transport_HeavyDutyDieselVehicles(Est_Transport):
+
+    catpath_with_whitespace = 'Transport/Road Transportation/Heavy-Duty Diesel Vehicles'
+    echart_title = 'Heavy-Duty Diesel Vehicles (Mobile Combustion Sources)'
+    echart_div_id = 'ipcc_chart_mcs_heavy_duty_diesel_vehicles'
+
+    def init_neud_transportation_mode(self):
+        from . import neud
+
+        medtruck_co2e_by_fuel = neud.medium_truck_ghg_emissions_by_fuel()
+        medium_emissions = GHG_PT_zeros()
+        medium_emissions[GHG.CO2] = (
+            medtruck_co2e_by_fuel[neud.TransportationEnergySource.Diesel]
+            * (1 * u.Mt_CO2 / u.Mt_CO2e))
+
+        co2e_by_tmode = neud.ghg_emissions_by_transportation_mode()
+        heavy_emissions = GHG_PT_zeros()
+        heavy_emissions[GHG.CO2] = (
+            co2e_by_tmode[neud.TransportationMode.HeavyTrucks]
+            * (1 * u.Mt_CO2 / u.Mt_CO2e))
+
+        # Ready by eye from chart here:
+        # https://440megatonnes.ca/insight/biofuels-in-canada-are-rising-will-emissions-fall
+        biodiesel_and_renewable_diesel = sts.STS(
+            times=array.array('d', [      2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]),
+            t_unit=u.years,
+            values=array.array('d', [0.0, .007, .016, .018, 0.02, .020, .020, .022, .024, .026, .030, .035, .035, .036, .067, .069]),
+            v_unit=u.dimensionless,
+            interpolation = sts.InterpolationMode.current)
+
+        self.emissions_by_label[f'Medium-Duty (NEUD data)'] = medium_emissions * (1 - biodiesel_and_renewable_diesel)
+        self.emissions_by_label[f'Heavy-Duty (NEUD data)'] = heavy_emissions * (1 - biodiesel_and_renewable_diesel)
+        # see also here for projected production capacity
+        # https://www.cer-rec.gc.ca/en/data-analysis/energy-markets/renewable-energy-canada/an-overview-of-bioenergy.html
+
+
+    def update_A9_emissions(self, emissions_sectoral_pt):
+        for label, emissions in self.emissions_by_label.items():
+            emissions_sectoral_pt[:, IPCC.Transport__Road__Heavy_Duty_Diesel_Vehicles] += emissions
+
+
 class Est_EntericFermentation(object):
     def __init__(self):
         from .sc_3210013001 import (
@@ -1179,6 +1220,7 @@ class EstSectorEmissions(object):
         Est_SCS_Residential().update_A9_emissions(self.sectoral_emissions)
         Est_Transport_LightDutyGasolineTrucks().update_A9_emissions(self.sectoral_emissions)
         Est_Transport_LightDutyGasolineVehicles().update_A9_emissions(self.sectoral_emissions)
+        Est_Transport_HeavyDutyDieselVehicles().update_A9_emissions(self.sectoral_emissions)
         Est_EntericFermentation().update_A9_emissions(self.sectoral_emissions)
 
     def max_gap_2005(self, thresh_Mt=1000):

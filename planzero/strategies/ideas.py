@@ -1261,5 +1261,11 @@ ideas.heat_pumps_for_commercial = NewcoIdea(
 # https://link.springer.com/article/10.1007/s11027-005-9007-4
 
 
-# An only-cold-weather lithium ion battery with amazing energy density
+# An only-cold-weather lithium ion battery with amazing energy density...
+# maybe good for the arctic? Seems not suitable for where most people live
 # https://interestingengineering.com/energy/chinas-ev-battery-double-range
+
+
+# Made in Alberta:
+# Separate manure into methane, solids, clean water, and crop nutrients
+# https://www.livestockwaterrecycling.com/

@@ -16,6 +16,15 @@ def test_add():
     assert c.values[1:] == array.array('d', [13])
     assert c.v_unit == u.kg
 
+def test_add_scalar_dimensionless():
+    a = annual_report(times=[10 * u.years], values=[5 * u.dimensionless])
+
+    c = a + 1
+    assert c.times == array.array('d', [10])
+    assert np.isnan(c.values[0])
+    assert c.values[1:] == array.array('d', [6])
+    assert c.v_unit == u.dimensionless
+
 def test_to():
     a = annual_report(times=[10 * u.years], values=[1000 * u.kg]).to('metric_ton')
     print(a.v_unit)
