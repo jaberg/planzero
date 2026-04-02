@@ -1260,6 +1260,14 @@ ideas.scale_up_rng = NewcoIdea(
         'Transport/Marine/Domestic_Navigation',
     ])
 
+ideas.limit_freight_speed_to_90kph = NewcoIdea(
+    descr="Limit freight vehicles to 90km/h on highways",
+    ipcc_catpaths=[
+        'Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Vehicles',
+        'Transport/Road_Transportation/Light-Duty_Diesel_Trucks',
+    ])
+
 
 # Tidal power:
 # https://www.orbitalmarine.com/

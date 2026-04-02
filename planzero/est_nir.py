@@ -1136,6 +1136,12 @@ class Est_Transport_HeavyDutyDieselVehicles(Est_Transport):
             co2e_by_tmode[neud.TransportationMode.HeavyTrucks]
             * (1 * u.Mt_CO2 / u.Mt_CO2e))
 
+        bus_co2e_by_fuel = neud.bus_ghg_emissions_by_fuel()
+        bus_emissions = GHG_PT_zeros()
+        bus_emissions[GHG.CO2] = (
+            bus_co2e_by_fuel[neud.TransportationEnergySource.Diesel]
+            * (1 * u.Mt_CO2 / u.Mt_CO2e))
+
         # Ready by eye from chart here:
         # https://440megatonnes.ca/insight/biofuels-in-canada-are-rising-will-emissions-fall
         biodiesel_and_renewable_diesel = sts.STS(
@@ -1145,6 +1151,7 @@ class Est_Transport_HeavyDutyDieselVehicles(Est_Transport):
             v_unit=u.dimensionless,
             interpolation = sts.InterpolationMode.current)
 
+        self.emissions_by_label[f'Bus (NEUD data)'] = bus_emissions * (1 - biodiesel_and_renewable_diesel)
         self.emissions_by_label[f'Medium-Duty (NEUD data)'] = medium_emissions * (1 - biodiesel_and_renewable_diesel)
         self.emissions_by_label[f'Heavy-Duty (NEUD data)'] = heavy_emissions * (1 - biodiesel_and_renewable_diesel)
         # see also here for projected production capacity

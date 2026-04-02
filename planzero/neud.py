@@ -185,10 +185,13 @@ def df_transportation_table36():
 
 
 class TransportationEnergySource(str, enum.Enum):
+    Electricity = 'Electricity'
+    NaturalGas = 'Natural Gas'
     Gasoline = 'Motor Gasoline'
     Diesel = 'Diesel Fuel Oil'
     Ethanol = 'Ethanol'
     Biodiesel = 'Biodiesel Fuel'
+    Propane = 'Propane'
 
 
 @functools.cache
@@ -217,11 +220,68 @@ def medium_truck_ghg_emissions_by_fuel():
     # and BC too !?
     rval[:, [PT.BC, PT.NU, PT.YT, PT.NT]] = 0 * u.Mt_CO2e
 
+    # There will be None for at least Electricity, Natural Gas, Propane
+    #assert None not in rval.buf
+    return rval
+
+
+@functools.cache
+def df_transportation_table22():
+    file_pattern = os.path.join('data/neud', "tran_*.xls")
+    dataframes = []
+    for xlspath in glob.glob(file_pattern):
+        prefix = 'data/neud/tran_'
+        pt_letters = xlspath.split('_')[1]
+        if pt_letters == 'bct':
+            # The data is for BC and all territories, so technically
+            # the emissions should be assigned to XX, even if they
+            # are almost all from BC.
+            pt = PT.XX
+        else:
+            pt = getattr(PT, pt_letters.upper())
+        df = pd.read_excel(xlspath,
+                       sheet_name='Table 22',
+                       usecols='B:Z',
+                       header=10,
+                       nrows=46)
+        df['Geo'] = [pt.value] * len(df)
+        dataframes.append(df)
+    rval = pd.concat(dataframes, ignore_index=True)
+    return rval
+
+
+@functools.cache
+def bus_ghg_emissions_by_fuel():
+    rval = objtensor.empty(TransportationEnergySource, PT)
+    counter = 0
+    years = list(range(2000, 2023 + 1))
+    for row in df_transportation_table22().iloc:
+        colB = str(row['Unnamed: 1'])
+        if colB == 'GHG Emissions by Energy Source (Mt of CO2e)':
+            counter = 7
+            continue
+        if counter:
+            pt = PT(row['Geo'])
+            trans_egy_src = TransportationEnergySource(colB)
+            # what's the difference between 'n.a.' and '-' ?
+            values = [float('nan') if row[year] in ('n.a.', '–') else float(row[year]) for year in years]
+            rval[trans_egy_src, pt] = sts.annual_report2(
+                years=years,
+                values=values,
+                v_unit=u.Mt_CO2e)
+
+            counter -= 1
+
+    # setting per-territory emissions to zero because
+    # their emissions are aggregated in PT.XX
+    # and BC too !?
+    rval[:, [PT.BC, PT.NU, PT.YT, PT.NT]] = 0 * u.Mt_CO2e
+
     assert None not in rval.buf
     return rval
 
 def demo():
-    medium_truck_ghg_emissions_by_fuel()
+    print(bus_ghg_emissions_by_fuel())
 
 
 if __name__ == '__main__':

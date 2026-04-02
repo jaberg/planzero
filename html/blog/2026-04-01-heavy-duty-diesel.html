@@ -10,8 +10,8 @@
 <p>
 Table of Contents:
 <ul>
-    <li><a href="#qual">Heavy-Duty Diesel Trucking</a></li>
-    <li><a href="#quant">An Emission Estimator</a></li>
+    <li><a href="#qual">Heavy-Duty Diesel Vehicles</a></li>
+    <li><a href="#quant">Estimating Emissions from the National Energy Use Database</a></li>
     <li><a href="#csfs">Critical Success Factors</a></li>
     <li><a href="#barriers">Barriers</a></li>
     <li><a href="#strategies">Potential Strategies</a></li>
@@ -19,156 +19,246 @@ Table of Contents:
 </ul>
 </p>
 
-<h2 id="qual">Heavy-Duty Diesel Trucking</h2>
+<h2 id="qual">Heavy-Duty Diesel Vehicles</h2>
 
 <p>
 This is the eighth post in the sector-by-sector series replicating
 Canada's <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html">National Greenhouse Gas Inventory Report (NIR)</a>.
 It refreshes PlanZero's
-<a href="/ipcc-sectors/Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles">Heavy-Duty Diesel Vehicles</a>
-ipcc summary page,
+<a href="/ipcc-sectors/Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles">IPCC / Transport / Road Transportation / Heavy-Duty Diesel Vehicles</a>
+IPCC sector summary page,
 updates the NIR estimation, and refreshes
-the critical success factors and barriers.
+the critical success factors, barriers, and strategies.
 </p>
 
 <p>
 <i>Heavy-duty diesel trucks</i> are a familiar site on roads across Canada.
-The large trucks that pull trailers full of cargo across the country
-are, nearly without exception, diesel-burning vehicles.
+The large trucks that pull trailers of cargo across the country
+are diesel-powered vehicles (with probably the only exceptions being experimental battery-electric vehicles, such as <a href="https://www.volvotrucks.ca/en-ca/trucks/vnr-electric/">Volvo's VNR</a>).
 There are an estimated 532 thousand of these class-8 trucks in Canada,
-and they travelled an average of about 80 thousand kilometres per year in recent years (<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=60&page=0">NEUD</a>).
+and they each travelled an average of about 80 thousand kilometres per year in recent years (<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=60&page=0">NEUD</a>).
+Large articulated trucks are the largest contributor to emissions in this category,
+but many other vehicle types are included as well.
+Mid-size trucks (class 5-7, commonly used as delivery vehicles),
+school buses, municipal garbage trucks,
+fire trucks,
+inter-city coaches, are all examples of vehicles accounted in this sector because they
+(a) have a gross weight vehicle rating over 8500 lbs,
+(b) are diesel-powered, and
+(c) are used for road transportation.
 </p>
 
-<h2>Causes of Emissions</h2>
+<h2 id="quant">Estimating Emissions from the National Energy Use Database</h2>
 
 <p>
-The Heavy-Duty Diesel Vehicle (HDDV) category covers all on-road diesel vehicles with
-a Gross Vehicle Weight Rating of over 3865kg (8500 lbs). In Canada's National Inventory Report,
-these are broken down by weight class:
-<ul>
-    <li><b>Heavy Heavy-Duty Vehicles (Class 8)</b>: These are the primary
-        contributors. They include "semi" trucks or tractor-trailers used for
-        long-haul freight. They have a GVWR exceeding 14,969 kg (33,000 lbs).</li>
-    <li><b>Medium Heavy-Duty Vehicles (Classes 6–7)</b>: Includes vehicles
-        like school buses, large delivery trucks, and "straight" trucks. Their
-        weights range from 8,846 kg to 14,969 kg.  </li>
-    <li><b>Light Heavy-Duty Vehicles (Classes 2B–5)</b>: This includes
-        heavy-duty pickup trucks (e.g., Ford F-250/350 diesel versions), large
-        vans, and smaller vocational trucks used in construction or local
-        delivery. </li>
-</ul>
-Although "heavy-duty" often implies freight transportation, this IPCC category also includes other diesel-powered vehicle types such as municipal garbage trucks, fire trucks, and public transit buses.
+I implemented an estimator of diesel emissions from vehicles meeting the IPCC definition of a "Heavy-duty Vehicle" from the 
+<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm">National Energy Use Database (NEUD)</a>.
+The NEUD uses a different taxonomy of vehicles:
+their categories of road vehicles are cars, passenger and freight light trucks, medium trucks, heavy trucks, motorcycles, school buses, urban transit, and inter-city buses.
+To estimate an estimator for the IPCC sector of heavy-duty diesel vehicles,
+I extracted emissions associated with diesel medium-duty trucks, diesel buses,
+and all heavy trucks (which are assumed in the NEUD to be diesel-burning vehicles).
+The diverse data sources used to construct the NEUD itself are summarized in <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/data_e/handbook/2023/chapter5.cfm">Chapter 5 of the NEUD's Handbook Tables</a>.
 </p>
 
-
-
-
+{{blog.est_nir.Est_Transport_HeavyDutyDieselVehicles().echart() | safe}}
 
 <p>
-Buses count in this sector, but their emissions were only
-1.5 - 3Mt in 2023, so I didn't add them on the chart
-(<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=33&page=0">NEUD</a>).
+    In black, the table above shows the
+    <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory?lang=en">National Greenhouse Gas Inventory (NIR)</a>, national sectoral total.
+    The stacked shaded regions show the contributions of different vehicle types
+    according to the
+    <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm">National Energy Use Database (NEUD)</a>.
+    The NIR's sectoral total and the sum of contributing factors from the NEUD show a similar
+    shape of curve, but the sum of NEUD factors is higher by at least 3 Mt {{CO2e|safe}} (in year 2014) and as much
+    as 10 Mt {{CO2e|safe}} (in year 2000).
+    Both curves show a peak around years 2011-2014 when demand was rising,
+    and emissions-reduction measures had not yet been taken.
+    Since that time, emission has fallen, likely  due
+    to legislation requiring that retail diesel
+    <a href="https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/biodiesel">contain some blended non-fossil diesel</a>,
+    and requiring that
+    <a href="https://pollution-waste.canada.ca/environmental-protection-registry/regulations/view?Id=119">new trucks be more efficient</a>.
 </p>
 
 <p>
-Ruminants
-(from <a href="https://en.wikipedia.org/wiki/Ruminant">wikipedia</a>)
-are "herbivorous grazing or browsing artiodactyls belonging to the suborder Ruminantia that are able to acquire nutrients from plant-based food by fermenting it in a specialized stomach prior to digestion, principally through microbial actions.
-The process, which takes place in the front part of the digestive system and therefore is called foregut fermentation, typically requires the fermented ingesta (known as cud) to be regurgitated and chewed again. The process of rechewing the ingesta to further break down plant matter and stimulate digestion is called rumination or chewing the cud."
-The fermentation, (the enteric fermentation), that happens in this first stomach produces methane,
-which cattle release through their mouths when they regurgitate cud.
-There are many ruminant species; ruminants includes all domestic and wild bovines (including dairy and beef cattle), goats, sheep, as well as many species that aren't farmed at significant scale.
+The discrepancy between the top of the shaded regions (the PlanZero estimator) and the
+thick black line (its target) is a relatively large one among PlanZero sectoral estimators.
+I'm not yet sure why, although
+<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/handbook/appendix_b.cfm">
+two explanations
+</a>
+are offered in the National End-Use Energy Database's Handbook.
+The handbook recognizes that in preparing the NEUD and the NIR (specifically NIR-2023),
+"Both Natural Resources Canada (NRCan) and ECCC use the energy demand data from Statistics Canada’s Report on Energy Supply and Demand (RESD) in Canada as a base." but differ in some of their category semantics,
+most notably for our purposes here:
+<ol>
+    <li>NIR-2023 "reallocates industrial and agriculture diesel and agriculture motor gasoline to the transportation sector"</li>
+    <li>NEUD "reallocates diesel fuel oil use of commercial/institutional sector to the transportation sector".</li>
+</ol>
+I understand the first difference (point 1 above) to be that industrial and agricultural diesel use (according to either RESD or NEUD) is somewhere in "transportation" according to the NIR.
+Based on my understanding of the IPCC taxonomy used in the NIR, this
+would be some combination of this sector, and two sub-categories of
+"Energy / Mobile Combustion Sources / Transport / Other".
+I believe this diesel is counted by the NEUD as industrial use, and I'm not using it as
+part of the PlanZero estimator here.
+To the extent this NIR counts such diesel use toward this sector,
+the PlanZero estimator should include diesel combustion from those sources as well,
+which would make the discrepancy larger.
 </p>
 
+<p>
+With regards to the second difference (point 2 above),
+I understand it to mean that diesel fuel use associated with commercial/institutional use
+in the RESD is counted as transportation in the NEUD.
+In the NIR, this diesel would presumably be counted in the area of
+"Energy / Mobile Combustion Sources / Transport", but not necessarily as subcategory "Road Transportation / Heavy-Duty Diesel Vehicles" (the focus of this post);
+in the NIR, this diesel might be counted as "Off-Road Commercial and Institutional" or "Off-Road Other Transportation".
+According to StatsCan's
+"<a href="https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=2510002901">Supply and demand of primary and secondary energy</a>",
+commercial and institutional diesel use appears to be significant e.g. accounting for about 13% of national diesel usage in 2023.
+Spreading these emissions (currently counted by this PlanZero estimator) across multiple IPCC sectors
+could plausibly address the discrepancy shown in the chart above.
+Making this adjustment is left for future work, when developing estimators for these other IPCC sectors.
+</p>
 
-<h2 id="quant">Residential Stationary Combustion Sources</h2>
-
-{{blog.est_nir.Est_EntericFermentation().echart() | safe}}
-
-<p>
-The NIR methodology regarding agriculture
-(Annex 3.4 <a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/G-Additional-NIR-Annexes?lang=en"></a>) describes how Environment and Climate Change Canada (ECCC) determined the emission factors for Canada's cattle.
-It is fundamentally an energy accounting method:
-the total energy of various food sources is estimated, as is the energy in outputs of milk and dung, as is the energy required for staying warm in various environments, growing, producing milk, producing baby calves and so on.
-The energy estimation leads to an imbalance: cattle take in more than they put out in these variou ways.
-The energy imbalance is assumed to be the lost methane formed by enteric fermentation.
-</p>
-<p>
-For my purposes, I appreciate that NIR Annex 3.4 includes Table A3.4-11 (<a href="https://data-donnees.az.ec.gc.ca/api/file?path=%2Fsubstances%2Fmonitor%2Fcanada-s-official-greenhouse-gas-inventory%2FG-Additional-NIR-Annexes%2FEN_Annex3.4_Methodologies_Agriculture.pdf">pdf</a>),
-which lists emission factors per heads of cattle of various types, at selected years since 1990.
-For example in 2023: dairy cows are assessed as producing an average of 145.6 kg {{CH4|safe}}/yr;
-beef cows, 121.5 kg {{CH4|safe}}/yr; calves just 44 kg {{CH4|safe}}/yr.
-The emission factors for fully-grown animals numbers have risen since 1990 because
-the animals on farms have gotten bigger. Although the emission factors per head of cattle
-are higher now than in 1990, the emission factors per unit of food, at least for dairy output, would be lower
-now because today's dairy cattle are more productive.
-</p>
-<p>
-Multiplying these emission factors by the cattle populations in Statistics Canada Table 32-10-0130-01 (<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210013001">Number of cattle, by class and farm type</a>) yielded one of the better-fitting sectoral estimators in PlanZero.
-(Happily, it also extends two years ahead of the NIR, because StatsCan has updated the cattle population tables more recently.)
-</p>
-<p>
-Future work can add the populations of other livestock, especially sheep because they are also ruminants, but also chickens and swine. I believe their emissions impact is relatively small
-because their populations are smaller, and non-ruminants don't produce significant amounts of methane.
-</p>
 
 <h2 id="csfs">Critical Success Factors</h2>
 
-<p> The reduction of enteric fermentation emissions
-requires some combination of the following:
-<ul>
-    <li>reduce the number of bovine animals, particularly ruminants e.g. cattle and sheep</li>
-    <li>reduce the rate of methane emitted, per head</li>
-    <li>increase the rate of food production, per head</li>
-    <li>increase the rate of methane capture (not currently practical, as far as I know)</li>
-</ul>
+<p>
+The reduction of emissions from heavy-duty diesel vehicles seems to require some combination
+of the following:
+<ol>
+    <li>Reduce demand for road freight (perhaps by shifting it to marine or rail)</li>
+    <li>Reduce the mass of freight or the distance it must travel (already a major consideration in logistics)</li>
+    <li>Reduce use of fossil fuels for heavy-duty vehicle applications (use other fuels, energy sources)</li>
+    <li>Increase energy efficiency of heavy-duty vehicles (e.g. via electric motors)</li>
+    <li>Reduce use of buses (without incurring greater emissions in other sectors)</li>
+    <li>Reduce use of fossil fuels to power buses</li>
+</ol>
 </p>
 
+<h3>
+    Barriers
+</h3>
 
-<h3 id="barriers">Barriers</h3>
-<p>
 <ul>
-    <li><b>Alignment</b>: Owners of herds do not want to reduce their herds, and neither do their customers or suppliers.</li>
-    <li><b>Demand</b>: Domestic and international demand for beef and milk products is high,
-        and expected to rise with increasing global population and increasing global wealth.</li>
-    <li><b>Culture</b>: The voting population likes cattle: they're picturesque, iconic, and widely considered to be tasty and nutritious.</li>
-    <li><b>Animal Welfare</b>:
-        So-called "factory farming" methods appear to generate the least methane per unit food,
-        because wild grasses are the hardest to digest, and require the most fermentation.
+    <li><b>Technology Gap</b>:
+        Freight movement is energy intensive, in that it is almost purely
+        the conversion of energy into propulsion to move materials from one
+        point to another. Diesel is an affordable fuel with high energy density,
+        there is no obvious replacement.
+    </li>
+    <li><b>Renewable Diesel</b>:
+        Renewable diesel fuel (e.g. B99 or B100) can currently replace diesel
+        at a price premium of only about 25%, can be made from canola or
+        waste cooking oil. The catch is that to make enough of it
+        to power all heavy vehicles would require something like twice
+        Canada's current amount of farmland, and it may not be the best
+        use of that land.
+    </li>
+    <li><b>Batteries</b>:
+        Today's EV battery technology cannot carry enough charge, at low
+        enough weight, or low enough cost, or recharge quickly enough,
+        to support today's trucking practices
+        without operational changes that would hurt operational efficiency.
+    </li>
+    <li><b>Grid Readiness</b>:
+        Freight movement needs a lot of energy.
+        Electric truck propulsion is more energy-efficient than
+        diesel by a factor of roughly 3x (much less energy is wasted as heat).
+        Still, moving 2022's freight work by electricity
+        would have required 15-20% more electricity than Canada produced in that year.
+        (Canada produced about
+        <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">
+        560 terawatt hours of electricity in 2022 and 2023
+        </a>,
+        the freight industry used about
+        <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=36&page=0">
+        263 terawatt hours of energy in diesel fuel</a>.)
+    </li>
+    <li><b>Asset Life</b>:
+        Heavy freight trucks are only replaced on average every 15-20 years
+        (see <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=60&page=0">stock/sales ratio, NEUD</a>).
+        Even compelling new technology would likely take decades to roll out
+        across the sector.
+    </li>
+    <li><b>Charging Infrastructure</b>:
+        There is no technology standard or installed base of charging equipment
+        across Canada suitable for charging heavy-duty vehicles.
+        Several systems are in development around the world; the process of trialing
+        and scaling one or several in Canada will take time and money.
+    </li>
+    <li><b>Geography</b>:
+        Canada's population is mostly spread along a thin strip of sparsely populated
+        territory, which is one of the most energy-demanding topologies to support with
+        a transportation or logistics network.
+        It is also cold, which challenges many battery technologies.
     </li>
 </ul>
-</p>
+
+
 
 <h3 id="strategies">Strategies</h3>
 
 <p>
-Active strategies for emissions reduction in this sector include
-adjusting feed mixtures, selective breeding for more-efficient cattle,
-and administring feed additives such as Bovaer.
-<a href="https://www.dsm-firmenich.com/anh/products-and-services/products/methane-inhibitors/bovaer.html">Bovaer</a> is approved for use in 60+ countries as an additive
-that changes the chemistry in the first ruminant stomach to produce hydrogen
-instead of methane.
-It is not a silver bullet for the sector, but Bovaer can reduce methane emissions by
-30% for dairy cows and 45% for beef cattle.
-Without a technological breakthrough that allows low-cost methane capture from
-cattle barns, or a feed mixture that significantly reduces the need for enteric fermentation,
-the only way to reduce emissions in this sector to zero would
-be to somehow reduce the number of cattle.
+In the short term, the most promising strategies for reducing emissions in
+this sector  are dropping speed limits for freight vehicles and blending
+greater quantities of renewable diesel into marketable fuel.
+Ontario and Quebec already require trucks to be electronically limited to 105 km/h
+to reduce emissions.
+Many countries in Europe limit freight trucks on highways to <a href="https://dhl-freight-connections.com/en/business/truck-speed-limits-europe/">80 km/h or 90 km/h</a>
+to reduce fuel consumption and/or emissions, but beyond that there is little-to-no benefit.
+There's a limit too to how much renewable diesel can be produced,
+but as much as can be made from e.g. used cooking oil, should probably be produced
+and blended with fossil diesel.
+Renewable diesel production capacity is expected to <a href="https://www.cer-rec.gc.ca/en/data-analysis/energy-markets/renewable-energy-canada/an-overview-of-bioenergy.html">double from 2024 levels by 2028</a>.
+</p>
+
+<p>
+It is not believed that a switch to renewable diesel, and a reduction in speed limits,
+can reduce the sector's emissions to zero.
+With regards to freight,
+there are many technologies in development to provide energy to freight vehicles
+via various novel fuels,
+through fuel distribution networks that do not necessarily exist yet,
+to be used in different kinds of engines that may or not already be used in
+any large-scale application.
+There is no reason to expect a reduction in the need for freight transportation in the years ahead.
+It may be a long metaphorical road to zero-emission freight sector.
+</p>
+<p>
+With regards to buses, strategies for decarbonization are more advanced.
+Relative to freight vehicles, buses aren't required to move as much mass,
+so they don't require as much energy to travel a given distance.
+Electric motors are roughly 3x as energy-efficient as diesel ones on a highway,
+but in stop-and-go city traffic, their efficiency advantage increases, perhaps doubling again.
+Bus routes are often shorter than freight routes, which also lowers the battery requirements.
+Buses based on today's battery technologies (e.g. lithium-ion, or soon, sodium-ion)
+are being trialed in cities around the world, and battery powered buses seem
+like an increasingly practical and viable alternative to diesel ones as battery
+costs continue to drop (see e.g. electrification of buses in
+<a href="https://www.translink.ca/news/2025/june/translink%20to%20expand%20battery-electric%20bus%20fleet">Vancouver</a>,
+<a href="https://www.ttc.ca/riding-the-ttc/TTC-Green-Initiatives">Toronto</a>, and
+<a href="https://www.stm.info/en/about/major_projects/major-bus-projects/bus-network-electrification">Montreal</a>).
 </p>
 
 
 <h3 id="conclusion">Conclusion</h3>
 
 <p>
-This post has introduced a relatively accurate estimator of enteric fermentation emissions
-based on emission factors from the NIR and data from Statistics Canada.
-The <a href="/ipcc-sectors/Enteric_Fermentation">IPCC / Enteric Fermentation</a>
+This post has introduced a estimator of emissions from heavy-duty diesel vehicles 
+based on data from NRCan's National Energy Use Database.
+The estimator is too high (it over-estimates emissions) by 3-10 Mt {{CO2e|safe}}
+but there is a likely explanation, and the estimator can be adjusted in future work.
+The <a href="/ipcc-sectors/Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles">IPCC / Transport / Road Transportation / Heavy-Duty Diesel Vehicles</a>
 page has been refreshed to feature this estimator, as well as updated
 critical success factors,
 barriers to those success factors,
 and strategies.
 The next post in this series replicating the NIR will look at
-heavy-duty diesel-burning trucks.
+stationary combustion sources in commercial and institutional applications,
+which was responsible for about 32 Mt {{CO2e|safe}} in 2005.
 </p>
 <p>
 Until then,
