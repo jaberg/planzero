@@ -11,7 +11,7 @@
 Table of Contents:
 <ul>
     <li><a href="#emissions">Emissions from Cars and Trucks</a></li>
-    <li><a href="#neud">Emissions Data from the National Energy Use Database</a></li>
+    <li><a href="#neud">An Estimator Based on Data from the National Energy Use Database</a></li>
     <li><a href="#csfs">Critical Success Factors</a></li>
     <li><a href="#barriers">Barriers</a></li>
     <li><a href="#strategies">Potential Strategies</a></li>
@@ -32,27 +32,37 @@ and
 This post brings these two IPCC-Sector summary pages, updated critical success factors and barriers,
 and some discussion of the granular data on this sector that's available from the
 Natural Resources Canada (NRCan).
-The preeminent over-arching strategy for carbon reduction in these sectors is a transition to EVs.
+The preeminent overarching strategy for carbon reduction in these sectors is a transition to EVs.
 </p>
 
 <p>
-I'm not exactly sure where the line is between the two IPCC sectors treated in this post.
-Admittedly, I think of it as "cars" and "bigger car/truck type things".
+The IPCC guidelines for what is a car vs. a truck is not abundantly clear,
+although there seems to be agreement among the data sources I drew on.
+For what it's worth, Table 2.2.1 of the <a href="https://www.ipcc-nggip.iges.or.jp/public/gp/bgp/2_3_Road_Transport.pdf">IPCC's "Good Practice Guidance..."</a> regarding Vehicle types
+defines light-duty passenger cars as "vehicles with gross weight less than 3855 kg designed to carry
+12 or fewer passengers."
+Light-duty trucks on the other hand, are "Vehicle with a gross weight of
+3855 kg or less designed primarily for the
+transportation of cargo or 12 or more
+passengers, or are equipped for off-road
+operations. This includes most pick-up trucks,
+passenger and cargo vans four-wheel drive
+vehicles and derivatives of these."
 Examples are probably more helpful, although there are debatable edge cases:
 <ul>
     <li><b>Light-Duty Gasoline Vehicles</b>
 <ul>
-    <li>Sedans: (e.g., Nissan Altima, Honda Accord)</li>
-    <li>Hatchbacks: (e.g., Volkswagen Golf)</li>
-    <li>Coupes: (e.g., Mazda Miata)</li>
+    <li>Sedans: e.g., Nissan Altima, Honda Accord</li>
+    <li>Hatchbacks: e.g., Volkswagen Golf</li>
+    <li>Coupes: e.g., Mazda Miata</li>
 </ul>
 </li>
 <li><b>Light-Duty Gasoline Trucks</b>
 <ul>
-    <li>Pickup Trucks: (e.g., Ford F-150, Chevy Silverado)</li>
-    <li>SUVs / Crossovers: (e.g., Ford Explorer, Toyota RAV4, Honda CR-V)</li>
-    <li>Commercial Vans: (e.g., Ford Transit Connect)</li>
-    <li>Minivans: (e.g., Dodge Caravan, Honda Odyssey)</li>
+    <li>Pickup Trucks: e.g., Ford F-150, Chevy Silverado</li>
+    <li>SUVs / Crossovers: e.g., Ford Explorer, Toyota RAV4, Honda CR-V</li>
+    <li>Commercial Vans: e.g., Ford Transit Connect</li>
+    <li>Minivans: e.g., Dodge Caravan, Honda Odyssey</li>
 </ul>
 </li>
 </ul>
@@ -60,50 +70,24 @@ All of these are road vehicles with a gross vehicle weight rating (GVWR) of up t
 The ones in the lower set ("Trucks") are designed with greater off-road or cargo capabilities in mind.
 </p>
 
-<p>
-Combustion produces more mass in {{CO2|safe}} from the tailpipe than is put into the fuel tank as gasoline.
-Gasoline is made up almost entirely of hydrogen and carbon atoms.
-It is a mixture of many <i>hydrocarbon</i> molecules of various configurations, such as
-octane (8 carbon atoms and 18 hydrogen atoms),
-heptane (7 and 16),
-and benzene (6 and 6).
-When gasoline combusts in the presence of oxygen,
-it produces carbon dioxide ({{CO2|safe}}) and water vapour in a reaction like this (for octane):
-</p>
+<h2 id="neud">An Estimator Based on Data from the National Energy Use Database</h2>
 
 <p>
-{{blog.terms.gas_combustion|safe}}
-</p>
-
-<p>
-In other words, twenty five oxygen molecules are required to combust 2 octane molecules.
-Although gasoline is a somewhat variable mixture of octane and other molecules,
-typically about 2.3 to 2.65 kg of pure oxygen is required to combust a litre of gasoline.
-This is equivalent to roughly 9,000 liters of air at standard temperature and pressure.
-The reason the emissions weigh more than the fuel is that
-most of the mass of the {{CO2|safe}} emissions are from the oxygen, not the gasoline.
-The emission factor for gasoline used in the NIR is 2.307 kg {{CO2|safe}} / litre (<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/D-Emission-Factors?lang=en">NIR Annex 6: Emission Factors</a>).
-Burning a standard tank of gas, say 65 litres, produces, about 150 kg of {{CO2|safe}} emissions.
-</p>
-
-
-<h2 id="neud">Estimating Residential Stationary Combustion Emissions</h2>
-
-<p>
-Data from National Resources Canada,
-which publishes the
+National Resources Canada publishes the
 <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm">National Energy Use Database (NEUD)</a>
-(and a great
-<a href="https://oee.nrcan.gc.ca/publications/statistics/trends/2020/transportation.cfm">mini-site overview of drivers and solutions for this sector</a>)
-highlight that although engine efficiency has improved,
-emissions in these sectors combined are rising slightly because
+which provides the kind of breakdown I was hoping to use in PlanZero.
+(It also hosts a great
+<a href="https://oee.nrcan.gc.ca/publications/statistics/trends/2020/transportation.cfm">mini-site overview of drivers and solutions for this sector</a>).
+The emissions total from the combined output of cars and trucks is rising slightly, because
 of a trend toward the use of larger vehicles for roles that used to be filled by smaller ones,
 and a greater number of vehicles in operation.
+Improvements to engine efficiency and greater use of hybrid and electric vehicles are
+making a difference, but the onset of the COVID-19 pandemic in 2020 had such a radical
+effect on the emissions from recent years that it's hard to say whether vehicle emissions
+have peaked.
 </p>
 
-{{blog.est_nir.Est_Transport_LightDutyGasolineTrucks().echart() | safe}}
 
-{{blog.est_nir.Est_Transport_LightDutyGasolineVehicles().echart() | safe}}
 
 <p>
 To replicate and break down emissions for this sector I used data
@@ -115,6 +99,31 @@ Plotting the emissions for the NEUD's passenger and freight light trucks
 against the reported emissions in the NIR's "Light-Duty Gasoline Truck" and "Light-Duty Gasoline Vehicles" categories
 yielded the charts above.
 </p>
+<table>
+    <thead>
+        <tr><th>National Energy Use Database (NEUD) Transportation Mode</th><th>National Greenhouse Gas Inventory Report (NIR) Sector</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Cars</td><td>Light-duty Gasoline Vehicles</td></tr>
+        <tr><td>Passenger Light Trucks</td><td>Light-duty Gasoline Trucks</td></tr>
+        <tr><td>Freight Light Trucks</td><td>Light-duty Gasoline Trucks</td></tr>
+    </tbody>
+</table>
+
+{{blog.est_nir.Est_Transport_LightDutyGasolineVehicles().echart() | safe}}
+
+<p>
+With regards to Light-Duty Gasoline Vehicles, it seems to correspond to the NEUD's "cars"
+transportation mode quite well. This data is somewhat
+consistently 2-3 Mt {{CO2e|safe}} higher than the NIR total for years 2000-2021, and then
+crosses to be lower by up to 2 Mt {{CO2e|safe}} in 2023.
+Accounting around ethanol blending, and vehicle classifications may contribute
+to the discrepancy.
+This is close enough for my first pass, further investigation is left to future work.
+</p>
+
+
+{{blog.est_nir.Est_Transport_LightDutyGasolineTrucks().echart() | safe}}
 
 <p>
 In the case of the Light-Duty Gasoline Trucks,
@@ -124,7 +133,7 @@ and high for other years (2016-2023).
 The estimator should be at least slightly wrong because it isn't supposed to include
 the small number of diesel-powered light truck vehicles, but it currently does.
 However, if we imagine removing the emissions contributions from diesel vehicles from the PlanZero estimator,
-then the estimator would be lower, and it would be more-wrong for years 2006 to 2010.
+then the estimator would be lower, and therefore more-wrong for years 2006 to 2010.
 Another possible source of the discrepancy is accounting around ethanol:
 it represents 5-10% of fuel, and produces {{CO2|safe}}, but it is not a fossil fuel.
 A third possibility is the reclassification of vehicles within either the NIR, or the NEUD, or both,
@@ -132,21 +141,11 @@ because car makers have blurred the line between cars, crossover vehicles, and S
 Still, the estimator is relatively accurate, at least by the standards of this PlanZero first pass.
 </p>
 
-<p>
-With regards to Light-Duty Gasoline Vehicles, it seems only to correspond to the NEUD's "cars"
-transportation mode. The "Cars" data is somewhat
-consistently 2-3 Mt {{CO2e|safe}} higher than the NIR total for years 2000-2021, and then
-crosses to be lower by up to 2 Mt {{CO2e|safe}} in 2023.
-Again, diesel use, accounting around ethanol blending, and vehicle classifications may all contribute
-to the discrepancy.
-Still, this is close enough for my first pass,
-so the investigation of the discrepancy is left for future work.
-</p>
 
 <h2 id="csfs">Critical Success Factors</h2>
 
 <p>
-The arithmetic of emissions in this sector is such some combination of the following is required:
+The arithmetic of emissions in this sector is such that some combination of the following is required:
 <ol>
     <li>Reduce number of gasoline vehicles of this class</li>
     <li>Reduce distance travelled by this class of vehicle under gasoline power</li>
@@ -168,18 +167,18 @@ strategy for emissions reduction in this sector is a transition to EVs.
         Brand marketing plays a strong role in car puchasing decisions.
         Vehicle choices have become an integral part of many people's professional and personal image.
     </li>
-    <li><b>Longevity</b>: Vehicles sales in this class account for about 10% of the number of vehicle registrations. It could take decades to change the technology mix within this sector.
+    <li><b>Longevity</b>: Annual vehicles sales are only about 10% of the number of vehicle registrations. It could take decades to change the technology mix within this sector.
     </li>
     <li><b>EV Range</b>: 
         Battery power density is such that EVs cannot yet match the range that's possible using
         a large gasoline tank. Charging a battery isn't as convenient as refilling a tank.
     </li>
     <li><b>EV Sticker Price</b>:
-        Non-hybrid internal combustion vehicles are cheaper than hybrid and EV variants, similar models.
+        Conventional internal combustion vehicles are cheaper than similar hybrid and EV variants.
     </li>
     <li><b>EV Cost Complexity</b>:
-        The total cost of ownership comparison for EVs and PHEVs
-        is less than ICE vehicles in many use cases, but the calculation depends on several factors,
+        The total cost of ownership for EVs
+        is less than conventional vehicles in many use cases, but not all, and the calculation depends on several factors,
         not all of which are top-of-mind or even well-known to buyers.
     </li>
     <li><b>EV Pace of Deprecation</b>:
@@ -196,6 +195,9 @@ strategy for emissions reduction in this sector is a transition to EVs.
         Cold temperatures degrade lithium-ion battery performance more than gasoline engine performance.
         Sodium ion batteries are more robust to cold, may help in future designs.
     </li>
+    <li><b>Lithium Battery Fire Concerns</b>: EV batteries (especially lithium-ion batteries)
+        can cause fires, especially in the event of a vehicle crash. These fires are considered <a href="https://electricvehiclecouncil.com.au/docs/are-electric-vehicle-fires-common/">less likely</a> than gasoline fires in crash scenarios, but the
+        fires introduce <a href="https://fsri.org/research/fire-safety-batteries-and-electric-vehicles">new fire-fighting challenges</a> when they occur.</li>
     <li><b>Gasoline engine efficiency is hard to improve</b>:
         Gasoline engines have already been refined over almost a century of intense engineering.
         Higher fuel efficiency
@@ -233,15 +235,17 @@ compared to what we see in light-duty cars and trucks).
 If such systems are developed for heavy-duty trucks, they may be useful to light-duty vehicles as well.
 </p>
 
+
 <h2 id="conclusion">Conclusion</h2>
 
 <p>
-Canadians live far apart, drive a lot, and increasingly, they like to drive SUVs and pickups.
+Canadians live far apart, drive a lot, and increasingly, they like to drive SUVs and pickup trucks.
 Combined, emissions in these sectors are on the rise and account for about 11% of Canada's net emissions.
-Historically, vehicles in this class have been universally powered by fossil fuels.
+Historically, vehicles in these classes have been universally powered by fossil fuels.
 More recently, plug-in hybrids and purely battery-electric vehicles have been
-brought to market in this category, and accounted for about 16% of new vehicle sales in 2024
-(<a href="https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=2010008601">link</a>).
+brought to market, and accounted for about
+<a href="https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=2010008601">
+    16% of new vehicle sales in 2024</a>.
 I think it's likely that these EVs can and will replace the gasoline models over time,
 although I expect consumers will continue to push for better power-to-weight batteries than
 the ones in today's new vehicles.
@@ -264,14 +268,56 @@ pages have been refreshed to feature this estimator, as well as updated
 critical success factors,  barriers to those success factors,
 and strategies to address those factors and barriers.
 The next post in this series will look at <i>enteric fermentation</i>,
-the methane released as part of bovine digestion.
+the methane released during digestion by all livestock, but especially ruminants, and especially cattle.
 </p>
+
+
 <p>
 Until then,
 </p>
 <p>
 - James Bergstra
 </p>
+
+<h3>P.S. A note on why a little gasoline produces so much {{CO2e|safe}}</h3>
+
+<p>
+I did not implement the PlanZero estimator by multiplying a quantity of fuel by an emission factor,
+because the NEUD had done that already.
+If I had done that, I would have had a natural reason to mention
+that the emission factor for gasoline is 2.307 kg {{CO2e|safe}} per litre of gasoline,
+and point out (because I don't think it's common knowledge but it should be),
+that the emissions from burning gasoline are more than the mass of the gasoline.
+Here, as a concluding remark on this post, I'm going to write about this anyway.
+</p>
+
+<p>
+The reason combustion produces more mass in {{CO2|safe}} from the tailpipe than is put into the fuel tank as gasoline,
+is that gasoline contains only  hydrogen and carbon atoms.
+It is a mixture of many <i>hydrocarbon</i> molecules of various configurations, such as
+octane (8 carbon atoms and 18 hydrogen atoms),
+heptane (7 and 16),
+and benzene (6 and 6),
+but there's very little of anything else.
+Gasoline combustion requires oxygen,
+and when it combusts it produces carbon dioxide ({{CO2|safe}}) and water vapour in a reaction like the following, for octane as an example:
+</p>
+
+<p>
+{{blog.terms.gas_combustion|safe}}
+</p>
+
+<p>
+In other words, 25 oxygen molecules are required to combust 2 octane molecules.
+Although gasoline is a somewhat variable mixture of octane and other molecules,
+typically about 2.3 to 2.65 kg of pure oxygen is required to combust a litre of gasoline.
+This is equivalent to roughly 9,000 liters of air at standard temperature and pressure.
+The reason the emissions weigh more than the fuel is that
+most of the mass of the {{CO2|safe}} emissions are from the oxygen, not the gasoline.
+The emission factor for gasoline used in the NIR is 2.307 kg {{CO2|safe}} / litre (<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/D-Emission-Factors?lang=en">NIR Annex 6: Emission Factors</a>).
+Burning a standard tank of gas, say 65 litres, burns about 50kg of gasoline, and produces about 150 kg of {{CO2|safe}} emissions.
+</p>
+
 
 </section>
 </div>
