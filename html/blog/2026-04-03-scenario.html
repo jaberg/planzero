@@ -1,0 +1,204 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#intro">Introduction</a></li>
+    <li><a href="#simulation">Simulation Framework</a>
+        <ul>
+            <li><a href="#timeseries">TimeSeries Objects</a></li>
+            <li><a href="#dynelem">DynamicElement Objects</a></li>
+    </li>
+    <li><a href="#modelling">Scenario Modelling</a>
+        <ul>
+            <li><a href="#csfs">Modelling Critical Success Factors</a></li>
+            <li><a href="#barriers">Modelling Barriers</a></li>
+            <li><a href="#strategies">Modelling Strategies</a></li>
+            <li><a href="#scenarios">Modelling Scenarios</a></li>
+        </ul>
+    </li>
+    <li><a href="#scaling">The Scaling Scenario, Starting with Bovaer</a>
+        <ul>
+            <li><a href="#scaling_csfs">Critical Success Factors</a></li>
+            <li><a href="#scaling_barriers">Barriers</a></li>
+            <li><a href="#scaling_strategies">Strategies</a></li>
+            <li><a href="#scaling_other">Other TimeSeries and DynamicElement Objects</a></li>
+        </ul>
+    </li>
+    <li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</p>
+
+<h2 id="intro">Introduction</h2>
+
+<p>
+This post takes a break from the series replicating  NIR sectoral totals,
+to look to the future.
+It brings new top-level tabs for the PlanZero modelling framework:
+<!-- TODO -->
+<ul>
+    <li><b>CSFs</b> is a table of all formalized critical success factors in PlanZero </li>
+    <li><b>Barriers</b> is a table of all formalized barriers</li>
+    <li><b>Strategies</b> is a table of all formalized strategies</li>
+    <li><b>Scenarios</b> is a table of all formalized scenarios</li>
+</ul>
+
+This post is the first in what I hope will be a series of posts,
+incrementally developing the Scaling scenario (introduced below)
+to reflect the possibilities of scaling existing products
+that address emissions in the various sectors of the National Inventory
+Report.
+</p>
+
+
+<h2>Modelling Framework</h2>
+
+<h3>Time Series</h3>
+<p>
+Is a data structure of values of something at a sequence of times.
+The value at a particular time can be undefined, or a number or a random variable.
+The whole time series generally has a unit, so the series represents e.g.
+a sequence of Mt {{CO2e|safe}} or Canadian dollars.
+See ureg.py for the set of units used in PlanZero.
+</p>
+
+
+<h3>Dynamic Element</h3>
+<p>
+Is a rule for determining the values of some TimeSeries objects (outputs), based on
+some modelling parameters, and the values of other TimeSeries objects (inputs).
+There are several styles of Dynamic Element in PlanZero:
+some simply import data from StatsCan tables
+the X DynamicElement implements some simple geophysics
+the Y DynamicElement implements a hypothetical government policy
+and the Z DynamicElement implements hypothetical economic behaviour (how farmers might adopt Bovaer).
+</p>
+
+<p>
+DynamicElement objects declare the names of the TimeSeries they require as input
+and the names of the TimeSeries they define as outputs.
+The simulation engine uses this information to ensure the compatibility of all
+of the DynamicElement objects that make up a simulation.
+</p>
+
+<p>
+There is support for circular dependencies,
+because DynamicElements must specifiy, for each input, whether
+the exactly-current value of that input is required, or any recent-enough
+value will do. Circular dependencies through exactly-current required inputs are disallowed,
+but usually these circular dependencies can be resolved by configuring one of the DyanamicElement
+objects to accept an almost-exactly-current value.
+</p>
+
+
+<h2 id="usage">Using the Framework</h2>
+
+<p>
+To date, PlanZero posts have talked about 
+critical success factors, barriers, and strategies
+informally.
+I will make an effort, going forward, to reflect at least some of these as code objects.
+</p>
+
+<h3>CSFs</h3>
+
+<p>
+These are names for TimeSeries objects,
+and sometimes DynamicElements that maintain a relationship between a few named TimeSeries objects.
+For example, a post may say name a strategy of "increasing engine efficiency".
+Going forward, I'll attempt to formalize that by stating the name of this efficiency variable.
+In the case of efficiency variables specifically, I'll also name the numerator and denominator,
+and the DynamicElement that relates all three.
+</p>
+
+<h3>Barriers</h3>
+
+<p>
+What I've been calling barriers in posts to date typically correspond to constraints.
+In PlanZero, these constraints are implemented as TimeSeries objects that
+take a value of 0 for times when the constraint is not violated,
+and another value when the constraint is violated.
+Generally a DynamicElement is required to determine whether each constraint is violated.
+</p>
+
+<h3>Strategies</h3>
+
+<p>
+Strategies are DynamicElement and TimeSeries objects that implement modelling assumptions,
+and serve to provide values for the TimeSeries objects that are the inputs to the CSF and Barrier
+DynamicElements.
+</p>
+
+<p>
+Not all Strategies are well-enough developed to be included in a Scenario.
+PlanZero includes Strategies that are quite speculative: all that's required to
+create a Strategy in PlanZero is a brief description of the idea, and a URL to
+learn more about it.
+In order to be eligible to participate in a scenario, a Strategy must be fully
+fledged as a DynamicElement: it must declare which TimeSeries variables it consults as inputs,
+and which ones it defines as outputs, and what logic it uses to relate them.
+</p>
+
+
+<h3>Scenario</h3>
+
+<p>
+A Scenario Is a data structure that comprises all of the TimeSeries objects,
+and all of the DynamicElement objects that make up a model of Canada's future,
+with regards to emissions.
+</p>
+
+<h2 id="scaling">The Scaling Scenario, Starting with Bovaer</h2>
+<h3 id="#scaling_csfs">Critical Success Factors</h3>
+<h3 id="#scaling_barriers">Barriers</h3>
+<h3 id="#scaling_strategies">Strategies</h3>
+<h3 id="#scaling_other">Other TimeSeries and DynamicElement Objects</h3>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>
+Future posts in the Scaling series will develop other product types,
+and analyze their potential to reduce emissions, and their impact on the Scenario overall.
+They will introduce at least one, and usually several DynamicElements to PlanZero.
+These posts may look at products such as:
+<ul>
+    <li>Solar, wind, and tidal energy for grid-scale power generation</li>
+    <li>EVs for road transportation</li>
+    <li>Heat Pumps for residential and commercial/institutional heating</li>
+</ul>
+</p>
+
+<h3>Dynamic Element: Bovaer Makers</h3>
+Bovaer production emissions are assumed to be zero.
+
+<h3>Dynamic Element: Cattle Operations</h3>
+Cattle numbers, sizes, productivity etc. remain as in 2023.
+Bovaer usage follows sigmoidal adoption curve if CCD will pay for it.
+
+
+<h3>Dynamic Element: Carbon Capture Donor</H3>
+The <code>Scale Current Products </code>
+includes one especially notable dynamic element, which is called "Carbon Capture Donor",
+and which functions to pay for infinite amounts of carbon capture at a parameterized price.
+All dynamic elements can be parameterized, but this element in particular is important
+because it allows us to compare diverse scenarios in terms of the cost to achieve net-zero.
+
+
+parameterized by how much we are willing to pay to remove {{CO2|safe}} from the atmosphere.
+which aims to model
+what 
+
+In introduces a set of modelling objects, foremost among them
+the <code>Scenario</code>.
+
+
+</section>
+</div>
+{% include "post-main.html" %}

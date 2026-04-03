@@ -12,6 +12,7 @@ _blogs_sorted_by_date = []
 
 class BlogTag(str, enum.Enum):
     NIR_Modelling = "NIR Modelling"
+    ScalingStrategies = 'Scaling Strategies'
 
 
 class BlogPost(BaseModel):
@@ -33,6 +34,7 @@ class BlogPost(BaseModel):
     def __init_subclass__(cls):
         super().__init_subclass__()
         _classes.append(cls)
+
 
 from .planet_model import emissions_impulse_response_project_evaluation
 from . import enums
@@ -78,6 +80,30 @@ class IPCC_HeavyDutyDieselVehicles(BlogPost):
             est_nir=est_nir,
             terms=dict(),
             )
+
+
+class ScenarioModelling(BlogPost):
+    """This post introduces a modelling framework for PlanZero.
+    The framework formalizes the ideas of critical success factors (CSFs), barriers, and strategies
+    in terms of TimeSeries and DynamicElement modelling elements. A Scenario modelling element
+    brings CSFs, barriers, and strategies together to simulate a hypothetical future.
+    This post introduces a "Scaling" Scenario that estimates what can be achieved by scaling
+    currently-available products at various rates of willingness-to-pay for carbon removal.
+    In this post the scaling Scenario contains just a single product: Bovaer. A new
+    series of posts will develop other scaling strategies.
+    """
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 4, 3),
+            title='A Scenario Modelling Framework',
+            url_filename="2026-04-03-scenario",
+            author="James Bergstra",
+            tags={BlogTag.ScalingStrategies,
+                  enums.IPCC_Sector.Enteric_Fermentation,
+                 },
+            published=False,
+            )
+
 
 class IPCC_EntericFermentation(BlogPost):
     """Seventh in the sector-by-sector National Greenhouse Gas Inventory series:

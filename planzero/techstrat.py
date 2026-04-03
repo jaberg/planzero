@@ -36,8 +36,11 @@ class TechnologyReadinessLevel(str, enum.Enum):
     Scale = 'Scale'
     Mature = 'Mature'
 
+_classes = []
 
-class TechStrat(object):
+from .base import Project as DynamicElement
+
+class TechStrat(DynamicElement):
     """Description in docstring will be picked up as long-form description"""
     # sectors affected by this technology strategy
     # Their analysis pages will feature links to this strategy
@@ -52,6 +55,11 @@ class TechStrat(object):
                 return trl
         else:
             return trl
+
+    @classmethod
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        _classes.append(cls)
 
 
 class Light_Duty_BEV_250wh_per_kg(TechStrat):
