@@ -75,13 +75,17 @@ def number_of_cattle_by_class_and_farm_type():
     rval_pt[:] = 0 * u.cattle
     for key, val_by_year in dct_pt.items():
         years, values = zip(*sorted(val_by_year.items()))
-        rval_pt[*key] = sts.annual_report2(years, values, v_unit=u.cattle)
+        rval_pt[*key] = sts.annual_report2(
+            years, values, v_unit=u.cattle,
+            interpolation=sts.InterpolationMode.current)
 
     rval_ca = objtensor.empty(SurveyDate, Livestock, FarmType)
     rval_ca[:] = 0 * u.cattle
     for key, val_by_year in dct_ca.items():
         years, values = zip(*sorted(val_by_year.items()))
-        rval_ca[*key] = sts.annual_report2(years, values, v_unit=u.cattle)
+        rval_ca[*key] = sts.annual_report2(
+            years, values, v_unit=u.cattle,
+            interpolation=sts.InterpolationMode.current)
     return rval_pt, rval_ca
 
 

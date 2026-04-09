@@ -1340,3 +1340,7 @@ ideas.limit_freight_speed_to_90kph = NewcoIdea(
 # Made in Alberta:
 # Separate manure into methane, solids, clean water, and crop nutrients
 # https://www.livestockwaterrecycling.com/
+
+
+# make fertilizer on the farm
+# https://www.plasmaleap.com/efuels-chemicals

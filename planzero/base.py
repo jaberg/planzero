@@ -15,7 +15,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pint
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from .ureg import ureg
 u = ureg
 
@@ -29,21 +29,25 @@ u = ureg
 from . import ipcc_canada
 from .enums import GHG
 
-from .sts import SparseTimeSeries
+from .sts import SparseTimeSeries, STS
 
 
 class Project(BaseModel):
 
-    identifier: str
+    identifier: str | None = None
     _sub_projects: 'list[Project]' = []
 
     may_register_emissions:bool = True
     requires_emissions_registration_closed:bool = False
 
-    def __init__(self, **kwargs):
-        if 'identifier' not in kwargs:
-            kwargs = dict(kwargs, identifier=self.__class__.__name__)
-        super().__init__(**kwargs)
+    @computed_field
+    def description(self) -> str:
+        return self.__class__.__doc__
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        if self.identifier is None:
+            self.identifier = self.__class__.__name__
 
     def init_add_subprojects(self, sub_projects):
         self._sub_projects.extend(sub_projects)
@@ -90,6 +94,7 @@ class Project(BaseModel):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
+DynamicElement = Project # TODO: rename Project
 
 BaseScenario_subclasses = []
 
@@ -136,22 +141,61 @@ class StateCurrent(object):
             assert 0, ('Setting non-writeable attr', attr)
 
 
+class DeclarationContext(object):
+
+    def __init__(self, state, dynelem, need_current, write):
+        self.__dict__.update(
+            state=state,
+            dynelem=dynelem,
+            need_current=need_current,
+            write=write,
+            )
+
+    def __setattr__(self, name, thing):
+        if isinstance(thing, STS):
+            return self.state.declare_sts(
+                self.dynelem,
+                thing,
+                name=name,
+                need_current=self.need_current,
+                write=self.write)
+        else:
+            raise TypeError(thing)
+
+
+class Stash(object):
+    pass
+
+
 class State(object):
     t_start = 1990 * u.years
 
     def __init__(self, t_start=t_start, name=None):
         self.t_start = t_start
-        self._t_now = t_start
-        self.sts = {}
+        self._t_now = t_start # always in some unit of time, not always the same unit
+        self.sts = {}  # the sts objects built up by rolling simulation forward
+
+        # TODO: index by enums.IPCC_Sector
         self.sectoral_emissions_contributors = {
-            catpath: {} for catpath in sorted(ipcc_canada.catpaths)}
+            catpath: {}
+            for catpath in sorted(ipcc_canada.catpaths)}
+
         self.projects = {}
         self.project_writes = {} # prj.identifier -> set of string names
         self.project_requires_current = {} # prj.identifier -> set of string names
         self.project_t_next = {} # prj.identifier -> t_next
+        self.stashes = {} # prj.identifier -> private namespace
         self._depgraph = None
         self.name = name
         self.emissions_registration_closed = False
+
+        self.sts_id_counter = 100
+
+    def new_sts_identifier(self):
+        name = self.name or 'State_STS'
+        rval = f'{name}_{self.sts_id_counter}'
+        self.sts_id_counter += 1
+        return rval
 
     def dependency_digraph(self):
         graph = nx.DiGraph()
@@ -169,76 +213,93 @@ class State(object):
             graph.add_node(prj.identifier)
         return graph
 
+    def declare_read_current_sts(self, project, name):
+        self.sts[name].current_readers.append(project)
+        self.project_requires_current[project.identifier].add(name)
+        self._depgraph = None
+
+    def declare_sts(self, project, sts, name=None, need_current=False, write=False):
+        if name is None:
+            name = self.new_sts_identifier()
+        else:
+            if sts.identifier is not None:
+                assert name == sts.identifier
+        assert isinstance(sts, STS)
+        if name not in self.sts:
+            assert sts.identifier in (None, name)
+            sts.identifier = name
+            self.sts[name] = sts
+            self._depgraph = None
+        else:
+            # TODO type-check for compatible existing sts
+            pass
+        del sts # after this point, we're annotating whatever's in self.sts[name]
+        if need_current:
+            assert not write
+            self.declare_read_current_sts(project, name)
+        if write:
+            assert not need_current
+            assert self.sts[name].writer is None
+            self.sts[name].writer = project
+            self.project_writes[project.identifier].add(name)
+            self._depgraph = None
+            return self.sts[name]
+        return self.sts[name]
+
     @contextlib.contextmanager
     def requiring_latest(self, project):
-        class Context(object):
-            def __setattr__(_, name, sts):
-                if name not in self.sts:
-                    self.sts[name] = sts
-                    self._depgraph = None
-                    sts.identifier = name
-                else:
-                    # TODO type-check for compatible existing sts
-                    pass
-                return self.sts[name]
-        try:
-            yield Context()
-        finally:
-            pass
+        """ STS declaration syntax for variables whose "latest" values are
+        required by a dynamic element. "Latest" values can be used to break
+        dependency cycles that would occur if "Current" values were required.
+        """
+        yield DeclarationContext(self, project, need_current=False, write=False)
 
     @contextlib.contextmanager
     def requiring_current(self, project):
-        class Context(object):
-
-            def will_read_current(_, name):
-                self.sts[name].current_readers.append(project)
-                self.project_requires_current[project.identifier].add(name)
-                self._depgraph = None
-
-            def __setattr__(_, name, sts):
-                if name not in self.sts:
-                    self.sts[name] = sts
-                    sts.identifier = name
-                else:
-                    # TODO type-check for compatible existing sts
-                    pass
-                _.will_read_current(name)
-                return self.sts[name]
-        try:
-            yield Context()
-        finally:
-            pass
+        """ STS declaration syntax for variables whose "current" values are
+        required by a dynamic element. If any of these STS variables have
+        a value defined for the same time as the `project` has requested
+        a call to step(), step() will only be called after those input values have been determined,
+        and these up-to-date input values will be provided to the step function.
+        """
+        yield DeclarationContext(self, project, need_current=True, write=False)
 
     @contextlib.contextmanager
     def defining(self, project, catpath=None, ghg=None):
-        class Context(object):
-            def __setattr__(_, name, sts):
-                if name in self.sts:
-                    # TODO type-check for compatible existing sts
-                    pass
-                else:
-                    self.sts[name] = sts
-                    sts.identifier = name
-                assert self.sts[name].writer is None
-                self.sts[name].writer = project
-                self.project_writes[project.identifier].add(name)
-                self._depgraph = None
-                return self.sts[name]
-        try:
-            yield Context()
-        finally:
-            pass
+        yield DeclarationContext(self, project, need_current=False, write=True)
+
+    def stash(self, project):
+        return self.stashes[project.identifier]
 
     def add_project(self, project):
         assert project.identifier not in self.projects
         self.projects[project.identifier] = project
         self.project_writes[project.identifier] = set() # of strings
         self.project_requires_current[project.identifier] = set() # of strings
+        self.stashes[project.identifier] = Stash()
         self.project_t_next[project.identifier] = project.on_add_project(self)
         self._depgraph = None
 
-        # we close registration at the request of the first project that
+        # we will close registration at the request of the first project that
         # requires it to be closed
+        # TODO: remind me why this mechanism was required?
+        #       I'm guessing it had something to do with collecting registries
+        #       Any registry-collecting dynamic element won't know what its
+        #       inputs are until all participating dynamic elements have been
+        #       added to the state.
+        #       A solution would be to support other types of STS container than ObjectTensor
+        #       such as list of STS or dict of STS; that way, a dynamic element
+        #       could declare e.g. (1) the whole dict of STS as its input.
+        #       and instead of registering an emission, a dynamic element could declare
+        #       that it's output STS should be a member of such-and-such dictionary.
+        #       Getting this to work without abstraction leaks might be tricky, because
+        #       in some sense the dictionary is an input, but from a dependency graph
+        #       perspective, it's all the elements that are the dependencies, and the
+        #       dictionary itself isn't part of the dependency graph.
+        #
+        #       ObjectTensor container actually didn't work out that well.
+        #       Now I'm more optimistic about tagging STS objects by e.g.
+        #       CO2_emissions, CH4_emissions, investment_capital, etc.
         self.emissions_registration_closed |= project.requires_emissions_registration_closed
 
         self.add_projects(project._sub_projects)
@@ -337,14 +398,6 @@ class State(object):
                 heapq.heappush(self._heap, (new_t_next, node_idx, prj_identifier))
 
 
-class GlobalHeatEnergy(SparseTimeSeries):
-    pass
-
-    #def annotate_plot(self, t_unit=None, **kwargs):
-        #height = specific_heat_of_top_300m_of_ocean.to(self.v_unit / u.kelvin).magnitude
-        #plt.axhline(height)
-        #plt.text(self.times[0].to('years').magnitude, height, "Shallow Ocean 1C")
-
 
 surface_area_of_earth = 5.1e14 * u.m * u.m
 
@@ -401,22 +454,24 @@ class AtmosphericChemistry(BaseScenarioProject):
             )
 
     def on_add_project(self, state):
-        with state.requiring_current(self) as ctx:
-            for catpath, contributors in state.sectoral_emissions_contributors.items():
-                for sts_key in contributors.get(GHG.CO2, []):
-                    ctx.will_read_current(sts_key)
-                for sts_key in contributors.get(GHG.CH4, []):
-                    ctx.will_read_current(sts_key)
-                for sts_key in contributors.get(GHG.N2O, []):
-                    ctx.will_read_current(sts_key)
-                for sts_key in contributors.get(GHG.HFCs, []):
-                    ctx.will_read_current(sts_key)
-                for sts_key in contributors.get(GHG.PFCs, []):
-                    ctx.will_read_current(sts_key)
-                for sts_key in contributors.get(GHG.SF6, []):
-                    ctx.will_read_current(sts_key)
-                for sts_key in contributors.get(GHG.NF3, []):
-                    ctx.will_read_current(sts_key)
+        # TODO: use new ObjTensor support to vectorize this code
+
+        for catpath, contributors in state.sectoral_emissions_contributors.items():
+            # TODO: why not loop over these keys?
+            for sts_key in contributors.get(GHG.CO2, []):
+                state.declare_read_current_sts(self, sts_key)
+            for sts_key in contributors.get(GHG.CH4, []):
+                state.declare_read_current_sts(self, sts_key)
+            for sts_key in contributors.get(GHG.N2O, []):
+                state.declare_read_current_sts(self, sts_key)
+            for sts_key in contributors.get(GHG.HFCs, []):
+                state.declare_read_current_sts(self, sts_key)
+            for sts_key in contributors.get(GHG.PFCs, []):
+                state.declare_read_current_sts(self, sts_key)
+            for sts_key in contributors.get(GHG.SF6, []):
+                state.declare_read_current_sts(self, sts_key)
+            for sts_key in contributors.get(GHG.NF3, []):
+                state.declare_read_current_sts(self, sts_key)
 
         with state.defining(self) as ctx:
             for catpath, _ in state.sectoral_emissions_contributors.items():
@@ -464,12 +519,13 @@ class AtmosphericChemistry(BaseScenarioProject):
             ctx.Annual_Heat_Energy_forcing = SparseTimeSeries(default_value=0 * u.exajoule)
             ctx.Cumulative_Heat_Energy_forcing = SparseTimeSeries(default_value=0 * u.exajoule)
             ctx.Heat_Energy_imbalance = SparseTimeSeries(unit=u.exajoule)
-            ctx.Cumulative_Heat_Energy = GlobalHeatEnergy(default_value=0.0 * u.exajoule)
+            ctx.Cumulative_Heat_Energy = SparseTimeSeries(default_value=0.0 * u.exajoule)
             ctx.Ocean_Temperature_Anomaly = SparseTimeSeries(default_value=1.3 * u.kelvin)
 
-        return state.t_now
+        return int(state.t_now.to(u.years).magnitude + 1) * u.years
 
     def step(self, state, current):
+
         # add up annual emissions from registry
         annual_CO2_mass = 0 * u.kt_CO2
         annual_CH4_mass = 0 * u.kt_CH4
@@ -654,7 +710,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         current.Cumulative_Heat_Energy += current.Heat_Energy_imbalance
 
-        return state.t_now + self.stepsize
+        return int(state.t_now.to(u.years).magnitude + 1) * u.years
 
     def step_N2O(self, state, current, annual_N2O_mass):
         conc = current.Atmospheric_N2O_conc
@@ -726,6 +782,8 @@ class GeometricHumanPopulationForecast(BaseScenarioProject):
 
 
 class GeometricBovinePopulationForecast(BaseScenarioProject):
+    # TODO: share code with BovinePopulation in barriers.py
+    # maybe make that BovinePopulation inherit from BaseScenarioProject?
 
     # https://www.ucdavis.edu/food/news/making-cattle-more-sustainable
     # 70% of emissions remain, according to https://www.helsinki.fi/en/news/climate-change/new-feed-additive-can-significantly-reduce-methane-emissions-generated-ruminants-already-dairy-farm

@@ -122,6 +122,43 @@ async def get_ipcc_sectors_category(
         return rval
 
 
+@app.get("/barriers/", response_class=HTMLResponse)
+async def get_barriers(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="barriers.html",
+        context=dict(
+            default_context,
+            active_tab='barriers',
+            ),
+    )
+
+
+@app.get("/scenarios/", response_class=HTMLResponse)
+async def get_scenarios(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="scenarios.html",
+        context=dict(
+            default_context,
+            active_tab='scenarios',
+            ),
+    )
+
+
+@app.get("/scenarios/{ident}/", response_class=HTMLResponse)
+async def get_scenario_page(ident:str, request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="scenario_template.html",
+        context=dict(
+            default_context,
+            active_tab='scenarios',
+            ident=ident,
+            ),
+    )
+
+
 @app.get("/strategies/", response_class=HTMLResponse)
 async def get_strategies(request: Request):
     return templates.TemplateResponse(

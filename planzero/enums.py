@@ -212,3 +212,7 @@ class IPCC_Sector(str, enum.Enum):
     Settlements = 'Settlements'
 
     Harvested_Wood_Products = 'Harvested Wood Products'
+
+
+class StandardScenarios(str, enum.Enum):
+    Scaling = 'scaling'

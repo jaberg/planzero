@@ -44,10 +44,10 @@ class STS(BaseModel):
     times:object # will be a double-precision float array
     values:object # will be a double-precision float array
 
-    current_readers:list[str] = []
-    writer:str|None = None
+    current_readers:list[str] = [] # DynamicElement identifiers (globally unique)
+    writer:str|None = None         # DynamicElement identifiers (globally unique)
 
-    identifier: str | None = None
+    identifier: str | None = None  # STS identifier (unique within a State)
 
     interpolation: InterpolationMode
 
@@ -80,7 +80,6 @@ class STS(BaseModel):
     def times_with_units(self):
         return [tt * self.t_unit for tt in self.times]
 
-
     def max(self, _i_start=None):
         # TODO: what is this _i_start business??
         if _i_start is None:
@@ -94,23 +93,6 @@ class STS(BaseModel):
 
     def __string__(self):
         return f'STS(id={self.identifier})'
-
-    def _init_v_unit(self, values, unit, default_value):
-        # specify unit if you want no default value and you don't know any values yet
-        # provide default_value if you do want a default value to apply prior to the first (time, value) pair, then no unit
-        if default_value is None:
-            # without a default_unit, it's required to either
-            # (a) set the unit, or
-            # (b) provide initial values and times
-            # and it is okay to do both, but then `unit` takes precedence.
-            if unit is None:
-                return values[0].u
-            else:
-                if isinstance(unit, str):
-                    unit = getattr(u, unit)
-                return unit
-        else:
-            return default_value.u
 
     def __len__(self):
         return len(self.times)
@@ -260,7 +242,7 @@ class STS(BaseModel):
         elif all(vv == 0 for vv in other.values):
             return self.copy()
         else:
-            raise NotImplementedError()
+            return add_interp_interp(self, other)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -313,8 +295,62 @@ class STS(BaseModel):
         rval = sum(self.values[1:]) * self.v_unit
         return rval
 
-    def integral(self, start_time=None, end_time=None):
-        raise NotImplementedError()
+    def bin_integral(self, start_time, end_time):
+        if self.interpolation == InterpolationMode.latest:
+            raise NotImplementedError()
+        i0, v0 = self._idx_of_time(start_time)
+        i1, v1 = self._idx_of_time(end_time)
+        assert v0 and v1
+        idxs = list(range(i0, i1)) + [i1]
+        assert i0 > 0
+        values = [self.values[ii] for ii in idxs]
+        times = [self.times[ii - 1] for ii in idxs]
+        # clip to range
+        times[0] = start_time.to(self.t_unit).magnitude
+        times[-1] = end_time.to(self.t_unit).magnitude
+        rval = 0
+        for t0, t1, vv in zip(times, times[1:], values):
+            rval += (t1 - t0) * vv
+        return rval * self.t_unit * self.v_unit
+
+    def bin_integrals(self, bin_boundaries,
+                      default_value=float('nan'),
+                      interpolation=InterpolationMode.no_interpolation):
+        native_boundaries = [tt.to(self.t_unit).magnitude
+                             for tt in sorted(bin_boundaries)]
+        # Time integrals over bins
+        if self.interpolation == InterpolationMode.no_interpolation:
+            raise NotImplementedError()
+        tmp = self.native_interp(bin_boundaries) # TODO: check this does right thing for latest
+        bin_sums = {tt: 0 for tt in native_boundaries}
+        current_bin = native_boundaries[0]
+        for t0, t1, vv in zip(tmp.times, tmp.times[1:], tmp.values[1:]):
+            if t0 < current_bin: # cuts out times before bins begin
+                continue
+            bin_sums[current_bin] += (t1 - t0) * vv
+            if t1 in bin_sums:
+                if t1 == native_boundaries[-1]:
+                    break
+                else:
+                    current_bin = t1
+        times, values = zip(*sorted(bin_sums.items()))
+        # trimming off the last times and values because the upper limit wasn't actually a bin
+        return STS(
+            times=array.array('d', times[:-1]),
+            t_unit=self.t_unit,
+            values=array.array('d', [default_value] + list(values[:-1])),
+            v_unit=self.t_unit * self.v_unit,
+            interpolation=interpolation,
+            )
+
+    def delay(self, amount):
+        native_amount = amount.to(self.t_unit).magnitude
+        return self.__class__(
+            times=array.array('d', [tt + native_amount for tt in self.times]),
+            values=array.array('d', self.values),
+            t_unit=self.t_unit,
+            v_unit=self.v_unit,
+            interpolation=self.interpolation)
 
     def _setdefault_scalar(self, times, val):
         assert self.interpolation == InterpolationMode.no_interpolation
@@ -342,7 +378,7 @@ class STS(BaseModel):
         # will produce a result that is at least defined for the given years
         return self._setdefault_scalar(times, 0)
 
-    def interp(self, times):
+    def interp(self, times): # TODO: rename this linear_interp
         raw_times = [tt.to(self.t_unit).magnitude for tt in times]
         raw_times.sort()
         if self.interpolation == InterpolationMode.no_interpolation:
@@ -360,34 +396,67 @@ class STS(BaseModel):
         else:
             raise NotImplementedError()
 
+    def native_interp(self, times):
+        values = self.query(times)
+        # assume value are in self.v_unit
+        dct = {tt.to(self.t_unit).magnitude: vv.magnitude
+               for tt, vv in zip(times, values)}
+        # clobber with self.times, self.values so that
+        # if there's a time in times that's also in self.times
+        # we handle it correctly with "latest" interpolation
+        dct.update(dict(zip(self.times, self.values[1:])))
+        new_times, new_values = zip(*sorted(dct.items()))
+        return self.__class__(
+            times=array.array('d', new_times),
+            t_unit=self.t_unit,
+            values=array.array('d', [self.values[0]] + list(new_values)),
+            v_unit=self.v_unit,
+            interpolation=self.interpolation)
 
-# TODO: make this a function, why didn't I?
-class SparseTimeSeries(STS):
 
-    def __init__(self, *, times=None, values=None, unit=None, identifier=None, t_unit=u.seconds, default_value=None,
-                 interpolation='current', skip_nan_values=False):
-        super().__init__(
-            t_unit=t_unit,
-            v_unit=self._init_v_unit(values, unit, default_value),
-            times=array.array('d'),
-            values=array.array('d'),
-            current_readers=[],
-            writer=None,
-            identifier=identifier,
-            interpolation=interpolation)
-
-        if self.v_unit == u.kg_CO2 ** 2:
-            assert 0
-
-        if interpolation == InterpolationMode.no_interpolation:
-            assert default_value is None
-
-        if default_value is None:
-            self.values.append(float('nan'))
+def SparseTimeSeries(times=None, values=None, unit=None, identifier=None, t_unit=u.seconds,
+                     default_value=None,
+                     interpolation='current',
+                     skip_nan_values=False):
+    if default_value is None:
+        # without a default_unit, it's required to either
+        # (a) set the unit, or
+        # (b) provide initial values and times
+        # and it is okay to do both, but then `unit` takes precedence.
+        if unit is None:
+            v_unit = values[0].u
         else:
-            self.values.append(default_value.to(self.v_unit).magnitude)
-        if times is not None:
-            self.extend(times, values, skip_nan_values=skip_nan_values)
+            if isinstance(unit, str):
+                v_unit = getattr(u, unit)
+            else:
+                v_unit = unit
+    else:
+        v_unit = default_value.u
+
+    self = STS(
+        t_unit=t_unit,
+        v_unit=v_unit,
+        times=array.array('d'),
+        values=array.array('d'),
+        current_readers=[],
+        writer=None,
+        identifier=identifier,
+        interpolation=interpolation)
+
+    if self.v_unit == u.kg_CO2 ** 2:
+        assert 0
+
+    if interpolation == InterpolationMode.no_interpolation:
+        assert default_value is None
+
+    if default_value is None:
+        self.values.append(float('nan'))
+    else:
+        self.values.append(default_value.to(self.v_unit).magnitude)
+    if times is not None:
+        self.extend(times, values, skip_nan_values=skip_nan_values)
+
+    return self
 
 
 def annual_report(**kwargs):
@@ -397,7 +466,9 @@ def annual_report(**kwargs):
         **kwargs)
 
 
-def annual_report2(years, values, v_unit, include_nan_values=True):
+def annual_report2(years, values, v_unit, include_nan_values=True,
+                   identifier=None,
+                   interpolation=InterpolationMode.no_interpolation):
     # This is a faster implementation of annual_report
     array_values = array.array('d', [float('nan')])
     array_times = array.array('d')
@@ -415,10 +486,8 @@ def annual_report2(years, values, v_unit, include_nan_values=True):
         v_unit=v_unit,
         times=array_times,
         values=array_values,
-        current_readers=[],
-        writer=None,
-        identifier=None,
-        interpolation=InterpolationMode.no_interpolation)
+        identifier=identifier,
+        interpolation=interpolation)
 
 
 def annual_report_decay(self, timescale, horizon):
@@ -535,6 +604,7 @@ def add_scalar(self, other):
 
 
 def union_times(args, ignore_constants=True):
+    # return a set of times mentioned in any of the args
     if not args:
         raise NotImplementedError()
     qs = [arg for arg in args if isinstance(arg, pint.Quantity) or arg is None]
@@ -558,6 +628,34 @@ def union_times(args, ignore_constants=True):
     for arg in nonqs:
         times.update(arg.times)
     return {tt * t_unit for tt in times}
+
+
+def interleave(args, t_unit=None):
+    """Return an STS with all of the time-values from the arguments.
+    An error is raised if multiple args define a value for any time in common
+    """
+    dct = {}
+    v_units = set()
+    interpolations = set()
+    for arg in args:
+        if t_unit is None:
+            t_unit = arg.t_unit
+        v_units.add(arg.v_unit)
+        interpolations.add(arg.interpolation)
+        for tt, vv in zip(arg.times, arg.values[1:]):
+            ttu = (tt * arg.t_unit).to(t_unit).magnitude
+            if ttu in dct:
+                raise ValueError(ttu)
+            dct[ttu] = vv
+    v_unit, = v_units
+    interpolation, = interpolations
+    times, values = zip(*sorted(dct.items()))
+    return STS(
+        times=array.array('d', times),
+        t_unit=t_unit,
+        values=array.array('d', [float('nan')] + list(values)),
+        v_unit=v_unit,
+        interpolation=interpolation)
 
 
 def with_default_zero(self, times):
@@ -628,6 +726,68 @@ def mul_no_interp_sts(a, b):
     return rval
 
 
+def add_interp_interp(a, b):
+    if a.t_unit != b.t_unit:
+        raise NotImplementedError()
+    else:
+        t_unit = a.t_unit
+    if a.v_unit != b.v_unit:
+        raise NotImplementedError()
+    else:
+        v_unit = a.v_unit
+    assert a.interpolation != InterpolationMode.no_interpolation
+    assert b.interpolation != InterpolationMode.no_interpolation
+    if a.interpolation == b.interpolation == InterpolationMode.current:
+        interpolation = InterpolationMode.current
+    else:
+        raise NotImplementedError()
+
+    raw_times = sorted(set(list(a.times) + list(b.times)))
+    times = [tt * t_unit for tt in raw_times]
+    interp_a = a.native_interp(times)
+    interp_b = b.native_interp(times)
+    assert len(interp_a.times) == len(interp_b.times)
+    assert len(interp_a.values) == len(interp_b.values)
+    raw_values = [av + bv for av, bv in zip(interp_a.values, interp_b.values)]
+
+    rval = STS(
+        times=array.array('d', raw_times),
+        t_unit=t_unit,
+        values=array.array('d', raw_values),
+        v_unit=v_unit,
+        interpolation=interpolation)
+    return rval
+
+
+def mul_interp_interp(a, b):
+    if a.t_unit != b.t_unit:
+        raise NotImplementedError()
+    t_unit = a.t_unit
+    v_unit = a.v_unit * b.v_unit
+    assert a.interpolation != InterpolationMode.no_interpolation
+    assert b.interpolation != InterpolationMode.no_interpolation
+    if a.interpolation == b.interpolation == InterpolationMode.current:
+        interpolation = InterpolationMode.current
+    else:
+        raise NotImplementedError()
+
+    raw_times = sorted(set(list(a.times) + list(b.times)))
+    times = [tt * t_unit for tt in raw_times]
+    interp_a = a.native_interp(times)
+    interp_b = b.native_interp(times)
+    assert len(interp_a.times) == len(interp_b.times)
+    assert len(interp_a.values) == len(interp_b.values)
+    raw_values = [av * bv for av, bv in zip(interp_a.values, interp_b.values)]
+
+    rval = STS(
+        times=array.array('d', raw_times),
+        t_unit=t_unit,
+        values=array.array('d', raw_values),
+        v_unit=v_unit,
+        interpolation=interpolation)
+    return rval
+
+
 def mul_sts_sts(self, other):
     if self.interpolation == other.interpolation == 'no_interpolation':
         return mul_no_interp_no_interp(self, other)
@@ -639,7 +799,8 @@ def mul_sts_sts(self, other):
         return scale_convert(other, 0 * self.v_unit)
     elif all(vv == 0 for vv in other.values):
         return scale_convert(self, 0 * other.v_unit)
-    raise NotImplementedError()
+    else:
+        return mul_interp_interp(other, self)
 
 
 def scale(self, amount):
@@ -675,5 +836,3 @@ if SparseTimeSeries not in objtensor._types_for_pint_to_ignore:
     objtensor._types_for_pint_to_ignore = (
         objtensor._types_for_pint_to_ignore
         + (STS,))
-
-

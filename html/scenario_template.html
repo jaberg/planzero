@@ -1,0 +1,24 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Scenario: {{ident}}</h1>
+        <p>{{planzero.scenarios.scenarios[ident].short_descr}}</p>
+    </header>
+<p>
+
+<!-- TODO: use ident, not just scaling -->
+{{planzero.sim.sim_scaling(ident).by_ipcc_sector.as_html()|safe}}
+
+<!-- TODO: table of sectors, linking to simulated-sector results
+    which strategies affected that sector, and how 
+-->
+
+</p>
+
+</section><!--post-->
+</div><!--main-->
+
+{% include "post-main.html" %}

@@ -16,7 +16,11 @@ from .ipcc_transport_road_heavydutydiesel import (
     IPCC_Transport_RoadTransportation_HeavyDutyDieselVehicles,
 )
 
+from . import barriers
 from . import strategies
+from . import scenarios
+from . import sim
+
 
 def standard_project_evaluation():
     rval = base.ProjectEvaluation(

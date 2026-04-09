@@ -1176,8 +1176,8 @@ class Est_EntericFermentation(object):
             cattle_jan1 = self.cattle_pt[SurveyDate.Jan1, livestock, FarmType.AllCattle]
             cattle_jul1 = self.cattle_pt[SurveyDate.Jul1, livestock, FarmType.AllCattle]
             emissions = GHG_PT_zeros()
-            emissions[GHG.CH4] += .5 * cattle_jan1 * emfac[livestock, None]
-            emissions[GHG.CH4] += .5 * cattle_jul1 * emfac[livestock, None]
+            emissions[GHG.CH4] += cattle_jan1 * emfac[livestock, None] * (.5 * u.year)
+            emissions[GHG.CH4] += cattle_jul1 * emfac[livestock, None] * (.5 * u.year)
             self.emissions_by_label[livestock.value] = emissions
         self.echart_div_id = 'echart_div_enteric_fermentation'
         self.echart_title = 'Enteric Fermentation'

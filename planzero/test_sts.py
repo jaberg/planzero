@@ -164,3 +164,5 @@ def test_setdefault_zero():
     assert b is a
     assert b.times == array.array('d', [.5, 1, 10, 12])
     assert b.values[1:] == array.array('d', [0, 0, 1, 2])
+
+# TODO: test bin_integrals, integral, delay, interleave, mul_interp_interp, add_interp_interp

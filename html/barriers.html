@@ -1,0 +1,46 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Barriers</h1>
+        <p>What are the challenges and constraints on emission reduction efforts?</p>
+    </header>
+
+<p>
+
+</p>
+
+<h2>Sortable Table</h2>
+
+<table id="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Short Description
+              </th>
+              <th>
+                  IPCC Sectors
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+          {% for ident, obj in planzero.barriers.barriers.items() %}
+          <tr>
+              <td>
+                  <a href="/barriers/{{ident}}">{{obj.short_descr}}</a>
+              </td>
+              <td>
+                  {% for ipcc_sector in obj.ipcc_sectors %}
+                  {{ipcc_sector.value}} 
+                  {% endfor %}
+              </td>
+          </tr>
+          {% endfor %}
+    </tbody>
+</table>
+</section>
+</div>
+
+{% include "post-main.html" %}

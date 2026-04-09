@@ -6,7 +6,7 @@ peval = app.get_peval()
 
 client = TestClient(app.app)
 
-from planzero import ipcc_canada
+from planzero import ipcc_canada, enums
 import planzero.blog
 
 def test_home():
@@ -24,6 +24,22 @@ def test_home_strategies():
     assert response.status_code == 200
 
 
+def test_home_barriers():
+    response = client.get("/barriers/")
+    assert response.status_code == 200
+
+
+def test_home_scenarios():
+    response = client.get("/scenarios/")
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("scenario", enums.StandardScenarios)
+def test_scenarios(scenario):
+    response = client.get(f"/scenarios/{scenario}/")
+    assert response.status_code == 200
+
+
 def test_home_about():
     response = client.get("/about/")
     assert response.status_code == 200
@@ -35,6 +51,7 @@ def test_each_ipcc_sector(catpath):
     url = f"/ipcc-sectors/{catpath}/"
     response = client.get(url)
     assert response.status_code == 200
+
 
 @pytest.mark.parametrize("idea_name", peval.projects)
 def test_each_strategy(idea_name):

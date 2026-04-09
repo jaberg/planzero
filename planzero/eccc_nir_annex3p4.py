@@ -35,7 +35,7 @@ def table_A3p4_11(year_min_inclusive=1990, year_max_inclusive=2023):
             times=array.array('d', years),
             t_unit=u.years,
             values=array.array('d', [values[0]] + list(values)),
-            v_unit=u.kg_CH4 / u.cattle,
+            v_unit=u.kg_CH4 / u.cattle / u.year,
             interpolation=sts.InterpolationMode.current)
     rval = objtensor.empty(Livestock_nonsums)
     rval[Livestock.DairyCows] = ar2(1)

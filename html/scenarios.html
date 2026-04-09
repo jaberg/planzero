@@ -1,0 +1,55 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Scenarios</h1>
+        <p>What future scenarios are modelled in PlanZero?</p>
+    </header>
+<p>
+
+</p>
+
+<h2>Sortable Table</h2>
+
+<table id="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Short Description
+              </th>
+              <th>
+                  Emissions 2050
+              </th>
+              <th>
+                  Emissions 2075
+              </th>
+              <th>
+                  Emissions 2100
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+          {% for ident, obj in planzero.scenarios.scenarios.items() %}
+          <tr>
+              <td>
+                  <a href="/scenarios/{{ident}}/">{{obj.short_descr}}</a>
+              </td>
+              <td>
+                  {{obj.emissions_in_year(2050)}}
+              </td>
+              <td>
+                  {{obj.emissions_in_year(2075)}}
+              </td>
+              <td>
+                  {{obj.emissions_in_year(2100)}}
+              </td>
+          </tr>
+          {% endfor %}
+    </tbody>
+</table>
+</section>
+</div>
+
+{% include "post-main.html" %}
