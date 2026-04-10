@@ -58,7 +58,7 @@ class BovaerAdoptionLimit(Barrier):
         current.max_fraction_of_cattle_on_bovaer = min(
             (state.latest.bovine_population_fraction_on_bovaer
              + self.max_increase_rate * 1.0 * u.year),
-            1.0)
+            1.0 * u.dimensionless)
         return state.t_now + 1 * u.years
 
 
@@ -82,13 +82,26 @@ class BovaerPrice(Barrier):
 
     @computed_field
     def bovaer_price(self) -> object:
+        # XXX
+        # this is the wrong unit for price, the price should be different for
+        # calves because they are smaller, shouldn't it?
+        # Can you even give it to calves? Starting at what age?
         return 150 * u.CAD / u.cattle / u.year
-    # this is the wrong unit for price, the price should be different for
-    # calves because they are smaller, shouldn't it?
-    # Can you even give it to calves? Starting at what age?
 
+    def on_add_project(self, state):
+        with state.defining(self) as ctx:
+            ctx.bovaer_price = sts.SparseTimeSeries(
+                default_value=self.bovaer_price)
+
+# TODO: not all bovaer that's paid for will make it into cattle
+
+# TODO: there will be a cost for monitoring
+
+# TODO: let's suppose the strategy is just to pay for as much as farmers are prepared to use
+# and see what it costs.
 
 # TODO: Market mechanism in simulation to determine prices based on supply and demand
+
 # TODO: Output-based carbon pricing model for agriculture
 
 
@@ -201,9 +214,12 @@ class BovinePopulation(Barrier):
         for ob, hc, emfac in zip(stash.on_bovaer, stash.headcounts, stash.emfacs):
             hc_now = hc.query(state.t_now)
             ob_now = hc_now * frac
-            assert ob_now.magnitude == 0
+            assert 0 <= frac <= 1
             ob.append(state.t_now, ob_now)
-            bovine_methane_contribs.append(emfac.query(state.t_now) * hc_now)
+            emfac_now = emfac.query(state.t_now)
+            bovine_methane_contribs.append(
+                ob_now * emfac_now * .5 # XXX not actually .5
+                + (hc_now - ob_now) * emfac_now)
 
         current.bovine_methane_rate = sum(bovine_methane_contribs)
 
@@ -222,6 +238,8 @@ class BovinePopulation(Barrier):
             print(state.sts['bovine_methane_annual'].values[-1])
         else:
             print('skipping')
+
+        # TODO: how much did the Bovaer cost?
 
         # TODO: how much milk and beef are produced?
 

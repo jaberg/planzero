@@ -1164,6 +1164,7 @@ class Est_Transport_HeavyDutyDieselVehicles(Est_Transport):
 
 
 class Est_EntericFermentation(object):
+    # TODO: share code with BovinePopulation in barriers.py
     def __init__(self):
         from .sc_3210013001 import (
             FarmType, Livestock, Livestock_nonsums, SurveyDate,

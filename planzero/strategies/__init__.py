@@ -11,6 +11,8 @@ from .. import ureg as u
 from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw, HTML_Markdown
 from .ideas import Idea
 
+from .strategy2 import Strategy2, strategies
+
 
 # carbon capture
 # negative-carbon cement
@@ -193,6 +195,7 @@ bovaer_assumptions_markdown = """
 """
 # Yowsers... surely there's better syntax to look up these constants?
 
+# TODO: Restructure this to be viewed on blog
 class NationalBovaerMandate(Strategy):
 
     """

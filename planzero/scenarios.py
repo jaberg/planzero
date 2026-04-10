@@ -5,11 +5,14 @@ from .enums import StandardScenarios
 from .base import DynamicElement
 
 from . import barriers
+from . import strategies
 
 
 def collect_dynelems(scenario):
     rval = []
     rval.extend([val for val in barriers.barriers.values()
+                if scenario in val.scenarios])
+    rval.extend([val for val in strategies.strategies.values()
                 if scenario in val.scenarios])
     return rval
 
@@ -38,7 +41,6 @@ class Scenario(BaseModel):
         return float('nan') * u.Mt_CO2e
 
 
-
 class Scaling(Scenario):
 
     def __init__(self):
@@ -48,3 +50,6 @@ class Scaling(Scenario):
             research={},
             state=None,
             dynelems=collect_dynelems(StandardScenarios.Scaling))
+
+# TODO: Profitable(Scenario)
+#    what can be done economically profitably?

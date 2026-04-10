@@ -23,9 +23,6 @@ class Strategy(Project):
     # short description, typically nota full sentence
     title: str
 
-    # the strategy for which the action plan is developed
-    description: str | None
-
     # objectives supported:
     ipcc_catpaths: list[str]
 
@@ -73,8 +70,6 @@ class Strategy(Project):
     def __init__(self, **kwargs):
         if 'after_tax_cashflow_name' not in kwargs:
             kwargs = dict(kwargs, after_tax_cashflow_name=f'{self.__class__.__name__}_AfterTaxCashFlow')
-        if 'description' not in kwargs:
-            kwargs = dict(kwargs, description=self.__class__.__doc__)
         super().__init__(**kwargs)
 
     def init_add_subprojects(self, sub_projects):
