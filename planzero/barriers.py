@@ -58,7 +58,11 @@ class BovaerAdoptionLimit(Barrier):
         current.max_fraction_of_cattle_on_bovaer = min(
             (state.latest.bovine_population_fraction_on_bovaer
              + self.max_increase_rate * 1.0 * u.year),
-            1.0 * u.dimensionless)
+            0.99 * u.dimensionless)
+        # Approximately 1.5% of Canada's milk is organic, and about 0.7%
+        # of beef is organic. It's such a small amount that it's not
+        # worth parameterizing, so just hard-coding 99% max adoption.
+        # Apparently Bovaer is not allowed as part of organic production.
         return state.t_now + 1 * u.years
 
 
