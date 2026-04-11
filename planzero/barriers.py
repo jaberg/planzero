@@ -93,12 +93,13 @@ class BovaerPrice(Barrier):
             ctx.bovaer_price = sts.SparseTimeSeries(
                 default_value=self.bovaer_price)
 
-# TODO: not all bovaer that's paid for will make it into cattle
-
 # TODO: there will be a cost for monitoring
+# https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
+# It can apparently be done pretty well with drones
+# There are approximately 70_000 cattle operations in Canada
+# Monitoring might cost 10-20 million / year?
 
-# TODO: let's suppose the strategy is just to pay for as much as farmers are prepared to use
-# and see what it costs.
+# TODO: Bovaer production (and distribution?) is energy-intensive, has GHG footprint
 
 # TODO: Market mechanism in simulation to determine prices based on supply and demand
 
@@ -145,8 +146,37 @@ class BovinePopulation(Barrier):
     # TODO: beef cattle reduction is greater, multiplier should be .55
 
     @computed_field
-    def methane_per_head_per_year(self)->object:
-        return 175 * u.pounds_CH4 / u.cattle / u.year
+    def bovaer_actual_vs_nominal(self) -> float:
+        """What fraction of cattle nominally on bovaer actually eat it properly?"""
+        return .95
+
+    @computed_field
+    def bovaer_methane_reduction(self) -> dict[object, object]:
+        guess = .4
+        return {
+            Livestock.Bulls: guess,
+            Livestock.DairyCows: 0.30, # https://www.dsm-firmenich.com/anh/products-and-services/products/methane-inhibitors/bovaer.html
+            Livestock.BeefCows: .45, # https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html
+            Livestock.DairyHeifers: guess,
+            Livestock.BeefHeifers: guess,
+            Livestock.SlaughterHeifers: guess,
+            Livestock.Steers: guess,
+            Livestock.Calves: guess,
+        }
+
+    @computed_field
+    def bovaer_cost(self) -> dict[object, object]:
+        # https://www.producer.com/livestock/new-methane-feed-additive-pleases-producers
+        return {
+            Livestock.Bulls: .50 * u.CAD / u.day / u.cattle,
+            Livestock.DairyCows: 0.50 * u.CAD / u.day / u.cattle,
+            Livestock.BeefCows: 0.50 * u.CAD / u.day / u.cattle,
+            Livestock.DairyHeifers: .40 * u.CAD / u.day / u.cattle,
+            Livestock.BeefHeifers: .40 * u.CAD / u.day / u.cattle,
+            Livestock.SlaughterHeifers: .40 * u.CAD / u.day / u.cattle,
+            Livestock.Steers: .40 * u.CAD / u.day / u.cattle,
+            Livestock.Calves: .30 * u.CAD / u.day / u.cattle,
+        }
 
     def on_add_project(self, state):
         stash = state.stash(self)
@@ -160,7 +190,7 @@ class BovinePopulation(Barrier):
             emfac = table_A3p4_11()
             stash.headcounts = []
             stash.on_bovaer = []
-            stash.emfacs = []
+            stash.livestock_type = []
             bovine_methane = None
             for livestock in Livestock_nonsums:
                 jan1 = cattle_pt[SurveyDate.Jan1, livestock, FarmType.AllCattle]
@@ -179,7 +209,7 @@ class BovinePopulation(Barrier):
                         stash.on_bovaer.append(on_bovaer)
                         state.declare_sts(self, on_bovaer, need_current=True)
 
-                        stash.emfacs.append(emfac[livestock])
+                        stash.livestock_type.append(livestock)
 
                         if bovine_methane is None:
                             bovine_methane = hc * emfac[livestock]
@@ -189,6 +219,8 @@ class BovinePopulation(Barrier):
                         assert not isinstance(jan1_pt, sts.STS)
 
             ctx.bovine_methane_rate = bovine_methane
+            ctx.bovaer_cost = sts.SparseTimeSeries(default_value=0 * u.CAD / u.year, t_unit=u.year)
+            ctx.bovaer_cost_annual = sts.SparseTimeSeries(default_value=0 * u.CAD, t_unit=u.year)
 
             # this ends with the 2025-2026 year being associated with 2025
             correct = bovine_methane.bin_integrals(
@@ -206,22 +238,28 @@ class BovinePopulation(Barrier):
 
     def step(self, state, current):
         stash = state.stash(self)
+        emfac = table_A3p4_11()
 
-        frac = current.bovine_population_fraction_on_bovaer
+        frac = (
+            current.bovine_population_fraction_on_bovaer
+            * self.bovaer_actual_vs_nominal)
 
-        # TODO: for each type of cattle, for each province
+        # TODO: for each province
         bovine_methane_contribs = []
-        for ob, hc, emfac in zip(stash.on_bovaer, stash.headcounts, stash.emfacs):
+        bovaer_cost_contribs = []
+        for ob, hc, livestock in zip(stash.on_bovaer, stash.headcounts, stash.livestock_type):
             hc_now = hc.query(state.t_now)
             ob_now = hc_now * frac
             assert 0 <= frac <= 1
             ob.append(state.t_now, ob_now)
-            emfac_now = emfac.query(state.t_now)
+            emfac_now = emfac[livestock].query(state.t_now)
             bovine_methane_contribs.append(
-                ob_now * emfac_now * .5 # XXX not actually .5
+                ob_now * emfac_now * (1 - self.bovaer_methane_reduction[livestock])
                 + (hc_now - ob_now) * emfac_now)
+            bovaer_cost_contribs.append(ob_now * self.bovaer_cost[livestock])
 
         current.bovine_methane_rate = sum(bovine_methane_contribs)
+        current.bovaer_cost = sum(bovaer_cost_contribs)
 
         assert state.t_now.u == u.year
         if state.t_now.magnitude == int(state.t_now.magnitude):
@@ -235,12 +273,17 @@ class BovinePopulation(Barrier):
                 year_end,  # XXX this year is off by one
                 state.sts['bovine_methane_rate'].bin_integral(
                     year_start, year_end))
-            print(state.sts['bovine_methane_annual'].values[-1])
+            state.sts['bovaer_cost_annual'].append(
+                year_end,  # XXX this year is off by one
+                state.sts['bovaer_cost'].bin_integral(
+                    year_start, year_end))
         else:
-            print('skipping')
-
-        # TODO: how much did the Bovaer cost?
+            pass
 
         # TODO: how much milk and beef are produced?
+        # TODO: raise a violation if the ratio of production to Canada's
+        # population gets too from historic norms. Should the fix be to assume
+        # there will be more cattle? How many? Where would they live, what
+        # would they eat, etc?
 
         return state.t_now + .5 * u.year

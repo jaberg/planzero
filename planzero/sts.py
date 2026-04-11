@@ -301,8 +301,8 @@ class STS(BaseModel):
         i0, v0 = self._idx_of_time(start_time)
         i1, v1 = self._idx_of_time(end_time)
         assert v0 and v1
+        assert i0 >= 0
         idxs = list(range(i0, i1)) + [i1]
-        assert i0 > 0
         values = [self.values[ii] for ii in idxs]
         times = [self.times[ii - 1] for ii in idxs]
         # clip to range
