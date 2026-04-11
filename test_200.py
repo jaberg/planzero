@@ -36,7 +36,7 @@ def test_home_scenarios():
 
 @pytest.mark.parametrize("scenario", enums.StandardScenarios)
 def test_scenarios(scenario):
-    response = client.get(f"/scenarios/{scenario}/")
+    response = client.get(f"/scenarios/{scenario.value}/")
     assert response.status_code == 200
 
 
