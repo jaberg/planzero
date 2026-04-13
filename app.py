@@ -227,6 +227,7 @@ default_context = dict(
     max=max,
     sorted=sorted,
     enumerate=enumerate,
+    isinstance=isinstance,
     u=u,
     have_page_for_catpath=have_page_for_catpath,
     url_for_catpath=url_for_catpath,

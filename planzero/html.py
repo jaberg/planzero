@@ -79,15 +79,22 @@ class EChartItemStyle(BaseModel):
 
 class EChartSeriesDataElem(BaseModel):
     value: float
-    url: str
+    url: str | None
 
 
 class EChartSeriesBase(BaseModel):
     name: str
     type: str = 'line'
+    yAxisIndex: int = 0
     lineStyle: EChartLineStyle | None = EChartLineStyle(width=2)
     itemStyle: EChartItemStyle | None = None
     data: list[float | EChartSeriesDataElem]
+
+
+def EChartSeriesData(sts, times, v_unit, url):
+    values = sts.query(times).to(v_unit).magnitude
+    return [{'value': float(vv), 'url': url}
+            for vv in values]
 
 
 class EChartSeriesStackElem(EChartSeriesBase):
@@ -107,7 +114,7 @@ class StackedAreaEChart(HTML_element):
 
     title: EChartTitle
     xAxis: EChartXAxis
-    yAxis: EChartYAxis
+    yAxis: EChartYAxis | list[EChartYAxis]
 
     stacked_series: list[EChartSeriesBase]
     other_series: list[EChartSeriesBase]
@@ -124,7 +131,9 @@ class StackedAreaEChart(HTML_element):
         option_{self.div_id} = {{
             title: {self.title.model_dump(exclude_none=True)},
             xAxis: {self.xAxis.model_dump(exclude_none=True)},
-            yAxis: {self.yAxis.model_dump(exclude_none=True)},
+            yAxis: {[ya.model_dump(exclude_none=True) for ya in self.yAxis]
+                    if isinstance(self.yAxis, list)
+                    else self.yAxis.model_dump(exclude_none=True)},
             series: {
                 [foo.model_dump(exclude_none=True)
                 for foo in (self.stacked_series + self.other_series)]},

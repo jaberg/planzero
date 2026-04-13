@@ -13,6 +13,7 @@ from .html import (
     EChartYAxis,
     EChartSeriesStackElem,
     EChartSeriesBase,
+    EChartSeriesData,
     EChartLineStyle,
     EChartItemStyle,
     StackedAreaEChart)
@@ -33,23 +34,23 @@ class SimulationResult(BaseModel):
         sim_years_ints = np.arange(1995, 2100)
         sim_years = [tt * u.years for tt in sim_years_ints]
 
-        def co2e_data(catpath):
-            values = state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'].query(
-                sim_years).to(u.Mt_CO2e).magnitude
-            return [{'value': vv, 'url': './'}
-                    for vv in values]
-
         by_ipcc_sector = StackedAreaEChart(
             div_id='by_ipcc_sector',
             title=EChartTitle(
                 text='Simulated Emissions by IPCC Sector',
                 subtext='Hover over data points to see sector labels'),
             xAxis=EChartXAxis(data=sim_years_ints),
-            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            yAxis=[
+                EChartYAxis(name='Emissions (Mt CO2e)'),
+                EChartYAxis(name='Annual Subsidies (CAD, billions)')],
             stacked_series=[
                 EChartSeriesStackElem(
                     name=f'Simulated {catpath}',
-                    data=co2e_data(catpath))
+                    data=EChartSeriesData(
+                        state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'],
+                        times=sim_years,
+                        v_unit=u.Mt_CO2e,
+                        url=None))
                 for catpath, contributors in state.sectoral_emissions_contributors.items()
                 if contributors
             ],
@@ -69,13 +70,23 @@ class SimulationResult(BaseModel):
                     lineStyle=EChartLineStyle(color='#303030'),
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=ipcc_canada.net_emissions_total()),
+                EChartSeriesBase(
+                    name='Subsidies Required',
+                    yAxisIndex=1,
+                    lineStyle=EChartLineStyle(type='dotted', color='#600000'),
+                    itemStyle=EChartItemStyle(color='#600000'),
+                    data=EChartSeriesData(
+                        state.sts[f'AnnualSubsidyTotal'],
+                        times=sim_years,
+                        v_unit=u.giga_CAD,
+                        url=None)),
             ])
         return SimulationResult(
             state=state,
             by_ipcc_sector=by_ipcc_sector,
             )
 
-from .base import AtmosphericChemistry
+from .base import AtmosphericChemistry, SubsidyAccounting
 
 @functools.cache
 def sim_scenario(scenario_name):
@@ -85,5 +96,6 @@ def sim_scenario(scenario_name):
         t_start=scenario.t_start_year * u.years)
     state.add_projects(scenario.dynelems)
     state.add_project(AtmosphericChemistry())
+    state.add_project(SubsidyAccounting())
     state.run_until(2100 * u.years)
     return SimulationResult.from_state_scenario(state, scenario)

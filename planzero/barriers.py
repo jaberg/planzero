@@ -16,21 +16,28 @@ class Barrier(DynamicElement):
         super().__init_subclass__()
         barriers[cls.__name__] = cls()
 
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.tags.add('barrier')
+
 
 class BovaerAdoptionLimit(Barrier):
-    """Assume that no more than X% of
-    farmers will switch to administering Bovaer
-    in any given year, but that adoption
-    can go all the way to 100%.
-    """
     
     @computed_field
     def max_increase_rate(self) -> object:
         return 5.0 * u.percent / u.year
 
     @computed_field
-    def short_descr(self) -> str:
-        return f"Bovaer will only be adopted by, at most, {self.max_increase_rate} of cattle operations"
+    def short_description(self) -> str:
+        return f"Assume Bovaer will only be adopted by, at most, {self.max_increase_rate} of cattle operations"
+
+    @computed_field
+    def description(self) -> str:
+        return f"""Assume that no more than {self.max_increase_rate} of
+        farmers will switch to administering Bovaer
+        in any given year, but that adoption
+        can ultimately go all the way to 100%.
+        """
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
@@ -73,8 +80,8 @@ class BovaerAdoptionLimit(Barrier):
 class BovaerPrice(Barrier):
 
     @computed_field
-    def short_descr(self) -> str:
-        return f"Bovaer will always cost {self.bovaer_price}"
+    def short_description(self) -> str:
+        return f"Assume Bovaer will always cost {self.bovaer_price} on average across cattle"
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
@@ -82,7 +89,7 @@ class BovaerPrice(Barrier):
 
     @computed_field
     def scenarios(self) -> list[object]:
-        return [StandardScenarios.Scaling]
+        return [] # [StandardScenarios.Scaling]
 
     @computed_field
     def research(self) -> dict[str, str]:
@@ -118,18 +125,14 @@ from .sc_3210013001 import (
     number_of_cattle_by_class_and_farm_type)
 
 class BovinePopulation(Barrier):
-    """The barrier to net-zero represented by this class is that Canada
-    has a lot of cattle. They are modelled as producing methane (although
+    """Assume cattle produce methane (although
     less-so if they are fed Bovaer) and they also produce milk and beef.
-    The production of leather is not modelled.
-
-    In future, the evolution of the cattle population may be modelled
-    (and projected) but for now it is projected as remaining constant.
+    The evolution of the cattle population is projected to remain constant.
     """
 
     @computed_field
-    def short_descr(self) -> str:
-        return f"Model a constant cattle population"
+    def short_description(self) -> str:
+        return f"Model cattle population, production of methane (considering Bovaer), milk and beef"
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
@@ -267,6 +270,8 @@ class BovinePopulation(Barrier):
         # basically guessing at this
         state.register_emission('Other_Product_Manufacture_and_Use', 'CO2',
                                 'bovaer_production_CO2_annual')
+
+        state.register_subsidy_requirement('bovaer_cost_annual')
         return 2026.5 * u.year
 
     def step(self, state, current):

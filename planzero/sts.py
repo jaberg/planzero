@@ -23,6 +23,15 @@ class InterpolationMode(str, Enum):
     # queries without exact matches will return the previous value
     current = 'current'
 
+    # queries with exact matches will return the corresponding value
+    # queries without exact matches will return a linear interpolation
+    # between immediate neighbours, like numpy.interp
+    # linear = 'linear'
+
+    # TODO: how to support uncertainty in value measurements?
+    #       idea: rename STS "SparseTimeSeries" -> TS "TimeSeries"
+    #             create new STS "StochasticTimeSeries" class
+
 
 class STS(BaseModel):
     """A data structure of (time, value) pairs (stored separately) representing
@@ -66,12 +75,6 @@ class STS(BaseModel):
             v_unit=v_unit or u.dimensionless,
             interpolation=InterpolationMode.current)
         return rval
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        #assert len(self.times) + 1 == len(self.values), (len(self.times), len(self.values))
-        #assert isinstance(self.times, array.array)
-        #assert isinstance(self.values, array.array)
 
     def times_with_units(self):
         return [tt * self.t_unit for tt in self.times]

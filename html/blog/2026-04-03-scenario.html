@@ -10,7 +10,7 @@
 <p>
 Table of Contents:
 <ul>
-    <li><a href="#intro">Introduction</a></li>
+    <li><a href="#introduction">Introduction</a></li>
     <li><a href="#simulation">Simulation Framework</a>
         <ul>
             <li><a href="#timeseries">TimeSeries Objects</a></li>
@@ -36,7 +36,7 @@ Table of Contents:
 </ul>
 </p>
 
-<h2 id="intro">Introduction</h2>
+<h2 id="introduction">Introduction</h2>
 
 <p>
 This post takes a break from the series replicating  NIR sectoral totals,
@@ -44,33 +44,165 @@ to look to the future.
 It brings new top-level tabs for the PlanZero modelling framework:
 <!-- TODO -->
 <ul>
-    <li><b>CSFs</b> is a table of all formalized critical success factors in PlanZero </li>
-    <li><b>Barriers</b> is a table of all formalized barriers</li>
-    <li><b>Strategies</b> is a table of all formalized strategies</li>
-    <li><b>Scenarios</b> is a table of all formalized scenarios</li>
+    <li><b>CSFs</b> &mdash; formalized critical success factors in PlanZero </li>
+    <li><b>Barriers</b> &mdash; formalized barriers</li>
+    <li><b>Strategies</b> &mdash; formalized strategies</li>
+    <li><b>Scenarios</b> &mdash; formalized scenarios</li>
 </ul>
 
-This post is the first in what I hope will be a series of posts,
-incrementally developing the Scaling scenario (introduced below)
-to reflect the possibilities of scaling existing products
-that address emissions in the various sectors of the National Inventory
-Report.
+This post is the first in a new series
+developing a scenario (the <i>Scaling</i> scenario, introduced below)
+to model the effects of scaling the use of existing products
+that address emissions in the various IPCC sectors used in the National Greenhouse Gas Inventory.
 </p>
 
+{{ planzero.sim.sim_scenario("scaling").by_ipcc_sector.as_html()|safe }}
 
-<h2>Modelling Framework</h2>
-
-<h3>Time Series</h3>
 <p>
-Is a data structure of values of something at a sequence of times.
-The value at a particular time can be undefined, or a number or a random variable.
-The whole time series generally has a unit, so the series represents e.g.
-a sequence of Mt {{CO2e|safe}} or Canadian dollars.
-See ureg.py for the set of units used in PlanZero.
+This post also introduces the PlanZero scenario modelling framework itself.
+The <a href="#simulation">Simulation Framework</a> Section introduces the key modelling data structures:
+<i>time series</i> objects, that represent time-varying quantities;
+and <i>dynamic elements</i>, that represent the rules for how time-varying quantities should change.
+The <a href="#modelling">Scenario Modelling</a> Section explains how the concepts of
+Critical Success Factors, Barriers, and Strategies can (at least sometimes) be formalized
+as time series and dynamic elements. The ones that have been formalized can now
+be found in the new tabs above: <a href="/csfs/">CSFs</a>, <a href="/barriers/">Barriers</a>, and <a href="/strategies/">Strategies</a>.
+The <a href="#scaling">Scaling Scenario</a> Section uses these new mechanisms to model
+a strategy for reducing enteric fermentation,
+namely, the strategy of administering the Bovaer feed additive.
+The post concludes with some observations regarding the modelled effectiveness of Bovaer,
+some thoughts on how to develop the scaling scenario systematically,
+and some ideas for other standard scenarios that might be of interest for the PlanZero site.
 </p>
 
 
-<h3>Dynamic Element</h3>
+<h2 id="simulation">Simulation Framework</h2>
+<p>
+PlanZero's simulation framework involves a few types of thing:
+<ul>
+    <li>time series objects, which contain the data of time-varying quantities</li>
+    <li>dynamic element objects, which implement rules for the evolution of time series</li>
+    <li>scenario objects, which are sets of time series and dynamic elements. 
+</ul>
+This section introduces these object types, and later sections explain how they are used for
+modelling.
+</p>
+
+<h3 id="timeseries">Time Series Objects</h3>
+<p>
+A time series object (sometimes written as a TimeSeries) represents a time-varying quantity.
+PlanZero posts have used TimeSeries
+objects already, to represent e.g. the various sectoral emissions of greenhouse gases for the NIR.
+The key attributes of a TimeSeries are:
+<ul>
+    <li>a set of <i>what</i> numeric values the series takes</li>
+    <li>a set of times marking <i>when</i> the series takes these values</li>
+    <li>a unit of measure for the values</li>
+    <li>an interpolation mode, indicating how to interpret the times and values.</li>
+</ul>
+A TimeSeries is a bit like two matched columns in a spreadsheet:
+one column being the times, and the other being the values.
+Relative to columns in a spreadsheet,
+a TimeSeries restricts all of its values to be in a single common unit of measure,
+and imposes <i>querying semantics</i> on the TimeSeries according to the interpolation mode.
+</p>
+
+<p>
+The main purpose of PlanZero's TimeSeries objects is to support querying the value 
+at particular times, so that XXX.
+The querying logic in PlanZero's TimeSeries objects depends on the interpolation mode.
+As of writing, there are two interpolation modes:
+<ul>
+    <li>No interpolation: the series is only defined at the times listed explicitly, at which times the value is the corresponding value.</li>
+    <li>Current interpolation: the series is defined at all times,
+        to be the most-recent value prior to (or coincident with) time t.</li>
+</ul>
+The "No interpolation" mode is suitable for series such as an annual CO2e emission in the NIR.
+In that kind of time series, there are amounts for e.g. years,
+but there is no implied annual total for dates in between; the annual totals are only meant to apply to
+whole years.
+The "Current interpolation" mode is suitable for other kinds of time series, such as
+e.g.  the number of cattle in Canada.
+The nature of that time-varying quantity is different in that
+the question of "how many cattle are there in Canada?" can be reasonably asked
+of any date, regardless of what (time, value) pairs are being used to implement a TimeSeries
+approximating that time-varying quantity.
+Time-varying quantities such as emission factors, prices, and populations are
+best-represented as "Current interpolation" TimeSeries objects.
+Time-varying quantities such as quarterly or annual summaries are best-represented as "No interpolation".
+</p>
+
+<p>
+The purpose of the units of measure and the interpolation modes in TimeSeries objects
+is to prevent logic errors in modelling.
+When adding TimeSeries using compatible units (e.g. pounds and kilograms), unit conversion is automatic
+so that there's no chance of using an incorrect conversion factor by mistake.
+When adding TimeSeries using incompatible units (e.g. kilograms and kilograms per year),
+the library code raises an exception to indicate that there's an error in the model that needs correcting.
+Similarly, the intention of the interpolation modes is to catch logical errors.
+For example,
+multiplying annual greenhouse gas totals (whose mode would be "no interpolation")
+by emission factors (with mode "current interpolation")
+would result in a timeseries with a mode of "no interpolation";
+attempting to query that timeseries at arbitrary times would raise an exception
+because it's likely a mistaken usage.
+</p>
+
+<p>
+The following table lists of all 203 time series objects involved
+in the current scaling scenario, along with its unit of measure.
+It is may seem surprising that so many time series are required to
+simply model a single strategy (use Bovaer).
+The reason is that
+many time series are required to represent the historical NIR elements (at least one GHG and one CO2e time series per IPCC Sector),
+and many time series are required to represent the bovine population (about 7 types of cattle for each province and territory).
+The atmospheric timeseries elements are not strictly necessary, but I like to leave them in.
+The following sections will explain how these TimeSeries objects are related by dynamic elements and make up a scenario.
+</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Index</th>
+            <th>Time Series Name</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for ii, (name, sts) in enumerate(planzero.sim.sim_scenario("scaling").state.sts.items()) %}
+    <tr><td>{{ii}}</td><td>{{name.replace('_', ' ')}}</td><td>{{sts.v_unit}}</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+
+
+<h3 id="dynelem">Dynamic Element Objects</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>Index</th>
+            <th>Dynamic Element Name</th>
+            <th>Role</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for ii, (name, proj) in enumerate(planzero.sim.sim_scenario("scaling").state.projects.items()) %}
+    <tr><td>{{ii}}</td>
+        <td>{{name.replace('_', ' ')}}</td>
+        <td>{{", ".join(proj.tags)}}</td>
+        <td>{{proj.description|replace("CO2e", CO2e)|safe}}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<p>
+The next type of object in the simulation framework is the dynamic element.
+Dynamic elements are bits of modelling logic in the PlanZero software that
+define TimeSeries objects.
+</p>
 <p>
 Is a rule for determining the values of some TimeSeries objects (outputs), based on
 some modelling parameters, and the values of other TimeSeries objects (inputs).
@@ -96,6 +228,15 @@ value will do. Circular dependencies through exactly-current required inputs are
 but usually these circular dependencies can be resolved by configuring one of the DyanamicElement
 objects to accept an almost-exactly-current value.
 </p>
+
+and Dynamic Element objects, that represent the rules for how those values should change.
+Is a data structure of values of something at a sequence of times.
+The value at a particular time can be undefined, or a number or a random variable.
+The whole time series generally has a unit, so the series represents e.g.
+a sequence of Mt {{CO2e|safe}} or Canadian dollars.
+See ureg.py for the set of units used in PlanZero.
+</p>
+
 
 
 <h2 id="usage">Using the Framework</h2>
@@ -156,10 +297,29 @@ with regards to emissions.
 </p>
 
 <h2 id="scaling">The Scaling Scenario, Starting with Bovaer</h2>
+
+What is 3-NOP, how does it work?
+
+https://pmc.ncbi.nlm.nih.gov/articles/PMC8603004
+
 <h3 id="#scaling_csfs">Critical Success Factors</h3>
+Methane emissions
+CO2e
+Dollars spent on carbon removal
+
 <h3 id="#scaling_barriers">Barriers</h3>
+<p>The following are now listed on a newly-created <a href="/barriers/">barriers</a> page.
+</p>
+Donors will only pay up to X dollars per tonne CO2e removed
+
+Farmers will take a while to administer it even if it's paid-for and safe
+The fraction of farmers administering bovaer can't exceed this envelope
+
 <h3 id="#scaling_strategies">Strategies</h3>
+administer bovaer (how exactly?)
+
 <h3 id="#scaling_other">Other TimeSeries and DynamicElement Objects</h3>
+heads of various types of cattle
 
 <h2 id="conclusion">Conclusion</h2>
 

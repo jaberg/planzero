@@ -2,6 +2,7 @@
 # For more accurate climate simulation, check out
 # https://climate-assessment.readthedocs.io/en/latest/index.html
 
+import array
 import contextlib
 import heapq
 from io import StringIO
@@ -40,14 +41,35 @@ class Project(BaseModel):
     may_register_emissions:bool = True
     requires_emissions_registration_closed:bool = False
 
+    tags: set = set() # eg. barrier, strategy
+
     @computed_field
-    def description(self) -> str:
+    def short_description(self) -> str | None:
+        # The intent is for subclasses to over-ride this method.
         return self.__class__.__doc__
+
+    @computed_field
+    def description(self) -> str | None:
+        # The intent is for subclasses to use this implementation
+        # by populating the docstring, but they are welcome to
+        # override the method as well.
+        doc = self.__class__.__doc__
+        if doc:
+            return doc
+        else:
+            return self.short_description # which may be None
 
     def model_post_init(self, __context):
         super().model_post_init(__context)
         if self.identifier is None:
             self.identifier = self.__class__.__name__
+
+        try:
+            # don't use this anymore, call it short_descr
+            self.short_descr
+            raise Exception()
+        except AttributeError:
+            pass
 
     def init_add_subprojects(self, sub_projects):
         self._sub_projects.extend(sub_projects)
@@ -111,6 +133,10 @@ class BaseScenarioProject(Project):
     @staticmethod
     def base_scenario_projects():
         return [cls() for cls in BaseScenario_subclasses]
+
+    def model_post_init(self, __context):
+        super().model_post_init(__context)
+        self.tags.add('built-in')
 
 
 class StateCurrent(object):
@@ -180,9 +206,12 @@ class State(object):
             catpath: {}
             for catpath in sorted(ipcc_canada.catpaths)}
 
+        self.subsidy_requirements = set()
+
         self.projects = {}
         self.project_writes = {} # prj.identifier -> set of string names
         self.project_requires_current = {} # prj.identifier -> set of string names
+        #self.project_reads = {} # prj.identifier -> set of string names
         self.project_t_next = {} # prj.identifier -> t_next
         self.stashes = {} # prj.identifier -> private namespace
         self._depgraph = None
@@ -202,7 +231,7 @@ class State(object):
         things = set()
         things.update(sts.identifier for sts in self.sts.values())
         things.update(prj.identifier for prj in self.projects.values())
-        assert len(things) == len(self.sts) + len(self.projects)
+        assert len(things) == len(self.sts) + len(self.projects), "It might be confusing to use the same name for an STS and a Project"
         for sts in self.sts.values():
             graph.add_node(sts.identifier)
             if sts.writer:
@@ -330,6 +359,9 @@ class State(object):
         assert sts_key in self.sts
         self.sectoral_emissions_contributors[category_path].setdefault(ghg, []).append(sts_key)
 
+    def register_subsidy_requirement(self, sts_key):
+        self.subsidy_requirements.add(sts_key)
+
     @property
     def latest(self):
         class Latest(object):
@@ -431,6 +463,9 @@ NF3_GWP_100 = 16_100 * u.kg_CO2e / u.kg_NF3
 
 
 class AtmosphericChemistry(BaseScenarioProject):
+    """Combine GHG emissions into a CO2e estimate using GWP-100 emission factors,
+    and also simulate a simple radiative forcing and planetary heating model.
+    """
     methane_decay_timescale:float = 10.0
 
     may_register_emissions:bool = False
@@ -1110,3 +1145,29 @@ class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProj
             current.human_population * coefficient * .975
             * (1 * u.dimensionless - current.Other_LightDutyGasolineTrucks_ZEV_fraction))
         return state.t_now + self.stepsize
+
+
+class SubsidyAccounting(BaseScenarioProject):
+    """Tally up annual subsidy amounts required by barriers and strategies."""
+
+    def on_add_project(self, state):
+        for sts_key in state.subsidy_requirements:
+            state.declare_read_current_sts(self, sts_key)
+        with state.defining(self) as ctx:
+            ctx.AnnualSubsidyTotal = STS(
+                times=array.array('d', []),
+                values=array.array('d', [float('nan')]),
+                t_unit=u.year,
+                v_unit=u.CAD,
+                interpolation='no_interpolation')
+        return state.t_now.to('year').magnitude * u.year
+
+    def step(self, state, current):
+        zero = 0 * u.CAD
+        total = zero
+        for sts_key in state.subsidy_requirements:
+            subtotal = getattr(current, sts_key)
+            assert subtotal >= zero # sign convention and nan-check
+            total += subtotal
+        current.AnnualSubsidyTotal = total
+        return state.t_now + 1 * u.year

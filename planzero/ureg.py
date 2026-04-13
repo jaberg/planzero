@@ -6,6 +6,9 @@ ureg = pint.UnitRegistry()
 ureg.define('CAD = [currency]')
 ureg.define('USD = 1.35 CAD')
 
+ureg.define(f"mega_CAD = 1e6 * CAD")
+ureg.define(f"giga_CAD = 1e9 * CAD")
+
 ureg.define('people = [human_population]')
 ureg.define('cattle = [bovine_population]')
 
