@@ -24,6 +24,8 @@ from . import scenarios
 
 class SimulationResult(BaseModel):
 
+    state: object
+
     by_ipcc_sector: StackedAreaEChart
 
     @classmethod
@@ -69,13 +71,14 @@ class SimulationResult(BaseModel):
                     data=ipcc_canada.net_emissions_total()),
             ])
         return SimulationResult(
+            state=state,
             by_ipcc_sector=by_ipcc_sector,
             )
 
 from .base import AtmosphericChemistry
 
 @functools.cache
-def sim_scaling(scenario_name):
+def sim_scenario(scenario_name):
     scenario = scenarios.scenarios[scenario_name]
     state = State(
         name=f'State_{scenario_name}',

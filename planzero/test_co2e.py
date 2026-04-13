@@ -18,7 +18,8 @@ def test_co2e(assert_value=0, years=100):
         assert np.allclose(
             comp.state_A.sts[co2e_key].max(_i_start=1),
             impulse_mass)
-        assert comp.state_B.sts[co2e_key].max(_i_start=1) == 0 * u.kg_CO2e
+        assert co2e_key not in comp.state_B.sts
+        #assert comp.state_B.sts[co2e_key].max(_i_start=1) == 0 * u.kg_CO2e
         t_end = comp.state_A.t_now
 
         energy_A = comp.state_A.sts['Cumulative_Heat_Energy'].query(t_end)
@@ -32,7 +33,7 @@ def test_co2e(assert_value=0, years=100):
         print(
             ghg,
             comp.state_A.sts[co2e_key].max(_i_start=1).to(u.kilotonne_CO2e),
-            comp.state_B.sts[co2e_key].max(_i_start=1).to(u.kilotonne_CO2e),
+            #comp.state_B.sts[co2e_key].max(_i_start=1).to(u.kilotonne_CO2e),
             'remaining', (energy_A - energy_B).to('terajoule'),
             'forcing', forcing_delta.to('terajoule'),
             )

@@ -474,15 +474,31 @@ class AtmosphericChemistry(BaseScenarioProject):
                 state.declare_read_current_sts(self, sts_key)
 
         with state.defining(self) as ctx:
-            for catpath, _ in state.sectoral_emissions_contributors.items():
-                setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', SparseTimeSeries(unit=u.kt_CO2))
-                setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', SparseTimeSeries(unit=u.kt_CH4))
-                setattr(ctx, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', SparseTimeSeries(unit=u.kt_N2O))
-                setattr(ctx, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', SparseTimeSeries(unit=u.kt_HFC))
-                setattr(ctx, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', SparseTimeSeries(unit=u.kt_PFC))
-                setattr(ctx, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', SparseTimeSeries(unit=u.kt_SF6))
-                setattr(ctx, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', SparseTimeSeries(unit=u.kt_NF3))
-                setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', SparseTimeSeries(unit=u.kt_CO2e))
+            for catpath, contributors in state.sectoral_emissions_contributors.items():
+                any_CO2e_contributors = False
+                if contributors.get(GHG.CO2, []):
+                    setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', SparseTimeSeries(unit=u.kt_CO2))
+                    any_CO2e_contributors = True
+                if contributors.get(GHG.CH4, []):
+                    setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', SparseTimeSeries(unit=u.kt_CH4))
+                    any_CO2e_contributors = True
+                if contributors.get(GHG.N2O, []):
+                    setattr(ctx, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', SparseTimeSeries(unit=u.kt_N2O))
+                    any_CO2e_contributors = True
+                if contributors.get(GHG.HFCs, []):
+                    setattr(ctx, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', SparseTimeSeries(unit=u.kt_HFC))
+                    any_CO2e_contributors = True
+                if contributors.get(GHG.PFCs, []):
+                    setattr(ctx, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', SparseTimeSeries(unit=u.kt_PFC))
+                    any_CO2e_contributors = True
+                if contributors.get(GHG.SF6, []):
+                    setattr(ctx, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', SparseTimeSeries(unit=u.kt_SF6))
+                    any_CO2e_contributors = True
+                if contributors.get(GHG.NF3, []):
+                    setattr(ctx, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', SparseTimeSeries(unit=u.kt_NF3))
+                    any_CO2e_contributors = True
+                if any_CO2e_contributors:
+                    setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', SparseTimeSeries(unit=u.kt_CO2e))
 
             ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kt_CO2)
             ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kt_CH4)
@@ -537,6 +553,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
         for catpath, contributors in state.sectoral_emissions_contributors.items():
             catpath_CO2e_mass = 0 * u.kg_CO2e
+            any_CO2e_contributors = False
 
             catpath_CO2_contributors = contributors.get(GHG.CO2, [])
             if catpath_CO2_contributors:
@@ -548,6 +565,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                     raise
                 catpath_CO2e_mass += catpath_CO2_mass * CO2_GWP_100
                 annual_CO2_mass += catpath_CO2_mass
+                any_CO2e_contributors = True
 
             catpath_CH4_contributors = contributors.get(GHG.CH4, [])
             if catpath_CH4_contributors:
@@ -559,6 +577,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                     raise
                 catpath_CO2e_mass += catpath_CH4_mass * CH4_GWP_100
                 annual_CH4_mass += catpath_CH4_mass
+                any_CO2e_contributors = True
 
             catpath_N2O_contributors = contributors.get(GHG.N2O, [])
             if catpath_N2O_contributors:
@@ -570,6 +589,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                     raise
                 catpath_CO2e_mass += catpath_N2O_mass * N2O_GWP_100
                 annual_N2O_mass += catpath_N2O_mass
+                any_CO2e_contributors = True
 
             catpath_HFC_contributors = contributors.get(GHG.HFCs, [])
             if catpath_HFC_contributors:
@@ -577,6 +597,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                 setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
                 catpath_CO2e_mass += catpath_HFC_mass * HFC_GWP_100
                 annual_HFC_mass += catpath_HFC_mass
+                any_CO2e_contributors = True
 
             catpath_PFC_contributors = contributors.get(GHG.PFCs, [])
             if catpath_PFC_contributors:
@@ -584,6 +605,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                 setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
                 catpath_CO2e_mass += catpath_PFC_mass * PFC_GWP_100
                 annual_PFC_mass += catpath_PFC_mass
+                any_CO2e_contributors = True
 
             catpath_SF6_contributors = contributors.get(GHG.SF6, [])
             if catpath_SF6_contributors:
@@ -591,6 +613,7 @@ class AtmosphericChemistry(BaseScenarioProject):
                 setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
                 catpath_CO2e_mass += catpath_SF6_mass * SF6_GWP_100
                 annual_SF6_mass += catpath_SF6_mass
+                any_CO2e_contributors = True
 
             catpath_NF3_contributors = contributors.get(GHG.NF3, [])
             if catpath_NF3_contributors:
@@ -598,8 +621,10 @@ class AtmosphericChemistry(BaseScenarioProject):
                 setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
                 catpath_CO2e_mass += catpath_NF3_mass * NF3_GWP_100
                 annual_NF3_mass += catpath_NF3_mass
+                any_CO2e_contributors = True
 
-            setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', catpath_CO2e_mass)
+            if any_CO2e_contributors:
+                setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', catpath_CO2e_mass)
 
 
         current.Predicted_Annual_Emitted_CO2_mass = annual_CO2_mass

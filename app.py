@@ -1,7 +1,7 @@
 import json
 import datetime
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -188,15 +188,7 @@ async def get_blog(request: Request, post_name:str):
                 ),
         )
     except IOError:
-        return templates.TemplateResponse(
-            request=request,
-            name=f"/blog/blog_template.html",
-            context=dict(
-                default_context,
-                active_tab='blog',
-                blog=blog,
-                ),
-        )
+        raise HTTPException(status_code=404, detail="url not recognized")
 
 
 @app.get("/about/", response_class=HTMLResponse)
@@ -234,6 +226,7 @@ default_context = dict(
     min=min,
     max=max,
     sorted=sorted,
+    enumerate=enumerate,
     u=u,
     have_page_for_catpath=have_page_for_catpath,
     url_for_catpath=url_for_catpath,

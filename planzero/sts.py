@@ -19,10 +19,6 @@ class InterpolationMode(str, Enum):
     # queries without exact matches will return NaN or raise an exception
     no_interpolation = 'no_interpolation'
 
-    # queries with exact matches will return the previous value
-    # queries without exact matches will return the previous value
-    latest = 'latest'
-
     # queries with exact matches will return the corresponding value
     # queries without exact matches will return the previous value
     current = 'current'
@@ -117,8 +113,6 @@ class STS(BaseModel):
                     index = len(self.values) - 1
                 elif self.interpolation == InterpolationMode.current:
                     index = len(self.values) - 1
-                elif self.interpolation == InterpolationMode.latest:
-                    index = len(self.values) - 2
                 valid = True
             else:
                 if self.interpolation == InterpolationMode.no_interpolation:
@@ -126,9 +120,6 @@ class STS(BaseModel):
                     valid = self.times[index - 1] == ts
                 elif self.interpolation == InterpolationMode.current:
                     index = bisect.bisect_right(self.times, ts)
-                    valid = True
-                elif self.interpolation == InterpolationMode.latest:
-                    index = bisect.bisect_left(self.times, ts)
                     valid = True
                 else:
                     raise NotImplementedError(self.interpolation)
@@ -296,7 +287,7 @@ class STS(BaseModel):
         return rval
 
     def bin_integral(self, start_time, end_time):
-        if self.interpolation == InterpolationMode.latest:
+        if self.interpolation == InterpolationMode.no_interpolation:
             raise NotImplementedError()
         i0, v0 = self._idx_of_time(start_time)
         i1, v1 = self._idx_of_time(end_time)
@@ -321,7 +312,7 @@ class STS(BaseModel):
         # Time integrals over bins
         if self.interpolation == InterpolationMode.no_interpolation:
             raise NotImplementedError()
-        tmp = self.native_interp(bin_boundaries) # TODO: check this does right thing for latest
+        tmp = self.native_interp(bin_boundaries)
         bin_sums = {tt: 0 for tt in native_boundaries}
         current_bin = native_boundaries[0]
         for t0, t1, vv in zip(tmp.times, tmp.times[1:], tmp.values[1:]):
@@ -401,9 +392,6 @@ class STS(BaseModel):
         # assume value are in self.v_unit
         dct = {tt.to(self.t_unit).magnitude: vv.magnitude
                for tt, vv in zip(times, values)}
-        # clobber with self.times, self.values so that
-        # if there's a time in times that's also in self.times
-        # we handle it correctly with "latest" interpolation
         dct.update(dict(zip(self.times, self.values[1:])))
         new_times, new_values = zip(*sorted(dct.items()))
         return self.__class__(

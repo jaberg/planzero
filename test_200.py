@@ -67,3 +67,8 @@ def test_each_blog(url_filename):
     url = f"/blog/{url_filename}/"
     response = client.get(url)
     assert response.status_code == 200
+
+def test_blog_404():
+    url = f"/blog/not-an-actual-blog/"
+    response = client.get(url)
+    assert response.status_code == 404
