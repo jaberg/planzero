@@ -93,7 +93,7 @@ class EChartSeriesBase(BaseModel):
 
 def EChartSeriesData(sts, times, v_unit, url):
     values = sts.query(times).to(v_unit).magnitude
-    return [{'value': float(vv), 'url': url}
+    return [{'value': float(vv) if vv == vv else 0, 'url': url}
             for vv in values]
 
 
@@ -126,7 +126,10 @@ class StackedAreaEChart(HTML_element):
         <div id="{self.div_id}" style="width: {self.width_px}px; height: {self.height_px}px; margin: 0 auto;">
         </div>
         <script>
-        var mychart_{self.div_id} = echarts.init(document.getElementById('{self.div_id}'));
+        var mychart_{self.div_id} = echarts.init(
+            document.getElementById('{self.div_id}'),
+            null,
+            {{renderer: 'canvas', hoverLayerThreshold: 0}});
         var option_{self.div_id};
         option_{self.div_id} = {{
             title: {self.title.model_dump(exclude_none=True)},

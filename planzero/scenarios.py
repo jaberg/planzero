@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 from .ureg import u
 from .enums import StandardScenarios
@@ -39,6 +39,10 @@ class Scenario(BaseModel):
 
     def emissions_in_year(self, year):
         return float('nan') * u.Mt_CO2e
+
+    @computed_field
+    def name(self) -> str:
+        return self.__class__.__name__
 
 
 class Scaling(Scenario):

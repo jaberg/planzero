@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import pint
 from pydantic import BaseModel, computed_field
-from .ureg import ureg
+from .ureg import ureg, kt_by_ghg
 u = ureg
 
 
@@ -452,6 +452,8 @@ deltaF_coef_PFC = 0.08 * u.watt / (u.m * u.m) * surface_area_of_earth
 deltaF_coef_SF6 = 0.57 * u.watt / (u.m * u.m) * surface_area_of_earth
 deltaF_coef_NF3 = 0.21 * u.watt / (u.m * u.m) * surface_area_of_earth
 
+
+# TODO: use values in .ghgvalues
 CO2_GWP_100 = 1.0 * u.kg_CO2e / u.kg_CO2
 CH4_GWP_100 = 28.0 * u.kg_CO2e / u.kg_CH4
 N2O_GWP_100 = 265.0 * u.kg_CO2e / u.kg_N2O
@@ -1171,3 +1173,40 @@ class SubsidyAccounting(BaseScenarioProject):
             total += subtotal
         current.AnnualSubsidyTotal = total
         return state.t_now + 1 * u.year
+
+from . import ipcc_canada
+from . import ghgvalues
+
+class Other_NIR_Historical_Actuals(BaseScenarioProject):
+    """Populate otherwise-missing IPCC Categories with historical actuals from NIR-2025
+    """
+
+    def on_add_project(self, state):
+        non_agg_years = list(set(ipcc_canada.non_agg['Year'].unique()))
+        non_agg_years.sort()
+        datalen = len(non_agg_years)
+        assert ('kt',) == ipcc_canada.inv['Unit'].unique()
+        assert non_agg_years == ipcc_canada.echart_years()[:datalen] # assure sorted
+        for_sorting = []
+        for catpath in ipcc_canada.catpaths:
+            catpath_values = ipcc_canada.non_agg[
+                ipcc_canada.non_agg['CategoryPathWithWhitespace'] == ipcc_canada.catpaths[catpath]
+            ]
+            catpath_contributors = state.sectoral_emissions_contributors.get(catpath, {})
+            for ghg in GHG:
+                ghg_contributors = catpath_contributors.get(ghg.value, [])
+                if not ghg_contributors:
+                    values = catpath_values[ghg.value].values
+                    name = f'Historical_{ghg.value}_from_{catpath}'
+                    scale = 1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O] else 1.0 / ghgvalues.GWP_100[ghg].magnitude
+                    state.declare_sts(
+                        project=self,
+                        sts=STS(
+                            times=array.array('d', non_agg_years),
+                            t_unit=u.years,
+                            values=array.array('d', [0] + list(scale * values)),
+                            v_unit=kt_by_ghg[ghg],
+                            interpolation='current'),
+                        name=name,
+                        write=True)
+                    state.register_emission(catpath, ghg.value, name)

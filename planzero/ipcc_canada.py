@@ -59,7 +59,7 @@ def echart_series_all_Mt():
     non_agg_years.sort()
     datalen = len(non_agg_years)
     assert ('kt',) == inv['Unit'].unique()
-    assert non_agg_years == echart_years()[:datalen]
+    assert non_agg_years == echart_years()[:datalen] # assure sorted
     for_sorting = []
     for catpath in catpaths:
         values = non_agg[non_agg['CategoryPathWithWhitespace'] == catpaths[catpath]]['CO2eq'].values
