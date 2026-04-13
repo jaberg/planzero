@@ -59,6 +59,10 @@ class BovaerAdoptionLimit(Barrier):
         return 0.01
 
     def on_add_project(self, state):
+        with state.requiring_current(self) as ctx:
+            ctx.bovine_population_fraction_on_bovaer = sts.SparseTimeSeries(
+                default_value=0 * u.dimensionless)
+
         with state.defining(self) as ctx:
             ctx.max_fraction_of_cattle_on_bovaer = sts.SparseTimeSeries(
                 default_value=0 * u.dimensionless)
@@ -70,7 +74,7 @@ class BovaerAdoptionLimit(Barrier):
 
     def step(self, state, current):
         current.max_fraction_of_cattle_on_bovaer = min(
-            (state.latest.bovine_population_fraction_on_bovaer
+            (current.bovine_population_fraction_on_bovaer
              + self.max_increase_rate * 1.0 * u.year),
             (1 - self.organic_fraction) * u.dimensionless)
         # Apparently Bovaer is not allowed as part of organic production.
