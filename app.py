@@ -1,5 +1,6 @@
 import json
 import datetime
+import numpy as np
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
@@ -155,6 +156,90 @@ async def get_scenario_page(ident:str, request: Request):
             default_context,
             active_tab='scenarios',
             ident=ident,
+            ),
+    )
+
+
+@app.get("/scenarios/{scenario_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+async def get_scenario_strategy_impact(request: Request, scenario_name: str, strategy_name: str):
+    sim = planzero.sim.sim_scenario(scenario_name)
+    baseline_state = sim.state
+    ablated_state = sim.ablations.get(strategy_name)
+    if not ablated_state:
+        raise HTTPException(status_code=404, detail="Strategy not found in this scenario")
+    
+    # Calculate impact (baseline - ablated)
+    # This assumes we want to show emissions saved
+    sim_years_ints = np.arange(1990, 2090)
+    sim_years = [tt * u.years for tt in sim_years_ints]
+    
+    # Simple total emissions comparison
+    baseline_total = baseline_state.sts['Predicted_Annual_Emitted_CO2e_mass']
+    ablated_total = ablated_state.sts['Predicted_Annual_Emitted_CO2e_mass']
+
+    impact_data = planzero.sim.EChartSeriesData(
+        ablated_total - baseline_total, # ablated - baseline = amount saved if ablated > baseline
+        times=sim_years,
+        v_unit=u.Mt_CO2e,
+        url=None, # TODO: link to this class's code on github
+        )
+
+    impact_chart = planzero.sim.StackedAreaEChart(
+        div_id='impact_chart',
+        title=planzero.sim.EChartTitle(
+            text=f'Emissions Impact: {strategy_name}',
+            subtext=f'Annual Mt CO2e saved in {scenario_name}'),
+        xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
+        yAxis=[planzero.sim.EChartYAxis(name='Emissions Saved (Mt CO2e)')],
+        stacked_series=[
+            planzero.sim.EChartSeriesStackElem(
+                name='Emissions Avoided',
+                data=impact_data,
+            )
+        ],
+        other_series=[])
+
+    # Simple total subsidy comparison
+    subsidy_baseline_total = baseline_state.sts['AnnualSubsidyTotal']
+    subsidy_ablated_total = ablated_state.sts['AnnualSubsidyTotal']
+
+    subsidy_comparison_data = planzero.sim.EChartSeriesData(
+        subsidy_baseline_total - subsidy_ablated_total,
+        times=sim_years,
+        v_unit=u.giga_CAD,
+        url=None, # TODO: link to this class's code on github
+        )
+
+    subsidies_chart = planzero.sim.StackedAreaEChart(
+        div_id='subsidies_chart',
+        title=planzero.sim.EChartTitle(
+            text=f'Subsidies Impact: {strategy_name}',
+            subtext=f'Annual cost of subsidies in {scenario_name}'),
+        xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
+        yAxis=[planzero.sim.EChartYAxis(name='Subsidies Required (CAD, Billions)')],
+        stacked_series=[
+            planzero.sim.EChartSeriesStackElem(
+                name='Cost Incurred',
+                data=subsidy_comparison_data,
+            )
+        ],
+        other_series=[])
+
+    cost_per_tCO2e = (
+        (subsidy_baseline_total - subsidy_ablated_total).sum()
+        / (ablated_total - baseline_total).sum()).to(u.CAD / u.tonne_CO2e)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="strategy_impact.html",
+        context=dict(
+            default_context,
+            active_tab='scenarios',
+            scenario_name=scenario_name,
+            strategy_name=strategy_name,
+            impact_chart=impact_chart,
+            subsidies_chart=subsidies_chart,
+            cost_per_tCO2e=cost_per_tCO2e,
             ),
     )
 

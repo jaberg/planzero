@@ -312,6 +312,7 @@ Formalized CSFs in PlanZero are generally DynamicElement objects that also (addi
     <li>name CSF TimeSeries variables</li>
     <li>indicate whether each one should maximized, minimized, or maintained at a specific value</li>
     <li>indicate the IPCC sector(s) to which each CSF applies</li>
+    <li>serve primarily to generate metrics for comparing and constrasting scenarios</li>
 </ul>
 Work remains to be done, but I hope eventually CSFs help visualize how strategies affect emissions,
 and generally, what's happening in a scenario.
@@ -320,51 +321,61 @@ and generally, what's happening in a scenario.
 <h3>Barriers</h3>
 
 <p>
-What I've been calling barriers in PlanZero posts to date typically correspond to constraints or challenges.
-The <a href="/ipcc-sectors/Enteric_Fermentation/#barriers">barriers currently associated Enteric Fermentation</a> include,
-for example: "Owners of herds do not want to reduce their herds, and neither do their customers or suppliers."
+What I've been calling barriers in PlanZero posts to date typically correspond to constraints or challenges to what perhaps might otherwise be direct ways of achieving emissions reductions.
+For example, the <a href="/ipcc-sectors/Enteric_Fermentation/#barriers">barriers currently associated Enteric Fermentation</a> include
+"Owners of herds do not want to reduce their herds, and neither do their customers or suppliers."
+If there were no more cattle, there would be no more enteric fermentation emissions, but of course
+there would be other problems. That's why this is called a "Barrier". How might we address those problems,
+or the problems associated with other barriers? Usually it's hard to come up with easy answers.
 </p>
 <p>
-A formalized Barrier in PlanZero is a dynamic element that
-<ul>
+Barriers can be formalized in PlanZero as dynamic elements, but there isn't a lot of structure
+that comes with that. Barriers model the mechanisms that connect the things that we believe we can change
+(such as to provide farmers that are open to using Bovaer with Bovaer) to the effects that we're interested in (namely, the CSFs).
+With that said, formalized Barrier in PlanZero is a dynamic element that
+<ol>
     <li>is associated with any number (including zero) of IPCC sectors</li>
-    <li>reads strategy TimeSeries objects (see below) with non-zero delay</li>
-    <li>works with other Barrier DynamicElement objects to relate simulation inputs (e.g. StatsCan data regarding cattle headcounts) to simulation outputs (KPIs, e.g. annual sectoral {{CO2e|safe}} totals)</li>
-</ul>
-I expect typical CSF and Strategy elements to have relatively simple logic.
-I expect Barrier elements to house the complexity.
+    <li>reads miscellaneous TimeSeries objects</li>
+    <li>performs calculations that are important to the integrity of the simulation</li>
+</ol>
+I expect typical CSF and Strategy elements to have relatively simple logic,
+and Barrier elements to house the complexity.
 The strategy supporting this post is simply "use as much Bovaer as possible."
 It's not trivial to determine how much Bovear use is possible,
-and the logic for determining in the model, how much Bovaer it is possible to use in any given year, is in a Barrier element;
-it's fitting to call the element a "Barrier" because it isn't deemed possible
-to use enough for the entire national herd right away.
-Likewise, Bovaer usage doesn't immediately and completely eliminate methane;
-this frustrating fact supports again the word "Barrier" for the dynamic element
-that implements the modelling logic for how much methane is actually reduced, and at what cost.
+or what all of the consequences of that use would be.
+Without estimating and incorporating such limiting factors,
+the results of simulation would be less credible,
+and the integrity of the simulation would be reduced.
+The term "Barrier" is fitting
+because Barrier elements typically have the effect of limiting the speed of deployment,
+reminding us of the limited effectiveness of deployment,
+reminding us of the costs of it (both in terms of {{CO2|safe}} and CAD in this example).
+I hope, over time, to build up the library of Barriers in PlanZero,
+because I believe that this library will become the most valuable component of the project.
 </p>
 
-<p>
-We'll see below the documentation on the Barrier elements in the scaling scenario,
-but taken together, they implement what I would call "the model" being simulated.
-</p>
 
 <h3>Strategies</h3>
 
 <p>
-Strategies are DynamicElement and TimeSeries objects that implement modelling assumptions,
-and serve to provide values for the TimeSeries objects that are the inputs to the CSF and Barrier
-DynamicElements.
+Strategies are dynamic elements that, unlike Barriers, can be enabled or disabled without compromising the integrity of scenario simulation.
+Indeed, I expect that for many Strategies, they are relatively simple dynamic elements and that's basically all they do.
+</p>
+<p>
+A formalized Strategy in PlanZero is a dynamic element that
+<ol>
+    <li>performs calculations that are <i>not</i> important to the integrity of the simulation</li>
+    <li>can be enabled or disabled in a standard way, as part of scenario evaluation</li>
+</ol>
 </p>
 
 <p>
-Not all Strategies are well-enough developed to be included in a Scenario.
-PlanZero includes Strategies that are quite speculative: all that's required to
-create a Strategy in PlanZero is a brief description of the idea, and a URL to
-learn more about it.
-In order to be eligible to participate in a scenario, a Strategy must be fully
-fledged as a DynamicElement: it must declare which TimeSeries variables it consults as inputs,
-and which ones it defines as outputs, and what logic it uses to relate them.
-</p>
+Strategies let us evaluate the effectivness of ideas whose mechanics are supported through
+the operation of Barriers, and whose KPIs are reflected in CSFs.
+Strategies can be evaluated by ablative analysis of a scenario:
+we can run a scenario with a strategy enabled, and run it again with that strategy disabled,
+and compare the results.
+<p>
 
 
 <h3>Scenario</h3>

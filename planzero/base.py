@@ -537,14 +537,14 @@ class AtmosphericChemistry(BaseScenarioProject):
                 if any_CO2e_contributors:
                     setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', SparseTimeSeries(unit=u.kt_CO2e))
 
-            ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kt_CO2)
-            ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kt_CH4)
-            ctx.Predicted_Annual_Emitted_N2O_mass = SparseTimeSeries(unit=u.kt_N2O)
-            ctx.Predicted_Annual_Emitted_HFC_mass = SparseTimeSeries(unit=u.kt_HFC)
-            ctx.Predicted_Annual_Emitted_PFC_mass = SparseTimeSeries(unit=u.kt_PFC)
-            ctx.Predicted_Annual_Emitted_SF6_mass = SparseTimeSeries(unit=u.kt_SF6)
-            ctx.Predicted_Annual_Emitted_NF3_mass = SparseTimeSeries(unit=u.kt_NF3)
-            ctx.Predicted_Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kt_CO2e)
+            ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(unit=u.kt_CO2, interpolation='no_interpolation')
+            ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(unit=u.kt_CH4, interpolation='no_interpolation')
+            ctx.Predicted_Annual_Emitted_N2O_mass = SparseTimeSeries(unit=u.kt_N2O, interpolation='no_interpolation')
+            ctx.Predicted_Annual_Emitted_HFC_mass = SparseTimeSeries(unit=u.kt_HFC, interpolation='no_interpolation')
+            ctx.Predicted_Annual_Emitted_PFC_mass = SparseTimeSeries(unit=u.kt_PFC, interpolation='no_interpolation')
+            ctx.Predicted_Annual_Emitted_SF6_mass = SparseTimeSeries(unit=u.kt_SF6, interpolation='no_interpolation')
+            ctx.Predicted_Annual_Emitted_NF3_mass = SparseTimeSeries(unit=u.kt_NF3, interpolation='no_interpolation')
+            ctx.Predicted_Annual_Emitted_CO2e_mass = SparseTimeSeries(unit=u.kt_CO2e, interpolation='no_interpolation')
 
             # XXX : what year do these numbers represent? How can this be a default value
             # when the simulated years are a parameter of the state?

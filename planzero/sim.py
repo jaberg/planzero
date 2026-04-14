@@ -25,11 +25,12 @@ from . import scenarios
 class SimulationResult(BaseModel):
 
     state: object
+    ablations: dict[str, object] = {}
 
     by_ipcc_sector: StackedAreaEChart
 
     @classmethod
-    def from_state_scenario(cls, state, scenario):
+    def from_state_scenario(cls, state, scenario, ablations=None):
         sim_years_ints = np.arange(1990, 2090)
         assert (sim_years_ints[:20] == ipcc_canada.echart_years()[:20]).all()
         sim_years = [tt * u.years for tt in sim_years_ints]
@@ -106,6 +107,7 @@ class SimulationResult(BaseModel):
             ])
         return SimulationResult(
             state=state,
+            ablations=ablations or {},
             by_ipcc_sector=by_ipcc_sector,
             )
 
@@ -118,12 +120,27 @@ from .base import (
 @functools.cache
 def sim_scenario(scenario_name):
     scenario = scenarios.scenarios[scenario_name]
-    state = State(
-        name=f'State_{scenario_name}',
-        t_start=scenario.t_start_year * u.years)
-    state.add_projects(scenario.dynelems)
-    state.add_project(Other_NIR_Historical_Actuals())
-    state.add_project(AtmosphericChemistry())
-    state.add_project(SubsidyAccounting())
-    state.run_until(2100 * u.years)
-    return SimulationResult.from_state_scenario(state, scenario)
+
+    def run_sim(exclude_name=None):
+        state = State(
+            name=f'State_{scenario_name}' + (f'_minus_{exclude_name}' if exclude_name else ''),
+            t_start=scenario.t_start_year * u.years)
+        if exclude_name:
+            dynelems = [d for d in scenario.dynelems if d.__class__.__name__ != exclude_name]
+        else:
+            dynelems = scenario.dynelems
+        state.add_projects(dynelems)
+        state.add_project(Other_NIR_Historical_Actuals())
+        state.add_project(AtmosphericChemistry())
+        state.add_project(SubsidyAccounting())
+        state.run_until(2100 * u.years)
+        return state
+
+    baseline_state = run_sim()
+    ablations = {}
+    for d in scenario.dynelems:
+        if 'strategy' in d.tags:
+            name = d.__class__.__name__
+            ablations[name] = run_sim(exclude_name=name)
+
+    return SimulationResult.from_state_scenario(baseline_state, scenario, ablations=ablations)

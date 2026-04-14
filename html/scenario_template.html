@@ -11,10 +11,24 @@
 
 {{planzero.sim.sim_scenario(ident).by_ipcc_sector.as_html()|safe}}
 
-<!-- TODO: table of sectors, linking to simulated-sector results
-    which strategies affected that sector, and how 
--->
-<h2 id="csfs">Critical Success Factors</h2>
+<h2>Model Elements</h2>
+
+<h3 id="strategies">Strategies</h3>
+<table>
+    <thead>
+        <tr><th>Sector</th><th>Strategy</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        {% for name, proj in planzero.sim.sim_scenario(ident).state.projects.items() if 'strategy' in proj.tags %}
+        <tr><td>{{", ".join(proj.ipcc_sector_values)}}</td>
+            <td><a href="/scenarios/{{ident}}/strategies/{{name}}/">{{name}}</a></td>
+            <td>{{proj.short_description}}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<h3 id="csfs">Critical Success Factors</h3>
 <table>
     <thead>
         <tr><th>Sector</th><th>Maximize / Minimize / Maintain</th><th>TimeSeries KPI</th></tr>
@@ -31,7 +45,25 @@
 </table>
 
 
-<h2 id="dynelem">Dynamic Element Objects</h2>
+<h3 id="barriers">Barriers</h3>
+<table>
+    <thead>
+        <tr><th>Sector</th><th>Barrier</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+        {% for name, proj in planzero.sim.sim_scenario(ident).state.projects.items() if 'barrier' in proj.tags %}
+        <tr><td>{{", ".join(proj.ipcc_sector_values)}}</td>
+            <td>{{name}}</td>
+            <td>{{proj.short_description}}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+<h2>Simulation Elements</h2>
+
+<h3 id="dynelem">Dynamic Element Objects</h3>
 
 <table>
     <thead>
@@ -53,7 +85,7 @@
     </tbody>
 </table>
 
-<h2 id="timeseries">Time Series Objects</h2>
+<h3 id="timeseries">Time Series Objects</h3>
 <table>
     <thead>
         <tr>

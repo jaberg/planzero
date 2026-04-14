@@ -1,0 +1,45 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>{{strategy_name}} Strategy in {{scenario_name}} Scenario</h1>
+        <!--<p>Ablative analysis in Scenario: </p>-->
+    </header>
+<p>
+This page shows the marginal impact of the
+<strong>{{strategy_name}}</strong> strategy within the context of the
+<strong><a href="/scenarios/{{scenario_name}}/">{{scenario_name}}</a></strong> scenario. 
+</p>
+<table>
+    <thead>
+        <tr><th>Metric</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>Lifetime cost per tonne {{CO2e|safe}} abated</td><td>{{cost_per_tCO2e}}</td></tr>
+    </tbody>
+</table>
+<p>
+The chart below displays the difference in annual greenhouse
+gas emissions between a full simulation and one where this specific strategy is disabled.
+</p>
+
+{{impact_chart.as_html()|safe}}
+
+<p>
+Positive values represent emissions avoided (saved) by implementing this strategy.
+</p>
+
+{{subsidies_chart.as_html()|safe}}
+
+<ul class="actions special">
+    <li><a href="/scenarios/{{scenario_name}}/" class="button">Back to Scenario</a></li>
+</ul>
+
+</section>
+</div>
+
+{% include "post-main.html" %}

@@ -39,6 +39,11 @@ def test_scenarios(scenario):
     response = client.get(f"/scenarios/{scenario.value}/")
     assert response.status_code == 200
 
+# TODO: parameterize which strategies should be visible this way
+@pytest.mark.parametrize("scenario", enums.StandardScenarios)
+def test_scenarios_scaleBovaer(scenario):
+    response = client.get(f"/scenarios/{scenario.value}/strategies/ScaleBovaer")
+    assert response.status_code == 200
 
 def test_home_about():
     response = client.get("/about/")

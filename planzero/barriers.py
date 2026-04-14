@@ -20,6 +20,10 @@ class Barrier(DynamicElement):
         super().model_post_init(__context)
         self.tags.add('barrier')
 
+    @computed_field
+    def ipcc_sector_values(self) -> list[str]:
+        return [sec.value for sec in self.ipcc_sectors]
+
 
 class BovaerAdoptionLimit(Barrier):
     
@@ -129,14 +133,13 @@ from .sc_3210013001 import (
     number_of_cattle_by_class_and_farm_type)
 
 class BovinePopulation(Barrier):
-    """Assume cattle produce methane (although
-    less-so if they are fed Bovaer) and they also produce milk and beef.
+    """Assume cattle produce methane (less-so if they are fed Bovaer), milk and beef (TODO).
     The evolution of the cattle population is projected to remain constant.
     """
 
     @computed_field
     def short_description(self) -> str:
-        return f"Model cattle population, production of methane (considering Bovaer), milk and beef"
+        return f"Model cattle population, production of methane (considering Bovaer), milk and beef (TODO)"
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
