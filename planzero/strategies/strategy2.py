@@ -34,7 +34,9 @@ class ScaleBovaer(Strategy2):
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
-        return [IPCC_Sector.Enteric_Fermentation]
+        return [IPCC_Sector.Enteric_Fermentation,
+                IPCC_Sector.Other_Product_Manufacture_and_Use, # sync with BovinePopulation
+               ]
 
     @computed_field
     def scenarios(self) -> list[object]:
