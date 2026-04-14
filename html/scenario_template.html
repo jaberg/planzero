@@ -9,12 +9,66 @@
     </header>
 <p>
 
-<!-- TODO: use ident, not just scaling -->
 {{planzero.sim.sim_scenario(ident).by_ipcc_sector.as_html()|safe}}
 
 <!-- TODO: table of sectors, linking to simulated-sector results
     which strategies affected that sector, and how 
 -->
+<h2 id="csfs">Critical Success Factors</h2>
+<table>
+    <thead>
+        <tr><th>Sector</th><th>Maximize / Minimize / Maintain</th><th>TimeSeries KPI</th></tr>
+    </thead>
+    <tbody>
+        {% for CSF_name, proj in planzero.sim.sim_scenario(ident).state.projects.items() if 'CSF' in proj.tags %}
+        {% for kpi_name, kpi_goal in proj.kpi_targets.items() %}
+        <tr><td>{{", ".join(proj.ipcc_sector_values)}}</td>
+            <td>{{kpi_goal}}</td>
+            <td>{{kpi_name}}</td></tr>
+        {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<h2 id="dynelem">Dynamic Element Objects</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Index</th>
+            <th>Dynamic Element Name</th>
+            <th>Role</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for ii, (name, proj) in enumerate(planzero.sim.sim_scenario(ident).state.projects.items()) %}
+    <tr><td>{{ii + 1}}</td>
+        <td>{{name.replace('_', ' ')}}</td>
+        <td>{{", ".join(proj.tags)}}</td>
+        <td>{{proj.description|replace("CO2e", CO2e)|safe}}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<h2 id="timeseries">Time Series Objects</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Index</th>
+            <th>Time Series Name</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for ii, (name, sts) in enumerate(planzero.sim.sim_scenario(ident).state.sts.items()) %}
+    <tr><td>{{ii + 1}}</td><td>{{name.replace('_', ' ')}}</td><td>{{sts.v_unit}}</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
 
 </p>
 

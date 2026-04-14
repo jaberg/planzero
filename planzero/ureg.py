@@ -126,3 +126,6 @@ kilotonne_by_coal_type = {
     enums.CoalType.ImportedBituminous: u.kilotonne_coal_bit,
     enums.CoalType.ImportedSubbituminous: u.kilotonne_coal_subbit,
 }
+
+ureg.define('operation = [installation]')
+ureg.define('farm = operation')

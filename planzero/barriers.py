@@ -250,6 +250,8 @@ class BovinePopulation(Barrier):
             ctx.bovine_methane_rate = bovine_methane
             ctx.bovaer_cost = sts.SparseTimeSeries(default_value=0 * u.CAD / u.year, t_unit=u.year)
             ctx.bovaer_cost_annual = sts.SparseTimeSeries(default_value=0 * u.CAD, t_unit=u.year)
+            ctx.bovaer_headcount = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
+            ctx.bovine_headcount = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
 
             # this ends with the 2025-2026 year being associated with 2025
             correct = bovine_methane.bin_integrals(
@@ -290,6 +292,8 @@ class BovinePopulation(Barrier):
         bovine_methane_contribs = []
         bovaer_cost_contribs = []
         bovaer_CO2_contribs = []
+        bovaer_headcount_contribs = []
+        headcount_contribs = []
         for ob, hc, livestock in zip(stash.on_bovaer, stash.headcounts, stash.livestock_type):
             hc_now = hc.query(state.t_now)
             ob_now = hc_now * frac
@@ -302,10 +306,14 @@ class BovinePopulation(Barrier):
             bovaer_cost_contribs.append(ob_now * self.bovaer_cost[livestock])
             bovaer_CO2_contribs.append(
                 ob_now * current.bovaer_production_CO2_per_methane_abated)
+            bovaer_headcount_contribs.append(ob_now)
+            headcount_contribs.append(hc_now)
 
         current.bovine_methane_rate = sum(bovine_methane_contribs)
         current.bovaer_cost = sum(bovaer_cost_contribs)
         current.bovaer_production_CO2 = sum(bovaer_CO2_contribs)
+        current.bovaer_headcount = sum(bovaer_headcount_contribs)
+        current.bovine_headcount = sum(headcount_contribs)
 
         assert state.t_now.u == u.year
         if state.t_now.magnitude == int(state.t_now.magnitude):
@@ -341,3 +349,57 @@ class BovinePopulation(Barrier):
         # live, what would they eat, etc?
 
         return state.t_now + .5 * u.year
+
+
+class BovaerMonitoring(Barrier):
+
+    @computed_field
+    def short_description(self) -> str:
+        return f"Assume monitoring Bovaer usage costs {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for on-site inspection"
+
+    @computed_field
+    def paperwork_monitoring(self) -> object:
+        # Gemini made this up
+        return 1000 * u.CAD / u.farm / u.year
+
+    @computed_field
+    def onsite_monitoring(self) -> object:
+        # assume one visit per year at this rate, which Gemini made up
+        return 3000 * u.CAD / u.farm / u.year
+
+    @computed_field
+    def cattle_per_farm(self) -> object:
+        # TODO: pull down actual data from https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101
+        return 150 * u.cattle / u.farm
+
+    @computed_field
+    def ipcc_sectors(self) -> list[object]:
+        return [IPCC_Sector.Enteric_Fermentation]
+
+    @computed_field
+    def scenarios(self) -> list[object]:
+        return [StandardScenarios.Scaling]
+
+    @computed_field
+    def research(self) -> dict[str, str]:
+        return {}
+
+    def on_add_project(self, state):
+        with state.requiring_current(self) as ctx:
+            ctx.bovaer_headcount = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
+
+        with state.defining(self) as ctx:
+            ctx.bovaer_monitoring_cost_annual_total = sts.SparseTimeSeries(
+                default_value=0 * u.CAD)
+
+        state.register_subsidy_requirement('bovaer_monitoring_cost_annual_total')
+
+        return int(state.t_now.to('year').magnitude) * u.year
+
+    def step(self, state, current):
+        cost_rate = self.onsite_monitoring + self.paperwork_monitoring
+        current.bovaer_monitoring_cost_annual_total = (
+            cost_rate * 1 * u.year
+            / self.cattle_per_farm
+            * current.bovaer_headcount)
+        return state.t_now + 1 * u.year

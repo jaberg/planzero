@@ -18,7 +18,6 @@ from .html import (
     EChartItemStyle,
     StackedAreaEChart)
 
-from . import barriers
 from . import ipcc_canada
 from . import scenarios
 

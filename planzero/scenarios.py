@@ -4,6 +4,7 @@ from .ureg import u
 from .enums import StandardScenarios
 from .base import DynamicElement
 
+from . import csfs
 from . import barriers
 from . import strategies
 
@@ -11,6 +12,8 @@ from . import strategies
 def collect_dynelems(scenario):
     rval = []
     rval.extend([val for val in barriers.barriers.values()
+                if scenario in val.scenarios])
+    rval.extend([val for val in csfs.csfs.values()
                 if scenario in val.scenarios])
     rval.extend([val for val in strategies.strategies.values()
                 if scenario in val.scenarios])

@@ -109,7 +109,8 @@ and imposes <i>querying semantics</i> on the TimeSeries according to the interpo
 
 <p>
 The main purpose of PlanZero's TimeSeries objects is to support querying the value 
-at particular times, so that XXX.
+at particular times, in order to compute the values of other time-varying quantities required
+to simulate scenarios.
 The querying logic in PlanZero's TimeSeries objects depends on the interpolation mode.
 As of writing, there are two interpolation modes:
 <ul>
@@ -149,35 +150,50 @@ because it's likely a mistaken usage.
 </p>
 
 <p>
-The following table lists of all 203 time series objects involved
-in the current scaling scenario, along with its unit of measure.
-It is may seem surprising that so many time series are required to
-simply model a single strategy (use Bovaer).
-The reason is that
-many time series are required to represent the historical NIR elements (at least one GHG and one CO2e time series per IPCC Sector),
-and many time series are required to represent the bovine population (about 7 types of cattle for each province and territory).
-The atmospheric timeseries elements are not strictly necessary, but I like to leave them in.
-The following sections will explain how these TimeSeries objects are related by dynamic elements and make up a scenario.
+There are 1262 time series objects involved
+in the current scaling scenario.
+Most of the time series objects are indexed by year, although
+the heads-of-cattle counts are indexed by half-years because statistics canada
+reports headcounts at January 1 and July 1.
+There isn't a single obvious way to group, or organize all of these time series objects;
+techniques have been developed to help analysts explore such data, but
+researching, selecting, and integrating
+products for data visualization with PlanZero is left to future work.
+Broadly speaking, I think of the timeseries in the scenario so far as follows:
+<ul>
+    <li>cattle headcounts, for each type of cattle, and for each province</li>
+    <li>emissions of each greenhouse gas, for each IPCC category</li>
+    <li>atmospheric timeseries related to energy forcing as described in this earlier post</li>
+    <li>Bovaer-related timeseries, such as how many cattle are on it, and how many farmers might adopt it</li>
+    <li>costs requiring subsidy: e.g. Bovaer purchase and monitoring</li>
+</ul>
+The full table of timeseries values is shown on the
+<a href="/scenarios/scaling/#timeseries">scenario page</a> .
 </p>
-
-<table>
-    <thead>
-        <tr>
-            <th>Index</th>
-            <th>Time Series Name</th>
-            <th>Unit</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for ii, (name, sts) in enumerate(planzero.sim.sim_scenario("scaling").state.sts.items()) %}
-    <tr><td>{{ii}}</td><td>{{name.replace('_', ' ')}}</td><td>{{sts.v_unit}}</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
-
 
 
 <h3 id="dynelem">Dynamic Element Objects</h3>
+
+<p>
+Whereas TimeSeries objects are just tables of numbers like what you can see in spreadsheet columns,
+PlanZero's DynamicElement objects
+provide something like the formulas that sometimes generate those numbers.
+Dynamic elements define what the TimeSeries objects should be, and how they relate to each other.
+A DynamicElement object is like a spreadsheet of a specific form:
+<ul>
+    <li>a single shared set of times runs down the first column</li>
+    <li>each other column has the numeric values of a TimeSeries object</li>
+    <li>the initial rows are initialized using custom logic</li>
+    <li>the subsequent rows are computed recursively, each row from previous ones in the same way for each row</li>
+</ul>
+The DynamicElements that define a scenario can read each others' columns, but they can only write their own columns.
+The PlanZero simulation engine simulates a scenario by updating the rows of the various spreadsheets in chronological order, and in order of dependency when there are ties in the chronological ordering.
+</p>
+
+<p>
+By construction, are no more DynamicElement objects than TimeSeries.
+In practice, there are far fewer. As of writing, the Scaling scenario
+has over a thousand time series, but it has just eight dynamic elements (see also the <a href="/scenarios/scaling/#dynelem">current scaling scenario dynamic elements</a>):
 
 <table>
     <thead>
@@ -189,54 +205,70 @@ The following sections will explain how these TimeSeries objects are related by 
         </tr>
     </thead>
     <tbody>
-    {% for ii, (name, proj) in enumerate(planzero.sim.sim_scenario("scaling").state.projects.items()) %}
-    <tr><td>{{ii}}</td>
-        <td>{{name.replace('_', ' ')}}</td>
-        <td>{{", ".join(proj.tags)}}</td>
-        <td>{{proj.description|replace("CO2e", CO2e)|safe}}</td>
+
+    <tr><td>1</td>
+        <td>BovaerAdoptionLimit</td>
+        <td>barrier</td>
+        <td>Assume that no more than 5.0 percent / year of
+        farmers will switch to administering Bovaer
+        in any given year, but that adoption
+        can ultimately go all the way to 100%.
+        </td>
     </tr>
-    {% endfor %}
+
+    <tr><td>2</td>
+        <td>BovinePopulation</td>
+        <td>barrier</td>
+        <td>Assume cattle produce methane (although
+    less-so if they are fed Bovaer) and they also produce milk and beef.
+    The evolution of the cattle population is projected to remain constant.
+    </td>
+    </tr>
+
+    <tr><td>3</td>
+        <td>BovaerMonitoring</td>
+        <td>barrier</td>
+        <td>Assume paperwork and onsite monitoring costs to certify emission reductions.</td>
+    </td>
+    </tr>
+
+    <tr><td>4</td>
+        <td>EntericFermentation CSFs</td>
+        <td>CSF</td>
+        <td>All formalized CSFs related to Enteric Fermentation.</td>
+    </td>
+    </tr>
+
+    <tr><td>5</td>
+        <td>ScaleBovaer</td>
+        <td>strategy</td>
+        <td>Use as much Bovaer as farmers will take</td>
+    </tr>
+
+    <tr><td>6</td>
+        <td>Other NIR Historical Actuals</td>
+        <td>built-in</td>
+        <td>Populate otherwise-missing IPCC Categories with historical actuals from NIR-2025
+    </td>
+    </tr>
+
+    <tr><td>7</td>
+        <td>AtmosphericChemistry</td>
+        <td>built-in</td>
+        <td>Combine GHG emissions into a <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mrow><mi mathvariant="normal">C</mi><mi mathvariant="normal">O</mi></mrow><mn>2</mn></msub><mi mathvariant="normal">e</mi></mrow></math> estimate using GWP-100 emission factors,
+    and also simulate a simple radiative forcing and planetary heating model.
+    </td>
+    </tr>
+
+    <tr><td>8</td>
+        <td>SubsidyAccounting</td>
+        <td>built-in</td>
+        <td>Tally up annual subsidy amounts required by barriers and strategies.</td>
+    </tr>
     </tbody>
 </table>
-<p>
-The next type of object in the simulation framework is the dynamic element.
-Dynamic elements are bits of modelling logic in the PlanZero software that
-define TimeSeries objects.
-</p>
-<p>
-Is a rule for determining the values of some TimeSeries objects (outputs), based on
-some modelling parameters, and the values of other TimeSeries objects (inputs).
-There are several styles of Dynamic Element in PlanZero:
-some simply import data from StatsCan tables
-the X DynamicElement implements some simple geophysics
-the Y DynamicElement implements a hypothetical government policy
-and the Z DynamicElement implements hypothetical economic behaviour (how farmers might adopt Bovaer).
-</p>
 
-<p>
-DynamicElement objects declare the names of the TimeSeries they require as input
-and the names of the TimeSeries they define as outputs.
-The simulation engine uses this information to ensure the compatibility of all
-of the DynamicElement objects that make up a simulation.
 </p>
-
-<p>
-There is support for circular dependencies,
-because DynamicElements must specifiy, for each input, whether
-the exactly-current value of that input is required, or any recent-enough
-value will do. Circular dependencies through exactly-current required inputs are disallowed,
-but usually these circular dependencies can be resolved by configuring one of the DyanamicElement
-objects to accept an almost-exactly-current value.
-</p>
-
-and Dynamic Element objects, that represent the rules for how those values should change.
-Is a data structure of values of something at a sequence of times.
-The value at a particular time can be undefined, or a number or a random variable.
-The whole time series generally has a unit, so the series represents e.g.
-a sequence of Mt {{CO2e|safe}} or Canadian dollars.
-See ureg.py for the set of units used in PlanZero.
-</p>
-
 
 
 <h2 id="usage">Using the Framework</h2>
@@ -248,25 +280,72 @@ informally.
 I will make an effort, going forward, to reflect at least some of these as code objects.
 </p>
 
-<h3>CSFs</h3>
+<h3>Critical Success Factors</h3>
 
 <p>
-These are names for TimeSeries objects,
-and sometimes DynamicElements that maintain a relationship between a few named TimeSeries objects.
-For example, a post may say name a strategy of "increasing engine efficiency".
-Going forward, I'll attempt to formalize that by stating the name of this efficiency variable.
-In the case of efficiency variables specifically, I'll also name the numerator and denominator,
-and the DynamicElement that relates all three.
+A Critical Success Factors (CSF), as I've been using the term in the sector-by-sector
+NIR-reconstruction posts, can be formalized in terms of a triplet
+of (a) a sector, (b) an optimal value, and (c) a TimeSeries object.
+For example, a critical success factor such as "reduce the rate of methane emitted, per head"
+which is currently listed as a 
+<a href="/ipcc-sectors/Enteric_Fermentation/#csfs">factor for Enteric Fermentation</a>,
+can be formalized in this general way as follows:
+<table>
+    <thead>
+        <tr><th>Sector</th><th>Maximize / Minimize / Maintain</th><th>TimeSeries KPI</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Enteric Fermentation</td><td>Minimize</td><td>[average] methane / head</td></tr>
+    </tbody>
+</table>
+A CSF does not generally suggest a particular <i>mechanism</i> of achieving an emissions reduction,
+it is just a callout as a potential indicator of progress:
+emission reductions in an IPCC-sector should occur if, <i>and only if</i>, there is progress
+on at least some of its CSFs.
+CSFs are closely related to <i><a href="https://en.wikipedia.org/wiki/Performance_indicator">Key Performance Indicators</a></i> (KPIs);
+the TimeSeries used in a CSF definition can be called a KPI.
+</p>
+
+<p>
+Formalized CSFs in PlanZero are generally DynamicElement objects that also (additionally to what DynamicElement objects usually do)
+<ul>
+    <li>name CSF TimeSeries variables</li>
+    <li>indicate whether each one should maximized, minimized, or maintained at a specific value</li>
+    <li>indicate the IPCC sector(s) to which each CSF applies</li>
+</ul>
+Work remains to be done, but I hope eventually CSFs help visualize how strategies affect emissions,
+and generally, what's happening in a scenario.
 </p>
 
 <h3>Barriers</h3>
 
 <p>
-What I've been calling barriers in posts to date typically correspond to constraints.
-In PlanZero, these constraints are implemented as TimeSeries objects that
-take a value of 0 for times when the constraint is not violated,
-and another value when the constraint is violated.
-Generally a DynamicElement is required to determine whether each constraint is violated.
+What I've been calling barriers in PlanZero posts to date typically correspond to constraints or challenges.
+The <a href="/ipcc-sectors/Enteric_Fermentation/#barriers">barriers currently associated Enteric Fermentation</a> include,
+for example: "Owners of herds do not want to reduce their herds, and neither do their customers or suppliers."
+</p>
+<p>
+A formalized Barrier in PlanZero is a dynamic element that
+<ul>
+    <li>is associated with any number (including zero) of IPCC sectors</li>
+    <li>reads strategy TimeSeries objects (see below) with non-zero delay</li>
+    <li>works with other Barrier DynamicElement objects to relate simulation inputs (e.g. StatsCan data regarding cattle headcounts) to simulation outputs (KPIs, e.g. annual sectoral {{CO2e|safe}} totals)</li>
+</ul>
+I expect typical CSF and Strategy elements to have relatively simple logic.
+I expect Barrier elements to house the complexity.
+The strategy supporting this post is simply "use as much Bovaer as possible."
+It's not trivial to determine how much Bovear use is possible,
+and the logic for determining in the model, how much Bovaer it is possible to use in any given year, is in a Barrier element;
+it's fitting to call the element a "Barrier" because it isn't deemed possible
+to use enough for the entire national herd right away.
+Likewise, Bovaer usage doesn't immediately and completely eliminate methane;
+this frustrating fact supports again the word "Barrier" for the dynamic element
+that implements the modelling logic for how much methane is actually reduced, and at what cost.
+</p>
+
+<p>
+We'll see below the documentation on the Barrier elements in the scaling scenario,
+but taken together, they implement what I would call "the model" being simulated.
 </p>
 
 <h3>Strategies</h3>
