@@ -827,3 +827,48 @@ if SparseTimeSeries not in objtensor._types_for_pint_to_ignore:
     objtensor._types_for_pint_to_ignore = (
         objtensor._types_for_pint_to_ignore
         + (STS,))
+
+
+"""
+<p>
+The main purpose of PlanZero's TimeSeries objects is to support querying the value 
+at particular times, in order to compute the values of other time-varying quantities required
+to simulate scenarios.
+The querying logic in PlanZero's TimeSeries objects depends on the interpolation mode.
+As of writing, there are two interpolation modes:
+<ul>
+    <li>No interpolation: the series is only defined at the times listed explicitly, at which times the value is the corresponding value.</li>
+    <li>Current interpolation: the series is defined at all times,
+        to be the most-recent value prior to (or coincident with) time t.</li>
+</ul>
+The "No interpolation" mode is suitable for series such as an annual CO2e emission in the NIR.
+In that kind of time series, there are amounts for e.g. years,
+but there is no implied annual total for dates in between; the annual totals are only meant to apply to
+whole years.
+The "Current interpolation" mode is suitable for other kinds of time series, such as
+e.g.  the number of cattle in Canada.
+The nature of that time-varying quantity is different in that
+the question of "how many cattle are there in Canada?" can be reasonably asked
+of any date, regardless of what (time, value) pairs are being used to implement a TimeSeries
+approximating that time-varying quantity.
+Time-varying quantities such as emission factors, prices, and populations are
+best-represented as "Current interpolation" TimeSeries objects.
+Time-varying quantities such as quarterly or annual summaries are best-represented as "No interpolation".
+</p>
+
+<p>
+The purpose of the units of measure and the interpolation modes in TimeSeries objects
+is to prevent logic errors in modelling.
+When adding TimeSeries using compatible units (e.g. pounds and kilograms), unit conversion is automatic
+so that there's no chance of using an incorrect conversion factor by mistake.
+When adding TimeSeries using incompatible units (e.g. kilograms and kilograms per year),
+the library code raises an exception to indicate that there's an error in the model that needs correcting.
+Similarly, the intention of the interpolation modes is to catch logical errors.
+For example,
+multiplying annual greenhouse gas totals (whose mode would be "no interpolation")
+by emission factors (with mode "current interpolation")
+would result in a timeseries with a mode of "no interpolation";
+attempting to query that timeseries at arbitrary times would raise an exception
+because it's likely a mistaken usage.
+</p>
+"""

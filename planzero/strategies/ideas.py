@@ -1344,3 +1344,19 @@ ideas.limit_freight_speed_to_90kph = NewcoIdea(
 
 # make fertilizer on the farm
 # https://www.plasmaleap.com/efuels-chemicals
+
+
+# Sceye HAPS based on helium / hydrogen airship, marketed as sensor / telecommunications
+# https://sceye.com/
+
+# Aptera solar EV like a solar-panel e-bike+ enclosed motorcycle thing, pretty awesome
+# https://aptera.us/
+
+# Off-grid solar & wind & battery setup to support a mining operation in Austrlia
+# including 5GWh battery system
+# https://interestingengineering.com/energy/australia-off-grid-renewable-energy-mining
+
+
+# SMR Explainer focused on Darlington, Ontario (Narwal)
+# good to model this, and then ask Narwal if I did a good job?
+# https://thenarwhal.ca/ontario-darlington-nuclear-smr-explainer/

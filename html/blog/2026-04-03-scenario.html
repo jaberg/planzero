@@ -18,18 +18,16 @@ Table of Contents:
     </li>
     <li><a href="#modelling">Scenario Modelling</a>
         <ul>
-            <li><a href="#csfs">Modelling Critical Success Factors</a></li>
-            <li><a href="#barriers">Modelling Barriers</a></li>
-            <li><a href="#strategies">Modelling Strategies</a></li>
-            <li><a href="#scenarios">Modelling Scenarios</a></li>
+            <li><a href="#formalizing_csfs">Formalizing Critical Success Factors</a></li>
+            <li><a href="#formalizing_barriers_strategies">Formalizing Barriers and Strategies</a></li>
+            <li><a href="#scenario_simulation">Scenario Simulation</a></li>
         </ul>
     </li>
     <li><a href="#scaling">The Scaling Scenario, Starting with Bovaer</a>
         <ul>
-            <li><a href="#scaling_csfs">Critical Success Factors</a></li>
-            <li><a href="#scaling_barriers">Barriers</a></li>
-            <li><a href="#scaling_strategies">Strategies</a></li>
-            <li><a href="#scaling_other">Other TimeSeries and DynamicElement Objects</a></li>
+            <li><a href="#enteric_csfs">CSFs and Strategies for Enteric Fermentation Emissions</a></li>
+            <li><a href="#enteric_barriers">Barriers</a></li>
+            <li><a href="#simulating_bovaer">Simulating Canada's Future with Bovaer</a></li>
         </ul>
     </li>
     <li><a href="#conclusion">Conclusion</a></li>
@@ -39,61 +37,67 @@ Table of Contents:
 <h2 id="introduction">Introduction</h2>
 
 <p>
-This post takes a break from the series replicating  NIR sectoral totals,
-to look to the future.
-It brings new top-level tabs for the PlanZero modelling framework:
-<!-- TODO -->
+This post represents a break from the series replicating NIR sectoral totals.
+It introduces <i>strategies</i> and <i>scenarios</i> as formal elements of the PlanZero
+modelling framework, by way of first examples of Bovaer usage (as a strategy)
+and scaling-of-current-products (as a scenario, aka "scaling").
+The PlanZero site now includes top-level tabs for both types of entity:
 <ul>
-    <li><b>CSFs</b> &mdash; formalized critical success factors in PlanZero </li>
-    <li><b>Barriers</b> &mdash; formalized barriers</li>
-    <li><b>Strategies</b> &mdash; formalized strategies</li>
-    <li><b>Scenarios</b> &mdash; formalized scenarios</li>
+    <li><b><a href="/strategies/">Strategies</a></b> &mdash; code elements representing things that could be done</li>
+    <li><b><a href="/scenarios/">Scenarios</a></b> &mdash; simulations of strategies, and their consequences</li>
 </ul>
-
-This post is the first in a new series
-developing a scenario (the <i>Scaling</i> scenario, introduced below)
-to model the effects of scaling the use of existing products
-that address emissions in the various IPCC sectors used in the National Greenhouse Gas Inventory.
 </p>
 
-{{ planzero.sim.sim_scenario("scaling").by_ipcc_sector.as_html()|safe }}
-
 <p>
-This post also introduces the PlanZero scenario modelling framework itself.
-The <a href="#simulation">Simulation Framework</a> Section introduces the key modelling data structures:
-<i>time series</i> objects, that represent time-varying quantities;
-and <i>dynamic elements</i>, that represent the rules for how time-varying quantities should change.
-The <a href="#modelling">Scenario Modelling</a> Section explains how the concepts of
-Critical Success Factors, Barriers, and Strategies can (at least sometimes) be formalized
-as time series and dynamic elements. The ones that have been formalized can now
-be found in the new tabs above: <a href="/csfs/">CSFs</a>, <a href="/barriers/">Barriers</a>, and <a href="/strategies/">Strategies</a>.
-The <a href="#scaling">Scaling Scenario</a> Section uses these new mechanisms to model
-a strategy for reducing enteric fermentation,
-namely, the strategy of administering the Bovaer feed additive.
-The post concludes with some observations regarding the modelled effectiveness of Bovaer,
-some thoughts on how to develop the scaling scenario systematically,
-and some ideas for other standard scenarios that might be of interest for the PlanZero site.
+The post is organized as follows:
+<ul>
+    <li>The <a href="#simulation">Simulation Framework</a> section introduces how PlanZero simulates things
+        like an enormous spreadsheet with time series objects (columns of numbers)
+        and dynamic element objects (initialization and formulas).</li>
+    <li>The <a href="#modelling">Scenario Modelling</a> section explains how the concepts of
+        critical success factors, barriers, and strategies can be (a) formalized
+        in terms of time series and dynamic elements, and (b) combined to form scenarios.</li>
+    <li><a href="#scaling">The Scaling Scenario, Starting with Bovaer</a> section
+        documents the dynamic elements of the new scaling scenario, including
+        the strategy of scaling the usage of Bovaer (and its associated barriers).
+    </li>
+</ul>
+</P
+<p>
+The post is maybe the most technical so far (or most theoretical?), but I hope it might offer a design introduction
+to anyone interested in using this modelling framework.
+I intend to follow up on this post with others that add strategies and fill out the scaling scenario;
+with the technical foundation here, these future posts can be much shorter.
 </p>
 
 
 <h2 id="simulation">Simulation Framework</h2>
 <p>
-PlanZero's simulation framework involves a few types of thing:
+So far the posts have mostly been about trying to re-create data in the
+National Greenhouse Gas Inventory Report from other data sources, which I was doing to get
+started.
+The vision for the PlanZero project is that it will <i>extend</i> those sectoral emissions into the future
+with models that project how emissions might change in future.
+This is the first post that does that kind of projection.
+This section introduces the simulation engine used in PlanZero to run models
+that work a bit like a large spreadsheet.
+PlanZero's simulation framework involves two concepts:
 <ul>
-    <li>time series objects, which contain the data of time-varying quantities</li>
-    <li>dynamic element objects, which implement rules for the evolution of time series</li>
-    <li>scenario objects, which are sets of time series and dynamic elements. 
+    <li>time series objects, which contain the data of time-varying quantities (such as e.g. temperature, or annual emissions)</li>
+    <li>dynamic element objects, which implement rules for the evolution of time series data</li>
 </ul>
-This section introduces these object types, and later sections explain how they are used for
-modelling.
+The next two subsections explain each of these in more detail,
+and the next section (Scenario Modelling) explains how these are used to define scenarios.
 </p>
 
 <h3 id="timeseries">Time Series Objects</h3>
 <p>
-A time series object (sometimes written as a TimeSeries) represents a time-varying quantity.
-PlanZero posts have used TimeSeries
-objects already, to represent e.g. the various sectoral emissions of greenhouse gases for the NIR.
-The key attributes of a TimeSeries are:
+A time series represents a time-varying quantity in some unit of measure.
+PlanZero posts have used time series
+objects already to represent just about everything that was plotted as a function of time,
+e.g. both the various sectoral emissions of greenhouse gases in the NIR,
+and the attempts to reconstruct them.
+The key attributes of a time series are:
 <ul>
     <li>a set of <i>what</i> numeric values the series takes</li>
     <li>a set of times marking <i>when</i> the series takes these values</li>
@@ -103,350 +107,428 @@ The key attributes of a TimeSeries are:
 A TimeSeries is a bit like two matched columns in a spreadsheet:
 one column being the times, and the other being the values.
 Relative to columns in a spreadsheet,
-a TimeSeries restricts all of its values to be in a single common unit of measure,
+a time series object restricts all of its values to be in a single common unit of measure,
 and imposes <i>querying semantics</i> on the TimeSeries according to the interpolation mode.
 </p>
-
 <p>
-The main purpose of PlanZero's TimeSeries objects is to support querying the value 
-at particular times, in order to compute the values of other time-varying quantities required
-to simulate scenarios.
-The querying logic in PlanZero's TimeSeries objects depends on the interpolation mode.
-As of writing, there are two interpolation modes:
-<ul>
-    <li>No interpolation: the series is only defined at the times listed explicitly, at which times the value is the corresponding value.</li>
-    <li>Current interpolation: the series is defined at all times,
-        to be the most-recent value prior to (or coincident with) time t.</li>
-</ul>
-The "No interpolation" mode is suitable for series such as an annual CO2e emission in the NIR.
-In that kind of time series, there are amounts for e.g. years,
-but there is no implied annual total for dates in between; the annual totals are only meant to apply to
-whole years.
-The "Current interpolation" mode is suitable for other kinds of time series, such as
-e.g.  the number of cattle in Canada.
-The nature of that time-varying quantity is different in that
-the question of "how many cattle are there in Canada?" can be reasonably asked
-of any date, regardless of what (time, value) pairs are being used to implement a TimeSeries
-approximating that time-varying quantity.
-Time-varying quantities such as emission factors, prices, and populations are
-best-represented as "Current interpolation" TimeSeries objects.
-Time-varying quantities such as quarterly or annual summaries are best-represented as "No interpolation".
+Time series are important in PlanZero because they are the basis of simulation.
+PlanZero simulates scenarios by repeatedly figuring out what the next value in each time series should be.
+The figuring-out of the next value is done by dynamic elements, which we'll talk about in the next sub-section.
 </p>
 
 <p>
-The purpose of the units of measure and the interpolation modes in TimeSeries objects
-is to prevent logic errors in modelling.
-When adding TimeSeries using compatible units (e.g. pounds and kilograms), unit conversion is automatic
-so that there's no chance of using an incorrect conversion factor by mistake.
-When adding TimeSeries using incompatible units (e.g. kilograms and kilograms per year),
-the library code raises an exception to indicate that there's an error in the model that needs correcting.
-Similarly, the intention of the interpolation modes is to catch logical errors.
-For example,
-multiplying annual greenhouse gas totals (whose mode would be "no interpolation")
-by emission factors (with mode "current interpolation")
-would result in a timeseries with a mode of "no interpolation";
-attempting to query that timeseries at arbitrary times would raise an exception
-because it's likely a mistaken usage.
-</p>
-
-<p>
-There are 1262 time series objects involved
-in the current scaling scenario.
-Most of the time series objects are indexed by year, although
-the heads-of-cattle counts are indexed by half-years because statistics canada
-reports headcounts at January 1 and July 1.
-There isn't a single obvious way to group, or organize all of these time series objects;
-techniques have been developed to help analysts explore such data, but
-researching, selecting, and integrating
-products for data visualization with PlanZero is left to future work.
-Broadly speaking, I think of the timeseries in the scenario so far as follows:
-<ul>
-    <li>cattle headcounts, for each type of cattle, and for each province</li>
-    <li>emissions of each greenhouse gas, for each IPCC category</li>
-    <li>atmospheric timeseries related to energy forcing as described in this earlier post</li>
-    <li>Bovaer-related timeseries, such as how many cattle are on it, and how many farmers might adopt it</li>
-    <li>costs requiring subsidy: e.g. Bovaer purchase and monitoring</li>
-</ul>
-The full table of timeseries values is shown on the
-<a href="/scenarios/scaling/#timeseries">scenario page</a> .
+Before we get to dynamic elements though - a brief defence for making a custom data type with units and an interpolation mode.
+Unit conversion is a notorious source of error in systems that are difficult to test.
+One recent high-profile example is the <a href="https://en.wikipedia.org/wiki/Mars_Climate_Orbiter">loss of the Mars Climate Orbiter in 1999</a>.
+Time series objects in PlanZero are always in some unit of measure to try to avoid such errors,
+and PlanZero has introduced additional units of measure (cattle, CAD, kg-of-CO2) to reduce the likelihood
+of combining numbers inappropriately.
+A second defence against modelling error is the use of an "interpolation mode" on time series.
+There are currently two modes:
+the value of the series at points in time that aren't explicitly represented is either (a) undefined,
+or (b) defined to be the most-recent value.
+Series with different modes can be combined, but bearing these semantics in mind has helped catch
+modelling errors.
+These mechanisms don't guarantee a model is good, but they do
+help ensure that a simulation result reflects the intended modelling assumptions.
 </p>
 
 
 <h3 id="dynelem">Dynamic Element Objects</h3>
 
 <p>
-Whereas TimeSeries objects are just tables of numbers like what you can see in spreadsheet columns,
-PlanZero's DynamicElement objects
-provide something like the formulas that sometimes generate those numbers.
-Dynamic elements define what the TimeSeries objects should be, and how they relate to each other.
-A DynamicElement object is like a spreadsheet of a specific form:
+Whereas time series objects are tables of numbers like what you can see in spreadsheet columns,
+PlanZero's dynamic element objects are more like the formulas that define spreadsheet cells.
+Dynamic elements define how time series objects should be initialized,
+and how they should be extended by iterative computation.
+A dynamic element object is like a spreadsheet of a specific form:
 <ul>
     <li>a single shared set of times runs down the first column</li>
-    <li>each other column has the numeric values of a TimeSeries object</li>
-    <li>the initial rows are initialized using custom logic</li>
-    <li>the subsequent rows are computed recursively, each row from previous ones in the same way for each row</li>
+    <li>each other column has the numeric values of a time series</li>
+    <li>the initial rows (earlier times) are initialized using custom logic</li>
+    <li>the subsequent rows (later times) are computed recursively, each row from previous ones, always re-applying the same formula</li>
 </ul>
-The DynamicElements that define a scenario can read each others' columns, but they can only write their own columns.
-The PlanZero simulation engine simulates a scenario by updating the rows of the various spreadsheets in chronological order, and in order of dependency when there are ties in the chronological ordering.
+The dynamic elements that define a scenario can read each others' columns, but they can only write their own columns.
+</p>
+<p>
+Dynamic elements are important to know about, because they encode the modelling assumptions
+that make up a PlanZero scenario.
+PlanZero simulation engine simulates a scenario by using the dynamic elements in a scenario
+to update the rows of the various time series in chronological order, and in order of dependency when there are ties in the chronological ordering.
+The next section explains how critical success factors, barriers, strategies, and scenarios
+can be formalized as time series and dynamic elements.
+</p>
+
+<h2 id="modelling">Scenario Modelling</h2>
+
+<p>The purpose of PlanZero is to model future scenarios,
+and to explore strategies for how Canada might achieve a net-zero economy.
+I think of this modelling as being a combination of
+strategic management and numerical optimization.
+<a href="https://en.wikipedia.org/wiki/Strategic_management">Strategic management</a>, to quote wikipedia,
+"involves the formulation and implementation of the major goals and initiatives taken by an organization's managers on behalf of stakeholders, based on consideration of resources and an assessment of the internal and external environments in which the organization operates."
+If we consider Canada as an organization, the federal government has,
+among it's many goals and initiatives, set a goal to achieve net-zero by 2050 (<a href="TODO">earlier post</a>, <a href="TODO">government site</a>).
+As explained in the following sections,
+a framework used in strategic management helps formalize this goal in terms of a few types of time series and dynamic element,
+and numeric optimization can be used to search over strategies for desirable predicted futures.
+I hope that invoking the terminology of goals, CSFs, barriers, and strategies helps to make the modelling more accessible and engaging, and thereby solicits a greater quantity of constructive feedback.
+</p>
+<p>
+The word "goal" has a common-sense definition, but in the context of governmental planning and legislation,
+it is also appropriate to consider the term within the realm of strategic management.
+Strategic management does not offer a single definition of what a goal is, 
+or a canonical articulation of what good management looks like.
+I have an extremely limited knowledge of that field,
+but for what it's worth, the planning process of the federal government brings to my mind the framework articulated in
+"<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">The
+    Executive's Guide to Facilitating Strategy</a>" by Michael Wilkinson (which I'll refer to as EGFS).
+In the terminology of the EGFS, an organization's SMART goals (Specific, Measurable, Achievable, Relevant, and Time-bound)
+should be broken down systematically during an implementation planning process.
+The goal of net-zero by 2050 is questionably "Achievable" but otherwise qualifies as a SMART goal.
+EGFS suggests breaking down such a goal into three sets of considerations and hypotheses, before developing detailed implementation plans for specific strategies:
+<ul>
+    <li><strong>Critical Success Factors (CSFs)</strong> are key conditions that must be created to achieve one or more objectives.</li>
+    <li><strong>Barriers</strong> are existing or potential challenges that hinder the achievement of one or more objectives. </li>
+    <li><strong>Strategies</strong> are broad activities required to achieve a goal, create a critical condition, or overcome a barrier.</li>
+</ul>
+PlanZero posts focused on replicating NIR emissions estimates (such as TODO) have included sections with these names,
+and informal thoughts aligned with these definitions.
+The scenario modelling introduced in this post involves formalizing these notions
+as code objects that can be simulated and compared numerically to determine if, e.g.
+a particular strategy is a good idea.
+</p>
+<p>
+The next subsections explain how the EGFS concepts of CSF, barrier, and strategy
+can be formalized in terms of time series and dynamic elements,
+and used in that way to structure and interpret scenario simulations for the purpose of evaluating strategies.
+</p>
+
+<h3 id="formalizing_csfs">Formalizing Critical Success Factors</h3>
+
+<p>
+Critical Success Factors (CSFs) are introduced in EGFS as "key conditions that must be created to achieve one or more objectives."
+In PlanZero, the objective is, for each IPCC sector, to reduce emissions as much as possible, even producing negative emissions when that's possible.
+Therefore PlanZero's CSFs can be defined for each IPCC sector to reflect the numeric drivers of emissions in that sector.
+For example, in the case of enteric fermentation, the emissions calculation (see this <a href="">earlier post approximating the enteric fermentation emissions</a>)
+could be articulated as the product of two terms (ignoring ruminants other than cattle): number of cattle, and average methane emitted per head of cattle.
+These two terms suggest two CSFs:
+<ul>
+    <li>Minimize the number of cattle.</li>
+    <li>Minimize the average amount of methane emitted per head of cattle.</li>
+</ul>
+Minimizing either or both of these terms would, mathematically, reduce enteric fermentation emissions.
+Without minimizing one or the other, enteric fermentation emissions will not be reduced.
+Therefore, it's fair to say these are two "key conditions that must be created to achieve one or more objectives" of emissions reduction in this sector.
 </p>
 
 <p>
-By construction, are no more DynamicElement objects than TimeSeries.
-In practice, there are far fewer. As of writing, the Scaling scenario
-has over a thousand time series, but it has just eight dynamic elements (see also the <a href="/scenarios/scaling/#dynelem">current scaling scenario dynamic elements</a>):
+The two metrics mentioned in CSFs (number of cattle, and average amount of methane emitted) are also
+time series in PlanZero, because that's how I computed the NIR estimate for that sector.
+This has, in fact, been my motive in replicating the NIR estimates.
+I think the EGFS framework is useful, and I wanted to find good CSFs for each of the sectors.
+I believe CSFs, at least in the context of PlanZero, can be formalized in terms of a triplet
+of (a) a sector, (b) an optimal value, and (c) a TimeSeries object, which can be called a
+<a href="https://en.wikipedia.org/wiki/Performance_indicator">Key Performance Indicators</a> or KPI.
+This triplet of information is attached, in PlanZero, to special dynamic elements which carry the following information pertaining to a set of CSFs:
+<ul>
+    <li>the names of the KPI time series variables</li>
+    <li>whether each one should ideally be maximized, minimized, or maintained at a specific value</li>
+    <li>which IPCC sector(s) are affected by the CSFs</li>
+</ul>
+Scenarios will be discussed below, but the CSFs identified by these dynamic
+elements serve as default indicators to characterize each IPCC sector when
+visualizing scenario simulations.
+</p>
 
+<h3 id="formalizing_barriers_strategies">Formalizing Barriers and Strategies</h3>
+
+<p>
+Barriers are introduced in EGFS as "existing or potential challenges that hinder the achievement of one or more objectives"
+and strategies as "broad activities required to achieve a goal, create a critical condition, or overcome a barrier."
+In PlanZero, these two concepts are formalized hand-in-hand:
+EGFS strategies are formalized as relatively simple dynamic elements that reflect an
+approach, such as "feed as many cattle Bovaer as possible";
+and EGFS barriers are formalized as all of the dynamic elements required to model
+the effect of such a strategy on CSFs,
+such as "how many cattle can be fed Bovaer", "what would it cost", and "how much good would it do?"
+</p>
+<p>
+With both barriers and strategies being formalized as dynamic elements
+that are moreover developed "hand-in-hand", it's worth clarifying in terms of dynamic elements
+where one ends and the other begins.
+For greater clarity, a PlanZero Strategy should be an optional dynamic element that
+puts a trajectory in motion, and can be omitted to mean "not doing it".
+Omitting a strategy should not compromise the validity of a scenario simulation.
+In contrast, PlanZero barriers implement logic that is integral to the validity of the scenario;
+with regards to enteric fermentation for example,
+cattle produce methane at certain rates (which depend on e.g. Bovaer consumption)
+regardless of whether any cattle are fed Bovaer.
+The logic and assumptions that PlanZero uses to estimate methane emissions from cattle
+is implemented in a dynamic element, and that dynamic element is a barrier.
+This logic should always be included in simulation in order to estimate emissions for the sector.
+</p>
+<P>
+Barrier dynamic elements model
+<ul>
+    <li>how fast strategies will take effect</li>
+    <li>what costs / profits are expected</li>
+    <li>what will happen in the meantime before / as they work</li>
+</ul>
+Strategy dynamic elements model
+<ul>
+    <li>when a strategy should start</li>
+    <li>how to use investment (if applicable)</li>
+</ul>
+Barrier objects in PlanZero have the job of predicting the future.
+I hope, over time, to build up and refine the library of barriers in PlanZero,
+because I believe that this library will become the most valuable component of the project.
+Strategy objects are meant to reflect policy changes or product / project development efforts that could be undertaken;
+my vision is, at some point, to apply numerical optimization algorithms to tune the timing and degree of investment in strategies, but for now they are simply included all-or-nothing.
+</p>
+
+
+<h3 id="scenario_simulation">Scenario Simulation</h3>
+
+<p>
+Scenarios have been mentioned several times in this post already, but
+this subsection explains what I've meant in more detail.
+In the terms of the previous section (<a href="#simulation">Simulation Framework</a>)
+a PlanZero scenario is a set of dynamic elements, and the time series objects they define.
+In the terms of this section (<a href="#modelling">Scenario Modelling</a>)
+a PlanZero scenario is a set of CSF, barrier, and strategy elements, as well as
+a few built-in dynamic elements that, together, are capable of simulating
+the evolution of the emissions sectors used in Canada's 2025 NIR.
+The built-in dynamic elements are capable of simulating future emissions even without
+any CSF, barrier, or strategy elements:
+<ul>
+    <li><strong>Other NIR Historic Actuals</strong> defines time series objects for IPCC-sector emissions that haven't been modelled by other dynamic elements.
+        It initializes them with values from the NIR, and projects that they remain constant in the future.</li>
+    <li><strong>Atmospheric Chemistry</strong> combines sectoral GHG emissions into sectoral and national {{CO2e|safe}} totals, and simulates the effect on a simple planetary heat model.</li>
+    <li><strong>Subsidy Accounting</strong> totals any subsidy requirements across barriers. At some point this may include estimated impacts in e.g. healthcare, insurance, climate mitigation projects, and disaster relief; currently it does not.</li>
+</ul>
+Scenario simulation is probably best illustrated by example.
+Without further ado, let's continue to the next section, which describes PlanZero's first scenario:
+a simulation of possible futures with and without scaling the use of the bovine feed additive Bovaer.
+</p>
+
+<h2 id="scaling">The Scaling Scenario, Starting with Bovaer</h2>
+
+<p>
+Bovaer a brand name for a novel feed additive for cattle and sheep, also known as <a href="https://en.wikipedia.org/wiki/3-Nitrooxypropanol">3-Nitrooxypropanol, also known as 3-NOP</a>.
+It is a synthetic organic compound that, when added to ruminant livestock feed in the correct manner,
+has the effect of inhibiting methane production in their first stomach.
+Bovaer is <a href="https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html">approved for use in Canada</a>.
+This section explains how PlanZero can simulate aspects of Canada's future to
+estimate the consequences of using Bovaer, and of not using it.
+This post does not establish a position on the question of whether Canada should fund Bovaer
+for a number of reasons, foremost among them being that Bovaer is the only strategy in the model
+(and running a close second would be that the scenario makes no attempt to model government decision-making).
+What the post does do,
+is estimate that Bovaer costs about $510/t{{CO2e|safe}} according
+to the various modelling assumptions in the barriers below.
+</p>
+
+<p> This section is organized as follows:
+<ul>
+    <li>CSFs and Strategies for Enteric Fermentation Emissions</li>
+    <li>Barriers</li>
+    <li>Simulating Bovaer Uptake</li>
+    <li>The Scaling Scenario</li>
+</ul>
+</p>
+
+<h3 id="#enteric_csfs">CSFs and Strategies for Enteric Fermentation Emissions</h3>
+
+<p>
+We've already seen the currently-modelled CSFs and strategies for enteric fermentation
+in the examples given above.
+As of writing they are code objects, and rendered automatically as part of the
+new scaling scenario page:
+<a href="/scenarios/scaling/#csfs">CSFs</a>,
+<a href="/scenarios/scaling/#strategies">Strategies</a>.
+Reproducing them here, as that page is expected to change in future:
+</p>
+<h4>Strategies</h4>
 <table>
     <thead>
-        <tr>
-            <th>Index</th>
-            <th>Dynamic Element Name</th>
-            <th>Role</th>
-            <th>Description</th>
-        </tr>
+        <tr><th>Sector</th><th>Strategy</th><th>Description</th></tr>
     </thead>
     <tbody>
 
-    <tr><td>1</td>
-        <td>BovaerAdoptionLimit</td>
-        <td>barrier</td>
-        <td>Assume that no more than 5.0 percent / year of
-        farmers will switch to administering Bovaer
-        in any given year, but that adoption
-        can ultimately go all the way to 100%.
-        </td>
-    </tr>
+        <tr><td>Enteric Fermentation, Other Product Manufacture and Use</td>
+            <td><a href="/scenarios/scaling/strategies/ScaleBovaer/">ScaleBovaer</a></td>
+            <td>Use as much Bovaer as farmers will take</td></tr>
 
-    <tr><td>2</td>
-        <td>BovinePopulation</td>
-        <td>barrier</td>
-        <td>Assume cattle produce methane (although
-    less-so if they are fed Bovaer) and they also produce milk and beef.
-    The evolution of the cattle population is projected to remain constant.
-    </td>
-    </tr>
-
-    <tr><td>3</td>
-        <td>BovaerMonitoring</td>
-        <td>barrier</td>
-        <td>Assume paperwork and onsite monitoring costs to certify emission reductions.</td>
-    </td>
-    </tr>
-
-    <tr><td>4</td>
-        <td>EntericFermentation CSFs</td>
-        <td>CSF</td>
-        <td>All formalized CSFs related to Enteric Fermentation.</td>
-    </td>
-    </tr>
-
-    <tr><td>5</td>
-        <td>ScaleBovaer</td>
-        <td>strategy</td>
-        <td>Use as much Bovaer as farmers will take</td>
-    </tr>
-
-    <tr><td>6</td>
-        <td>Other NIR Historical Actuals</td>
-        <td>built-in</td>
-        <td>Populate otherwise-missing IPCC Categories with historical actuals from NIR-2025
-    </td>
-    </tr>
-
-    <tr><td>7</td>
-        <td>AtmosphericChemistry</td>
-        <td>built-in</td>
-        <td>Combine GHG emissions into a <math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mrow><mi mathvariant="normal">C</mi><mi mathvariant="normal">O</mi></mrow><mn>2</mn></msub><mi mathvariant="normal">e</mi></mrow></math> estimate using GWP-100 emission factors,
-    and also simulate a simple radiative forcing and planetary heating model.
-    </td>
-    </tr>
-
-    <tr><td>8</td>
-        <td>SubsidyAccounting</td>
-        <td>built-in</td>
-        <td>Tally up annual subsidy amounts required by barriers and strategies.</td>
-    </tr>
     </tbody>
 </table>
 
-</p>
 
-
-<h2 id="usage">Using the Framework</h2>
-
-<p>
-To date, PlanZero posts have talked about 
-critical success factors, barriers, and strategies
-informally.
-I will make an effort, going forward, to reflect at least some of these as code objects.
-</p>
-
-<h3>Critical Success Factors</h3>
-
-<p>
-A Critical Success Factors (CSF), as I've been using the term in the sector-by-sector
-NIR-reconstruction posts, can be formalized in terms of a triplet
-of (a) a sector, (b) an optimal value, and (c) a TimeSeries object.
-For example, a critical success factor such as "reduce the rate of methane emitted, per head"
-which is currently listed as a 
-<a href="/ipcc-sectors/Enteric_Fermentation/#csfs">factor for Enteric Fermentation</a>,
-can be formalized in this general way as follows:
+<h4>Critical Success Factors</h4>
 <table>
     <thead>
         <tr><th>Sector</th><th>Maximize / Minimize / Maintain</th><th>TimeSeries KPI</th></tr>
     </thead>
     <tbody>
-        <tr><td>Enteric Fermentation</td><td>Minimize</td><td>[average] methane / head</td></tr>
+
+
+        <tr><td>Enteric Fermentation</td>
+            <td>Minimize</td>
+            <td>bovine_methane_per_head</td></tr>
+
+        <tr><td>Enteric Fermentation</td>
+            <td>Minimize</td>
+            <td>bovine_headcount</td></tr>
+
+
     </tbody>
 </table>
-A CSF does not generally suggest a particular <i>mechanism</i> of achieving an emissions reduction,
-it is just a callout as a potential indicator of progress:
-emission reductions in an IPCC-sector should occur if, <i>and only if</i>, there is progress
-on at least some of its CSFs.
-CSFs are closely related to <i><a href="https://en.wikipedia.org/wiki/Performance_indicator">Key Performance Indicators</a></i> (KPIs);
-the TimeSeries used in a CSF definition can be called a KPI.
-</p>
 
 <p>
-Formalized CSFs in PlanZero are generally DynamicElement objects that also (additionally to what DynamicElement objects usually do)
-<ul>
-    <li>name CSF TimeSeries variables</li>
-    <li>indicate whether each one should maximized, minimized, or maintained at a specific value</li>
-    <li>indicate the IPCC sector(s) to which each CSF applies</li>
-    <li>serve primarily to generate metrics for comparing and constrasting scenarios</li>
-</ul>
-Work remains to be done, but I hope eventually CSFs help visualize how strategies affect emissions,
-and generally, what's happening in a scenario.
+The strategy of using as much Bovaer as farmers are prepared to take is called "ScaleBovaer"
+and it is defined, as of writing, by its <a href="https://github.com/jaberg/planzero/blob/1f424d7824c8038e2f5952a61928c74889003482/planzero/strategies/strategy2.py#L57">Python language implementation</a> to work by
+setting elements of the time series called "bovine_population_fraction_on_bovaer" to equal
+those of another time series called "max_fraction_of_cattle_on_bovaer".
+The KPIs for enteric fermentation emission reduction are called "bovine_headcount"
+and "bovine_methane_per_head".
+These time series are related by the barrier elements described in the next section.
 </p>
 
-<h3>Barriers</h3>
+<h3 id="#enteric_barriers">Barriers</h3>
 
 <p>
-What I've been calling barriers in PlanZero posts to date typically correspond to constraints or challenges to what perhaps might otherwise be direct ways of achieving emissions reductions.
-For example, the <a href="/ipcc-sectors/Enteric_Fermentation/#barriers">barriers currently associated Enteric Fermentation</a> include
-"Owners of herds do not want to reduce their herds, and neither do their customers or suppliers."
-If there were no more cattle, there would be no more enteric fermentation emissions, but of course
-there would be other problems. That's why this is called a "Barrier". How might we address those problems,
-or the problems associated with other barriers? Usually it's hard to come up with easy answers.
-</p>
-<p>
-Barriers can be formalized in PlanZero as dynamic elements, but there isn't a lot of structure
-that comes with that. Barriers model the mechanisms that connect the things that we believe we can change
-(such as to provide farmers that are open to using Bovaer with Bovaer) to the effects that we're interested in (namely, the CSFs).
-With that said, formalized Barrier in PlanZero is a dynamic element that
-<ol>
-    <li>is associated with any number (including zero) of IPCC sectors</li>
-    <li>reads miscellaneous TimeSeries objects</li>
-    <li>performs calculations that are important to the integrity of the simulation</li>
-</ol>
-I expect typical CSF and Strategy elements to have relatively simple logic,
-and Barrier elements to house the complexity.
-The strategy supporting this post is simply "use as much Bovaer as possible."
-It's not trivial to determine how much Bovear use is possible,
-or what all of the consequences of that use would be.
-Without estimating and incorporating such limiting factors,
-the results of simulation would be less credible,
-and the integrity of the simulation would be reduced.
-The term "Barrier" is fitting
-because Barrier elements typically have the effect of limiting the speed of deployment,
-reminding us of the limited effectiveness of deployment,
-reminding us of the costs of it (both in terms of {{CO2|safe}} and CAD in this example).
-I hope, over time, to build up the library of Barriers in PlanZero,
-because I believe that this library will become the most valuable component of the project.
+We've seen some of the currently-modelled barriers for enteric fermentation emissions
+in the examples given above, but not all of them.
+As of writing, the following are code objects, and rendered automatically
+in the <a href="/scenarios/scaling/#barriers">Barriers</a> section of the new scaling scenario page.
+Reproducing them here (as that page is expected to change in future):
 </p>
 
+<h4 id="barriers">Barriers</h4>
+<table>
+    <thead>
+        <tr><th>Sector</th><th>Barrier</th><th>Description</th></tr>
+    </thead>
+    <tbody>
 
-<h3>Strategies</h3>
+        <tr><td>Enteric Fermentation</td>
+            <td>BovaerAdoptionLimit</td>
+            <td>Assume Bovaer will only be adopted by, at most, 5.0 percent / year of cattle operations</td>
+        </tr>
+        <tr><td>Enteric Fermentation, Other Product Manufacture and Use</td>
+            <td>BovinePopulation</td>
+            <td>Model cattle population, production of methane (considering Bovaer), milk and beef (TODO)</td>
+        </tr>
+        <tr><td>Enteric Fermentation</td>
+            <td>BovaerMonitoring</td>
+            <td>Assume monitoring Bovaer usage costs 1000.0 CAD / farm / year for paperwork and 3000.0 CAD / farm / year for on-site inspection</td>
+        </tr>
+    </tbody>
+</table>
 
 <p>
-Strategies are dynamic elements that, unlike Barriers, can be enabled or disabled without compromising the integrity of scenario simulation.
-Indeed, I expect that for many Strategies, they are relatively simple dynamic elements and that's basically all they do.
+The "BovaerAdoptionLimit" barrier defines the "max_fraction_of_cattle_on_bovaer" time series
+by implementing an assumption that whenever Bovaer starts being completely subsidized by e.g. the government,
+that farmers might adopt its usage at a rate of at most 5% of all farmers per year.
+Further, it assumes that organic farmers (estimated to be 1% of farmers) will never adopt Bovaer,
+because Bovaer is incompatible with the production of organic milk and beef.
+The details of the Python implementation as of writing are available on <a href="https://github.com/jaberg/planzero/blob/1f424d7824c8038e2f5952a61928c74889003482/planzero/barriers.py#L28">github</a>.
 </p>
 <p>
-A formalized Strategy in PlanZero is a dynamic element that
-<ol>
-    <li>performs calculations that are <i>not</i> important to the integrity of the simulation</li>
-    <li>can be enabled or disabled in a standard way, as part of scenario evaluation</li>
-</ol>
+The "BovinePopulation" barrier defines a large number of time series: all of the cattle headcounts per cattle type (calves, beef vs. dairy vs. slaughter heifers, beef vs. dairy cows, bulls),
+per province and territory, and per whether they are on Bovaer or not.
+It estimates the methane produced by each of these sub-populations of cattle, and adds them up to get a total.
+Cattle on Bovaer are modelled as producing 30% less if they are dairy cows, 45% less if they are beef cows,
+and similar numbers that I guessed if they are other kinds of cattle (I could not find data).
+It also estimates the cost of the Bovaer required &mdash; from $0.30/day for calves to $0.50/day for adults &mdash; and registers this cost as requiring a subsidy.
+It also estimates the {{CO2|safe}} required to produce Bovaer;
+I couldn't find a reference for this number, but I chose it to yield the manufacturer claim of 10-15% net greenhouse gas reduction (the scenario estimate is 13.8%).
+The {{CO2|safe}} is attributed to the IPCC Sector "Industrial / Other Product Manufacture and Use".
+The details of the Python implementation as of writing are available on <a href="https://github.com/jaberg/planzero/blob/1f424d7824c8038e2f5952a61928c74889003482/planzero/barriers.py#L135">github</a>.
+</p>
+<p>
+The "BovaerMonitoring" barrier defines a single time series called "bovaer_monitoring_cost_annual" that is registered as requiring a subsidy.
+The subsidy amount is calculated based on guesses of $1000 / farm /year for administrative overhead,
+and $3000 / farm / year for onsite inspection.
+Confidence intervals are not yet supported in PlanZero, but if they were, I would use large ones around these figures as I did not find references
+(<a href="https://github.com/jaberg/planzero/issues/52">github issue here</a>).
+This barrier uses a rough estimate of 160 cattle / farm on average, rather than the
+<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101">actual farm data available from Statistics Canada</a> which has hovered around 160 in recent years.
+The details of the Python implementation as of writing are available on <a href="https://github.com/jaberg/planzero/blob/1f424d7824c8038e2f5952a61928c74889003482/planzero/barriers.py#L359">github</a>.
 </p>
 
-<p>
-Strategies let us evaluate the effectivness of ideas whose mechanics are supported through
-the operation of Barriers, and whose KPIs are reflected in CSFs.
-Strategies can be evaluated by ablative analysis of a scenario:
-we can run a scenario with a strategy enabled, and run it again with that strategy disabled,
-and compare the results.
-<p>
 
-
-<h3>Scenario</h3>
-
+<h3 id="simulating_bovaer">Simulating Canada's Future with Bovaer Usage</h3>
 <p>
-A Scenario Is a data structure that comprises all of the TimeSeries objects,
-and all of the DynamicElement objects that make up a model of Canada's future,
-with regards to emissions.
+The combination of all of the CSFs, barriers, and strategies results in a set of
+8 dynamic elements (3 built-in, 1 CSF, 1 strategy, and 3 barriers), and 1267 time series objects
+(the ones named above, plus many others, such as emissions of each GHG for each province and territory, for each of 71 IPCC sectors,
+and per-province per-cattle-type headcounts).
+The whole set is listed on the
+<a href="/scenarios/scaling/">scaling scenario</a> page
+(see sections on <a href="/scenarios/scaling/#dynelem">dynamic elements</a> and 
+<a href="/scenarios/scaling/#timeseries">time series</a>), although the set of elements listed there will grow as more barriers and strategies are added in future.
+Running this simulation for 100 years lets us visualize a future trajectory of emissions
+according to the IPCC sectors currently used in the NIR.
+</p>
+{{ planzero.sim.sim_scenario("scaling").by_ipcc_sector.as_html()|safe }}
+<p>
+For most sectors, the figure shows historical actuals until 2023, followed by constant projections
+as expected when using the "Other NIR Historic Actuals" dynamic element.
+<!-- TODO: add these pages -->
+For the Enteric Fermentation sector, we see a steady reduction in emissions as
+our simulated farmers adopt Bovaer at 5% / year.
+At the same time, we see a steady rise in emissions in the "Other Product Manufacture and Use" sector.
+After all eligible farms have adopted Bovaer annual emissions are reduced by 3.6 Mt {{CO2e|safe}}.
+The magnitude of subsidy required is shown in dark red, and plotted against the right vertical axis, in billions of dollars.
+As farmers adopt Bovaer it rises to a total just over 1.8 billion dollars.
+Since Bovaer usage and cost is proportional and synchronous, the cost of emissions reduction from
+using Bovaer can be computed directly by dividing these two numbers: 1.8 billion dollars / 3.6 Mt {{CO2e|safe}} equates to $500 / t{{CO2e|safe}}.
+Using more decimal places, the number coming out of the simulation as of writing is $505.38.
 </p>
 
-<h2 id="scaling">The Scaling Scenario, Starting with Bovaer</h2>
-
-What is 3-NOP, how does it work?
-
-https://pmc.ncbi.nlm.nih.gov/articles/PMC8603004
-
-<h3 id="#scaling_csfs">Critical Success Factors</h3>
-Methane emissions
-CO2e
-Dollars spent on carbon removal
-
-<h3 id="#scaling_barriers">Barriers</h3>
-<p>The following are now listed on a newly-created <a href="/barriers/">barriers</a> page.
+<p>Ablative analysis (looking at the results by comparing with the removal of each strategy one at a time)
+is available for the <a href="/scenarios/scaling/strategies/ScaleBovaer/">ScaleBovaer</a>. Follow
+<!-- TODO: refactor so that the "impact_chart" used on strategy_impact page is available here as well -->
 </p>
-Donors will only pay up to X dollars per tonne CO2e removed
 
-Farmers will take a while to administer it even if it's paid-for and safe
-The fraction of farmers administering bovaer can't exceed this envelope
-
-<h3 id="#scaling_strategies">Strategies</h3>
-administer bovaer (how exactly?)
-
-<h3 id="#scaling_other">Other TimeSeries and DynamicElement Objects</h3>
-heads of various types of cattle
 
 <h2 id="conclusion">Conclusion</h2>
 
 <p>
-Future posts in the Scaling series will develop other product types,
-and analyze their potential to reduce emissions, and their impact on the Scenario overall.
-They will introduce at least one, and usually several DynamicElements to PlanZero.
-These posts may look at products such as:
+This post has introduced PlanZero's simulation framework in terms of computational elements (time series and dynamic elements)
+and in terms of strategic management concepts (CSFs, barriers, strategies, scenarios).
+The post brings two new tabs to the top of the PlanZero website:
+<a href="/strategies/">strategies</a> lists the strategies implemented in PlanZero, which scenarios include them, and which IPCC Sectors they impact;
+<a href="/scenarios/">scenarios</a> lists the scenarios that are implemented in the software.
+<!-- TODO: fix the NaN in the scenarios table, and catch the current error with some testing -->
+Currently, there is just one strategy (ScaleBovaer) and one scenario (scaling) but it is my intention
+to add more.
+Perhaps I will get into a cadence of alternating between NIR-sector posts and
+scaling-strategy posts.
+I imagine, over time, that PlanZero may grow to include a small number of standard scenarios
+(perhaps "do nothing", "no-subsidies", "what about counting on a few speculative technologies...")
+but I'd concede I'm a bit hazy on how scenarios will be used, so I won't worry about it yet.
+More urgently than scenarios, PlanZero needs strategies (and associated CSFs and barriers), starting with products and technologies that are closest to mass adoption.
+The next strategy posts, in no particular order, should probably cover at least some of the following (the links in the list are to github issues reminding me to implement them):
 <ul>
-    <li>Solar, wind, and tidal energy for grid-scale power generation</li>
-    <li>EVs for road transportation</li>
-    <li>Heat Pumps for residential and commercial/institutional heating</li>
+    <li><a href="https://github.com/jaberg/planzero/issues/53">Solar</a>,
+        <a href="https://github.com/jaberg/planzero/issues/54">wind</a>,
+        <a href="https://github.com/jaberg/planzero/issues/55">tidal</a>,
+        and/or <a href="https://github.com/jaberg/planzero/issues/56">nuclear energy</a>
+        for grid-scale power generation</li>
+    <li> <a href="https://github.com/jaberg/planzero/issues/57">EVs for light-duty vehicles</a></li>
+    <li>Heat Pumps for <a href="https://github.com/jaberg/planzero/issues/58">residential</a> and
+        <a href="https://github.com/jaberg/planzero/issues/59">commercial/institutional</a> heating
+    </li>
 </ul>
 </p>
-
-<h3>Dynamic Element: Bovaer Makers</h3>
-Bovaer production emissions are assumed to be zero.
-
-<h3>Dynamic Element: Cattle Operations</h3>
-Cattle numbers, sizes, productivity etc. remain as in 2023.
-Bovaer usage follows sigmoidal adoption curve if CCD will pay for it.
-
-
-<h3>Dynamic Element: Carbon Capture Donor</H3>
-The <code>Scale Current Products </code>
-includes one especially notable dynamic element, which is called "Carbon Capture Donor",
-and which functions to pay for infinite amounts of carbon capture at a parameterized price.
-All dynamic elements can be parameterized, but this element in particular is important
-because it allows us to compare diverse scenarios in terms of the cost to achieve net-zero.
-
-
-parameterized by how much we are willing to pay to remove {{CO2|safe}} from the atmosphere.
-which aims to model
-what 
-
-In introduces a set of modelling objects, foremost among them
-the <code>Scenario</code>.
+<p>
+Until next time,
+</p>
+<p>
+- James Bergstra
+</p>
 
 
 </section>

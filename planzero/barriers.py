@@ -375,7 +375,7 @@ class BovaerMonitoring(Barrier):
     @computed_field
     def cattle_per_farm(self) -> object:
         # TODO: pull down actual data from https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101
-        return 150 * u.cattle / u.farm
+        return 160 * u.cattle / u.farm
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
