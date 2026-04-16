@@ -21,6 +21,7 @@ import planzero
 import planzero.blog
 import planzero.ipcc_home
 import planzero.est_nir
+import planzero.enums
 
 u = planzero.ureg
 
@@ -156,6 +157,40 @@ async def get_scenario_page(ident:str, request: Request):
             default_context,
             active_tab='scenarios',
             ident=ident,
+            ),
+    )
+
+
+@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
+@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
+@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
+async def get_scenario_ipcc_sectors_category(
+    request: Request,
+    scenario_name: str,
+    category: str,
+    subcategory: str = None,
+    subsubcategory: str = None):
+
+    if subsubcategory is not None:
+        catpath=f'{category}/{subcategory}/{subsubcategory}'
+    elif subcategory is not None:
+        catpath = f'{category}/{subcategory}'
+    else:
+        catpath = f'{category}'
+
+    sim = planzero.sim.sim_scenario(scenario_name)
+    chart = sim.echart_ipcc_sector(catpath)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="scenario_ipcc_sector.html",
+        context=dict(
+            default_context,
+            active_tab='scenarios',
+            scenario_name=scenario_name,
+            ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
+            catpath=catpath,
+            chart=chart,
             ),
     )
 

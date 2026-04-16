@@ -17,16 +17,13 @@
     <thead>
           <tr>
               <th>
+                  Name
+              </th>
+              <th>
                   Short Description
               </th>
               <th>
-                  Emissions 2050
-              </th>
-              <th>
-                  Emissions 2075
-              </th>
-              <th>
-                  Emissions 2100
+                  Predicted Emissions 2050
               </th>
           </tr>
     </thead>
@@ -34,17 +31,10 @@
           {% for ident, obj in planzero.scenarios.scenarios.items() %}
           <tr>
               <td>
-                  <a href="/scenarios/{{ident}}/">{{obj.short_descr}}</a>
+                  <a href="/scenarios/{{ident}}/">{{ident}}</a>
               </td>
-              <td>
-                  {{obj.emissions_in_year(2050)}}
-              </td>
-              <td>
-                  {{obj.emissions_in_year(2075)}}
-              </td>
-              <td>
-                  {{obj.emissions_in_year(2100)}}
-              </td>
+              <td>{{obj.short_descr}}</td>
+              <td>{{planzero.sim.sim_scenario(ident).state.sts["Predicted_Annual_Emitted_CO2e_mass"].query(2050 * u.year).to(u.Mt_CO2e)}}</td>
           </tr>
           {% endfor %}
     </tbody>

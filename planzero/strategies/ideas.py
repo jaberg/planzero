@@ -1360,3 +1360,8 @@ ideas.limit_freight_speed_to_90kph = NewcoIdea(
 # SMR Explainer focused on Darlington, Ontario (Narwal)
 # good to model this, and then ask Narwal if I did a good job?
 # https://thenarwhal.ca/ontario-darlington-nuclear-smr-explainer/
+
+
+# an app that you can facetime with AI while you're cooking, which can nudge
+# you toward your dietary goals, such as healthier eating, or more
+# climate-friendly eating, and help you cook differently.

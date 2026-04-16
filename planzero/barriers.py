@@ -190,11 +190,11 @@ class BovinePopulation(Barrier):
             Livestock.Bulls: .50 * u.CAD / u.day / u.cattle,
             Livestock.DairyCows: 0.50 * u.CAD / u.day / u.cattle,
             Livestock.BeefCows: 0.50 * u.CAD / u.day / u.cattle,
-            Livestock.DairyHeifers: .40 * u.CAD / u.day / u.cattle,
-            Livestock.BeefHeifers: .40 * u.CAD / u.day / u.cattle,
-            Livestock.SlaughterHeifers: .40 * u.CAD / u.day / u.cattle,
-            Livestock.Steers: .40 * u.CAD / u.day / u.cattle,
-            Livestock.Calves: .30 * u.CAD / u.day / u.cattle,
+            Livestock.DairyHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.BeefHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.SlaughterHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.Steers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.Calves: .20 * u.CAD / u.day / u.cattle,
         }
 
     def on_add_project(self, state):
@@ -206,22 +206,19 @@ class BovinePopulation(Barrier):
                 default_value=0 * u.dimensionless)
 
             # I don't know the details of current or actual production processes.
-            # This number is chosen to give net carbon reduction of 10-15%, as claimed on
-            # <TODO: LINK>
-            #
-            # The unit is chosen on the assumption that the process requires fossil fuel
-            # feedstock. It seems to me there may be low-carbon ways to produce 3-NOP,
-            # so this emissions-factor is a STS that may take on different values over time.
-            # It should also depend on the type or at least size of cattle,
-            # but I don't know how.
+            # This number is chosen based on a conversation with Google Gemini
+            # circa April 2026, in which it characterized the production footprint of Bovaer
+            # as 20-50 times less in magnitude compared to the emission
+            # reduction in enteric fermentation
             ctx.bovaer_production_CO2_per_methane_abated = sts.SparseTimeSeries(
-                default_value=600 * u.kg_CO2 / u.cattle / u.year)
+                default_value=45 * u.kg_CO2 / u.cattle / u.year)
 
         with state.defining(self) as ctx:
             cattle_pt, cattle_ca = number_of_cattle_by_class_and_farm_type()
             emfac = table_A3p4_11()
             stash.headcounts = []
             stash.on_bovaer = []
+            #stash.annual_methane_emissions = []
             stash.livestock_type = []
             bovine_methane = None
             for livestock in Livestock_nonsums:
@@ -238,7 +235,14 @@ class BovinePopulation(Barrier):
                                           name=f'headcount_{livestock.value}_{pt.value}')
                         stash.headcounts.append(hc)
 
-                        on_bovaer = sts.SparseTimeSeries(default_value=0 * u.cattle)
+                        ## XXX this upper bound changes every few months with new statscan data
+                        #annual_methane_emissions = (emfac[livestock] * hc).bin_integrals(
+                        #    bin_boundaries=[tt * u.year for tt in range(1990, 2026 + 1)])
+                        #state.declare_sts(self, hc, need_current=True,
+                        #                  name=f'annual_methane_emissions_{livestock.value}_{pt.value}')
+                        #stash.annual_methane_emissions.append(annual_methane_emissions)
+
+                        on_bovaer = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
                         stash.on_bovaer.append(on_bovaer)
                         state.declare_sts(self, on_bovaer, need_current=True,
                                           name=f'headcount_on_Bovaer_{livestock.value}_{pt.value}')
@@ -259,6 +263,7 @@ class BovinePopulation(Barrier):
             ctx.bovine_headcount = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
 
             # this ends with the 2025-2026 year being associated with 2025
+                # XXX this upper bound changes every few months with new statscan data
             correct = bovine_methane.bin_integrals(
                 bin_boundaries=[tt * u.year for tt in range(1990, 2026 + 1)])
             assert correct.times[-1] == 2025, correct

@@ -168,7 +168,7 @@ strategic management and numerical optimization.
 <a href="https://en.wikipedia.org/wiki/Strategic_management">Strategic management</a>, to quote wikipedia,
 "involves the formulation and implementation of the major goals and initiatives taken by an organization's managers on behalf of stakeholders, based on consideration of resources and an assessment of the internal and external environments in which the organization operates."
 If we consider Canada as an organization, the federal government has,
-among it's many goals and initiatives, set a goal to achieve net-zero by 2050 (<a href="TODO">earlier post</a>, <a href="TODO">government site</a>).
+among it's many goals and initiatives, set a goal to achieve net-zero by 2050 (<a href="/blog/2026-02-02-cnzeaa">earlier post</a>, <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/net-zero-emissions-2050.html">government site</a>).
 As explained in the following sections,
 a framework used in strategic management helps formalize this goal in terms of a few types of time series and dynamic element,
 and numeric optimization can be used to search over strategies for desirable predicted futures.
@@ -192,7 +192,7 @@ EGFS suggests breaking down such a goal into three sets of considerations and hy
     <li><strong>Barriers</strong> are existing or potential challenges that hinder the achievement of one or more objectives. </li>
     <li><strong>Strategies</strong> are broad activities required to achieve a goal, create a critical condition, or overcome a barrier.</li>
 </ul>
-PlanZero posts focused on replicating NIR emissions estimates (such as TODO) have included sections with these names,
+PlanZero posts focused on replicating NIR emissions estimates (such as <a href="/blog/2026-03-31-enteric">"Enteric Fermentation: Emissions Calculations"</a>) have included sections with these names,
 and informal thoughts aligned with these definitions.
 The scenario modelling introduced in this post involves formalizing these notions
 as code objects that can be simulated and compared numerically to determine if, e.g.
@@ -325,8 +325,8 @@ This post does not establish a position on the question of whether Canada should
 for a number of reasons, foremost among them being that Bovaer is the only strategy in the model
 (and running a close second would be that the scenario makes no attempt to model government decision-making).
 What the post does do,
-is estimate that Bovaer costs about $510/t{{CO2e|safe}} according
-to the various modelling assumptions in the barriers below.
+is estimate that Bovaer costs about $175/t{{CO2e|safe}} according
+to the modelling assumptions in the barriers below.
 </p>
 
 <p> This section is organized as follows:
@@ -440,10 +440,10 @@ per province and territory, and per whether they are on Bovaer or not.
 It estimates the methane produced by each of these sub-populations of cattle, and adds them up to get a total.
 Cattle on Bovaer are modelled as producing 30% less if they are dairy cows, 45% less if they are beef cows,
 and similar numbers that I guessed if they are other kinds of cattle (I could not find data).
-It also estimates the cost of the Bovaer required &mdash; from $0.30/day for calves to $0.50/day for adults &mdash; and registers this cost as requiring a subsidy.
-It also estimates the {{CO2|safe}} required to produce Bovaer;
-I couldn't find a reference for this number, but I chose it to yield the manufacturer claim of 10-15% net greenhouse gas reduction (the scenario estimate is 13.8%).
-The {{CO2|safe}} is attributed to the IPCC Sector "Industrial / Other Product Manufacture and Use".
+It also estimates the cost of the Bovaer required &mdash; from $0.20/day for calves to $0.50/day for adults &mdash; and registers this cost as requiring a subsidy.
+It also estimates the {{CO2e|safe}} required to produce Bovaer;
+I couldn't find a reference for this number, but I'm guessing it is about 5% of the greenhouse gas reduction delivered by the Bovaer usage.
+The {{CO2e|safe}} is attributed to the IPCC Sector "Industrial / Other Product Manufacture and Use" as {{CO2|safe}} until I have a better model of how Bovaer is produced.
 The details of the Python implementation as of writing are available on <a href="https://github.com/jaberg/planzero/blob/1f424d7824c8038e2f5952a61928c74889003482/planzero/barriers.py#L135">github</a>.
 </p>
 <p>
@@ -475,23 +475,17 @@ according to the IPCC sectors currently used in the NIR.
 <p>
 For most sectors, the figure shows historical actuals until 2023, followed by constant projections
 as expected when using the "Other NIR Historic Actuals" dynamic element.
-<!-- TODO: add these pages -->
-For the Enteric Fermentation sector, we see a steady reduction in emissions as
+For the <a href="/scenarios/scaling/ipcc-sectors/Enteric_Fermentation/">"Enteric Fermentation" sector (scaling scenario)</a>, we see a steady reduction in emissions as
 our simulated farmers adopt Bovaer at 5% / year.
-At the same time, we see a steady rise in emissions in the "Other Product Manufacture and Use" sector.
-After all eligible farms have adopted Bovaer annual emissions are reduced by 3.6 Mt {{CO2e|safe}}.
+At the same time, we see a steady rise in emissions in the <a href="/scenarios/scaling/ipcc-sectors/Other_Product_Manufacture_and_Use/">"Other Product Manufacture and Use"</a> sector.
+After all eligible farms have adopted Bovaer annual emissions are reduced by 9.5 Mt {{CO2e|safe}}.
 The magnitude of subsidy required is shown in dark red, and plotted against the right vertical axis, in billions of dollars.
-As farmers adopt Bovaer it rises to a total just over 1.8 billion dollars.
+As farmers adopt Bovaer it rises to a total just over 1.6 billion dollars per year.
 Since Bovaer usage and cost is proportional and synchronous, the cost of emissions reduction from
-using Bovaer can be computed directly by dividing these two numbers: 1.8 billion dollars / 3.6 Mt {{CO2e|safe}} equates to $500 / t{{CO2e|safe}}.
-Using more decimal places, the number coming out of the simulation as of writing is $505.38.
+using Bovaer can be computed directly by dividing these two numbers: 1.6 billion dollars / 9.5 Mt {{CO2e|safe}} equates to $175.36 / t{{CO2e|safe}}.
+Ablative analysis (looking at the results by comparing with the removal of each strategy one at a time)
+is available for the <a href="/scenarios/scaling/strategies/ScaleBovaer/">ScaleBovaer</a>.
 </p>
-
-<p>Ablative analysis (looking at the results by comparing with the removal of each strategy one at a time)
-is available for the <a href="/scenarios/scaling/strategies/ScaleBovaer/">ScaleBovaer</a>. Follow
-<!-- TODO: refactor so that the "impact_chart" used on strategy_impact page is available here as well -->
-</p>
-
 
 <h2 id="conclusion">Conclusion</h2>
 
@@ -501,7 +495,6 @@ and in terms of strategic management concepts (CSFs, barriers, strategies, scena
 The post brings two new tabs to the top of the PlanZero website:
 <a href="/strategies/">strategies</a> lists the strategies implemented in PlanZero, which scenarios include them, and which IPCC Sectors they impact;
 <a href="/scenarios/">scenarios</a> lists the scenarios that are implemented in the software.
-<!-- TODO: fix the NaN in the scenarios table, and catch the current error with some testing -->
 Currently, there is just one strategy (ScaleBovaer) and one scenario (scaling) but it is my intention
 to add more.
 Perhaps I will get into a cadence of alternating between NIR-sector posts and

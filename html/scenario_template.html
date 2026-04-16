@@ -16,13 +16,20 @@
 <h3 id="strategies">Strategies</h3>
 <table>
     <thead>
-        <tr><th>Sector</th><th>Strategy</th><th>Description</th></tr>
+        <tr><th>Name</th><th>Description</th><th>Sector</th></tr>
     </thead>
     <tbody>
         {% for name, proj in planzero.sim.sim_scenario(ident).state.projects.items() if 'strategy' in proj.tags %}
-        <tr><td>{{", ".join(proj.ipcc_sector_values)}}</td>
+        <tr>
             <td><a href="/scenarios/{{ident}}/strategies/{{name}}/">{{name}}</a></td>
-            <td>{{proj.short_description}}</td></tr>
+            <td>{{proj.short_description}}</td>
+            <td>
+                {% for ipcc_sector in proj.ipcc_sectors %}
+                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+                {% if not loop.last %},{% endif%}
+                {% endfor %}
+            </td>
+        </tr>
         {% endfor %}
     </tbody>
 </table>
@@ -31,14 +38,21 @@
 <h3 id="csfs">Critical Success Factors</h3>
 <table>
     <thead>
-        <tr><th>Sector</th><th>Maximize / Minimize / Maintain</th><th>TimeSeries KPI</th></tr>
+        <tr><th>Maximize / Minimize / Maintain</th><th>TimeSeries KPI</th><th>Sector</th></tr>
     </thead>
     <tbody>
         {% for CSF_name, proj in planzero.sim.sim_scenario(ident).state.projects.items() if 'CSF' in proj.tags %}
         {% for kpi_name, kpi_goal in proj.kpi_targets.items() %}
-        <tr><td>{{", ".join(proj.ipcc_sector_values)}}</td>
+        <tr>
             <td>{{kpi_goal}}</td>
-            <td>{{kpi_name}}</td></tr>
+            <td>{{kpi_name}}</td>
+            <td>
+                {% for ipcc_sector in proj.ipcc_sectors %}
+                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+                {% if not loop.last %},{% endif%}
+                {% endfor %}
+            </td>
+        </tr>
         {% endfor %}
         {% endfor %}
     </tbody>
@@ -48,13 +62,20 @@
 <h3 id="barriers">Barriers</h3>
 <table>
     <thead>
-        <tr><th>Sector</th><th>Barrier</th><th>Description</th></tr>
+        <tr><th>Name</th><th>Description</th><th>Sector</th></tr>
     </thead>
     <tbody>
         {% for name, proj in planzero.sim.sim_scenario(ident).state.projects.items() if 'barrier' in proj.tags %}
-        <tr><td>{{", ".join(proj.ipcc_sector_values)}}</td>
+        <tr>
             <td>{{name}}</td>
-            <td>{{proj.short_description}}</td></tr>
+            <td>{{proj.short_description}}</td>
+            <td>
+                {% for ipcc_sector in proj.ipcc_sectors %}
+                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+                {% if not loop.last %},{% endif%}
+                {% endfor %}
+            </td>
+        </tr>
         {% endfor %}
     </tbody>
 </table>

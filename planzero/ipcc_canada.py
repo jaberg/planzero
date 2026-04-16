@@ -136,3 +136,12 @@ def annual_sector_Mt_CO2e_by_year(catpathww):
     rval = {int(year): float(val) for year, val in zip(years, values)}
     assert rval, catpathww
     return rval
+
+
+def annual_sector_ghg_kt_by_year(catpathww, ghg_str):
+    df = non_agg[non_agg['CategoryPathWithWhitespace'] == catpathww]
+    values = df[ghg_str].values
+    years = df['Year'].values
+    rval = {int(year): float(val) for year, val in zip(years, values)}
+    assert rval, catpathww
+    return rval

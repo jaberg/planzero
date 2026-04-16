@@ -213,6 +213,15 @@ class IPCC_Sector(str, enum.Enum):
 
     Harvested_Wood_Products = 'Harvested Wood Products'
 
+    @staticmethod
+    def from_catpath(catpath):
+        # may have whitespace or not
+        try:
+            return IPCC_Sector_from_catpath_no_whitespace[catpath]
+        except KeyError:
+            return IPCC_Sector_from_catpath_with_whitespace[catpath]
+
+
 
 class StandardScenarios(str, enum.Enum):
     Scaling = 'scaling'
@@ -360,3 +369,10 @@ IPCC_Sector.Settlements.catpath_no_whitespace = 'Settlements'
 IPCC_Sector.Settlements.catpath_with_whitespace = 'Settlements'
 IPCC_Sector.Harvested_Wood_Products.catpath_no_whitespace = 'Harvested_Wood_Products'
 IPCC_Sector.Harvested_Wood_Products.catpath_with_whitespace = 'Harvested Wood Products'
+
+IPCC_Sector_from_catpath_no_whitespace = {
+    ipcc_sector.catpath_no_whitespace: ipcc_sector
+    for ipcc_sector in IPCC_Sector}
+IPCC_Sector_from_catpath_with_whitespace = {
+    ipcc_sector.catpath_with_whitespace: ipcc_sector
+    for ipcc_sector in IPCC_Sector}

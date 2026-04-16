@@ -28,7 +28,7 @@ u = ureg
 
 
 from . import ipcc_canada
-from .enums import GHG
+from .enums import GHG, IPCC_Sector
 
 from .sts import SparseTimeSeries, STS
 
@@ -1186,27 +1186,27 @@ class Other_NIR_Historical_Actuals(BaseScenarioProject):
         non_agg_years.sort()
         datalen = len(non_agg_years)
         assert ('kt',) == ipcc_canada.inv['Unit'].unique()
-        assert non_agg_years == ipcc_canada.echart_years()[:datalen] # assure sorted
         for_sorting = []
         for catpath in ipcc_canada.catpaths:
-            catpath_values = ipcc_canada.non_agg[
-                ipcc_canada.non_agg['CategoryPathWithWhitespace'] == ipcc_canada.catpaths[catpath]
-            ]
             catpath_contributors = state.sectoral_emissions_contributors.get(catpath, {})
+            ipcc_sector = IPCC_Sector.from_catpath(catpath)
             for ghg in GHG:
                 ghg_contributors = catpath_contributors.get(ghg.value, [])
                 if not ghg_contributors:
-                    values = catpath_values[ghg.value].values
-                    name = f'Historical_{ghg.value}_from_{catpath}'
-                    scale = 1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O] else 1.0 / ghgvalues.GWP_100[ghg].magnitude
-                    state.declare_sts(
-                        project=self,
-                        sts=STS(
-                            times=array.array('d', non_agg_years),
-                            t_unit=u.years,
-                            values=array.array('d', [0] + list(scale * values)),
-                            v_unit=kt_by_ghg[ghg],
-                            interpolation='current'),
-                        name=name,
-                        write=True)
-                    state.register_emission(catpath, ghg.value, name)
+                    kt_by_yr = ipcc_canada.annual_sector_ghg_kt_by_year(
+                        ipcc_sector.catpath_with_whitespace,
+                        ghg.value)
+                    if not all(vv == 0 for vv in kt_by_yr.values()):
+                        name = f'Historical_{ghg.value}_from_{catpath}'
+                        scale = 1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O] else 1.0 / ghgvalues.GWP_100[ghg].magnitude
+                        state.declare_sts(
+                            project=self,
+                            sts=STS(
+                                times=array.array('d', non_agg_years),
+                                t_unit=u.years,
+                                values=array.array('d', [0] + [scale * kt_by_yr[yr] for yr in non_agg_years]),
+                                v_unit=kt_by_ghg[ghg],
+                                interpolation='current'),
+                            name=name,
+                            write=True)
+                        state.register_emission(catpath, ghg.value, name)

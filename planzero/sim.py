@@ -1,5 +1,6 @@
 
 import functools
+from functools import cached_property
 
 from pydantic import BaseModel
 import numpy as np
@@ -20,27 +21,46 @@ from .html import (
 
 from . import ipcc_canada
 from . import scenarios
+from .ghgvalues import GHG, GWP_100
 
 
 class SimulationResult(BaseModel):
 
+    scenario_name: str
+
     state: object
     ablations: dict[str, object] = {}
 
-    by_ipcc_sector: StackedAreaEChart
+    @cached_property
+    def year_ints(self) -> list[int]:
+        start = int(self.state.t_start.to(u.years).magnitude)
+        now = int(self.state._t_now.to(u.years).magnitude)
+        return list(range(start, now))
 
-    @classmethod
-    def from_state_scenario(cls, state, scenario, ablations=None):
-        sim_years_ints = np.arange(1990, 2090)
-        assert (sim_years_ints[:20] == ipcc_canada.echart_years()[:20]).all()
-        sim_years = [tt * u.years for tt in sim_years_ints]
+    @cached_property
+    def year_times(self) -> list[object]:
+        return [tt * u.years for tt in self.year_ints]
+
+
+    @staticmethod
+    def annual_sector_Mt_CO2e_by_year(ipcc_sector) -> dict[int, float]:
+        df = ipcc_canada.non_agg[
+            ipcc_canada.non_agg['CategoryPathWithWhitespace'] \
+            == ipcc_sector.catpath_with_whitespace]
+        values = df['CO2eq'].values / 1000
+        years = df['Year']
+        rval = {int(year): float(val) for year, val in zip(years, values)}
+        return rval
+
+    @cached_property
+    def by_ipcc_sector(self) -> StackedAreaEChart:
         for_sorting = []
-        for catpath, contributors in state.sectoral_emissions_contributors.items():
+        for catpath, contributors in self.state.sectoral_emissions_contributors.items():
             if not contributors:
                 continue
             data = EChartSeriesData(
-                state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'],
-                times=sim_years,
+                self.state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'],
+                times=self.year_times,
                 v_unit=u.Mt_CO2e,
                 url=None)
             values = [vdict['value'] for vdict in data]
@@ -61,12 +81,12 @@ class SimulationResult(BaseModel):
                 for_sorting.append((1.0 / min(values), catpath + '(sink years)', sink_years))
                 for_sorting.append((max(values), catpath + '(source years)', source_years))
 
-        by_ipcc_sector = StackedAreaEChart(
+        return StackedAreaEChart(
             div_id='by_ipcc_sector',
             title=EChartTitle(
-                text=f'Simulated Emissions by IPCC Sector: {scenario.name} scenario',
+                text=f'Simulated Emissions by IPCC Sector: {self.scenario_name} scenario',
                 subtext='Hover over data points to see sector labels'),
-            xAxis=EChartXAxis(data=sim_years_ints),
+            xAxis=EChartXAxis(data=self.year_ints),
             yAxis=[
                 EChartYAxis(name='Emissions (Mt CO2e)'),
                 EChartYAxis(name='Annual Subsidies (CAD, billions)')],
@@ -100,16 +120,66 @@ class SimulationResult(BaseModel):
                     lineStyle=EChartLineStyle(type='dotted', color='#600000'),
                     itemStyle=EChartItemStyle(color='#600000'),
                     data=EChartSeriesData(
-                        state.sts[f'AnnualSubsidyTotal'],
-                        times=sim_years,
+                        self.state.sts[f'AnnualSubsidyTotal'],
+                        times=self.year_times,
                         v_unit=u.giga_CAD,
                         url=None)),
             ])
+
+    def echart_ipcc_sector_reference_NIR_values(self, ipcc_sector):
+        v_by_yr = self.annual_sector_Mt_CO2e_by_year(ipcc_sector)
+        values = []
+        for yr in self.year_ints:
+            try:
+                values.append(v_by_yr[yr])
+            except KeyError:
+                break
+        return values
+
+    def echart_ipcc_sector(self, catpath) -> StackedAreaEChart:
+        """Return an EChart that shows the emissions contributions to this
+        sector in the base scenario.
+        """
+        from .enums import IPCC_Sector
+        ipcc_sector = IPCC_Sector.from_catpath(catpath)
+
+        return StackedAreaEChart(
+            div_id=f'echart_ipcc_sector_{catpath.replace("/", "_")}',
+            title=EChartTitle(
+                text=f'{ipcc_sector.value} ({self.scenario_name} scenario)',
+                subtext='Hover over data points to see emissions by usage,'),
+            xAxis=EChartXAxis(data=self.year_ints),
+            yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=f'{sts_id}',
+                    data=EChartSeriesData(
+                        self.state.sts[sts_id] * GWP_100[GHG(ghg)],
+                        times=self.year_times,
+                        v_unit=u.Mt_CO2e,
+                        url=None),
+                    emphasis={'disabled': 1}, # prevents visual corruption on my computer
+                    )
+                for ghg, contribs in self.state.sectoral_emissions_contributors[
+                    ipcc_sector.catpath_no_whitespace].items()
+                for sts_id in contribs if contribs
+            ],
+            other_series=[
+                EChartSeriesBase(
+                    name='NIR Sector Total',
+                    lineStyle=EChartLineStyle(color='#303030'),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=self.echart_ipcc_sector_reference_NIR_values(ipcc_sector)),
+            ])
+
+    @classmethod
+    def from_state_scenario(cls, state, scenario, ablations=None):
         return SimulationResult(
+            scenario_name=scenario.name,
             state=state,
             ablations=ablations or {},
-            by_ipcc_sector=by_ipcc_sector,
             )
+
 
 from .base import (
     AtmosphericChemistry,

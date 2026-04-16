@@ -40,9 +40,6 @@ class Scenario(BaseModel):
         super().__init_subclass__()
         scenarios[cls.__name__.lower()] = cls() # lower() to make url-compatible
 
-    def emissions_in_year(self, year):
-        return float('nan') * u.Mt_CO2e
-
     @computed_field
     def name(self) -> str:
         return self.__class__.__name__
@@ -57,6 +54,3 @@ class Scaling(Scenario):
             research={},
             state=None,
             dynelems=collect_dynelems(StandardScenarios.Scaling))
-
-# TODO: Profitable(Scenario)
-#    what can be done economically profitably?
