@@ -75,6 +75,10 @@ u = ureg
 u.m3 = u.m ** 3
 ureg.define(f"kilo_m3 = 1000 * meter * meter * meter")
 
+# Set this registry as the application-wide registry for pint.
+# This is critical for pickling/unpickling custom units (e.g. via diskcache).
+pint.set_application_registry(ureg)
+
 litres_by_fuel_type = {
     enums.FuelType.LightFuelOil: u.l_LFO,
     enums.FuelType.HeavyFuelOil: u.l_HFO,

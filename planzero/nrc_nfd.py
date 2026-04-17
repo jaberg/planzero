@@ -5,7 +5,7 @@ Natural Resources Canada (NRC) - National Forerst Database (NFD)
 http://nfdp.ccfm.org/en/download.php
 
 """
-import functools
+from .my_functools import cache
 import math, enum
 import pandas as pd
 
@@ -40,7 +40,7 @@ m3_by_roundwood_species_group = {
 }
 
 
-@functools.cache
+@cache
 def net_merchantable_volume_harvested():
     rval = objtensor.empty(
         RoundwoodSpeciesGroup,

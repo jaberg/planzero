@@ -1,7 +1,7 @@
 """AER: Alberta Energy Regulator"""
 
 import enum
-import functools
+from .my_functools import cache
 
 import pandas as pd
 from .ureg import u
@@ -18,7 +18,7 @@ class VentingType(str, enum.Enum):
 
 
 # https://www.aer.ca/data-and-performance-reports/statistical-reports/st60b
-@functools.cache
+@cache
 def st60b_2024_OneStop():
     rval = objtensor.empty(VentingType)
     onestop_2023 = pd.read_excel('data/ST60B_2024.xlsx',

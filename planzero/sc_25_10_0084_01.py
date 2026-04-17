@@ -1,5 +1,4 @@
 import enum
-import functools
 
 import pandas as pd
 
@@ -9,6 +8,7 @@ from . import enums
 from . import objtensor
 from . import sts
 from .enums import NAICS, PT
+from .my_functools import cache
 
 
 class FuelType(str, enum.Enum):
@@ -90,7 +90,7 @@ def _get_df():
     return df
 
 
-@functools.cache
+@cache
 def electric_power_generation_fuel_consumed_cost_of_fuel():
     df = _get_df()
 

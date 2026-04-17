@@ -3,7 +3,7 @@
 https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm
 """
 import enum
-import functools
+from .my_functools import cache
 import glob
 import os
 
@@ -29,7 +29,7 @@ class EndUse(str, enum.Enum):
     Lighting = 'Lighting'
     SpaceCooling = 'Space Cooling'
 
-@functools.cache
+@cache
 def df_residential_table2():
     file_pattern = os.path.join('data/neud', "res_*.xls")
     dataframes = []
@@ -54,7 +54,7 @@ def df_residential_table2():
     return rval
 
 
-@functools.cache
+@cache
 def ghg_emissions_excl_electricity_by_end_use():
     rval = objtensor.empty(EndUse, PT)
     counter = 0
@@ -85,7 +85,7 @@ def ghg_emissions_excl_electricity_by_end_use():
     return rval
 
 
-@functools.cache
+@cache
 def df_transportation_table8():
     file_pattern = os.path.join('data/neud', "tran_*.xls")
     dataframes = []
@@ -128,7 +128,7 @@ class TransportationMode(str, enum.Enum):
     OffRoad = "Off-Road2"
 
 
-@functools.cache
+@cache
 def ghg_emissions_by_transportation_mode():
     rval = objtensor.empty(TransportationMode, PT)
     counter = 0
@@ -159,7 +159,7 @@ def ghg_emissions_by_transportation_mode():
     return rval
 
 
-@functools.cache
+@cache
 def df_transportation_table36():
     file_pattern = os.path.join('data/neud', "tran_*.xls")
     dataframes = []
@@ -194,7 +194,7 @@ class TransportationEnergySource(str, enum.Enum):
     Propane = 'Propane'
 
 
-@functools.cache
+@cache
 def medium_truck_ghg_emissions_by_fuel():
     rval = objtensor.empty(TransportationEnergySource, PT)
     counter = 0
@@ -225,7 +225,7 @@ def medium_truck_ghg_emissions_by_fuel():
     return rval
 
 
-@functools.cache
+@cache
 def df_transportation_table22():
     file_pattern = os.path.join('data/neud', "tran_*.xls")
     dataframes = []
@@ -250,7 +250,7 @@ def df_transportation_table22():
     return rval
 
 
-@functools.cache
+@cache
 def bus_ghg_emissions_by_fuel():
     rval = objtensor.empty(TransportationEnergySource, PT)
     counter = 0

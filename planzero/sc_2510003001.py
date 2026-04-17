@@ -1,5 +1,5 @@
 import enum
-import functools
+from .my_functools import cache
 
 import pandas as pd
 import numpy as np
@@ -129,7 +129,7 @@ UoM_by_fuel_type_and_characteristic = {
 }
 
 
-@functools.cache
+@cache
 def supply_and_demand_of_primary_and_secondary_energy():
     df = zip_table_to_dataframe("25-10-0030-01")
     df['REF_DATE'] = df['REF_DATE'].apply(pd.to_numeric)

@@ -10,7 +10,6 @@ the NAICS_source_emissions totals. The NAICS_source_emissions data is a superset
 of information for the years that it covers, currently 2022 and 2023.
 
 """
-import functools
 import enum
 
 import numpy as np
@@ -22,6 +21,7 @@ from .enums import GHG, PT
 from .ghgvalues import GWP_100
 from . import objtensor
 from . import sts
+from .my_functools import cache
 
 class EKey(str, enum.Enum):
     GHGRP_ID = "GHGRP ID No. / No d'identification du PDGES"
@@ -244,13 +244,13 @@ class EmissionSource(str, enum.Enum):
     Unspecified = 'unspecified' # not every row in the source file indicates an emission source
 
 
-@functools.cache
+@cache
 def _read_emissions():
     df = pd.read_csv('data/PDGES-GHGRP-GHGEmissionsGES-2004-Present.csv')
     return df
 
 
-@functools.cache
+@cache
 def _read_emissions_sources():
     df = pd.read_csv('data/PDGES-GHGRP-GHGEmissionsSourcesGES-2022-2023.csv')
     return df
@@ -261,7 +261,7 @@ def GHGRP_IDs():
     return list(sorted(df[EKey.GHGRP_ID].unique()))
 
 
-@functools.cache
+@cache
 def facilities_by_NAICS():
     """Return the set of facilities that has, at any time, reported under each NAICS code.
 
@@ -363,7 +363,7 @@ def GHG_NAICS_source_emissions(
     return rval
 
 
-@functools.cache
+@cache
 def NAICS_emissions(ekey):
     """Return NAICS category subtotals by summing over facilities for each
     year.
@@ -401,7 +401,7 @@ def NAICS_emissions(ekey):
     return rval
 
 
-@functools.cache
+@cache
 def source_emissions_backfill_proportions():
     rval = {} # facility_id -> emissions source -> proportion
     for row in _read_emissions_sources().iloc:
@@ -436,7 +436,7 @@ def source_emissions_backfill_proportions():
     return rval
 
 
-@functools.cache
+@cache
 def GHG_NAICS_source_emissions_backfilled():
     """Return NAICS category subtotals by summing over facilities for each
     year. For years prior to 2022, estimate emissions per EmissionSource using

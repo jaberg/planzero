@@ -1,5 +1,4 @@
 import enum
-import functools
 
 import pandas as pd
 
@@ -9,6 +8,7 @@ from .sc_utils import zip_table_to_dataframe, Factors, times_values
 
 from . import objtensor
 from . import sts
+from .my_functools import cache
 
 
 class SurveyDate(str, enum.Enum):
@@ -49,7 +49,7 @@ class FarmType(str, enum.Enum):
     Feeding = 'On feeding operations'
 
 
-@functools.cache
+@cache
 def number_of_cattle_by_class_and_farm_type():
     df = zip_table_to_dataframe("32-10-0130-01")
     df['REF_DATE'] = df['REF_DATE'].apply(pd.to_numeric)

@@ -1,5 +1,5 @@
 import enum
-import functools
+from .my_functools import cache
 import matplotlib.pyplot as plt
 
 from .enums import PT, GHG, IPCC_Sector as IPCC
@@ -57,7 +57,7 @@ def _delayed_CO2_released(CO2_by_pt, rpc, halflife):
     return rval
 
 
-@functools.cache
+@cache
 def _logs_and_bolts():
     # The carbon content of net harvested timber is accounted as
     # being instantaneously decremented from the forest (considered as part of the atmosphere) and slowly
@@ -101,7 +101,7 @@ def _logs_and_bolts():
     return cap, rel
 
 
-@functools.cache
+@cache
 def _other_industrial_roundwood():
     net_harvested_w_tenure = net_merchantable_volume_harvested() # cache'd
     net_harvested = net_harvested_w_tenure.sum(RoundwoodTenure)
@@ -135,7 +135,7 @@ def _other_industrial_roundwood():
     return cap, rel
 
 
-@functools.cache
+@cache
 def _fuelwood_and_firewood():
     net_harvested_w_tenure = net_merchantable_volume_harvested() # cache'd
     net_harvested = net_harvested_w_tenure.sum(RoundwoodTenure)
@@ -169,7 +169,7 @@ def _fuelwood_and_firewood():
     return cap, rel
 
 
-@functools.cache
+@cache
 def _pulpwood():
     net_harvested_w_tenure = net_merchantable_volume_harvested() # cache'd
     net_harvested = net_harvested_w_tenure.sum(RoundwoodTenure)

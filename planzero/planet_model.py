@@ -1,4 +1,4 @@
-import functools
+from .my_functools import cache
 
 from . import enums
 from .base import (
@@ -27,7 +27,7 @@ class EmissionsImpulseResponse(Project):
         state.register_emission(self.catpath, self.ghg, 'impulse_response')
 
 
-@functools.cache
+@cache
 def emissions_impulse_response_project_evaluation(impulse_co2e, years,
                                                   catpath='Forest_Land'):
     peval = ProjectEvaluation(

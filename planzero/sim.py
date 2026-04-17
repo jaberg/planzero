@@ -1,5 +1,5 @@
 
-import functools
+from .my_functools import cache
 from functools import cached_property
 
 from pydantic import BaseModel
@@ -187,7 +187,7 @@ from .base import (
     Other_NIR_Historical_Actuals,
     )
 
-@functools.cache
+@cache
 def sim_scenario(scenario_name):
     scenario = scenarios.scenarios[scenario_name]
 

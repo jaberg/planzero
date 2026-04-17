@@ -1,7 +1,7 @@
 # https://www.petrinex.ca/PD/Documents/PD_Conventional_Volumetrics_Report.pdf
 
 import enum
-import functools
+from .my_functools import cache
 import json
 import os
 
@@ -169,7 +169,7 @@ def read_volume_csv(year, month, pt):
     raise IOError('no path match')
 
 
-@functools.cache
+@cache
 def ghgrp_id_by_petrinex_id(report_year=2022):
     df = ghgrp._read_emissions_sources() # 2022 & 2023
     npri_ids = df[ghgrp.ESKey.NPRI_ID]
@@ -289,7 +289,7 @@ class VolumeSummary(pydantic.BaseModel):
             return cls.model_validate(cached_data)
 
 
-@functools.cache
+@cache
 def petrinex_annual_summary(pt, include_ghgrp, large_emitter_cutoff=None):
     rval = objtensor.empty(ProductID, ActivityID, FacilityType)
     tmp = {}

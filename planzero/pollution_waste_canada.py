@@ -1,11 +1,12 @@
 import datetime
-import functools
 import json
 import os
 
 import pydantic
 import requests
 from pathlib import Path
+
+from .my_functools import cache
 
 cache_dir = 'cache/pollution_waste_canada'
 
@@ -129,7 +130,7 @@ class GHGRP_by_Petrinex_Mapping(pydantic.BaseModel):
     ghgrp_id_by_petrinex_id: dict[str, str]
 
 
-@functools.cache
+@cache
 def ghgrp_id_by_petrinex_id(report_year=2022):
     # see __main__.py cache_ghgrp_by_petrinex for function that writes this file
     cache_path = Path(cache_dir) / f"ghgrp_id_by_petrinex_id_{report_year}.json"

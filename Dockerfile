@@ -24,9 +24,16 @@ RUN pip install --no-cache-dir markdown
 RUN pip install --no-cache-dir latex2mathml
 RUN pip install --no-cache-dir stats-can
 RUN pip install --no-cache-dir openpyxl xlrd
+RUN pip install --no-cache-dir diskcache
 
 
 COPY . /content
 WORKDIR /content
 ENV PLANZERO_DATA="/content/data"
+ENV PLANZERO_USE_DISK_CACHE="1"
+ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
+
+# Run warmup to populate the disk cache in the image
+RUN python warmup.py
+
 CMD ["fastapi", "run"]

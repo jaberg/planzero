@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 from .ureg import u
 from .sts import annual_report
-from .my_functools import maybecache
+from .my_functools import cache
 from . import enums
 
-@maybecache
+@cache
 def national_emissions_IPCC(year):
     """Call with year as an integer,
     Get back a dataframe with the body of that year's sheet.
@@ -15,7 +15,7 @@ def national_emissions_IPCC(year):
     yod = year % 10
     decade = ((year - yod) % 100) // 10
 
-    file_path = '/mnt/data/EN_Annex9_GHG_IPCC_Canada.xlsx'
+    file_path = '/content/data/EN_Annex9_GHG_IPCC_Canada.xlsx'
 
     df = pd.read_excel(
         file_path, sheet_name=f'{decade}{yod}', usecols='A:O',

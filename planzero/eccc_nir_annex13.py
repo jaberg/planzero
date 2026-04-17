@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 from .ureg import u
 from .sts import annual_report
-from .my_functools import maybecache
+from .my_functools import cache
 
-@maybecache
+@cache
 def national_electricity_CO2e_from_combustion():
 
     # Define the file path (use forward slashes or a raw string for Windows paths)

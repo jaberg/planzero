@@ -8,6 +8,7 @@ from .ureg import u
 from .sc_utils import zip_table_to_dataframe, Factors
 from . import objtensor
 from . import sts
+from .my_functools import cache
 
 unit_by_fuel_type = {
     enums.CoalType.CanadianBituminous: ('Canadian bituminous coal', 'Metric tonnes', u.tonne_coal_bit),
@@ -59,7 +60,7 @@ def set_ptxx(rval_pt, rval_ca):
             raise RuntimeError(key) from exc
 
 
-@functools.cache
+@cache
 def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utility():
     df = zip_table_to_dataframe("25-10-0017-01")
     df['REF_DATE'] = df['REF_DATE'].apply(pd.to_numeric)
@@ -101,7 +102,7 @@ def Archived_Electric_Power_Generation_Annual_Fuel_Consumed_by_Electrical_Utilit
     return rval_pt, rval_ca
 
 
-@functools.cache
+@cache
 def Electric_Power_Annual_Generation_by_Class_of_Producer():
     df = zip_table_to_dataframe("25-10-0020-01")
     df['REF_DATE'] = df['REF_DATE'].apply(pd.to_numeric)
