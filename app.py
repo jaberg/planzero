@@ -22,16 +22,9 @@ import planzero.blog
 import planzero.ipcc_home
 import planzero.est_nir
 import planzero.enums
+from planzero import get_peval
 
 u = planzero.ureg
-
-_peval = None
-def get_peval():
-    global _peval
-    if _peval is None:
-        _peval = planzero.standard_project_evaluation()
-        _peval.run_until(2125 * u.years)
-    return _peval
 
 
 @app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)

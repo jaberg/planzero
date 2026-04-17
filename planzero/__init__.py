@@ -20,11 +20,15 @@ from . import barriers
 from . import strategies
 from . import scenarios
 from . import sim
+from .my_functools import cache as _cache
 
 
-def standard_project_evaluation():
-    rval = base.ProjectEvaluation(
-        projects={strat.identifier: strat for strat in strategies.standard_strategies()},
+@_cache
+def get_peval():
+    peval = base.ProjectEvaluation(
+        projects={strat.identifier: strat
+                  for strat in strategies.standard_strategies()},
         common_projects=BaseScenarioProject.base_scenario_projects(),
     )
-    return rval
+    peval.run_until(2125 * ureg.years)
+    return peval

@@ -55,6 +55,9 @@ def warmup():
     print("Warmup calling est_nir.EstSectorEmissions...")
     planzero.est_nir.EstSectorEmissions().max_gap_2005()
 
+    print("Warmup calling old standard_project_evaluation()")
+    planzero.get_peval()
+
     print("Warmup complete. Disk cache populated.")
 
 if __name__ == "__main__":
