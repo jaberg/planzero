@@ -11,10 +11,6 @@ csfs = {} # classname -> Singleton instance
 
 class CSFs(DynamicElement):
 
-    @computed_field
-    def kpi_targets(self) -> list[str]:
-        return []
-
     @classmethod
     def __init_subclass__(cls):
         super().__init_subclass__()
@@ -25,20 +21,20 @@ class CSFs(DynamicElement):
         self.tags.add('CSF')
 
     @computed_field
-    def ipcc_sector_values(self) -> list[str]:
-        return [sec.value for sec in self.ipcc_sectors]
+    def kpi_name(self) -> str:
+        raise NotImplementedError()
 
 
-class EntericFermentation_CSFs(CSFs):
-    """All formalized CSFs related to Enteric Fermentation
-    """
+
+class ReduceMethanePerCattleHead(CSFs):
 
     @computed_field
-    def kpi_targets(self) -> dict[str, str | float]:
-        return {
-            'bovine_methane_per_head': 'Minimize',
-            'bovine_headcount': 'Minimize',
-        }
+    def kpi_name(self) -> str:
+        return 'bovine_methane_per_head'
+
+    @computed_field
+    def target_value(self) -> float:
+        return -float('inf') # means "minimize", there's no mechanism to say 0 is bound
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
@@ -47,7 +43,6 @@ class EntericFermentation_CSFs(CSFs):
     @computed_field
     def scenarios(self) -> list[object]:
         return [StandardScenarios.Scaling]
-
 
     def on_add_project(self, state):
         state.declare_read_current_sts(self, 'bovine_headcount')
@@ -61,3 +56,22 @@ class EntericFermentation_CSFs(CSFs):
         current.bovine_methane_per_head = (
             current.bovine_methane_rate
             / current.bovine_headcount)
+
+
+class ReducePopulationCattle(CSFs):
+
+    @computed_field
+    def kpi_name(self) -> str:
+        return 'bovine_headcount'
+
+    @computed_field
+    def target_value(self) -> float:
+        return -float('inf') # means "minimize", there's no mechanism to say 0 is bound
+
+    @computed_field
+    def ipcc_sectors(self) -> list[object]:
+        return [IPCC_Sector.Enteric_Fermentation]
+
+    @computed_field
+    def scenarios(self) -> list[object]:
+        return [StandardScenarios.Scaling]

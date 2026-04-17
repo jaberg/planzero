@@ -25,7 +25,7 @@ Table of Contents:
     </li>
     <li><a href="#scaling">The Scaling Scenario, Starting with Bovaer</a>
         <ul>
-            <li><a href="#enteric_csfs">CSFs and Strategies for Enteric Fermentation Emissions</a></li>
+            <li><a href="#enteric_csfs">Critical Success Factors and Strategies for Enteric Fermentation Emissions</a></li>
             <li><a href="#enteric_barriers">Barriers</a></li>
             <li><a href="#simulating_bovaer">Simulating Canada's Future with Bovaer</a></li>
         </ul>
@@ -46,6 +46,8 @@ The PlanZero site now includes top-level tabs for both types of entity:
     <li><b><a href="/strategies/">Strategies</a></b> &mdash; code elements representing things that could be done</li>
     <li><b><a href="/scenarios/">Scenarios</a></b> &mdash; simulations of strategies, and their consequences</li>
 </ul>
+That said, PlanZero is just getting started.
+For anyone that would like to see a more-developed pathways-to-net-zero tracker for Canada, check out <a href="https://dashboard.440megatonnes.ca/">440 Megatones Pathways Tracker</a>, and the research behind it. It's great work and I intend to replicate it to understand it better.
 </p>
 
 <p>
@@ -172,7 +174,7 @@ among it's many goals and initiatives, set a goal to achieve net-zero by 2050 (<
 As explained in the following sections,
 a framework used in strategic management helps formalize this goal in terms of a few types of time series and dynamic element,
 and numeric optimization can be used to search over strategies for desirable predicted futures.
-I hope that invoking the terminology of goals, CSFs, barriers, and strategies helps to make the modelling more accessible and engaging, and thereby solicits a greater quantity of constructive feedback.
+I hope that invoking the terminology of goals, critical success factors, barriers, and strategies helps to make the modelling more accessible and engaging, and thereby solicits a greater quantity of constructive feedback.
 </p>
 <p>
 The word "goal" has a common-sense definition, but in the context of governmental planning and legislation,
@@ -188,7 +190,7 @@ should be broken down systematically during an implementation planning process.
 The goal of net-zero by 2050 is questionably "Achievable" but otherwise qualifies as a SMART goal.
 EGFS suggests breaking down such a goal into three sets of considerations and hypotheses, before developing detailed implementation plans for specific strategies:
 <ul>
-    <li><strong>Critical Success Factors (CSFs)</strong> are key conditions that must be created to achieve one or more objectives.</li>
+    <li><strong>Critical Success Factors</strong> are key conditions that must be created to achieve one or more objectives.</li>
     <li><strong>Barriers</strong> are existing or potential challenges that hinder the achievement of one or more objectives. </li>
     <li><strong>Strategies</strong> are broad activities required to achieve a goal, create a critical condition, or overcome a barrier.</li>
 </ul>
@@ -199,7 +201,7 @@ as code objects that can be simulated and compared numerically to determine if, 
 a particular strategy is a good idea.
 </p>
 <p>
-The next subsections explain how the EGFS concepts of CSF, barrier, and strategy
+The next subsections explain how the EGFS concepts of critical success factor, barrier, and strategy
 can be formalized in terms of time series and dynamic elements,
 and used in that way to structure and interpret scenario simulations for the purpose of evaluating strategies.
 </p>
@@ -207,12 +209,12 @@ and used in that way to structure and interpret scenario simulations for the pur
 <h3 id="formalizing_csfs">Formalizing Critical Success Factors</h3>
 
 <p>
-Critical Success Factors (CSFs) are introduced in EGFS as "key conditions that must be created to achieve one or more objectives."
+Critical success factors are introduced in EGFS as "key conditions that must be created to achieve one or more objectives."
 In PlanZero, the objective is, for each IPCC sector, to reduce emissions as much as possible, even producing negative emissions when that's possible.
-Therefore PlanZero's CSFs can be defined for each IPCC sector to reflect the numeric drivers of emissions in that sector.
+Therefore PlanZero's success factors can be defined for each IPCC sector to reflect the numeric drivers of emissions in that sector.
 For example, in the case of enteric fermentation, the emissions calculation (see this <a href="">earlier post approximating the enteric fermentation emissions</a>)
 could be articulated as the product of two terms (ignoring ruminants other than cattle): number of cattle, and average methane emitted per head of cattle.
-These two terms suggest two CSFs:
+These two terms suggest two critical success factors:
 <ul>
     <li>Minimize the number of cattle.</li>
     <li>Minimize the average amount of methane emitted per head of cattle.</li>
@@ -223,20 +225,20 @@ Therefore, it's fair to say these are two "key conditions that must be created t
 </p>
 
 <p>
-The two metrics mentioned in CSFs (number of cattle, and average amount of methane emitted) are also
+The two metrics mentioned in the critical success factors (number of cattle, and average amount of methane emitted) are also
 time series in PlanZero, because that's how I computed the NIR estimate for that sector.
 This has, in fact, been my motive in replicating the NIR estimates.
-I think the EGFS framework is useful, and I wanted to find good CSFs for each of the sectors.
-I believe CSFs, at least in the context of PlanZero, can be formalized in terms of a triplet
+I think the EGFS framework is useful, and I wanted to find critical success factors for each of the sectors.
+I believe these, at least in the context of PlanZero, can be formalized in terms of a triplet
 of (a) a sector, (b) an optimal value, and (c) a TimeSeries object, which can be called a
 <a href="https://en.wikipedia.org/wiki/Performance_indicator">Key Performance Indicators</a> or KPI.
-This triplet of information is attached, in PlanZero, to special dynamic elements which carry the following information pertaining to a set of CSFs:
+This triplet of information is attached, in PlanZero, to special dynamic elements which carry the following information pertaining to a set of critical success factors:
 <ul>
     <li>the names of the KPI time series variables</li>
     <li>whether each one should ideally be maximized, minimized, or maintained at a specific value</li>
-    <li>which IPCC sector(s) are affected by the CSFs</li>
+    <li>which IPCC sector(s) are affected by the critical success factors</li>
 </ul>
-Scenarios will be discussed below, but the CSFs identified by these dynamic
+Scenarios will be discussed below, but the critical success factors identified by these dynamic
 elements serve as default indicators to characterize each IPCC sector when
 visualizing scenario simulations.
 </p>
@@ -250,7 +252,7 @@ In PlanZero, these two concepts are formalized hand-in-hand:
 EGFS strategies are formalized as relatively simple dynamic elements that reflect an
 approach, such as "feed as many cattle Bovaer as possible";
 and EGFS barriers are formalized as all of the dynamic elements required to model
-the effect of such a strategy on CSFs,
+the effect of such a strategy on critical success factors,
 such as "how many cattle can be fed Bovaer", "what would it cost", and "how much good would it do?"
 </p>
 <p>
@@ -296,11 +298,11 @@ this subsection explains what I've meant in more detail.
 In the terms of the previous section (<a href="#simulation">Simulation Framework</a>)
 a PlanZero scenario is a set of dynamic elements, and the time series objects they define.
 In the terms of this section (<a href="#modelling">Scenario Modelling</a>)
-a PlanZero scenario is a set of CSF, barrier, and strategy elements, as well as
+a PlanZero scenario is a set of critical success factors, barriers, and strategy elements, as well as
 a few built-in dynamic elements that, together, are capable of simulating
 the evolution of the emissions sectors used in Canada's 2025 NIR.
 The built-in dynamic elements are capable of simulating future emissions even without
-any CSF, barrier, or strategy elements:
+any critical success factor, barrier, or strategy elements:
 <ul>
     <li><strong>Other NIR Historic Actuals</strong> defines time series objects for IPCC-sector emissions that haven't been modelled by other dynamic elements.
         It initializes them with values from the NIR, and projects that they remain constant in the future.</li>
@@ -331,22 +333,22 @@ to the modelling assumptions in the barriers below.
 
 <p> This section is organized as follows:
 <ul>
-    <li>CSFs and Strategies for Enteric Fermentation Emissions</li>
+    <li>Critical success factors and strategies for enteric fermentation emissions</li>
     <li>Barriers</li>
-    <li>Simulating Bovaer Uptake</li>
-    <li>The Scaling Scenario</li>
+    <li>Simulating bovaer uptake</li>
+    <li>The scaling scenario</li>
 </ul>
 </p>
 
-<h3 id="#enteric_csfs">CSFs and Strategies for Enteric Fermentation Emissions</h3>
+<h3 id="#enteric_csfs">Critical Success Factors and Strategies for Enteric Fermentation Emissions</h3>
 
 <p>
-We've already seen the currently-modelled CSFs and strategies for enteric fermentation
+We've already seen the currently-modelled critical success factors and strategies for enteric fermentation
 in the examples given above.
 As of writing they are code objects, and rendered automatically as part of the
 new scaling scenario page:
-<a href="/scenarios/scaling/#csfs">CSFs</a>,
-<a href="/scenarios/scaling/#strategies">Strategies</a>.
+<a href="/scenarios/scaling/#csfs">critical success factors</a>,
+<a href="/scenarios/scaling/#strategies">strategies</a>.
 Reproducing them here, as that page is expected to change in future:
 </p>
 <h4>Strategies</h4>
@@ -460,8 +462,9 @@ The details of the Python implementation as of writing are available on <a href=
 
 <h3 id="simulating_bovaer">Simulating Canada's Future with Bovaer Usage</h3>
 <p>
-The combination of all of the CSFs, barriers, and strategies results in a set of
-8 dynamic elements (3 built-in, 1 CSF, 1 strategy, and 3 barriers), and 1267 time series objects
+The combination of all of the critical success factors, barriers, and strategies is a set of
+<! TODO: the CSF defined above is clearly the tuple per timeseries, not the dynamic element -- restrict CSF to have a single metric? -->
+8 dynamic elements (3 built-in, 1 critical success factor, 1 strategy, and 3 barriers), and 1267 time series objects
 (the ones named above, plus many others, such as emissions of each GHG for each province and territory, for each of 71 IPCC sectors,
 and per-province per-cattle-type headcounts).
 The whole set is listed on the
@@ -491,18 +494,19 @@ is available for the <a href="/scenarios/scaling/strategies/ScaleBovaer/">ScaleB
 
 <p>
 This post has introduced PlanZero's simulation framework in terms of computational elements (time series and dynamic elements)
-and in terms of strategic management concepts (CSFs, barriers, strategies, scenarios).
+and in terms of strategic management concepts (critical success factors, barriers, strategies, scenarios).
 The post brings two new tabs to the top of the PlanZero website:
 <a href="/strategies/">strategies</a> lists the strategies implemented in PlanZero, which scenarios include them, and which IPCC Sectors they impact;
 <a href="/scenarios/">scenarios</a> lists the scenarios that are implemented in the software.
 Currently, there is just one strategy (ScaleBovaer) and one scenario (scaling) but it is my intention
 to add more.
-Perhaps I will get into a cadence of alternating between NIR-sector posts and
+I would like to get into a cadence of alternating between NIR-sector posts and
 scaling-strategy posts.
 I imagine, over time, that PlanZero may grow to include a small number of standard scenarios
 (perhaps "do nothing", "no-subsidies", "what about counting on a few speculative technologies...")
 but I'd concede I'm a bit hazy on how scenarios will be used, so I won't worry about it yet.
-More urgently than scenarios, PlanZero needs strategies (and associated CSFs and barriers), starting with products and technologies that are closest to mass adoption.
+More urgently than scenarios, PlanZero needs strategies (and associated critical success factors and barriers), starting with products and technologies that are closest to mass adoption.
+For anyone that would like to see a more-developed pathways-to-net-zero tracker for Canada, check out <a href="https://dashboard.440megatonnes.ca/">440 Megatones Pathways Tracker</a>, and the research behind it. It's great work and I intend to replicate it to understand it better (<a href="https://github.com/jaberg/planzero/issues/60">github issue</a>).
 The next strategy posts, in no particular order, should probably cover at least some of the following (the links in the list are to github issues reminding me to implement them):
 <ul>
     <li><a href="https://github.com/jaberg/planzero/issues/53">Solar</a>,
