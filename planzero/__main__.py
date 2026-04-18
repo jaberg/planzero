@@ -64,6 +64,7 @@ def cache_petrinex(args):
 def request_all_planzero_pages(args):
     import requests
     import time
+    from . import endpoints
 
     class SiteClient(object):
         def get(self, path):
@@ -74,26 +75,9 @@ def request_all_planzero_pages(args):
             return rval.status_code
 
     client = SiteClient()
-    for path in [
-        '/',
-        '/ipcc-sectors/',
-        '/strategies/',
-        '/about/',
-    ]:
-        status_code = client.get(path)
-        print(status_code, '{:.2f}'.format(client.last_get_time), path)
-
-    from . import ipcc_canada
-    for catpath in ipcc_canada.catpaths:
-        path = f'/ipcc-sectors/{catpath}/'
-        status_code = client.get(path)
-        print(status_code, '{:.2f}'.format(client.last_get_time), path)
-
-    from . import blog
-    for url_filename in blog._blogs_by_url_filename:
-        path = f'/blog/{url_filename}/'
-        status_code = client.get(path)
-        print(status_code, '{:.2f}'.format(client.last_get_time), path)
+    for endpoint in enpoints.endpoints():
+        status_code = client.get(endpoint)
+        print(status_code, '{:.2f}'.format(client.last_get_time), endpoint)
 
 
 if __name__ == '__main__':

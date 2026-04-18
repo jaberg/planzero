@@ -226,6 +226,13 @@ request_all_planzero_pages: .build
 		-it --rm $(target) \
 		python -m planzero request_all_pages
 
+warmup_cache_speed_test: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python warmup.py
+
 demo_neud: .build
 	docker run \
 		-v ${PWD}:/mnt/ \

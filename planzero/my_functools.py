@@ -20,10 +20,3 @@ def cache(f):
         return _disk_cache.memoize()(f)
     else:
         return functools.cache(f)
-
-def maybecache(f):
-    return cache(f)
-
-def clear_cache():
-    if os.path.exists(CACHE_DIR):
-        shutil.rmtree(CACHE_DIR)

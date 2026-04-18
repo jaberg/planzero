@@ -32,3 +32,5 @@ def get_peval():
     )
     peval.run_until(2125 * ureg.years)
     return peval
+
+from . import endpoints
