@@ -293,19 +293,21 @@ async def get_strategies(request: Request):
     )
 
 
+@planzero.my_functools.cache
+def get_blog_html(post_name: str):
+    blog = planzero.blog._blogs_by_url_filename.get(post_name)
+    return templates.get_template(f"/blog/{post_name}.html").render(dict(
+        default_context,
+        active_tab='blog',
+        blog=blog,
+        ))
+
+
 @app.get("/blog/{post_name}", response_class=HTMLResponse)
 async def get_blog(request: Request, post_name:str):
-    blog = planzero.blog._blogs_by_url_filename.get(post_name)
     try:
-        return templates.TemplateResponse(
-            request=request,
-            name=f"/blog/{post_name}.html",
-            context=dict(
-                default_context,
-                active_tab='blog',
-                blog=blog,
-                ),
-        )
+        html = get_blog_html(post_name)
+        return HTMLResponse(content=html)
     except IOError:
         raise HTTPException(status_code=404, detail="url not recognized")
 
