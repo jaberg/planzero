@@ -22,6 +22,7 @@ jupyter: .build
 test: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
 		-w /mnt/ \
 		-it --rm $(target) \
 		pytest -W error --maxfail=2 .
