@@ -134,6 +134,21 @@ async def get_barriers(request: Request):
             ),
     )
 
+@app.get("/scenarios/{scenario_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+async def get_scenario_strategy_impact(request: Request, scenario_name: str, barrier_name: str):
+    sim = planzero.sim.sim_scenario(scenario_name)
+    return templates.TemplateResponse(
+        request=request,
+        name="scenario_barrier.html",
+        context=dict(
+            default_context,
+            sim=sim,
+            active_tab='scenarios',
+            scenario_name=scenario_name,
+            barrier_name=barrier_name,
+            ),
+    )
+
 
 @app.get("/scenarios/", response_class=HTMLResponse)
 async def get_scenarios(request: Request):

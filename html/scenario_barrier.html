@@ -1,0 +1,64 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>{{barrier_name}} ({{scenario_name}} scenario)</h1>
+        <!--<p>Scenario: </p>-->
+    </header>
+<p>
+This page visualizes some of the key time series of the <strong>{{barrier_name}}</strong> barrier
+in the <strong>{{scenario_name}}</strong> scenario.
+</p>
+
+<h3>Description</h3>
+<p>
+{{planzero.barriers.barriers[barrier_name].description}}
+</p>
+
+<h3>Time Series Defined by this Dynamic Element</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th></th>
+            <th></th>
+            <th>Year</th>
+            <th></th>
+            <th></th>
+            <th>Unit</th>
+        </tr>
+        <tr>
+            <th></th>
+            <th>2000</th>
+            <th>2025</th>
+            <th>2050</th>
+            <th>2075</th>
+            <th>2100</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+{% for sts_name, sts_var in sorted(sim.state.sts.items()) if sts_var.writer and sts_var.writer.identifier == barrier_name %}
+<tr>
+    <td>{{sts_name[:50]}}</td>
+    <td>{{sts_var.query(2000 * u.years).magnitude}}</td>
+    <td>{{sts_var.query(2025 * u.years).magnitude}}</td>
+    <td>{{sts_var.query(2050 * u.years).magnitude}}</td>
+    <td>{{sts_var.query(2075 * u.years).magnitude}}</td>
+    <td>{{sts_var.query(2100 * u.years).magnitude}}</td>
+    <td>{{sts_var.v_unit}}</td>
+</tr>
+    </tbody>
+{% endfor %}
+</table>
+
+<ul class="actions special">
+    <li><a href="/scenarios/{{scenario_name}}/" class="button">Back to Scenario</a></li>
+</ul>
+
+</section>
+</div>
+
+{% include "post-main.html" %}

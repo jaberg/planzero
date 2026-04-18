@@ -13,7 +13,6 @@ def endpoints():
         "/",
         "/ipcc-sectors/",
         "/strategies/",
-        "/barriers/",
         "/scenarios/",
         "/about/",
     ]
@@ -30,9 +29,7 @@ def endpoints():
             rval.append(f"/scenarios/{scenario.value}/strategies/{strategy}/")
 
         for barrier in barriers.barriers:
-            # TODO: set up an endpoint for
-            # rval.append(f"/scenarios/{scenario.value}/barriers/{barrier}/")
-            pass
+            rval.append(f"/scenarios/{scenario.value}/barriers/{barrier}/")
 
         for catpath in ipcc_canada.catpaths:
             rval.append(f"/scenarios/{scenario.value}/ipcc-sectors/{catpath}/")

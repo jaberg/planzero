@@ -74,7 +74,7 @@
     <tbody>
         {% for name, proj in planzero.sim.sim_scenario(ident).state.projects.items() if 'barrier' in proj.tags %}
         <tr>
-            <td>{{name}}</td>
+            <td><a href="/scenarios/{{ident}}/barriers/{{name}}/">{{name}}</a></td>
             <td>{{proj.short_description}}</td>
             <td>
                 {% for ipcc_sector in proj.ipcc_sectors %}
