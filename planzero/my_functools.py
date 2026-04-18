@@ -8,7 +8,7 @@ except ImportError:
     diskcache = None
 
 CACHE_DIR = os.environ['PLANZERO_CACHE_DIR']
-USE_DISK_CACHE = os.environ['PLANZERO_USE_DISK_CACHE'] == '1'
+USE_DISK_CACHE = (os.environ['PLANZERO_USE_DISK_CACHE'] == '1')
 
 _disk_cache = None
 

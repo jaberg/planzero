@@ -20,6 +20,7 @@ jupyter: .build
 		jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
 
 test: .build
+	# run tests with memory cache
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-e PLANZERO_USE_DISK_CACHE=0 \
@@ -119,7 +120,6 @@ test_ghgrp: .build
 		pytest --maxfail=2 -vv planzero/test_ghgrp.py
 
 
-
 stakeholders: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
@@ -127,9 +127,11 @@ stakeholders: .build
 		-it --rm $(target) \
 		python stakeholders.py
 
+
 local: .build
 	docker run \
 		-e PLANZERO_DATA=/mnt/data/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
 		-v ${PWD}:/mnt/ \
 		-p 127.0.0.1:8012:8012 \
 		-w /mnt/ \
