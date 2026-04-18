@@ -13,6 +13,7 @@ from .ghgvalues import GWP_100, GHG_zero_kg
 from .ureg import (u, kg_by_ghg,
                    kilotonne_by_coal_type,
                    kt_by_ghg)
+from .my_functools import cache
 from . import aer
 from . import ghgrp
 from . import naics
@@ -950,24 +951,29 @@ class Est_Transport_HeavyDutyDieselVehicles(Est_Transport):
         for label, emissions in self.emissions_by_label.items():
             emissions_sectoral_pt[:, IPCC.Transport__Road__Heavy_Duty_Diesel_Vehicles] += emissions
 
+@cache
+def enteric_fermentation_emissions():
+    from .sc_3210013001 import (
+        FarmType, Livestock, Livestock_nonsums, SurveyDate,
+        number_of_cattle_by_class_and_farm_type)
+    from .eccc_nir_annex3p4 import table_A3p4_11
+    rval = {}
+    cattle_pt, cattle_ca = number_of_cattle_by_class_and_farm_type()
+    emfac = table_A3p4_11()
+    for livestock in Livestock_nonsums:
+        cattle_jan1 = cattle_pt[SurveyDate.Jan1, livestock, FarmType.AllCattle]
+        cattle_jul1 = cattle_pt[SurveyDate.Jul1, livestock, FarmType.AllCattle]
+        emissions = GHG_PT_zeros()
+        emissions[GHG.CH4] += cattle_jan1 * emfac[livestock, None] * (.5 * u.year)
+        emissions[GHG.CH4] += cattle_jul1 * emfac[livestock, None] * (.5 * u.year)
+        rval[livestock.value] = emissions
+    return rval
+
 
 class Est_EntericFermentation(object):
     # TODO: share code with BovinePopulation in barriers.py
     def __init__(self):
-        from .sc_3210013001 import (
-            FarmType, Livestock, Livestock_nonsums, SurveyDate,
-            number_of_cattle_by_class_and_farm_type)
-        from .eccc_nir_annex3p4 import table_A3p4_11
-        self.emissions_by_label = {}
-        self.cattle_pt, self.cattle_ca = number_of_cattle_by_class_and_farm_type()
-        emfac = table_A3p4_11()
-        for livestock in Livestock_nonsums:
-            cattle_jan1 = self.cattle_pt[SurveyDate.Jan1, livestock, FarmType.AllCattle]
-            cattle_jul1 = self.cattle_pt[SurveyDate.Jul1, livestock, FarmType.AllCattle]
-            emissions = GHG_PT_zeros()
-            emissions[GHG.CH4] += cattle_jan1 * emfac[livestock, None] * (.5 * u.year)
-            emissions[GHG.CH4] += cattle_jul1 * emfac[livestock, None] * (.5 * u.year)
-            self.emissions_by_label[livestock.value] = emissions
+        self.emissions_by_label = enteric_fermentation_emissions()
         self.echart_div_id = 'echart_div_enteric_fermentation'
         self.echart_title = 'Enteric Fermentation'
 
