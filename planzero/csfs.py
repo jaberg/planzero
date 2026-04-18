@@ -25,8 +25,10 @@ class CSFs(DynamicElement):
         raise NotImplementedError()
 
 
-
-class ReduceMethanePerCattleHead(CSFs):
+class Reduce_Methane_per_Cattle_Head(CSFs):
+    """Enteric fermentation emissions would be reduced if each head of cattle
+    emitted less.
+    """
 
     @computed_field
     def kpi_name(self) -> str:
@@ -58,7 +60,9 @@ class ReduceMethanePerCattleHead(CSFs):
             / current.bovine_headcount)
 
 
-class ReducePopulationCattle(CSFs):
+class Reduce_Population_Cattle(CSFs):
+    """Enteric fermentation emissions would be reduced if there were fewer head of cattle.
+    """
 
     @computed_field
     def kpi_name(self) -> str:

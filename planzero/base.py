@@ -55,9 +55,13 @@ class Project(BaseModel):
         # override the method as well.
         doc = self.__class__.__doc__
         if doc:
-            return doc
+            rval = doc
         else:
-            return self.short_description # which may be None
+            rval = self.short_description # which may be None
+        if rval is None:
+            raise RuntimeError()
+        else:
+            return rval
 
     def model_post_init(self, __context):
         super().model_post_init(__context)

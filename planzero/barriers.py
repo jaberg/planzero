@@ -199,7 +199,7 @@ class Bovine_Population(Barrier):
                         assert isinstance(jan1_pt, sts.STS)
                         hc = sts.interleave([jan1_pt, jul1_pt.delay(.5 * u.years)])
                         hc.values[0] = 0 # assume 0 instead of undefined
-                        state.declare_sts(self, hc, need_current=True,
+                        state.declare_sts(self, hc, write=True,
                                           name=f'headcount_{livestock.value}_{pt.value}')
                         stash.headcounts.append(hc)
 
@@ -212,7 +212,7 @@ class Bovine_Population(Barrier):
 
                         on_bovaer = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
                         stash.on_bovaer.append(on_bovaer)
-                        state.declare_sts(self, on_bovaer, need_current=True,
+                        state.declare_sts(self, on_bovaer, write=True,
                                           name=f'headcount_on_Bovaer_{livestock.value}_{pt.value}')
 
                         stash.livestock_type.append(livestock)
