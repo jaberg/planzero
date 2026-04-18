@@ -75,7 +75,7 @@ def request_all_planzero_pages(args):
             return rval.status_code
 
     client = SiteClient()
-    for endpoint in enpoints.endpoints():
+    for endpoint in endpoints.endpoints():
         status_code = client.get(endpoint)
         print(status_code, '{:.2f}'.format(client.last_get_time), endpoint)
 

@@ -65,8 +65,10 @@ async def get_ipcc_sectors(request: Request, error_text:str=None):
 def url_for_catpath(catpath):
     return f'/ipcc-sectors/{catpath}/'.replace(' ', '_')
 
+
 def filepath_for_catpath(catpath):
     return f'{htmlroot}/ipcc-sectors/{catpath}.html'.replace(' ', '_')
+
 
 def templatepath_for_catpath(catpath):
     return f'/ipcc-sectors/{catpath}.html'.replace(' ', '_')
