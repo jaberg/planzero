@@ -25,7 +25,7 @@ class Barrier(DynamicElement):
         return [sec.value for sec in self.ipcc_sectors]
 
 
-class BovaerAdoptionLimit(Barrier):
+class Bovaer_Adoption_Limit(Barrier):
     
     @computed_field
     def max_increase_rate(self) -> object:
@@ -84,38 +84,6 @@ class BovaerAdoptionLimit(Barrier):
         # Apparently Bovaer is not allowed as part of organic production.
         return state.t_now + 1 * u.years
 
-
-class BovaerPrice(Barrier):
-
-    @computed_field
-    def short_description(self) -> str:
-        return f"Assume Bovaer will always cost {self.bovaer_price} on average across cattle"
-
-    @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return [IPCC_Sector.Enteric_Fermentation]
-
-    @computed_field
-    def scenarios(self) -> list[object]:
-        return [] # [StandardScenarios.Scaling]
-
-    @computed_field
-    def research(self) -> dict[str, str]:
-        return {}
-
-    @computed_field
-    def bovaer_price(self) -> object:
-        # XXX
-        # this is the wrong unit for price, the price should be different for
-        # calves because they are smaller, shouldn't it?
-        # Can you even give it to calves? Starting at what age?
-        return 150 * u.CAD / u.cattle / u.year
-
-    def on_add_project(self, state):
-        with state.defining(self) as ctx:
-            ctx.bovaer_price = sts.SparseTimeSeries(
-                default_value=self.bovaer_price)
-
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
 # It can apparently be done pretty well with drones
@@ -132,7 +100,7 @@ from .sc_3210013001 import (
     FarmType, Livestock, Livestock_nonsums, SurveyDate,
     number_of_cattle_by_class_and_farm_type)
 
-class BovinePopulation(Barrier):
+class Bovine_Population(Barrier):
     """Assume cattle produce methane (less-so if they are fed Bovaer), milk and beef (TODO).
     The evolution of the cattle population is projected to remain constant.
     """
@@ -361,7 +329,7 @@ class BovinePopulation(Barrier):
         return state.t_now + .5 * u.year
 
 
-class BovaerMonitoring(Barrier):
+class Bovaer_Monitoring(Barrier):
 
     @computed_field
     def short_description(self) -> str:
