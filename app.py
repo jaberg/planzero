@@ -83,6 +83,21 @@ def have_page_for_catpath(catpath):
         return False
 
 
+@planzero.my_functools.cache
+def get_ipcc_sector_html(catpath: str):
+    if not have_page_for_catpath(catpath):
+        return None
+    return templates.get_template(templatepath_for_catpath(catpath)).render(dict(
+        default_context,
+        active_tab='ipcc_sectors',
+        peval=get_peval(),
+        stakeholders=planzero.strategies.stakeholders,
+        catpath=catpath,
+        blogs_by_tag=planzero.blog.blogs_by_tag,
+        est_nir=planzero.est_nir,
+        ))
+
+
 @app.get("/ipcc-sectors/{category}/", response_class=HTMLResponse)
 @app.get("/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
 @app.get("/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
@@ -99,24 +114,13 @@ async def get_ipcc_sectors_category(
     else:
         catpath = f'{category}'
 
-    if have_page_for_catpath(catpath):
-        return templates.TemplateResponse(
-            request=request,
-            name=templatepath_for_catpath(catpath),
-            context=dict(
-                default_context,
-                active_tab='ipcc_sectors',
-                peval=get_peval(),
-                stakeholders=planzero.strategies.stakeholders,
-                catpath=catpath,
-                blogs_by_tag=planzero.blog.blogs_by_tag,
-                est_nir=planzero.est_nir,
-                ))
+    html = get_ipcc_sector_html(catpath)
+    if html:
+        return HTMLResponse(content=html)
     else:
-        rval = await get_ipcc_sectors(
+        return await get_ipcc_sectors(
             request, 
-            error_text=f"Sorry, we don't have the analyis page for {catpath} yet")
-        return rval
+            error_text=f"Sorry, we don't have the analysis page for {catpath} yet")
 
 
 @app.get("/barriers/", response_class=HTMLResponse)
