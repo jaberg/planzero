@@ -1,4 +1,4 @@
-from .. import Project, SparseTimeSeries
+from .. import DynamicElement, SparseTimeSeries
 from .. import ureg as u
 from .ideas import ideas
 

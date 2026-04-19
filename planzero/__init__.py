@@ -1,4 +1,4 @@
-from .base import Project
+from .base import DynamicElement
 from .base import BaseScenarioProject
 from .base import ProjectEvaluation
 from .base import SparseTimeSeries

@@ -33,10 +33,10 @@ from .enums import GHG, IPCC_Sector
 from .sts import SparseTimeSeries, STS
 
 
-class Project(BaseModel):
+class DynamicElement(BaseModel):
 
     identifier: str | None = None
-    _sub_projects: 'list[Project]' = []
+    _sub_projects: 'list[DynamicElement]' = []
 
     may_register_emissions:bool = True
     requires_emissions_registration_closed:bool = False
@@ -120,11 +120,10 @@ class Project(BaseModel):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
-DynamicElement = Project # TODO: rename Project
 
 BaseScenario_subclasses = []
 
-class BaseScenarioProject(Project):
+class BaseScenarioProject(DynamicElement):
     """Inherit from BaseScenarioProject to be included in the default base
     scenario for project evaluation.
     """
@@ -158,7 +157,7 @@ class StateCurrent(object):
             return self.state.sts[attr].query(self.state.t_now)
         else:
             if attr in self.state.sts:
-                raise AttributeError(f'state variable {attr} exists, but the calling Project class did not register to read it')
+                raise AttributeError(f'state variable {attr} exists, but the calling DynamicElement class did not register to read it')
             else:
                 raise AttributeError(attr)
 
@@ -235,7 +234,7 @@ class State(object):
         things = set()
         things.update(sts.identifier for sts in self.sts.values())
         things.update(prj.identifier for prj in self.projects.values())
-        assert len(things) == len(self.sts) + len(self.projects), "It might be confusing to use the same name for an STS and a Project"
+        assert len(things) == len(self.sts) + len(self.projects), "It might be confusing to use the same name for an STS and a DynamicElement"
         for sts in self.sts.values():
             graph.add_node(sts.identifier)
             if sts.writer:

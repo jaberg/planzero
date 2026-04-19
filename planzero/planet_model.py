@@ -2,7 +2,7 @@ from .my_functools import cache
 
 from . import enums
 from .base import (
-    Project,
+    DynamicElement,
     ProjectEvaluation,
     AtmosphericChemistry, # TODO: move to this file
     SparseTimeSeries,
@@ -11,7 +11,7 @@ from .base import (
 from .ghgvalues import GWP_100
 
 
-class EmissionsImpulseResponse(Project):
+class EmissionsImpulseResponse(DynamicElement):
     ghg:object
     impulse_co2e:object
     catpath:str

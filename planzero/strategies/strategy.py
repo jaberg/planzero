@@ -14,11 +14,12 @@ class Stakeholder(BaseModel):
     name: str
     url: str
 
-from .. import Project
+from .. import DynamicElement
 
 Strategy_subclasses = []
 
-class Strategy(Project):
+class Strategy(DynamicElement):
+    # TODO: deprecate this class, use Strategy2 instead, but maybe call it Strategy
 
     # short description, typically nota full sentence
     title: str

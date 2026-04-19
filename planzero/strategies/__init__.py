@@ -5,7 +5,7 @@ from . import stakeholders
 from . import battery_tug
 from . import battery_freighter
 
-from .. import Project, SparseTimeSeries
+from .. import SparseTimeSeries
 from .. import ureg as u
 
 from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw, HTML_Markdown
