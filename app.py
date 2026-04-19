@@ -323,10 +323,22 @@ async def get_strategies(request: Request):
 @app_cache
 def get_blog_html(post_name: str):
     blog = planzero.blog._blogs_by_url_filename.get(post_name)
+    prev_url_filename = None
+    next_url_filename = None
+    for ii, obj in enumerate(planzero.blog._blogs_sorted_by_date):
+        if obj is blog:
+            if ii:
+                next_url_filename = planzero.blog._blogs_sorted_by_date[ii - 1].url_filename
+            if ii + 1 < len(planzero.blog._blogs_sorted_by_date):
+                prev_url_filename = planzero.blog._blogs_sorted_by_date[ii + 1].url_filename
+            break
+
     return templates.get_template(f"/blog/{post_name}.html").render(dict(
         default_context,
         active_tab='blog',
         blog=blog,
+        prev_url_filename=prev_url_filename,
+        next_url_filename=next_url_filename,
         ))
 
 

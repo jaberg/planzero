@@ -423,6 +423,14 @@ Until then,
 - James Bergstra
 </p>
 
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
 </section>
 </div>
 {% include "post-main.html" %}

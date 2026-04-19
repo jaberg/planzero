@@ -282,6 +282,14 @@ how Canada might be powered in the decades to come, but I will wait until I have
 Coming up in the next post will be a similar modelling summary of Canada's next-largest emissions-contributing sector from 2005: forest land.
 </p>
 
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
 </section>
 </div>
 {% include "post-main.html" %}
