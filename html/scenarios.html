@@ -34,7 +34,7 @@
                   <a href="/scenarios/{{ident}}/">{{ident}}</a>
               </td>
               <td>{{obj.short_descr}}</td>
-              <td>{{planzero.sim.sim_scenario(ident).state.sts["Predicted_Annual_Emitted_CO2e_mass"].query(2050 * u.year).to(u.Mt_CO2e)}}</td>
+              <td>{{"{:.1f}".format(planzero.sim.sim_scenario(ident).state.sts["Predicted_Annual_Emitted_CO2e_mass"].query(2050 * u.year).to(u.Mt_CO2e).magnitude)}} Mt{{CO2e|safe}}</td>
           </tr>
           {% endfor %}
     </tbody>

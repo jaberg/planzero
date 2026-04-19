@@ -58,11 +58,15 @@ class SimulationResult(BaseModel):
         for catpath, contributors in self.state.sectoral_emissions_contributors.items():
             if not contributors:
                 continue
+            # TODO: this scenario_name isn't really what we want here,
+            # self.scenario_name is the class name of the scenario object,
+            # whereas what we want is the value of the corresponding scenario
+            # enum (!?)
             data = EChartSeriesData(
                 self.state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'],
                 times=self.year_times,
                 v_unit=u.Mt_CO2e,
-                url=None)
+                url=f'/scenarios/{self.scenario_name.lower()}/ipcc-sectors/{catpath}/')
             values = [vdict['value'] for vdict in data]
             if max(values) <= 0:
                 # all negative
