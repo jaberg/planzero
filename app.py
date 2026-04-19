@@ -14,7 +14,6 @@ htmlroot = 'html'
 app.mount("/assets", StaticFiles(directory=f"{htmlroot}/assets/"), name="assets")
 app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images")
 
-
 templates = Jinja2Templates(directory=htmlroot)
 
 import planzero
@@ -25,6 +24,19 @@ import planzero.enums
 from planzero import get_peval
 
 u = planzero.ureg
+
+
+def app_cache(f):
+    if planzero.my_functools.USE_DISK_CACHE:
+        # this branch is used in deployed code
+        return planzero.my_functools.cache(f)
+    else:
+        # this branch is used in dev mode,
+        # where, coincidentally, it's preferred to
+        # not cache endpoints *at all* so that I can see
+        # changes in html templates rendered via jinja
+        # without reloading anything
+        return f
 
 
 @app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)
@@ -83,7 +95,7 @@ def have_page_for_catpath(catpath):
         return False
 
 
-@planzero.my_functools.cache
+@app_cache
 def get_ipcc_sector_html(catpath: str):
     if not have_page_for_catpath(catpath):
         return None
@@ -308,7 +320,7 @@ async def get_strategies(request: Request):
     )
 
 
-@planzero.my_functools.cache
+@app_cache
 def get_blog_html(post_name: str):
     blog = planzero.blog._blogs_by_url_filename.get(post_name)
     return templates.get_template(f"/blog/{post_name}.html").render(dict(
