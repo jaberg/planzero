@@ -374,11 +374,11 @@ Reproducing them here, as that page is expected to change in future:
     <tbody>
 
 
-        <tr><td>Enteric Fermentation</td>
+        <tr><td><a href="/scenarios/scaling/ipcc-sectors/Enteric_Fermentation">Enteric Fermentation</a></td>
             <td>Minimize</td>
             <td>bovine_methane_per_head</td></tr>
 
-        <tr><td>Enteric Fermentation</td>
+        <tr><td><a href="/scenarios/scaling/ipcc-sectors/Enteric_Fermentation">Enteric Fermentation</a></td>
             <td>Minimize</td>
             <td>bovine_headcount</td></tr>
 
@@ -413,23 +413,24 @@ Reproducing them here (as that page is expected to change in future):
     </thead>
     <tbody>
 
-        <tr><td>Enteric Fermentation</td>
-            <td>BovaerAdoptionLimit</td>
+        <tr><td><a href="/scenarios/scaling/ipcc-sectors/Enteric_Fermentation">Enteric Fermentation</a></td>
+            <td><a href="/scenarios/scaling/barriers/Bovaer_Adoption_Limit">Bovaer Adoption Limit</a></td>
             <td>Assume Bovaer will only be adopted by, at most, 5.0 percent / year of cattle operations</td>
         </tr>
-        <tr><td>Enteric Fermentation, Other Product Manufacture and Use</td>
-            <td>BovinePopulation</td>
+        <tr><td><a href="/scenarios/scaling/ipcc-sectors/Enteric_Fermentation">Enteric Fermentation</a>,
+<a href="/scenarios/scaling/ipcc-sectors/Other_Product_Manufacture_and_Use">Other Product Manufacture and Use</a></td>
+            <td><a href="/scenarios/scaling/barriers/Bovine_Population">Bovine Population</a></td>
             <td>Model cattle population, production of methane (considering Bovaer), milk and beef (TODO)</td>
         </tr>
-        <tr><td>Enteric Fermentation</td>
-            <td>BovaerMonitoring</td>
+        <tr><td><a href="/scenarios/scaling/ipcc-sectors/Enteric_Fermentation">Enteric Fermentation</a></td>
+            <td><a href="/scenarios/scaling/barriers/Bovaer_Monitoring">Bovaer Monitoring</a></td>
             <td>Assume monitoring Bovaer usage costs 1000.0 CAD / farm / year for paperwork and 3000.0 CAD / farm / year for on-site inspection</td>
         </tr>
     </tbody>
 </table>
 
 <p>
-The "BovaerAdoptionLimit" barrier defines the "max_fraction_of_cattle_on_bovaer" time series
+The "Bovaer Adoption Limit" barrier defines the "max_fraction_of_cattle_on_bovaer" time series
 by implementing an assumption that whenever Bovaer starts being completely subsidized by e.g. the government,
 that farmers might adopt its usage at a rate of at most 5% of all farmers per year.
 Further, it assumes that organic farmers (estimated to be 1% of farmers) will never adopt Bovaer,
@@ -437,7 +438,7 @@ because Bovaer is incompatible with the production of organic milk and beef.
 The details of the Python implementation as of writing are available on <a href="https://github.com/jaberg/planzero/blob/1f424d7824c8038e2f5952a61928c74889003482/planzero/barriers.py#L28">github</a>.
 </p>
 <p>
-The "BovinePopulation" barrier defines a large number of time series: all of the cattle headcounts per cattle type (calves, beef vs. dairy vs. slaughter heifers, beef vs. dairy cows, bulls),
+The "Bovine Population" barrier defines a large number of time series: all of the cattle headcounts per cattle type (calves, beef vs. dairy vs. slaughter heifers, beef vs. dairy cows, bulls),
 per province and territory, and per whether they are on Bovaer or not.
 It estimates the methane produced by each of these sub-populations of cattle, and adds them up to get a total.
 Cattle on Bovaer are modelled as producing 30% less if they are dairy cows, 45% less if they are beef cows,
@@ -449,7 +450,7 @@ The {{CO2e|safe}} is attributed to the IPCC Sector "Industrial / Other Product M
 The details of the Python implementation as of writing are available on <a href="https://github.com/jaberg/planzero/blob/1f424d7824c8038e2f5952a61928c74889003482/planzero/barriers.py#L135">github</a>.
 </p>
 <p>
-The "BovaerMonitoring" barrier defines a single time series called "bovaer_monitoring_cost_annual" that is registered as requiring a subsidy.
+The "Bovaer Monitoring" barrier defines a single time series called "bovaer_monitoring_cost_annual" that is registered as requiring a subsidy.
 The subsidy amount is calculated based on guesses of $1000 / farm /year for administrative overhead,
 and $3000 / farm / year for onsite inspection.
 Confidence intervals are not yet supported in PlanZero, but if they were, I would use large ones around these figures as I did not find references

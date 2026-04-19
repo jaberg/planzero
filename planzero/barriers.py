@@ -368,7 +368,7 @@ class Bovaer_Monitoring(Barrier):
 
         with state.defining(self) as ctx:
             ctx.bovaer_monitoring_cost_annual_total = sts.SparseTimeSeries(
-                default_value=0 * u.CAD)
+                default_value=0 * u.mega_CAD)
 
         state.register_subsidy_requirement('bovaer_monitoring_cost_annual_total')
 
