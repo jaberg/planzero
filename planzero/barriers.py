@@ -224,9 +224,9 @@ class Bovine_Population(Barrier):
                     else:
                         assert not isinstance(jan1_pt, sts.STS)
 
-            ctx.bovine_methane_rate = bovine_methane
-            ctx.bovaer_cost = sts.SparseTimeSeries(default_value=0 * u.CAD / u.year, t_unit=u.year)
-            ctx.bovaer_cost_annual = sts.SparseTimeSeries(default_value=0 * u.CAD, t_unit=u.year)
+            ctx.bovine_methane_rate = bovine_methane.to(u.kt_CH4 / u.year)
+            ctx.bovaer_cost = sts.SparseTimeSeries(default_value=0 * u.mega_CAD / u.year, t_unit=u.year)
+            ctx.bovaer_cost_annual = sts.SparseTimeSeries(default_value=0 * u.mega_CAD, t_unit=u.year)
             ctx.bovaer_headcount = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
             ctx.bovine_headcount = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
 
@@ -240,12 +240,12 @@ class Bovine_Population(Barrier):
             # however the atmospheric chemistry model that runs for 2026
             # runs at the equivalent of Jan 1, 2026, but expects the 2026 numbers to be done
             # which is unfortunate.
-            ctx.bovine_methane_annual = correct.delay(1 * u.year)
+            ctx.bovine_methane_annual = correct.delay(1 * u.year).to(u.kt_CH4)
 
             ctx.bovaer_production_CO2 = sts.SparseTimeSeries(
-                default_value=0 * u.kg_CO2 / u.year)
+                default_value=0 * u.kt_CO2 / u.year)
             ctx.bovaer_production_CO2_annual = sts.SparseTimeSeries(
-                default_value=0 * u.kg_CO2,
+                default_value=0 * u.kt_CO2,
                 t_unit=u.year)
 
         state.register_emission('Enteric_Fermentation', 'CH4',
