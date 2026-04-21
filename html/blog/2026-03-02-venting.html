@@ -65,16 +65,16 @@ both inside the well tube (<i>produced, wet gas</i>), and between the well tube 
 </p>
 <p>
 Casing gas can be an inconvenience to an oil well operator, because
-it contains methane but it may not be profitable to capture that methane and bring it to market.
-The gas cannot simply be sealed in the well, because it's the relatively low pressure within the well bore that draws oil and gas into the well;
+it may not be profitable to capture that methane and bring it to market.
+At the same time, the gas cannot simply be sealed in the well, because it's the relatively low pressure within the well bore that draws in the oil;
 the casing gas needs to come out.
-In the unprofitable case, the question then faces the well operator, of what to do with the flow of casing gas?
-There are two standard practices: to release it (producing <i>venting</i> emissions), or to burn it (producing <i>flaring</i> emissions).
+In this unprofitable case, the question then faces the well operator, of what to do with the flow of casing gas?
+There are two standard practices: (1) to release it, producing <i>venting</i> emissions, or else (2) to burn it, producing <i>flaring</i> emissions.
 Burning it requires more equipment, but it is considered better for the environment because
 vented methane traps more heat over time as a greenhouse gas than is released by its combustion.
-The ratio of exactly how much better it is continues to be the subject of academic study, but
-it is believed to be hundreds of times better, depending on how far into the future you count the greenhouse effect
-(See e.g. <a href="https://www.rogersathre.com/Sathre_2014_comparing_heat_combustion_GHGs.pdf">Sathre 2014</a>;
+(The ratio of exactly how much better it is continues to be the subject of academic study, but
+it is believed to be hundreds of times better, depending on how far into the future you count the greenhouse effect.
+See e.g. <a href="https://www.rogersathre.com/Sathre_2014_comparing_heat_combustion_GHGs.pdf">Sathre 2014</a>;
 troublingly, my own {{CO2e|safe}} model doesn't seem to get the ratio right, and I've made a
 <a href="https://github.com/jaberg/planzero/issues/39">github issue</a> as a reminder to investigate.)
 </p>
@@ -84,11 +84,15 @@ from all sources across the oil and gas industry.
 The casing gas discussed above is one source, but there are many more,
 such as the release of gas from equipment and piping for maintenance purposes, the release of gas that evaporates from
 oil in pipes and holding tanks, even the release of gas from oil production <i>sewage</i> flows and the tailings ponds to which the sewage drains.
-The post is organized as a brief review of the definition of venting according to the IPCC (which isn't always identical to the 
-definitions used in industry), a review of sources of venting emissions in Canada (and their accounting),
-and then my own attempt to replicate the National Greenhouse Gas Inventory Report (NIR) venting emissions total.
+The post is organized as 
+<ul>
+    <li>a brief review of the definition of venting according to the IPCC, which isn't always identical to the 
+        definitions used in industry</li>
+    <li>a review of sources of venting emissions in Canada, and their accounting</li>
+    <li>my own attempt to replicate the National Greenhouse Gas Inventory Report (NIR) venting emissions total</li>
+</ul>
 I end up presenting an accurate estimator, but only by multiplying many of the emissions totals in source data
-by a factor of 2.5 (spoiler: there are justifications, but they will not be totally satisfying).
+by a factor of 2.5, which sounds bad, but is the standard practice for estimating total fugitive emissions from measured fugitive emissions in recent years.
 The post closes with some thoughts on how to improve the estimator, and a look forward
 to the next post in the series, which will be about emissions from stationary combustion within the oil and gas sector itself.
 </p>
@@ -179,16 +183,14 @@ I have not attempted to delineate the venting emissions of oil systems from natu
 <h2 id="estimating">Estimating Venting Emissions</h2>
 
 <p>
-I struggled to estimate the NIR Venting total from published data,
-and this post reports on the use of three data sets, and one big hack.
+I estimated the NIR Venting total from three data sets, and a multiplier from a publication that I believe has set the approach for NIR estimation,
+but I don't believe I've fully implemented the NIR estimation protocol for this sector yet.
 The three public databases were
 the Greenhouse Gas Reporting Program (GHGRP),
 the Alberta Energy Regulator's ST60B report,
 and Petrinex.
 Details on how I used these data sets follows below, after the figure.
-The hack is that I just multiplied many of the emissions in the data by 2.5,
-but see the section below (<a href="#why2.5">Why I ...</a>) before dismissing the technique outright.
-The result, below, is an estimator that accounts for about 90% of emissions in very-recent years (2022-2023),
+The result is an estimator that accounts for about 90% of reported emissions in very-recent years (2022-2023),
 about 50% venting emissions for less-recent years (e.g. 2004-2014),
 and 0% of the emissions prior to 2004.
 </p>
@@ -312,26 +314,25 @@ that's normally used by the <a href="https://pollution-waste.canada.ca/national-
 The vented emissions total that I extracted from GHGRP data, ST60B data, and Saskatchewan Petrinex data,
 which all had data for 2023, totalled about 18Mt of the 42Mt {{CO2e|safe}} reported by Canada for the Vented Oil and Gas emissions sector in 2023.
 The NIR total (42 Mt) is almost entirely from Alberta and Saskatchewan, just like my data, and
-after adding up the facility-reported emissions I was simply only 40% of the way there.
+after adding up the facility-reported emissions I was simply only about 40% of the way there.
 As it happens, the factor you need to use to get from 40% to 100% is 2.5,
-and 2.5 is the factor found by 
+and 2.5 is the factor estimated by 
 <a href="https://pubs.acs.org/doi/10.1021/acs.est.7b03525">Johnson et al. (2017)</a>
-to get from facility-based fugitive emissions estimates (which the government was using circa 2016)
-to atmospheric emissions estimates (measured by a spectrometer on an airplane, which those authors published in that paper).
-So I went ahead and multiplied my emissions totals by 2.5.
+to adjust from facility-based fugitive emission estimates (which the government was using circa 2016, and which I am using via the data sets described above)
+to atmospheric emissions estimates measured by a spectrometer on an airplane.
 </p>
 
 <p>
-It is, admittedly, not generally recognized as good accounting practice to multiply a number that you have, that you do not want,
-by an arbitrary factor in order to get a number that you do want.
-In this instance, however, there is some justification.
-I expect there will always be some amount of unreported emissions from venting, leaking, and flaring,
-and the question from an accounting perspective is how much.
 The finding of <a href="https://pubs.acs.org/doi/10.1021/acs.est.7b03525">Johnson et al. (2017)</a>
-was that unreported emissions were not only more than the reported emissions, but
-were likely 2.5 times the total estimate of futigitive emissions that the government was using at the time,
-which was based on facility counts, component-by-facility averages, and formation gas content on a township-by-township basis across Alberta and Saskatchewan.
+was that unreported emissions were likely 2.5 times the total estimate of
+futigitive emissions that the government was using at the time,
+which was based on facility reporting, facility counts, component-by-facility averages, and
+formation gas content on a township-by-township basis across Alberta and
+Saskatchewan.
 Since 2017, the NIR has adopted the use of atmospheric estimates in their methodology for estimating fugitive emissions.
+This multiplier (the ratio of unreported to reported fugitive methane emissions) can be expected to vary from year to year.
+As facility reporting protocols and technologies change, they may report a greater fraction of currently-unreported emissions, causing the multiplier to drop.
+Conversely, as facilities reduce emissions from sources of reported emissions, the multiplier will rise unless they also reduce emissions from unreported sources.
 </p>
 <p>
 The PlanZero estimator does not yet implement a facility-count, and component-by-facility based estimator.
@@ -340,8 +341,11 @@ I am not sure if there's public data to support such an estimator, but there is 
 as well as processing volumes, and the 2006 IPCC guideline publishes coefficients to use in the absence of regional ones
 (<a href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_4_Ch4_Fugitive_Emissions.pdf">Ch 4, Fugitive Emissions</a>).
 It's possible that such an estimator could offer an alternate, and better-justified account of
-what I'm currently calling "Unreported" emissions, although it would be silly if it simply turned out to double-count the way
-facilities were already submitting their emissions to Petrinex.
+what I'm currently calling "Unreported" emissions, by simply calibrating the per-component emissions coefficients to match the aggregate methane emissions measured periodically from the air.
+Ideally, such an estimator would also take into account facility-reported emissions, and find that when facilities report reduced methane emission, they are also found
+to have less fugitive methane by aerial measurement.
+An ideal model would not simply estimate the sectoral total, but would also be responsive to individual facility or component-level changes aimed at reducing the total,
+and perhaps useful in managing a carbon market.
 I've created a <a href="https://github.com/jaberg/planzero/issues/40">github issue</a> as a reminder to investigate.
 </p>
 
