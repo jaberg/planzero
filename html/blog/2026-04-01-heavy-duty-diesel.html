@@ -15,7 +15,7 @@ Table of Contents:
     <li><a href="#csfs">Critical Success Factors</a></li>
     <li><a href="#barriers">Barriers</a></li>
     <li><a href="#strategies">Potential Strategies</a></li>
-    <li><a href="#conclusions">Conclusions</a></li>
+    <li><a href="#conclusion">Conclusion</a></li>
 </ul>
 </p>
 
@@ -24,20 +24,19 @@ Table of Contents:
 <p>
 This is the eighth post in the sector-by-sector series replicating
 Canada's <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html">National Greenhouse Gas Inventory Report (NIR)</a>.
-It refreshes PlanZero's
+It updates PlanZero's
 <a href="/ipcc-sectors/Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles">IPCC / Transport / Road Transportation / Heavy-Duty Diesel Vehicles</a>
 IPCC sector summary page,
-updates the NIR estimation, and refreshes
-the critical success factors, barriers, and strategies.
+specifically the NIR estimation, critical success factors, barriers, and strategies.
 </p>
 
 <p>
-<i>Heavy-duty diesel trucks</i> are a familiar site on roads across Canada.
+<i>Heavy-duty diesel trucks</i> are a familiar sight on roads across Canada.
 The large trucks that pull trailers of cargo across the country
 are diesel-powered vehicles (with probably the only exceptions being experimental battery-electric vehicles, such as <a href="https://www.volvotrucks.ca/en-ca/trucks/vnr-electric/">Volvo's VNR</a>).
-There are an estimated 532 thousand of these <a href="https://en.wikipedia.org/wiki/Truck_classification">class-8</a> trucks in Canada,
+There are an estimated 532 000 of these <a href="https://en.wikipedia.org/wiki/Truck_classification">class-8</a> trucks in Canada,
 and they each travelled an average of about 80 thousand kilometres per year in recent years (<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=60&page=0">NEUD</a>).
-Large articulated trucks are the largest contributor to emissions in this category,
+Large trucks are the largest contributor to emissions in this category,
 but many other vehicle types are included as well.
 Mid-size trucks (class 5-7, commonly used as delivery vehicles),
 school buses, municipal garbage trucks,
@@ -53,7 +52,7 @@ inter-city coaches, are all examples of vehicles accounted in this sector becaus
 <p>
 I implemented an estimator of diesel emissions from vehicles meeting the IPCC definition of a "Heavy-duty Vehicle" from the 
 <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/comprehensive_tables/list.cfm">National Energy Use Database (NEUD)</a>.
-The NEUD uses a different taxonomy of vehicles:
+The NEUD uses a different taxonomy of vehicles from the NIR:
 their categories of road vehicles are cars, passenger and freight light trucks, medium trucks, heavy trucks, motorcycles, school buses, urban transit, and inter-city buses.
 To estimate an estimator for the IPCC sector of heavy-duty diesel vehicles,
 I extracted emissions associated with diesel medium-duty trucks, diesel buses,
@@ -74,52 +73,31 @@ The diverse data sources used to construct the NEUD itself are summarized in <a 
     as 10 Mt {{CO2e|safe}} (in year 2000).
     Both curves show a peak around years 2011-2014 when demand was rising,
     and emissions-reduction measures had not yet been taken.
-    Since that time, emission has fallen, likely  due
+    Since that time, greenhouse gas emissions have fallen, likely  due
     to legislation requiring that retail diesel
-    <a href="https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/biodiesel">contain some blended non-fossil diesel</a>,
+    <a href="https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/biodiesel">contain some blended non-fossil diesel</a> (biodiesel can be made from plant oils, animal fats, and even cooking oil from restaurants),
     and requiring that
     <a href="https://pollution-waste.canada.ca/environmental-protection-registry/regulations/view?Id=119">new trucks be more efficient</a>.
 </p>
 
+
 <p>
 The discrepancy between the top of the shaded regions (the PlanZero estimator) and the
 thick black line (its target) is a relatively large one among PlanZero sectoral estimators.
-I'm not yet sure why, although
-<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/handbook/appendix_b.cfm">
-two explanations
-</a>
-are offered in the National End-Use Energy Database's Handbook.
-The handbook recognizes that in preparing the NEUD and the NIR (specifically NIR-2023),
-"Both Natural Resources Canada (NRCan) and ECCC use the energy demand data from Statistics Canada’s Report on Energy Supply and Demand (RESD) in Canada as a base." but differ in some of their category semantics,
-most notably for our purposes here:
-<ol>
-    <li>NIR-2023 "reallocates industrial and agriculture diesel and agriculture motor gasoline to the transportation sector"</li>
-    <li>NEUD "reallocates diesel fuel oil use of commercial/institutional sector to the transportation sector".</li>
-</ol>
-I understand the first difference (point 1 above) to be that industrial and agricultural diesel use (according to either RESD or NEUD) is somewhere in "transportation" according to the NIR.
-Based on my understanding of the IPCC taxonomy used in the NIR, this
-would be some combination of this sector, and two sub-categories of
-"Energy / Mobile Combustion Sources / Transport / Other".
-I believe this diesel is counted by the NEUD as industrial use, and I'm not using it as
-part of the PlanZero estimator here.
-To the extent this NIR counts such diesel use toward this sector,
-the PlanZero estimator should include diesel combustion from those sources as well,
-which would make the discrepancy larger.
-</p>
-
-<p>
-With regards to the second difference (point 2 above),
-I understand it to mean that diesel fuel use associated with commercial/institutional use
-in the RESD is counted as transportation in the NEUD.
-In the NIR, this diesel would presumably be counted in the area of
-"Energy / Mobile Combustion Sources / Transport", but not necessarily as subcategory "Road Transportation / Heavy-Duty Diesel Vehicles" (the focus of this post);
-in the NIR, this diesel might be counted as "Off-Road Commercial and Institutional" or "Off-Road Other Transportation".
-According to StatsCan's
-"<a href="https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=2510002901">Supply and demand of primary and secondary energy</a>",
-commercial and institutional diesel use appears to be significant e.g. accounting for about 13% of national diesel usage in 2023.
-Spreading these emissions (currently counted by this PlanZero estimator) across multiple IPCC sectors
-could plausibly address the discrepancy shown in the chart above.
-Making this adjustment is left for future work, when developing estimators for these other IPCC sectors.
+The discrepancy is not simply in the PlanZero estimations, it exists between the NEUD and the NIR:
+for example, the GHG estimates in the NEUD for year 2023 were approximately
+<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=39&page=0">9Mt{{CO2e|safe}}</a> and
+<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=39&page=0">32Mt{{CO2e|safe}}</a> respectively from
+diesel in medium-duty and heavy-duty freight trucks.
+Urban buses contribute an additional <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/showTable.cfm?type=CP&sector=tran&juris=ca&year=2023&rn=45&page=0">1.4 Mt{{CO2e|safe}}</a>.
+Diesel GHG emissions from these three NEUD-categories totalled 42.4Mt {{CO2e|safe}}),
+exceeding the NIR emissions estimate for heavy-duty diesel vehicles in that year (36.2Mt{{CO2e|safe}}) by 6.2 Mt, or 17%.
+I reduced this gap in PlanZero by removing the use of biofuel and renewable-derived diesel, but it made only a small difference and most of the gap remains.
+The methodology in the
+<a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/menus/trends/handbook/appendix_b.cfm">NEUD Handbook appendix B</a>
+seems sensible;
+I do not know which buses, or medium, or heavy-duty trucks, should not be counted in this IPCC-defined sector; they all seem like heavy, diesel-burning road vehicles whose exhaust emissions should be counted.
+Perhaps the mystery will resolve itself after future work if I model e.g. off-road vehicle diesel use and find myself with an under-estimate that balances things out.
 </p>
 
 
@@ -130,7 +108,7 @@ The reduction of emissions from heavy-duty diesel vehicles seems to require some
 of the following:
 <ol>
     <li>Reduce demand for road freight (perhaps by shifting it to marine or rail)</li>
-    <li>Reduce the mass of freight or the distance it must travel (already a major consideration in logistics)</li>
+    <li>Reduce the mass of freight or the distance it must travel (not easy, these are already major logistics cost drivers)</li>
     <li>Reduce use of fossil fuels for heavy-duty vehicle applications (use other fuels, energy sources)</li>
     <li>Increase energy efficiency of heavy-duty vehicles (e.g. via electric motors)</li>
     <li>Reduce use of buses (without incurring greater emissions in other sectors)</li>
@@ -138,7 +116,7 @@ of the following:
 </ol>
 </p>
 
-<h3>
+<h3 id="barriers">
     Barriers
 </h3>
 
@@ -203,7 +181,7 @@ of the following:
 
 <p>
 In the short term, the most promising strategies for reducing emissions in
-this sector  are dropping speed limits for freight vehicles and blending
+long-haul freight are (1) dropping speed limits for freight vehicles and (2) blending
 greater quantities of renewable diesel into marketable fuel.
 Ontario and Quebec already require trucks to be electronically limited to 105 km/h
 to reduce emissions.
@@ -212,24 +190,27 @@ to reduce fuel consumption and/or emissions, but beyond that there is little-to-
 There's a limit too to how much renewable diesel can be produced,
 but as much as can be made from e.g. used cooking oil, should probably be produced
 and blended with fossil diesel.
-Renewable diesel production capacity is expected to <a href="https://www.cer-rec.gc.ca/en/data-analysis/energy-markets/renewable-energy-canada/an-overview-of-bioenergy.html">double from 2024 levels by 2028</a>.
+Renewable diesel production capacity is expected to <a href="https://www.cer-rec.gc.ca/en/data-analysis/energy-markets/renewable-energy-canada/an-overview-of-bioenergy.html">double from 2024 levels by 2028</a>,
+but perhaps to flatten after 2028.
 </p>
 
 <p>
 It is not believed that a switch to renewable diesel, and a reduction in speed limits,
 can reduce the sector's emissions to zero.
-With regards to freight,
+With regards to long-haul freight,
 there are many technologies in development to provide energy to freight vehicles
 via various novel fuels,
 through fuel distribution networks that do not necessarily exist yet,
 to be used in different kinds of engines that may or not already be used in
 any large-scale application.
+Long-haul freight EVs are commercially available, but to use these at scale will require grid capacity upgrades and advances in battery chemistry at commercially viable price points.
 There is no reason to expect a reduction in the need for freight transportation in the years ahead.
 It may be a long metaphorical road to zero-emission freight sector.
 </p>
 <p>
-With regards to buses, strategies for decarbonization are more advanced.
-Relative to freight vehicles, buses aren't required to move as much mass,
+With regards to short-distance freight and buses, strategies for decarbonization are more advanced.
+Short-distance freight can be done on today's EV batteries.
+Relative to long-haul freight vehicles, buses aren't required to move as much mass,
 so they don't require as much energy to travel a given distance.
 Electric motors are roughly 3x as energy-efficient as diesel ones on a highway,
 but in stop-and-go city traffic, their efficiency advantage increases, perhaps doubling again.
@@ -247,18 +228,19 @@ costs continue to drop (see e.g. electrification of buses in
 <h3 id="conclusion">Conclusion</h3>
 
 <p>
-This post has introduced a estimator of emissions from heavy-duty diesel vehicles 
+This post has introduced an estimator of emissions from heavy-duty diesel vehicles
 based on data from NRCan's National Energy Use Database.
-The estimator is too high (it over-estimates emissions) by 3-10 Mt {{CO2e|safe}}
-but there is a likely explanation, and the estimator can be adjusted in future work.
+The estimator over-estimates GHG emissions by 3-10 Mt {{CO2e|safe}}
+and I don't yet have a hypothesis as to why; I only hope that after estimating some off-road diesel usage things may balance out.
 The <a href="/ipcc-sectors/Transport/Road_Transportation/Heavy-Duty_Diesel_Vehicles">IPCC / Transport / Road Transportation / Heavy-Duty Diesel Vehicles</a>
-page has been refreshed to feature this estimator, as well as updated
+page has been refreshed to feature this estimator,
+as well as updated
 critical success factors,
 barriers to those success factors,
 and strategies.
 The next post in this series replicating the NIR will look at
 stationary combustion sources in commercial and institutional applications,
-which was responsible for about 32 Mt {{CO2e|safe}} in 2005.
+which was responsible for about 32 Mt {{CO2e|safe}} in 2005 (about 5% of the national total).
 </p>
 <p>
 Until then,

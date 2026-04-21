@@ -1365,3 +1365,37 @@ ideas.limit_freight_speed_to_90kph = NewcoIdea(
 # an app that you can facetime with AI while you're cooking, which can nudge
 # you toward your dietary goals, such as healthier eating, or more
 # climate-friendly eating, and help you cook differently.
+
+
+# EV Wireless charging 95% stationary, 90% while moving
+# https://interestingengineering.com/energy/wireless-ev-charging-power-grids
+
+# Article on truck electrification in china
+# offers no sign of specific progress (April 2026)
+# https://interestingengineering.com/transportation/china-electric-trucks-cut-emissions
+
+# RVs as energy platforms, house batteries etc.
+# https://interestingengineering.com/transportation/rv-energy-solar-power-lithium-battery
+
+# Wireless energy transmission update (drone focused)
+# https://interestingengineering.com/military/china-microwave-beam-recharges-drones
+
+# Thorium fuel advances
+# https://interestingengineering.com/energy/thorium-based-nuclear-reactor-fuel-advances
+
+#Fleet of ‘Flying Ferries’ Will Provide Zero-Emission, Silent EV Boats for Travelers Along Norway’s Busy Coast 
+# https://www.goodnewsnetwork.org/fleet-of-flying-ferries-will-provide-zero-emission-silent-ev-boats-for-commuters-and-tourists-along-norways-coast/
+
+
+# GreenShed (UK) Research stage
+# Air-tight barn that captures methane
+# https://www.sruc.ac.uk/connect/about-sruc/major-projects/greenshed/
+
+
+# Ambient Carbon - startup stage
+# Photochemical process to remove up to 90% of methane from air, even from open-sided barns
+# https://www.prnewswire.com/news-releases/ambient-carbon-destroys-90-of-dairy-barn-methane-in-field-trial-302527842.html
+
+# Demonstration of battery dumptruck for mining from Hitachi
+# charges from trolly lines!
+# https://interestingengineering.com/transportation/384-ton-battery-dump-truck
