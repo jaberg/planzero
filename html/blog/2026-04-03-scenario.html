@@ -3,7 +3,7 @@
 <section class="post">
     <header class="major">
         <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
-        <h1>{% if not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
         <p>{{blog.about}}</p>
     </header>
 

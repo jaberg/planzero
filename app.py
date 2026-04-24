@@ -1,5 +1,7 @@
 import json
 import datetime
+import os
+
 import numpy as np
 
 from fastapi import FastAPI, Request, HTTPException
@@ -25,6 +27,7 @@ from planzero import get_peval
 
 u = planzero.ureg
 
+HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
 def app_cache(f):
     if planzero.my_functools.USE_DISK_CACHE:
@@ -365,7 +368,7 @@ async def get_about(request: Request):
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
-async def get_index(request: Request, unpublished:bool=False):
+async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POSTS):
     return templates.TemplateResponse(
         request=request,
         name="blog.html",

@@ -132,6 +132,7 @@ local: .build
 	docker run \
 		-e PLANZERO_DATA=/mnt/data/ \
 		-e PLANZERO_USE_DISK_CACHE=0 \
+		-e PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=1 \
 		-v ${PWD}:/mnt/ \
 		-p 127.0.0.1:8012:8012 \
 		-w /mnt/ \

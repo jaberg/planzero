@@ -37,6 +37,7 @@ WORKDIR /content
 ENV PLANZERO_DATA="/content/data"
 ENV PLANZERO_USE_DISK_CACHE="1"
 ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
+ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
 
 # Run warmup to populate the disk cache in the image
 RUN python warmup.py
