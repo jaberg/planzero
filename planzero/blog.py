@@ -100,7 +100,7 @@ class ScenarioModelling(BlogPost):
             tags={BlogTag.ScalingStrategies,
                   enums.IPCC_Sector.Enteric_Fermentation,
                  },
-            published=True,
+            draft=True,
             )
 
 
