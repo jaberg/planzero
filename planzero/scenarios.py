@@ -11,10 +11,8 @@ from . import strategies
 
 def collect_dynelems(scenario):
     rval = []
-    rval.extend([val for val in barriers.barriers.values()
-                if scenario in val.scenarios])
-    rval.extend([val for val in csfs.csfs.values()
-                if scenario in val.scenarios])
+    rval.extend([val for val in barriers.barriers.values()])
+    rval.extend([val for val in csfs.csfs.values()])
     rval.extend([val for val in strategies.strategies.values()
                 if scenario in val.scenarios])
     return rval
@@ -54,3 +52,14 @@ class Scaling(Scenario):
             research={},
             state=None,
             dynelems=collect_dynelems(StandardScenarios.Scaling))
+
+
+class Extrapolating(Scenario):
+
+    def __init__(self):
+        super().__init__(
+            t_start_year=1990,
+            short_descr=f"Assume the continuation of statistical trends",
+            research={},
+            state=None,
+            dynelems=collect_dynelems(StandardScenarios.Extrapolating))

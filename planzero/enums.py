@@ -223,10 +223,6 @@ class IPCC_Sector(str, enum.Enum):
 
 
 
-class StandardScenarios(str, enum.Enum):
-    Scaling = 'scaling'
-
-
 IPCC_Sector.SCS__Public_Electricity_and_Heat.catpath_no_whitespace = 'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production'
 IPCC_Sector.SCS__Public_Electricity_and_Heat.catpath_with_whitespace = 'Stationary Combustion Sources/Public Electricity and Heat Production'
 IPCC_Sector.SCS__Petroleum_Refining_Industries.catpath_no_whitespace = 'Stationary_Combustion_Sources/Petroleum_Refining_Industries'
@@ -376,3 +372,8 @@ IPCC_Sector_from_catpath_no_whitespace = {
 IPCC_Sector_from_catpath_with_whitespace = {
     ipcc_sector.catpath_with_whitespace: ipcc_sector
     for ipcc_sector in IPCC_Sector}
+
+
+class StandardScenarios(str, enum.Enum):
+    Scaling = 'scaling'
+    Extrapolating = 'extrapolating'

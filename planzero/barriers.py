@@ -24,6 +24,8 @@ class Barrier(DynamicElement):
     def ipcc_sector_values(self) -> list[str]:
         return [sec.value for sec in self.ipcc_sectors]
 
+from . import cattle
+
 
 class Bovaer_Adoption_Limit(Barrier):
     

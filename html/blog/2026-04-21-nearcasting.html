@@ -1,0 +1,57 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<div class="box">
+    <p><strong>Note on NIR:</strong> In the context of this post, the acronym "NIR" refers to the 2025 version of Canada's National Inventory Report. While new reports are released annually and PlanZero modelling will incorporate these future releases over time, the content of this post is left as is in reference to the 2025 version of the report.</p>
+</div>
+
+<p>
+Pick a horizon arbitrarily? 10 years? Trying to predict further ahead seems silly in
+view of changing policies and technology landscape.
+</p>
+
+<p>
+Pick a sector: Enteric Fermentation. Why?
+<ul>
+    <li>effort - it's already implemented as a Barrier (from TODO this post)</li>
+    <li>data - statistics Canada's data goes back to the 1940s</li>
+    <li>simplicity - just a few tables are involved, just one IPCC sector</li>
+</ul>
+Future work will have to revisit the sectors that were the focus of previous NIR-modelling posts,
+modify their emissions models to be barriers (in the recently-introduced PlanZero style), and
+make some attempt at statistical forecasting.
+</p>
+
+<p>
+<ul>
+    <li>number of cattle</li>
+    <li>cattle imports and exports</li>
+    <li>slaughter, beef production</li>
+    <li>dairy production</li>
+    <li>drought</li>
+    <li>grain price</li>
+    <li>grain production https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=3210035901</li>
+    <li>monthly grain production https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=3210035101</li>
+    <li>US exchange rate</li>
+</ul>
+</p>
+
+
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+{% include "post-main.html" %}

@@ -13,6 +13,7 @@ _blogs_sorted_by_date = []
 class BlogTag(str, enum.Enum):
     NIR_Modelling = "NIR Modelling"
     ScalingStrategies = 'Scaling Strategies'
+    Scenarios = 'Scenarios'
 
 
 class BlogPost(BaseModel):
@@ -79,6 +80,25 @@ class IPCC_HeavyDutyDieselVehicles(BlogPost):
                  },
             est_nir=est_nir,
             terms=dict(),
+            )
+
+
+class Nearcasting(BlogPost):
+    """This post introduces a new scenario based on statistical modelling and
+    extrapolation of current trends. This "extrapolating" scenario is
+    especially useful for near-term forecasting (near-casting).
+    Near-casting can be more accurate than simply
+    re-using prior-year estimates because Statistics Canada releases some indicator
+    variables with less delay than the ECCC releases the annual NIR.
+    """
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 4, 21),
+            title='Near-Term Forecasting of the National Inventory',
+            url_filename="2026-04-21-nearcasting",
+            author="James Bergstra",
+            tags={BlogTag.Scenarios, BlogTag.NIR_Modelling},
+            published=False,
             )
 
 

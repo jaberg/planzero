@@ -27,6 +27,11 @@ RUN pip install --no-cache-dir openpyxl xlrd
 RUN pip install --no-cache-dir diskcache
 
 
+RUN apt-get update
+RUN apt-get install -y build-essential
+RUN pip install --no-cache-dir xarray netCDF4 matplotlib cartopy
+RUN pip install --no-cache-dir scikit-learn
+
 COPY . /content
 WORKDIR /content
 ENV PLANZERO_DATA="/content/data"

@@ -25,8 +25,9 @@ def endpoints():
     for scenario in enums.StandardScenarios:
         rval.append(f"/scenarios/{scenario.value}/")
         
-        for strategy in strategies.strategies:
-            rval.append(f"/scenarios/{scenario.value}/strategies/{strategy}/")
+        for strategy, obj in strategies.strategies.items():
+            if scenario in obj.scenarios:
+                rval.append(f"/scenarios/{scenario.value}/strategies/{strategy}/")
 
         for barrier in barriers.barriers:
             rval.append(f"/scenarios/{scenario.value}/barriers/{barrier}/")

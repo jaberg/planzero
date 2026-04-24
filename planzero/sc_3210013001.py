@@ -88,6 +88,35 @@ def number_of_cattle_by_class_and_farm_type():
             interpolation=sts.InterpolationMode.current)
     return rval_pt, rval_ca
 
+@cache
+def number_of_cattle_by_class_and_farm_type_combined_surveys():
+    n_pt, n_ca = number_of_cattle_by_class_and_farm_type()
+    rval_pt = objtensor.empty(Livestock, FarmType, PT)
+    rval_ca = objtensor.empty(Livestock, FarmType)
+    for lt in Livestock:
+        for ft in FarmType:
+            for pt in PT:
+                jan1 = n_pt[SurveyDate.Jan1, lt, ft, pt]
+                jul1 = n_pt[SurveyDate.Jul1, lt, ft, pt]
+                if isinstance(jan1, sts.STS) and isinstance(jul1, sts.STS):
+                    rval_pt[lt, ft, pt] = sts.interleave([jan1, jul1.delay(.5 * u.years)])
+                elif isinstance(jan1, sts.STS) or isinstance(jul1, sts.STS):
+                    raise NotImplementedError()
+                else:
+                    # I think these are both zeros?
+                    rval_pt[lt, ft, pt] = 0.5 * jan1 + 0.5 * jul1
+
+            jan1 = n_ca[SurveyDate.Jan1, lt, ft]
+            jul1 = n_ca[SurveyDate.Jul1, lt, ft]
+            if isinstance(jan1, sts.STS) and isinstance(jul1, sts.STS):
+                rval_ca[lt, ft] = sts.interleave([jan1, jul1.delay(0.5 * u.years)])
+            elif isinstance(jan1, sts.STS) or isinstance(jul1, sts.STS):
+                raise NotImplementedError()
+            else:
+                # I think these are both zeros?
+                rval_ca[lt, ft] = 0.5 * jan1 + 0.5 * jul1
+    return rval_pt, rval_ca
+
 
 if __name__ == '__main__':
     rval_pt, rval_ca = number_of_cattle_by_class_and_farm_type()
