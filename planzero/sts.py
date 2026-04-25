@@ -56,6 +56,8 @@ class STS(BaseModel):
 
     interpolation: InterpolationMode
 
+    max_query_time: float | None = None
+
     @classmethod
     def zero_one(cls, time, interpolation=InterpolationMode.current, v_unit=None):
         rval = cls(
@@ -103,6 +105,9 @@ class STS(BaseModel):
         extending the timeseries.
         """
         ts = t_query.to(self.t_unit).magnitude
+        self.max_query_time = (
+            ts if self.max_query_time is None
+            else max(ts, self.max_query_time))
         if self.times:
             if ts > self.times[-1]:
                 if self.interpolation == InterpolationMode.no_interpolation:
@@ -159,8 +164,11 @@ class STS(BaseModel):
             tt = t.to(self.t_unit).magnitude
         if len(self.times):
             assert tt > self.times[-1]
+        vv = v.to(self.v_unit).magnitude
+        if self.max_query_time is not None and tt <= self.max_query_time:
+            print(f'Warning: append({t}, {v}) to STS {self.identifier} risks invalidating previously-queried value for time {self.max_query_time} for which we did not record the queried value')
         self.times.append(tt)
-        self.values.append(v.to(self.v_unit).magnitude)
+        self.values.append(vv)
 
     def extend(self, times, values, skip_nan_values=False):
         assert len(times) == len(values)
