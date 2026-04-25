@@ -33,14 +33,14 @@ test_blogs: .build
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest -W error --maxfail=2 -vv -k test_each_blog test_200.py
+		pytest -W error --maxfail=1 -vv -k test_each_blog test_200.py
 
 test_200: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest -W error --maxfail=2 -vv test_200.py
+		pytest -W error --maxfail=1 -vv test_200.py
 
 test_ipcc_canada: .build
 	docker run \
