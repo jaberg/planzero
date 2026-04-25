@@ -11,8 +11,13 @@ from . import strategies
 
 def collect_dynelems(scenario):
     rval = []
+
     rval.extend([val for val in barriers.barriers.values()])
+
+    # CSFs tend to depend on barrier-defined variables
+    # adding them later lets them use state.declare_read_current_sts
     rval.extend([val for val in csfs.csfs.values()])
+
     rval.extend([val for val in strategies.strategies.values()
                 if scenario in val.scenarios])
     return rval

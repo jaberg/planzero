@@ -47,7 +47,7 @@ class Reduce_Methane_per_Cattle_Head(CSFs):
         return [StandardScenarios.Scaling]
 
     def on_add_project(self, state):
-        state.declare_read_current_sts(self, 'bovine_headcount')
+        state.declare_read_current_sts(self, 'total_cattle_headcount')
         state.declare_read_current_sts(self, 'bovine_methane_rate')
         with state.defining(self) as ctx:
             ctx.bovine_methane_per_head = sts.SparseTimeSeries(

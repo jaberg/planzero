@@ -50,9 +50,11 @@ class ScaleBovaer(Strategy2):
 
     def on_add_project(self, state):
         with state.defining(self) as ctx:
-            ctx.bovine_population_fraction_on_bovaer = sts.SparseTimeSeries(
-                default_value=0 * u.dimensionless)
-        return 2025 * u.years
+            obj = sts.SparseTimeSeries(default_value=0 * u.dimensionless, t_unit=u.year)
+            ctx.bovine_population_fraction_on_bovaer = obj
+        # XXX wait until after Cattle_Population nearcasting until there's support
+        # for temporally overlapping initialization
+        return 2030 * u.years
 
     def step(self, state, current):
         # The strategy here, is to use as much Bovaer as farmers will take
