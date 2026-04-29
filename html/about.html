@@ -21,6 +21,7 @@ Table of Contents:
             <li><a href="#post-authorship">Post Authorship and Acknowledgements</a></li>
         </ul>
     </li>
+    <li><a href="#posts">Posts Developing this Page</a>
 </ul>
 </p>
 
@@ -73,16 +74,18 @@ help shape public policy, and guide capital investment into research and technol
 
 <h2 id="contributors">Contributors</h2>
 <ul>
-    <li><b>Myself, James Bergstra</b>.
-        James is the project's lead author and developer.
+    <li><b>Myself, James Bergstra</b>,
+        the project's lead author and developer.
         James is supported by his long-suffering wife, who endures the first drafts of so many posts, provides invaluable feedback and support, and wishes to remain anonymous.</li>
     </li>
     <li><b><a href="https://uwaterloo.ca/geography-environmental-management/profiles/seth-wynes">Professor Seth Wynes, Ph.D.</a></b>,
         an Assistant Professor in the Department of Geography and Environmental
     Management at the University of Waterloo. Seth is guiding James'
     transition into the world of climate modelling and communication.</li>
-    <li>The <b><a href="https://www.opt2refuture.org">Opt2Refuture team</a></b> has provided research leads, feedback on posts,
-        and stimulating discussion.</li>
+    <li>The <b><a href="https://www.opt2refuture.org">Opt2Refuture team</a></b>.
+        The group, of which James is a member, has provided research leads,
+        post feedback, and a forum for discussion of issues related to
+        emissions reduction in Canada.</li>
 </ul>
 
 
@@ -92,8 +95,8 @@ I think of the PlanZero project in terms of the following facets:
 <ol>
     <li>code (GitHub) - the state and history of all data, code, and content, in git</li>
     <li>issues (GitHub) - a set of likely next steps, a rough roadmap</li>
-    <li>posts - a narrative history of the development of the PlanZero site.</li>
-    <li>about - project overview</li>
+    <li>posts - a narrative history of the development of the PlanZero site</li>
+    <li>about - project overview, direction, acknowledgements</li>
     <li>rest of PlanZero site - the summary of PlanZero modelling and research</li>
 </ol>
 Posts have emerged as the most engaging facet.
@@ -259,6 +262,12 @@ In between, it's case by case management of contributor and audience expectation
 and community conventions.
 </p>
 
+<h2 id="posts">Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag("About") %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
 
 </section>
 </div>

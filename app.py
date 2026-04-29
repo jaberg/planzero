@@ -363,6 +363,7 @@ async def get_about(request: Request):
             default_context,
             peval=get_peval(),
             active_tab='about',
+            blogs_by_tag=planzero.blog.blogs_by_tag,
             ),
     )
 

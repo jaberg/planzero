@@ -497,6 +497,7 @@ class Contributing(BlogPost):
             date=datetime.datetime(2026, 1, 6),
             title="Contributing (even for myself)",
             url_filename="2026-01-06-contributing",
+            tags={BlogTag.About,},
             author="James Bergstra")
 
 
@@ -508,6 +509,7 @@ class HowMightWe(BlogPost):
             date=datetime.datetime(2025, 12, 5),
             title='How might Canada achieve Net-Zero?',
             url_filename="2025-12-05-first-post",
+            tags={BlogTag.About,},
             author="James Bergstra")
 
 
