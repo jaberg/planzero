@@ -310,6 +310,8 @@ class Cattle_Population(Barrier):
             context_size=self.ar_context_size)
         combined_surveys_pt, _ = number_of_cattle_by_class_and_farm_type_combined_surveys()
 
+        valid_steps = 0 # disables the use of AR model until blog post about it
+
         with state.requiring_current(self) as ctx:
             pass
 

@@ -14,6 +14,7 @@ class BlogTag(str, enum.Enum):
     NIR_Modelling = "NIR Modelling"
     ScalingStrategies = 'Scaling Strategies'
     Scenarios = 'Scenarios'
+    About = 'About'
 
 
 class BlogPost(BaseModel):
@@ -25,6 +26,7 @@ class BlogPost(BaseModel):
     author: str
     published: bool = True
     draft: bool = False # for published posts, show draft text anyway
+    concept_only: bool = False # there is no html for this post object
     tags: set[str] = set()
 
     def __init__(self, **kwargs):
@@ -63,8 +65,12 @@ class HTML_Matplotlib_Figure(HTML_element):
         svg_string = svg_buffer.getvalue()
         return svg_string
 
-class Nearcasting(BlogPost):
-    """This post introduces a new scenario based on statistical modelling and
+
+class UncertaintyReductionForCattleEnteric(BlogPost):
+    # Reducing Uncertainty with a better model
+
+    """
+    introduces a new scenario based on statistical modelling and
     extrapolation of current trends. This "extrapolating" scenario is
     especially useful for near-term forecasting (near-casting).
     Near-casting can be more accurate than simply
@@ -74,11 +80,98 @@ class Nearcasting(BlogPost):
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 4, 21),
-            title='Near-Term Forecasting of the National Inventory',
-            url_filename="2026-04-21-nearcasting",
+            title='Uncertainty in Scenario Forecasting',
+            url_filename="2026-04-21-nearcasting", # rename?
             author="James Bergstra",
             tags={BlogTag.Scenarios, BlogTag.NIR_Modelling},
+            concept_only=True,
             published=False,
+            draft=True,
+            )
+
+
+class Uncertainty(BlogPost):
+
+    """
+    introduces a new scenario based on statistical modelling and
+    extrapolation of current trends. This "extrapolating" scenario is
+    especially useful for near-term forecasting (near-casting).
+    Near-casting can be more accurate than simply
+    re-using prior-year estimates because Statistics Canada releases some indicator
+    variables with less delay than the ECCC releases the annual NIR.
+    """
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 4, 21),
+            title='Uncertainty in Scenario Forecasting',
+            url_filename="2026-04-21-nearcasting", # rename?
+            author="James Bergstra",
+            tags={BlogTag.Scenarios, BlogTag.NIR_Modelling},
+            concept_only=True,
+            published=False,
+            draft=True,
+            )
+
+class GPR_Extrapolation(BlogPost):
+    """This post introduces probabilistic forecasting to PlanZero.
+    There are lots of ways the future could go!
+    PlanZero aspires to model a representative set of futures in terms of the
+    sorts of time series that make up its scenarios.
+    This post introduces the statistical modelling technique of Gaussian Process Regression
+    to generate future scenarios that similar in mean, variance, and
+    rate of change to the past.
+    These models don't incorporate driving factors such as climate influences,
+    foreign exchange rates, international supply and demand, or trade policies,
+    but they probably improve the obviously-wrong-looking flat lines currently
+    extending to the right of year 2023 for each emission sector.
+    """
+    # * extends models
+    #
+    #
+
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 4, 25),
+            title='Improving Baseline Emission Estimates with Gaussian Process Regression',
+            url_filename="2026-04-25-GPR", # rename?
+            author="James Bergstra",
+            tags={BlogTag.Scenarios, BlogTag.NIR_Modelling},
+            concept_only=True,
+            published=False,
+            draft=True,
+            )
+
+class Glossary(BlogPost):
+    """Another post adding to the About page: a list of terms and acronyms used commonly in posts,
+    including some with specific meanings in the context of PlanZero
+    modelling.
+    """
+    # renames scenarios -> models
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 4, 20),
+            title='New: a glossary of terms used in specific ways across multiple posts',
+            url_filename="2026-04-20-glossary",
+            author="James Bergstra",
+            tags={BlogTag.About,},
+            concept_only=True,
+            draft=True,
+            )
+
+class About(BlogPost):
+    """Briefly going meta: this post explains
+    (1) why the About page has been rewritten, and
+    (2) how posts themselves are meant to work as a mechanism for developing PlanZero.
+    The content of this post also now appears on the About page.
+    """
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 4, 12),
+            title='About this project: a rearticulation',
+            url_filename="2026-04-12-about",
+            author="James Bergstra",
+            tags={BlogTag.About,},
+            draft=True,
             )
 
 
@@ -422,8 +515,9 @@ def init_blogs_by_url_filename():
     global _blogs_sorted_by_date
     for cls in _classes:
         obj = cls()
-        _blogs_by_url_filename[obj.url_filename] = obj
-        _blogs_sorted_by_date.append(obj)
+        if not obj.concept_only:
+            _blogs_by_url_filename[obj.url_filename] = obj
+            _blogs_sorted_by_date.append(obj)
     _blogs_sorted_by_date.sort(key=lambda x: x.date, reverse=True)
 
 # TODO: handle this in the metaclass, update the _blogs_sorted_by_date on access

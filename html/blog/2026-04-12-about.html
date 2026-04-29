@@ -1,15 +1,28 @@
 {% include "pre-main.html" %}
-
 <div id="main">
-
 <section class="post">
     <header class="major">
-        <h1>About Plan Zero</h1>
-        <p>An independent research project to model how Canada might achieve zero net emissions</p>
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
     </header>
+
+<div class="box">
+    <strong>Contribution</strong>: A rewritten <a href="/about/">About</a> page
+    brings a <a href="/about/#overview">project overview</a>, a <a href="/about/#contributors">contributors</a> section, and
+    a <a href="/about/#posting-policy">guidance re: posts</a> section with guidelines on a few points: 
+    <ul>
+        <li>the purpose of posts, their role in providing focus, convenience, and accessibility</li>
+        <li>the "Draft" status for posts</li>
+        <li>how to interpret post dates</li>
+        <li>how to interpret post authorship</li>
+    </ul>
+</div>
+
 <p>
 Table of Contents:
 <ul>
+    <li><a href="#introduction">Introduction</a></li>
     <li><a href="#overview">About this Project</a></li>
     <li><a href="#contributors">Contributors</a></li>
     <li><a href="#posting-policy">Guidance Re: Posts</a>
@@ -21,12 +34,30 @@ Table of Contents:
             <li><a href="#post-authorship">Post Authorship and Acknowledgements</a></li>
         </ul>
     </li>
+    <li><a href="#conclusion">Conclusion</a></li>
 </ul>
 </p>
 
+<h2 id="introduction">Introduction</h2>
+<p>This post takes a step back, reviews what PlanZero is trying to accomplish,
+and how the development is working.
+Not only does it "bring an update to the
+<a href="/about/">About</a> page", but it also explains of what I mean by that sort of phrase
+(variations of which I've used in many post introductions over the past months)
+in terms of the role of posts relative to other facets of the project.
+My intent is partly to prepare
+for a future in which others may contribute to PlanZero,
+and partly to keep myself focused by articulating a process that I believe I should follow.
+This post re-articulates the project mission and vision, and recognizes the
+contributors that are helping to bring it together.
+This post supercedes the thinking in <a href="/blog/2026-01-06-contributing">"Contributing (even for myself)"</a>, from January 2026, and replaces the
+previous content of the About page,
+which I have moved to the bottom of this post for posterity.
+</p>
+
 <h2 id="overview">About this project</h2>
-<!-- vision -->
 <p>
+I've updated the About page with a new self-description:
 PlanZero is an independent research project to model how Canada might achieve zero
 net emissions. The long-term vision is that it can quantify the opportunities
 associated with strategies &mdash;
@@ -39,7 +70,7 @@ projections of Canada's possible future
 and other macro trends that might influence future emissions. 
 </p>
 
-<!-- themes, positioning, mission -->
+<!-- themes, guiding principles -->
 <p>
 There have been, and thankfully continue to be, many efforts to model future emissions in the world:
 the effect they have on the climate, and the effect various technologies may exert on emission rates.
@@ -72,6 +103,8 @@ help shape public policy, and guide capital investment into research and technol
 <!--<h2 id="Glossary"></h2>-->
 
 <h2 id="contributors">Contributors</h2>
+<p>
+I have updated the About page to list project contributors, of whom I feel there are three:
 <ul>
     <li><b>Myself, James Bergstra</b>.
         James is the project's lead author and developer.
@@ -84,9 +117,15 @@ help shape public policy, and guide capital investment into research and technol
     <li>The <b><a href="https://www.opt2refuture.org">Opt2Refuture team</a></b> has provided research leads, feedback on posts,
         and stimulating discussion.</li>
 </ul>
+</p>
 
 
 <h2 id="posting-policy">Guidance Re: Posts</h2>
+<p>
+I have added to the About page a bit of guidance / reflection around the role
+that posts play for the project, and the way they should be handled for them
+to do their job.
+</p>
 <p>
 I think of the PlanZero project in terms of the following facets:
 <ol>
@@ -260,7 +299,106 @@ and community conventions.
 </p>
 
 
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>
+This post has brought a rewrite of the <a href="/about/">PlanZero About page</a>,
+with a more concise vision and mission, a recognition of contributors,
+and some guiding principles regarding posts.
+The mission could be crisper still, but right now
+it is to engage the community of Canadian students at
+undergraduate and graduate levels.
+As the project matures in depth and breadth,
+it could help shape public policy, and guide capital investment into research
+and technology development, but that will take time and significant effort.
+Meanwhile, there are about 100 universities in Canada, and if a few students at each one
+took an interest in PlanZero, they would make up a thriving contributor community.
+They are the next generation of shapers-of-public-policy and allocators-of-capital-investments.
+The guidance regarding posts is the beginning of a how-to-contribute onboarding document
+aimed at this population.
+</p>
+
+<p>
+The next post, also adding to the About page, will introduce a <a href="https://github.com/jaberg/planzero/issues/64">glossary</a>.
+While a <a href="https://github.com/jaberg/planzero/issues/63">bibliography</a> is on the horizon,
+a glossary represents a step forward: a place to consolidate the names of major sources,
+and an implementation of a cross-referencing mechanism for html-authored content.
+</p>
+
+<p>
+Before signing off,
+I would like to include the original text of the "About" page, posted in December 2025.
+It now feels a bit too individual for the project's About page.
+I can't bring myself to completely remove it, so I'm moving it here.</i>
+</p>
+
+<h3 id="manifesto">Previous Content of PlanZero/About</h3>
+<p>
+Plan Zero is a project I'm undertaking to understand how I might, at least personally, best-contribute to
+a more-sustainable way of life in Canada, and maybe beyond.
+It's a grand challenge, and I've always liked grand challenges.
+Hannah Ritchie observed in
+<a href="https://www.amazon.ca/Not-End-World-Generation-Sustainable/dp/031653675X/">Not the End of the World: How We Can Be the First Generation to Build a Sustainable Planet</a> that it's never been done before:
+that civilizations have historically thrived by living un-sustainably;
+that people have time-and-again drawn down useful natural resources faster than those resources could replenish;
+and that this activity of ours has redefined much of the surface of the earth.
+</p>
+<p>
+Despite this activity of ours having served human civilization relatively well for millenia,
+there seems to be a difference now, in that we may have gone too far.
+An accumulation of greenhouse gases in the atmosphere prevents the earth from
+radiating heat at the rate it has done for thousands of years, throughout the history of human civilization.
+This accumulation seems to be the result of burning fossil fuels, especially over the last century.
+Depending on how the global economy responds to their warnings,
+climate scientists predict changes over the next century
+that would disrupt life as usual for many people, perhaps all people.
+It is true that the Earth's environmental conditions and climate are very complex: 
+atmospheric scientists struggle to predict weather precisely beyond a few days,
+and the accumulation of heat causes changes in dynamics without historical precedent.
+However, as a student of statistical inference, and as a human being,
+it seems to me we should slow down the pace of climate change, at least enough to be comfortable adapting to it and enough to understand the changes it brings.
+If we could anticipate changes well enough in advance (perhaps a few generations out, say, seven)
+and set up future generations for success, that'd be good enough for me.
+However, I think that currently, we can't.
+Therefore, I believe there is currently a credible threat of enormous disruption in my own lifetime, to say nothing of generations to come, because
+the Earth is heating too quickly.
+</p>
+<p>
+I am working on this site to quantify possible impacts on economics, emissions and accumulated heat,
+that might come of various ideas to do something positive for the climate.
+Some of the ideas are regulatory
+(e.g. incentivize farmers to feed Bovaer to cattle,
+reduce tariffs on fuel-efficient technology),
+some of the ideas are entrepreneurial
+(e.g. commercialize efficient technology, drive adoption),
+and some of the ideas are oriented to consumers
+(e.g. buy and use different things, live differently).
+I am not an economist or a climate scientist. I have a Ph.D. in computer science,
+with application to machine learning.
+I would describe the climate and economic modelling methodology used in this site as ad-hoc,
+but it's encoded in open-source software on github so it's at least open to both scrutiny and feedback.
+I hope that over time, and through the process of sharing this work with others,
+that the methodology can be brought in line with accepted best practice,
+that the research can cover of all of Canada's IPCC sectors,
+that the sets of ideas for reducing emissions in each sector grow to include sufficient good ones,
+and that the analysis of promising ideas as "Strategies" starts to show a high-level picture,
+in actionable terms for various stakeholder groups, of how Canada might achieve its net-zero emissions targets, with an economy that provides us with prosperity for generations to come.
+And I hope that I can help make some of it happen.
+</p>
+
+<p>
+- James Bergstra
+</p>
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
 </section>
 </div>
-
 {% include "post-main.html" %}
