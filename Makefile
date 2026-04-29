@@ -13,6 +13,7 @@ bash: .build
 
 jupyter: .build
 	docker run \
+		-e PLANZERO_USE_DISK_CACHE=0 \
 		-v ${PWD}:/mnt/ \
 		-p 127.0.0.1:8013:8013 \
 		-w /mnt/ \
