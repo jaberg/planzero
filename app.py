@@ -361,7 +361,18 @@ async def get_about(request: Request):
         name="about.html",
         context=dict(
             default_context,
-            peval=get_peval(),
+            active_tab='about',
+            blogs_by_tag=planzero.blog.blogs_by_tag,
+            ),
+    )
+
+@app.get("/glossary/", response_class=HTMLResponse)
+async def get_about(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="glossary.html",
+        context=dict(
+            default_context,
             active_tab='about',
             blogs_by_tag=planzero.blog.blogs_by_tag,
             ),

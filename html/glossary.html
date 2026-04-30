@@ -1,0 +1,40 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>PlanZero Glossary</h1>
+        <p>Terms, acronyms, and conceptual modelling framework</p>
+    </header>
+<p>
+Table of Contents:
+<!-- TODO generate -->
+<ul>
+{% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
+<li><a href="#{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</a></li>
+{% endfor %}
+</ul>
+</p>
+
+{% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
+<h3 id="{{clsname}}">{{clsname.replace('_', ' ')}}</h3>
+
+{{obj.definition_html|safe}}
+
+{% if obj.code_refs %}
+    <p><strong>Code References</strong>
+    <ul>
+    {% for ref_text, ref_url in obj.code_links.items() %}
+        <li><a href="{{ref_url}}">{{ref_text}}</a></li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
+
+{% endfor %}
+
+</section>
+</div>
+
+{% include "post-main.html" %}

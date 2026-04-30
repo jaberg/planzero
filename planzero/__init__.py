@@ -34,3 +34,4 @@ def get_peval():
     return peval
 
 from . import endpoints
+from . import glossary # last
