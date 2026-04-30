@@ -12,8 +12,8 @@ _blogs_sorted_by_date = []
 
 class BlogTag(str, enum.Enum):
     NIR_Modelling = "NIR Modelling"
-    ScalingStrategies = 'Scaling Strategies'
-    Scenarios = 'Scenarios'
+    Strategies = 'Strategies'
+    BarrierModelling = 'Barrier Modelling'
     About = 'About'
 
 
@@ -83,7 +83,9 @@ class UncertaintyReductionForCattleEnteric(BlogPost):
             title='Uncertainty in Scenario Forecasting',
             url_filename="2026-04-21-nearcasting", # rename?
             author="James Bergstra",
-            tags={BlogTag.Scenarios, BlogTag.NIR_Modelling},
+            tags={BlogTag.BarrierModelling,
+                  BlogTag.NIR_Modelling,
+                  'Enteric Emissions'},
             concept_only=True,
             published=False,
             draft=True,
@@ -106,7 +108,8 @@ class Uncertainty(BlogPost):
             title='Uncertainty in Scenario Forecasting',
             url_filename="2026-04-21-nearcasting", # rename?
             author="James Bergstra",
-            tags={BlogTag.Scenarios, BlogTag.NIR_Modelling},
+            tags={BlogTag.BarrierModelling,
+                  BlogTag.NIR_Modelling},
             concept_only=True,
             published=False,
             draft=True,
@@ -135,39 +138,48 @@ class GPR_Extrapolation(BlogPost):
             title='Improving Baseline Emission Estimates with Gaussian Process Regression',
             url_filename="2026-04-25-GPR", # rename?
             author="James Bergstra",
-            tags={BlogTag.Scenarios, BlogTag.NIR_Modelling},
+            tags={BlogTag.BarrierModelling,
+                  BlogTag.NIR_Modelling},
             concept_only=True,
             published=False,
             draft=True,
             )
 
+
 class Glossary(BlogPost):
-    """Another post adding to the About page: a list of terms and acronyms used commonly in posts,
-    including some with specific meanings in the context of PlanZero
-    modelling.
+    """Another post adding to the About page:
+    a list of terms and acronyms used commonly in posts,
+    including some with specific meanings in the context of PlanZero modelling.
+    This post introduces a modelling framework for PlanZero.
+    The framework formalizes the ideas of critical success factors (CSFs), barriers, strategies,
+    and scenarios.
+    This post introduces a "Scaling" scenario that estimates what can be achieved by scaling
+    currently-available products.
     """
     # renames scenarios -> models
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 20),
-            title='New: a glossary of terms used in specific ways across multiple posts',
-            url_filename="2026-04-20-glossary",
+            date=datetime.datetime(2026, 4, 19),
+            title='A glossary of terms used in specific ways across multiple posts',
+            url_filename="2026-04-19-glossary",
             author="James Bergstra",
-            tags={BlogTag.About,},
-            concept_only=True,
+            tags={BlogTag.About,
+                  BlogTag.Strategies,
+                  BlogTag.BarrierModelling,
+                  BlogTag.NIR_Modelling},
             draft=True,
             )
 
 class About(BlogPost):
-    """Briefly going meta: this post explains
-    (1) why the About page has been rewritten, and
-    (2) how posts themselves are meant to work as a mechanism for developing PlanZero.
-    The content of this post also now appears on the About page.
+    """Briefly going meta: refining the vision and mission,
+    acknowledging the project contributors, and 
+    explaining how posts themselves are meant to work as a mechanism for developing PlanZero.
+    The content of this post also now appears on the site's "About" page.
     """
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 4, 12),
-            title='About this project: a rearticulation',
+            title='About this project: rewriting and expanding planzero.ca/about',
             url_filename="2026-04-12-about",
             author="James Bergstra",
             tags={BlogTag.About,},
@@ -175,22 +187,21 @@ class About(BlogPost):
             )
 
 
-class ScenarioModelling(BlogPost):
-    """This post introduces a modelling framework for PlanZero.
-    The framework formalizes the ideas of critical success factors (CSFs), barriers, strategies,
-    and scenarios.
-    This post introduces a "Scaling" scenario that estimates what can be achieved by scaling
-    currently-available products.
-    The scaling scenario launches with just a single product: Bovaer. A new
-    series of posts will develop other scaling strategies.
+class ModellingBovaer(BlogPost):
+    """
+    This post breaks from the sector-by-sector National Greenhouse Gas Inventory
+    to do a relatively simple bit of modelling: what would happen if Canada's beef
+    and dairy farmers gradually transitioned to administring the feed additive Bovaer,
+    which reduces methane emissions? A PlanZero model finds that it would remove up to
+    almost 10Mt of emissions, and cost about $175 per tonne removed.
     """
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 4, 3),
-            title='A Bovaer Strategy and a Scenario Modelling Framework',
-            url_filename="2026-04-03-scenario",
+            title='Modelling a Bovaer Strategy',
+            url_filename="2026-04-03-bovaer",
             author="James Bergstra",
-            tags={BlogTag.ScalingStrategies,
+            tags={BlogTag.BarrierModelling,
                   enums.IPCC_Sector.Enteric_Fermentation,
                  },
             draft=True,

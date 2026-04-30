@@ -39,7 +39,7 @@
               <td>{{name}}</td>
               <td>{{strat.short_description}}</td>
               <td>{% for scenario_enum in strat.scenarios %}
-                  <a href="/scenarios/{{scenario_enum.value}}/">{{scenario_enum.value}}</a>
+                  <a href="/scenarios/{{scenario_enum.value}}/strategies/{{name}}/">{{scenario_enum.value}}</a>
                   {% endfor %}</td>
               <td>{% for sector_enum in strat.ipcc_sectors %}
                   <a href="/ipcc-sectors/{{sector_enum.catpath_no_whitespace}}/">{{sector_enum.value}}</a>

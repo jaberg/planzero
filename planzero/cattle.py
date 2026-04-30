@@ -377,14 +377,15 @@ class Bovaer_Adoption_Limit(Barrier):
 
     @computed_field
     def short_description(self) -> str:
-        return f"Assume Bovaer will only be adopted by, at most, {self.max_increase_rate} of cattle operations"
+        return f"Assume Bovaer will only be adopted by, at most, {self.max_increase_rate} of cattle operations, up to a maximum of {(1 - self.organic_fraction) * 100:.1f}%"
 
     @computed_field
     def description(self) -> str:
         return f"""Assume that no more than {self.max_increase_rate} of
         farmers will switch to administering Bovaer
         in any given year, but that adoption
-        can ultimately go all the way to 100%.
+        can ultimately rise to {(1 - self.organic_fraction) * 100:.1f}%,
+        the remainder of whom are organic farmers who won't adopt it.
         """
 
     @computed_field
@@ -440,13 +441,13 @@ class Bovaer_Adoption_Limit(Barrier):
 
 
 class Cattle_Enteric_Emissions(Barrier):
-    """Assume cattle produce methane (less-so if they are fed Bovaer), milk and beef (TODO).
+    """Assume cattle produce methane (less-so if they are fed Bovaer).
     The evolution of the cattle population is projected to remain constant.
     """
 
     @computed_field
     def short_description(self) -> str:
-        return f"Model cattle population, production of methane (considering Bovaer), milk and beef (TODO)"
+        return f"Model cattle population, production of methane (considering Bovaer), and cost of Bovaer"
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
@@ -669,7 +670,7 @@ class Bovaer_Monitoring(Barrier):
 
     @computed_field
     def short_description(self) -> str:
-        return f"Assume monitoring Bovaer usage costs {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for on-site inspection"
+        return f"Assume administering and monitoring costs {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for on-site inspection, and farmers require a subsidy of {self.farm_subsidy} to administer the Bovaer in the first place"
 
     @computed_field
     def paperwork_monitoring(self) -> object:
@@ -680,6 +681,10 @@ class Bovaer_Monitoring(Barrier):
     def onsite_monitoring(self) -> object:
         # assume one visit per year at this rate, which Gemini made up
         return 3000 * u.CAD / u.farm / u.year
+
+    @computed_field
+    def farm_subsidy(self) -> object:
+        return 5000 * u.CAD / u.farm / u.year
 
     @computed_field
     def cattle_per_farm(self) -> object:
@@ -704,9 +709,13 @@ class Bovaer_Monitoring(Barrier):
 
         with state.defining(self) as ctx:
             ctx.bovaer_monitoring_cost_annual_total = sts.SparseTimeSeries(
-                default_value=0 * u.mega_CAD)
+                default_value=0 * u.mega_CAD, t_unit=u.year)
+            ctx.bovaer_farmer_subsidy_annual_total = sts.SparseTimeSeries(
+                default_value=0 * u.mega_CAD, t_unit=u.year)
 
         state.register_subsidy_requirement('bovaer_monitoring_cost_annual_total')
+
+        state.register_subsidy_requirement('bovaer_farmer_subsidy_annual_total')
 
         return int(state.t_now.to('year').magnitude) * u.year
 
@@ -716,4 +725,8 @@ class Bovaer_Monitoring(Barrier):
             cost_rate * 1 * u.year
             / self.cattle_per_farm
             * current.bovaer_headcount)
+        current.bovaer_farmer_subsidy_annual_total = (
+            current.bovaer_headcount
+            / self.cattle_per_farm
+            * self.farm_subsidy * (1 * u.year))
         return state.t_now + 1 * u.year
