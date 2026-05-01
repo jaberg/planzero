@@ -164,8 +164,8 @@ class Barrier(GlossaryTerm):
     <li>consumer behaviour</li>
     <li>the length of research and development cycles</li>
     <li>return on investment requirements</li>
-    <li>the laws of physics</li>
     <li>the predictions of climate models</li>
+    <li>the laws of physics</li>
     </ul>
     </p>
     """ 

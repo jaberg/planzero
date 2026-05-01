@@ -373,7 +373,7 @@ async def get_about(request: Request):
         name="glossary.html",
         context=dict(
             default_context,
-            active_tab='about',
+            active_tab='glossary',
             blogs_by_tag=planzero.blog.blogs_by_tag,
             ),
     )

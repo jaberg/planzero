@@ -107,7 +107,7 @@
     <tr><td>{{ii + 1}}</td>
         <td>{{name.replace('_', ' ')}}</td>
         <td>{{", ".join(proj.tags)}}</td>
-        <td>{{proj.description|replace("CO2e", CO2e)|safe}}</td>
+        <td>{{proj.short_description|replace("CO2e", CO2e)|safe}}</td>
     </tr>
     {% endfor %}
     </tbody>

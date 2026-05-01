@@ -27,8 +27,7 @@
     </style>
 
 <p>
-Table of Contents:
-<!-- TODO generate -->
+Term list:
 <ul>
 {% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
 <li><a href="#{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</a></li>
