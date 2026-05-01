@@ -18,7 +18,7 @@ Table of Contents:
 </p>
 
 {% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
-<h3 id="{{clsname}}">{{clsname.replace('_', ' ')}}</h3>
+<h3 id="{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</h3>
 
 {{obj.definition_html|safe}}
 
@@ -27,6 +27,15 @@ Table of Contents:
     <ul>
     {% for ref_text, ref_url in obj.code_links.items() %}
         <li><a href="{{ref_url}}">{{ref_text}}</a></li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
+{% if obj.see_also %}
+    <p><strong>See Also</strong>
+    <ul>
+    {% for term, ref_text in obj.see_also.items() %}
+    <li><a href="#{{planzero.glossary.glossary_terms_w_aka[term].__class__.__name__}}">{{term}}</a> - {{ref_text}}</li>
     {% endfor %}
     </ul>
     </p>
