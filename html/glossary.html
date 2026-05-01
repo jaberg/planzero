@@ -7,6 +7,25 @@
         <h1>PlanZero Glossary</h1>
         <p>Terms, acronyms, and conceptual modelling framework</p>
     </header>
+
+    <style>
+        .anchor-link {
+            visibility: hidden;
+            margin-left: 0.5rem;
+            color: #ccc !important;
+            text-decoration: none;
+            border-bottom: none !important;
+        }
+
+        h3:hover .anchor-link {
+            visibility: visible;
+        }
+
+        .anchor-link:hover {
+            color: #444 !important;
+        }
+    </style>
+
 <p>
 Table of Contents:
 <!-- TODO generate -->
@@ -18,12 +37,15 @@ Table of Contents:
 </p>
 
 {% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
-<h3 id="{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</h3>
+<h3 id="{{clsname}}">
+    {% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}<a href="#{{clsname}}" class="anchor-link" title="Link to this section"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Chain_link_icon_slanted.png/250px-Chain_link_icon_slanted.png"
+        width="12.5px"/></a>
+</h3>
 
 {{obj.definition_html|safe}}
 
 {% if obj.code_refs %}
-    <p><strong>Code References</strong>
+    <p><strong style="color: #666;">Code References</strong>
     <ul>
     {% for ref_text, ref_url in obj.code_links.items() %}
         <li><a href="{{ref_url}}">{{ref_text}}</a></li>
@@ -32,7 +54,7 @@ Table of Contents:
     </p>
 {% endif %}
 {% if obj.see_also %}
-    <p><strong>See Also</strong>
+    <p><strong style="color: #666;">See Also</strong>
     <ul>
     {% for term, ref_text in obj.see_also.items() %}
     <li><a href="#{{planzero.glossary.glossary_terms_w_aka[term].__class__.__name__}}">{{term}}</a> - {{ref_text}}</li>
