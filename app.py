@@ -417,5 +417,6 @@ default_context = dict(
     N2O=planzero.blog.latex(r"\mathrm N_2 \mathrm O"),
     CO2e=planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
     degrees=planzero.blog.latex(r'^\circ'),
+    siteref=planzero.glossary.siteref,
     )
 

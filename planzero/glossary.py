@@ -10,6 +10,16 @@ import inspect
 glossary_terms = {} # classname -> Singleton instance
 glossary_terms_w_aka = {} # string -> Singleton instance
 
+def siteref(term, text=None):
+    try:
+        return glossary_terms_w_aka[term].site_reference(text or term)
+    except KeyError as exc:
+        try:
+            return glossary_terms[term].site_reference(text)
+        except KeyError as fallback_exc:
+            raise exc
+
+
 from .blog import latex
 from . import barriers
 from . import cattle
@@ -100,7 +110,7 @@ class GlossaryTerm(BaseModel):
         return f'<a href="#{self.__class__.__name__}">{text}</a>'
 
 
-    def abs_ref(self, text=None) -> str:
+    def site_reference(self, text=None) -> str:
         if text is None:
             text = self.__class__.__name__.replace('_', ' ')
         return f'<a href="/glossary#{self.__class__.__name__}">{text}</a>'
