@@ -187,6 +187,58 @@ class Barrier(GlossaryTerm):
             'Example Barrier class: Bovaer Adoption Limit': cattle.Bovaer_Adoption_Limit,
         }
 
+class IPCC_Sector_Contributor(GlossaryTerm):
+    """<p>A {{lref("Dynamic Element", "dynamic element")|safe}}
+    (part of a {{lref("Model", "model")|safe}})
+    that represents a contribution to an {{lref("IPCC Sector")|safe}}.
+    Category emissions are typically a sum of products (e.g. amount of activity
+    multiplied by emissions per unit of activity,
+    summed over one or more activities that count toward the category);
+    in this typical case, each of the things being summed is an
+    IPCC-Sector Contributor.
+    </p>
+    <p>
+    This dynamic element defines a single timeseries for each greenhouse gas
+    that is emitted, whose unit is a rate of mass (of gas) per unit time.
+    </p>
+    """
+
+
+class Emission_Factor(GlossaryTerm):
+    """<p>
+    Category emissions are typically a sum of products (e.g. amount of activity
+    multiplied by emissions per unit of activity,
+    summed over one or more activities that count toward the category);
+    in this typical case, each of the emission-contributing activities corresponds
+    to an {{lref("Emissions Source")|safe}} and
+    the emission of each greenhouse gas per unit of activity is referred to as
+    an Emission Factor.
+    </p>
+    <p>
+    An Emission Factor is a time series, whose unit is an amount of
+    mass (of greenhouse gas) per unit activity (or if not "activity",
+    whatever makes sense for the {{lref("Emissions Source", "emission
+    contributor")|safe}}).
+    </p>
+    """
+
+
+class Emissions_Source(GlossaryTerm):
+    """<p>
+    Category emissions are typically a sum of products (e.g. amount of activity
+    multiplied by emissions per unit of activity,
+    summed over one or more activities that count toward the category);
+    in this typical case, each of the emission-contributing activities
+    corresponds
+    to an {{lref("Emissions Source")|safe}} and
+    the emission of each greenhouse gas per unit of activity is referred to as
+    an Emission Factor.
+    </p>
+    <p>
+    An Emission Source is a time series, whose unit is typically an amount of
+    activity (in whatever unit is appropriate for the emissions source) per
+    unit time.</p>"""
+
 
 class Critical_Success_Factor(GlossaryTerm):
     """<p>A Critical Success Factor is a dynamic element tied to an
@@ -645,4 +697,16 @@ class Petrinex(GlossaryTerm):
     In PlanZero, Petrinex is a data source for emissions data relating to
     the oil and gas sector in Alberta and Saskatchewan.
     </p>
+    """
+
+
+class Rollout(GlossaryTerm):
+    """The step by step creation of a scenario, by simulating a model."""
+
+
+class Simulation(GlossaryTerm):
+    """The algorithm of computing a scenario for a model by computing
+    the recurrence in dynamic elements.
+
+    TODO: talk about temporal dependencies, and latest vs current dependence.
     """
