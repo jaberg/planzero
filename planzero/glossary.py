@@ -148,9 +148,22 @@ class Dynamic_Element(GlossaryTerm):
 
 
 class Strategy(GlossaryTerm):
-    """A Strategy is a {{lref("Dynamic Element", "dynamic element")|safe}}
+    """<p>A Strategy is a {{lref("Dynamic Element", "dynamic element")|safe}}
     that is optional, that can be omitted without sacrificing the validity of
-    a model. """ 
+    a model.
+    Typically a strategy directly affects a small number of time series, and
+    indirectly, through those, affects the evolution of more time series via
+    barriers.
+    </p>
+    <p>
+    Defining Strategy in this way enables
+    {{lref("Ablative Analysis")|safe}} as a standard
+    part of {{lref("Simulation")|safe}}.
+    </p>
+    <p>I borrow the term from {{lref("EGFS")|safe}} but risk mis-appropriating it
+    as the use in a computational modelling framework is, admittedly, a stretch.
+    </p>
+    """ 
 
     @property
     def code_refs(self) -> dict[str, object]:
@@ -178,6 +191,9 @@ class Barrier(GlossaryTerm):
     <li>the laws of physics</li>
     </ul>
     </p>
+    <p>I borrow the term from {{lref("EGFS")|safe}} but risk mis-appropriating it
+    as the use in a computational modelling framework is, admittedly, a stretch.
+    </p>
     """ 
 
     @property
@@ -186,6 +202,16 @@ class Barrier(GlossaryTerm):
             'Barrier base class': barriers.Barrier,
             'Example Barrier class: Bovaer Adoption Limit': cattle.Bovaer_Adoption_Limit,
         }
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Strategy': 'a dynamic element designed to change the input to one or more barriers',
+            'Model': 'a set of dynamic elements, including barriers, that make a prediction',
+            'NIR_Model': "a model of Canada's future emissions",
+            'Simulation': 'the computation of scenarios from models',
+        }
+
 
 class IPCC_Sector_Contributor(GlossaryTerm):
     """<p>A {{lref("Dynamic Element", "dynamic element")|safe}}
@@ -708,5 +734,14 @@ class Simulation(GlossaryTerm):
     """The algorithm of computing a scenario for a model by computing
     the recurrence in dynamic elements.
 
+    Simulation
+
     TODO: talk about temporal dependencies, and latest vs current dependence.
+    """
+
+class Ablative_Analysis(GlossaryTerm):
+    """
+    For models with strategies, simulation involves rolling out the model
+    with all of the strategies enabled, and then with each
+    individual strategy being omitted.
     """
