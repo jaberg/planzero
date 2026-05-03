@@ -2,7 +2,7 @@
 from pydantic import Field, computed_field
 
 from ..ureg import u
-from ..enums import IPCC_Sector, StandardScenarios, PT
+from ..enums import IPCC_Sector, PT
 from ..base import DynamicElement
 from .. import sts
 from .. import objtensor
@@ -37,10 +37,6 @@ class Scale_Bovaer(Strategy2):
         return [IPCC_Sector.Enteric_Fermentation,
                 IPCC_Sector.Other_Product_Manufacture_and_Use, # sync with BovinePopulation
                ]
-
-    @computed_field
-    def scenarios(self) -> list[object]:
-        return [StandardScenarios.Scaling]
 
     @computed_field
     def research(self) -> dict[str, str]:

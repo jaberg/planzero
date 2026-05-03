@@ -7,7 +7,7 @@ from sklearn.linear_model import RidgeCV
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
 from .ureg import u
-from .enums import IPCC_Sector, StandardScenarios, PT
+from .enums import IPCC_Sector, PT
 from . import sts
 from .barriers import Barrier
 
@@ -393,10 +393,6 @@ class Bovaer_Adoption_Limit(Barrier):
         return [IPCC_Sector.Enteric_Fermentation]
 
     @computed_field
-    def scenarios(self) -> list[object]:
-        return [StandardScenarios.Scaling]
-
-    @computed_field
     def research(self) -> dict[str, str]:
         return {}
 
@@ -454,10 +450,6 @@ class Cattle_Enteric_Emissions(Barrier):
         return [IPCC_Sector.Enteric_Fermentation,
                 IPCC_Sector.Other_Product_Manufacture_and_Use, # TODO: Is this the correct sector?
                ]
-
-    @computed_field
-    def scenarios(self) -> list[object]:
-        return [StandardScenarios.Scaling]
 
     @computed_field
     def research(self) -> dict[str, str]:
@@ -694,10 +686,6 @@ class Bovaer_Monitoring(Barrier):
     @computed_field
     def ipcc_sectors(self) -> list[object]:
         return [IPCC_Sector.Enteric_Fermentation]
-
-    @computed_field
-    def scenarios(self) -> list[object]:
-        return [StandardScenarios.Scaling]
 
     @computed_field
     def research(self) -> dict[str, str]:

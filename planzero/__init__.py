@@ -18,7 +18,6 @@ from .ipcc_transport_road_heavydutydiesel import (
 
 from . import barriers
 from . import strategies
-from . import scenarios
 from . import sim
 from .my_functools import cache as _cache
 

@@ -26,7 +26,7 @@
                   Description
               </th>
               <th>
-                  Scenarios
+                  Simulations
               </th>
               <th>
                   Affected Sectors
@@ -36,10 +36,12 @@
     <tbody>
           {% for name, strat in planzero.strategies.strategies.items() %}
           <tr>
-              <td>{{name}}</td>
+              <td>{{name.replace('_', ' ')}}</td>
               <td>{{strat.short_description}}</td>
-              <td>{% for scenario_enum in strat.scenarios %}
-                  <a href="/scenarios/{{scenario_enum.value}}/strategies/{{name}}/">{{scenario_enum.value}}</a>
+              <td>{% for sim_name, site_sim in planzero.sim.site_simulations.items()
+                     if site_sim.dynelems_by_id(name)
+                  %}
+                  <a href="/simulations/{{sim_name}}/strategies/{{name}}/">{{sim_name}}</a>
                   {% endfor %}</td>
               <td>{% for sector_enum in strat.ipcc_sectors %}
                   <a href="/ipcc-sectors/{{sector_enum.catpath_no_whitespace}}/">{{sector_enum.value}}</a>

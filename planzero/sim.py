@@ -197,6 +197,11 @@ class SiteSimulation(BaseModel):
         # TODO: move to model
         raise NotImplementedError()
 
+    def dynelems_by_id(self, identifier):
+        # convenience method called in strategies.html jinja2 template
+        return [de for de in self.dynamic_elements()
+                if de.identifier == identifier]
+
 
 from .base import (
     AtmosphericChemistry,

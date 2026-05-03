@@ -1,7 +1,7 @@
 from pydantic import Field, computed_field
 
 from .ureg import u
-from .enums import IPCC_Sector, StandardScenarios, PT
+from .enums import IPCC_Sector, PT
 from .base import DynamicElement
 from . import sts
 from . import objtensor
