@@ -26,7 +26,7 @@ class Strategy2(DynamicElement):
         return [sec.value for sec in self.ipcc_sectors]
 
 
-class ScaleBovaer(Strategy2):
+class Scale_Bovaer(Strategy2):
 
     @computed_field
     def short_description(self) -> str:

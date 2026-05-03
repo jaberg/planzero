@@ -2,7 +2,7 @@
 from .my_functools import cache
 from functools import cached_property
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 import numpy as np
 
 from .ureg import u
@@ -20,13 +20,12 @@ from .html import (
     StackedAreaEChart)
 
 from . import ipcc_canada
-from . import scenarios
 from .ghgvalues import GHG, GWP_100
 
 
 class SimulationResult(BaseModel):
 
-    scenario_name: str
+    simulation_name: str
 
     state: object
     ablations: dict[str, object] = {}
@@ -58,15 +57,11 @@ class SimulationResult(BaseModel):
         for catpath, contributors in self.state.sectoral_emissions_contributors.items():
             if not contributors:
                 continue
-            # TODO: this scenario_name isn't really what we want here,
-            # self.scenario_name is the class name of the scenario object,
-            # whereas what we want is the value of the corresponding scenario
-            # enum (!?)
             data = EChartSeriesData(
                 self.state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'],
                 times=self.year_times,
                 v_unit=u.Mt_CO2e,
-                url=f'/scenarios/{self.scenario_name.lower()}/ipcc-sectors/{catpath}/')
+                url=f'/simulations/{self.simulation_name.lower()}/ipcc-sectors/{catpath}/')
             values = [vdict['value'] for vdict in data]
             if max(values) <= 0:
                 # all negative
@@ -88,7 +83,7 @@ class SimulationResult(BaseModel):
         return StackedAreaEChart(
             div_id='by_ipcc_sector',
             title=EChartTitle(
-                text=f'Simulated Emissions by IPCC Sector: {self.scenario_name} scenario',
+                text=f'Emissions by IPCC Sector: {self.simulation_name} simulation',
                 subtext='Hover over data points to see sector labels'),
             xAxis=EChartXAxis(data=self.year_ints),
             yAxis=[
@@ -150,7 +145,7 @@ class SimulationResult(BaseModel):
         return StackedAreaEChart(
             div_id=f'echart_ipcc_sector_{catpath.replace("/", "_")}',
             title=EChartTitle(
-                text=f'{ipcc_sector.value} ({self.scenario_name} scenario)',
+                text=f'{ipcc_sector.value} ({self.simulation_name} simulation)',
                 subtext='Hover over data points to see emissions by usage,'),
             xAxis=EChartXAxis(data=self.year_ints),
             yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
@@ -176,13 +171,31 @@ class SimulationResult(BaseModel):
                     data=self.echart_ipcc_sector_reference_NIR_values(ipcc_sector)),
             ])
 
+from .base import DynamicElement
+
+site_simulations = {}
+
+class SiteSimulation(BaseModel):
+    """A specific simulation (no caller configuration, all pre-loaded)
+    to be listed on the site's simulation page.
+    """
+
     @classmethod
-    def from_state_scenario(cls, state, scenario, ablations=None):
-        return SimulationResult(
-            scenario_name=scenario.name,
-            state=state,
-            ablations=ablations or {},
-            )
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        site_simulations[cls.__name__] = cls()
+
+    @computed_field
+    def short_description(self) -> str:
+        return self.__class__.__doc__
+
+    @computed_field
+    def t_start_year(self) -> int:
+        raise NotImplementedError()
+
+    def dynamic_elements(self) -> list[DynamicElement]:
+        # TODO: move to model
+        raise NotImplementedError()
 
 
 from .base import (
@@ -191,30 +204,93 @@ from .base import (
     Other_NIR_Historical_Actuals,
     )
 
+
+class Extrapolation(SiteSimulation):
+    """Extend statistical trends in emissions contributions"""
+
+    @computed_field
+    def t_start_year(self) -> int:
+        return 1990
+
+    def dynamic_elements(self) -> list[DynamicElement]:
+        return [
+            # standard for viz
+            Other_NIR_Historical_Actuals(),
+            AtmosphericChemistry(),
+            SubsidyAccounting(),
+        ]
+
+from .cattle import (
+    Cattle_Population,
+    Bovaer_Adoption_Limit,
+    Cattle_Enteric_Emissions,
+    Bovaer_Monitoring,
+    )
+
+from .csfs import (
+    Reduce_Methane_per_Cattle_Head,
+    Reduce_Population_Cattle,
+    )
+
+from .strategies.strategy2 import (
+    Scale_Bovaer,
+    )
+
+
+class Scaling(SiteSimulation):
+    """Model maximal deployment of existing products"""
+
+    @computed_field
+    def t_start_year(self) -> int:
+        return 1990
+
+    def dynamic_elements(self) -> list[DynamicElement]:
+        return [
+            ### Barriers
+            # cattle & Bovaer
+            Cattle_Population(),
+            Bovaer_Adoption_Limit(),
+            Cattle_Enteric_Emissions(),
+            Bovaer_Monitoring(),
+
+            ### CSFs
+            # Enteric Fermentation
+            Reduce_Methane_per_Cattle_Head(),
+            Reduce_Population_Cattle(),
+
+            ### Strategies
+            Scale_Bovaer(),
+
+            # standard for vis
+            Other_NIR_Historical_Actuals(),
+            AtmosphericChemistry(),
+            SubsidyAccounting(),
+        ]
+
 @cache
-def sim_scenario(scenario_name):
-    scenario = scenarios.scenarios[scenario_name]
+def simulation_result(simulation_name) -> SimulationResult:
+    site_sim = site_simulations[simulation_name]
 
     def run_sim(exclude_name=None):
         state = State(
-            name=f'State_{scenario_name}' + (f'_minus_{exclude_name}' if exclude_name else ''),
-            t_start=scenario.t_start_year * u.years)
+            name=f'State_{simulation_name}' + (f'_minus_{exclude_name}' if exclude_name else ''),
+            t_start=site_sim.t_start_year * u.years)
         if exclude_name:
-            dynelems = [d for d in scenario.dynelems if d.__class__.__name__ != exclude_name]
+            dynelems = [d for d in site_sim.dynamic_elements() if d.__class__.__name__ != exclude_name]
         else:
-            dynelems = scenario.dynelems
+            dynelems = site_sim.dynamic_elements()
         state.add_projects(dynelems)
-        state.add_project(Other_NIR_Historical_Actuals())
-        state.add_project(AtmosphericChemistry())
-        state.add_project(SubsidyAccounting())
         state.run_until(2100 * u.years)
         return state
 
     baseline_state = run_sim()
     ablations = {}
-    for d in scenario.dynelems:
+    for d in site_sim.dynamic_elements():
         if 'strategy' in d.tags:
             name = d.__class__.__name__
             ablations[name] = run_sim(exclude_name=name)
 
-    return SimulationResult.from_state_scenario(baseline_state, scenario, ablations=ablations)
+    return SimulationResult(
+            simulation_name=simulation_name,
+            state=baseline_state,
+            ablations=ablations)

@@ -4,7 +4,8 @@ from . import (
     enums,
     blog,
     strategies,
-    barriers
+    barriers,
+    sim,
     )
 
 
@@ -13,7 +14,8 @@ def endpoints():
         "/",
         "/ipcc-sectors/",
         "/strategies/",
-        "/scenarios/",
+        "/simulations/",
+        "/glossary/",
         "/about/",
     ]
 
@@ -22,18 +24,18 @@ def endpoints():
         f"/ipcc-sectors/{catpath}/"
         for catpath in ipcc_canada.catpaths])
 
-    for scenario in enums.StandardScenarios:
-        rval.append(f"/scenarios/{scenario.value}/")
+    for sim_name, site_sim in sim.site_simulations.items():
+        rval.append(f"/simulations/{sim_name}/")
         
-        for strategy, obj in strategies.strategies.items():
-            if scenario in obj.scenarios:
-                rval.append(f"/scenarios/{scenario.value}/strategies/{strategy}/")
+        for dynelem in site_sim.dynamic_elements():
+            if 'strategy' in dynelem.tags:
+                rval.append(f"/simulations/{sim_name}/strategies/{dynelem.identifier}/")
 
-        for barrier in barriers.barriers:
-            rval.append(f"/scenarios/{scenario.value}/barriers/{barrier}/")
+            if 'barrier' in dynelem.tags:
+                rval.append(f"/simulations/{sim_name}/barriers/{dynelem.identifier}/")
 
         for catpath in ipcc_canada.catpaths:
-            rval.append(f"/scenarios/{scenario.value}/ipcc-sectors/{catpath}/")
+            rval.append(f"/simulations/{sim_name}/ipcc-sectors/{catpath}/")
 
 
     rval.extend([

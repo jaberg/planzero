@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import jinja2
 
 app = FastAPI()
 
@@ -16,7 +17,12 @@ htmlroot = 'html'
 app.mount("/assets", StaticFiles(directory=f"{htmlroot}/assets/"), name="assets")
 app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images")
 
-templates = Jinja2Templates(directory=htmlroot)
+templates = Jinja2Templates(
+    #directory=htmlroot,
+    env=jinja2.Environment(
+        undefined=jinja2.StrictUndefined,
+        loader=jinja2.FileSystemLoader(htmlroot),
+        ))
 
 import planzero
 import planzero.blog
@@ -149,53 +155,61 @@ async def get_barriers(request: Request):
             ),
     )
 
-@app.get("/scenarios/{scenario_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
-async def get_scenario_strategy_impact(request: Request, scenario_name: str, barrier_name: str):
-    sim = planzero.sim.sim_scenario(scenario_name)
+@app.get("/scenarios/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+async def get_simulation_strategy_impact(request: Request, sim_name: str, barrier_name: str):
+    sim = planzero.sim.simulation_result(sim_name)
     return templates.TemplateResponse(
         request=request,
         name="scenario_barrier.html",
         context=dict(
             default_context,
             sim=sim,
-            active_tab='scenarios',
-            scenario_name=scenario_name,
+            active_tab='simulations',
+            sim_name=sim_name,
             barrier_name=barrier_name,
             ),
     )
 
 
 @app.get("/scenarios/", response_class=HTMLResponse)
+@app.get("/simulations/", response_class=HTMLResponse)
 async def get_scenarios(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="scenarios.html",
         context=dict(
             default_context,
-            active_tab='scenarios',
+            active_tab='simulations',
             ),
     )
 
 
 @app.get("/scenarios/{ident}/", response_class=HTMLResponse)
-async def get_scenario_page(ident:str, request: Request):
+@app.get("/simulations/{ident}/", response_class=HTMLResponse)
+async def get_simulation_page(ident:str, request: Request):
     return templates.TemplateResponse(
         request=request,
         name="scenario_template.html",
         context=dict(
             default_context,
-            active_tab='scenarios',
+            active_tab='simulations',
             ident=ident,
+            site_sim=planzero.sim.site_simulations[ident],
+            sim_result=planzero.sim.simulation_result(ident),
             ),
     )
 
 
-@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
-@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
-@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
-async def get_scenario_ipcc_sectors_category(
+@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
+@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
+@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
+async def get_simulation_ipcc_sectors_category(
     request: Request,
-    scenario_name: str,
+    sim_name: str,
     category: str,
     subcategory: str = None,
     subsubcategory: str = None):
@@ -207,7 +221,7 @@ async def get_scenario_ipcc_sectors_category(
     else:
         catpath = f'{category}'
 
-    sim = planzero.sim.sim_scenario(scenario_name)
+    sim = planzero.sim.simulation_result(sim_name)
     chart = sim.echart_ipcc_sector(catpath)
 
     return templates.TemplateResponse(
@@ -215,8 +229,8 @@ async def get_scenario_ipcc_sectors_category(
         name="scenario_ipcc_sector.html",
         context=dict(
             default_context,
-            active_tab='scenarios',
-            scenario_name=scenario_name,
+            active_tab='simulations',
+            sim_name=sim_name,
             ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
             catpath=catpath,
             chart=chart,
@@ -224,13 +238,14 @@ async def get_scenario_ipcc_sectors_category(
     )
 
 
-@app.get("/scenarios/{scenario_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
-async def get_scenario_strategy_impact(request: Request, scenario_name: str, strategy_name: str):
-    sim = planzero.sim.sim_scenario(scenario_name)
+@app.get("/scenarios/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+async def get_simulations_strategy_impact(request: Request, sim_name: str, strategy_name: str):
+    sim = planzero.sim.simulation_result(sim_name)
     baseline_state = sim.state
     ablated_state = sim.ablations.get(strategy_name)
     if not ablated_state:
-        raise HTTPException(status_code=404, detail="Strategy not found in this scenario")
+        raise HTTPException(status_code=404, detail="Strategy not found in this simulation")
     
     # Calculate impact (baseline - ablated)
     # This assumes we want to show emissions saved
@@ -252,7 +267,7 @@ async def get_scenario_strategy_impact(request: Request, scenario_name: str, str
         div_id='impact_chart',
         title=planzero.sim.EChartTitle(
             text=f'Emissions Impact: {strategy_name}',
-            subtext=f'Annual Mt CO2e saved in {scenario_name}'),
+            subtext=f'Annual Mt CO2e saved in {sim_name}'),
         xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
         yAxis=[planzero.sim.EChartYAxis(name='Emissions Saved (Mt CO2e)')],
         stacked_series=[
@@ -278,7 +293,7 @@ async def get_scenario_strategy_impact(request: Request, scenario_name: str, str
         div_id='subsidies_chart',
         title=planzero.sim.EChartTitle(
             text=f'Subsidies Impact: {strategy_name}',
-            subtext=f'Annual cost of subsidies in {scenario_name}'),
+            subtext=f'Annual cost of subsidies in {sim_name}'),
         xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
         yAxis=[planzero.sim.EChartYAxis(name='Subsidies Required (CAD, Billions)')],
         stacked_series=[
@@ -298,8 +313,8 @@ async def get_scenario_strategy_impact(request: Request, scenario_name: str, str
         name="strategy_impact.html",
         context=dict(
             default_context,
-            active_tab='scenarios',
-            scenario_name=scenario_name,
+            active_tab='simulations',
+            sim_name=sim_name,
             strategy_name=strategy_name,
             impact_chart=impact_chart,
             subsidies_chart=subsidies_chart,
@@ -418,5 +433,6 @@ default_context = dict(
     CO2e=planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
     degrees=planzero.blog.latex(r'^\circ'),
     siteref=planzero.glossary.siteref,
+    fade_in_intro=False,
     )
 

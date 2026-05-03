@@ -9,7 +9,10 @@ from . import sts
 csfs = {} # classname -> Singleton instance
 
 
+#class EmissionsContributor(DynamicElement):
 class CSFs(DynamicElement):
+    """
+    """
 
     @classmethod
     def __init_subclass__(cls):
@@ -21,8 +24,25 @@ class CSFs(DynamicElement):
         self.tags.add('CSF')
 
     @computed_field
+    def ipcc_sectors(self) -> object:
+        raise NotImplementedError()
+
+    @computed_field
     def kpi_name(self) -> str:
         raise NotImplementedError()
+
+
+if 0:
+    class Enteric_Fermentation_in_Dairy_Cows(EmissionsContributor):
+        pass
+
+
+    class Enteric_Fermentation_in_Beef_Cows(EmissionsContributor):
+        pass
+
+
+    class Enteric_Fermentation_in_Other_Cattle(EmissionsContributor):
+        pass
 
 
 class Reduce_Methane_per_Cattle_Head(CSFs):
@@ -42,9 +62,6 @@ class Reduce_Methane_per_Cattle_Head(CSFs):
     def ipcc_sectors(self) -> list[object]:
         return [IPCC_Sector.Enteric_Fermentation]
 
-    @computed_field
-    def scenarios(self) -> list[object]:
-        return [StandardScenarios.Scaling]
 
     def on_add_project(self, state):
         state.declare_read_current_sts(self, 'total_cattle_headcount')
@@ -75,7 +92,3 @@ class Reduce_Population_Cattle(CSFs):
     @computed_field
     def ipcc_sectors(self) -> list[object]:
         return [IPCC_Sector.Enteric_Fermentation]
-
-    @computed_field
-    def scenarios(self) -> list[object]:
-        return [StandardScenarios.Scaling]

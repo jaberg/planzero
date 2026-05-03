@@ -28,9 +28,6 @@ scenarios = {} # classname -> Singleton instance
 
 class Scenario(BaseModel):
 
-    t_start_year: int
-    short_descr: str
-    research: dict[str, str]
     dynelems: list[DynamicElement]
 
     def __init__(self, **kwargs):

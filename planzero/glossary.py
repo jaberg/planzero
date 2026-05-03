@@ -169,7 +169,7 @@ class Strategy(GlossaryTerm):
     def code_refs(self) -> dict[str, object]:
         return {
             'Strategy base class': strategies.Strategy2,
-            'Example Strategy: Scale Bovaer': strategies.strategy2.ScaleBovaer,
+            'Example Strategy: Scale Bovaer': strategies.strategy2.Scale_Bovaer,
         }
 
 

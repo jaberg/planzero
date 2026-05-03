@@ -4,11 +4,11 @@
 
 <section class="post">
     <header class="major">
-        <h1>{{ipcc_sector.value}} ({{scenario_name}} scenario)</h1>
+        <h1>{{ipcc_sector.value}} ({{sim_name}} simulation)</h1>
         <!--<p>Scenario: </p>-->
     </header>
 <p>
-This page shows the simulated emissions for the <strong>{{ipcc_sector.value}}</strong> sector in the <strong>{{scenario_name}}</strong> scenario.
+This page shows the simulated emissions for the <strong>{{ipcc_sector.value}}</strong> sector in the <strong>{{sim_name}}</strong> simulation.
 The chart below compares the simulated values against the historical
 NIR-2025 (<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory?lang=en">National Inventory Report</a>) baseline.
 </p>
@@ -16,7 +16,7 @@ NIR-2025 (<a href="https://data-donnees.az.ec.gc.ca/data/substances/monitor/cana
 {{chart.as_html()|safe}}
 
 <ul class="actions special">
-    <li><a href="/scenarios/{{scenario_name}}/" class="button">Back to Scenario</a></li>
+    <li><a href="/simulations/{{sim_name}}/" class="button">Back to Simulation Overview</a></li>
 </ul>
 
 </section>
