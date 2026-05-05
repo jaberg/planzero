@@ -226,7 +226,7 @@ class Extrapolation(SiteSimulation):
         ]
 
 from .cattle import (
-    Cattle_Population,
+    Cattle_Population_AR,
     Bovaer_Adoption_Limit,
     Cattle_Enteric_Emissions,
     Bovaer_Monitoring,

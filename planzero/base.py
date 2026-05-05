@@ -28,9 +28,9 @@ u = ureg
 
 
 from . import ipcc_canada
-from .enums import GHG, IPCC_Sector
+from .enums import GHG, IPCC_Sector, PT
 
-from .sts import SparseTimeSeries, STS
+from .sts import SparseTimeSeries, STS, InterpolationMode
 
 
 class DynamicElement(BaseModel):
@@ -196,6 +196,20 @@ class Stash(object):
     pass
 
 
+class EmissionResults(BaseModel):
+
+    by_sector_ghg_pt_driver: dict[tuple[object, object, object, object], object]
+
+    def sum(self):
+        rval = None
+        for ts in self.by_sector_ghg_pt_driver.values():
+            if rval is None:
+                rval = ts.sum()
+            else:
+                rval += ts.sum()
+        return rval
+
+
 class State(object):
     t_start = 1990 * u.years
 
@@ -220,6 +234,10 @@ class State(object):
         self._depgraph = None
         self.name = name
         self.emissions_registration_closed = False
+        self.registries = dict(
+            emission_factor={},
+            driver={},
+            cost_factor={})
 
         self.sts_id_counter = 100
 
@@ -345,6 +363,9 @@ class State(object):
         for _, _, project in order:
             self.add_project(project)
 
+    def add_dynamic_elements(self, dynamic_elements):
+        return self.add_projects(dynamic_elements)
+
     @property
     def t_now(self):
         return self._t_now
@@ -359,7 +380,78 @@ class State(object):
             raise RuntimeError()
         assert ghg == GHG(ghg)
         assert sts_key in self.sts
-        self.sectoral_emissions_contributors[category_path].setdefault(ghg, []).append(sts_key)
+        self.sectoral_emissions_contributors[category_path]\
+                .setdefault(ghg, []).append(sts_key)
+
+    def register_emission_factor(self, pt, driver, sts_key, ipcc_sector, ghg):
+        if self.emissions_registration_closed:
+            raise RuntimeError()
+        ipcc_sector = IPCC_Sector(ipcc_sector)
+        ghg = GHG(ghg)
+        pt = PT(pt)
+        assert sts_key in self.sts
+        driver_d = self.registries['emission_factor']\
+                .setdefault(ghg, {})\
+                .setdefault(pt, {}) \
+                .setdefault(ipcc_sector, {})
+        assert driver not in driver_d
+        driver_d[driver] = sts_key
+
+    def register_driver(self, pt, driver, sts_key):
+        if 1:
+            ts = self.sts[sts_key]
+            if ts.interpolation == InterpolationMode.no_interpolation:
+                assert ts.t_unit == u.years
+                assert all(tt == int(tt) for tt in ts.times)
+            else:
+                # an integral will be computed later
+                pass
+
+        if self.emissions_registration_closed:
+            raise RuntimeError()
+        pt = PT(pt)
+        assert sts_key in self.sts
+        driver_d = self.registries['driver']\
+                .setdefault(pt, {})
+        assert driver not in driver_d
+        driver_d[driver] = sts_key
+
+    def register_subsidy_factor(self, pt, driver, sts_key, program, reason):
+        if self.emissions_registration_closed:
+            raise RuntimeError()
+        assert sts_key in self.sts
+        pt = PT(pt)
+        program = enums.SubsidyPrograms(program)
+        reason_d = self.registries['subsidy_factor']\
+                .setdefault(program, {})\
+                .setdefault(driver, {})\
+                .setdefault(pt, {})
+        assert reason not in reason_d
+        reason_d[reason] = sts_key
+
+    def compute_annual_emissions(self):
+        by_sector_ghg_pt_driver = {}
+        year_start_int = int(self.t_start.to(u.years).magnitude)
+        year_end_float = self._t_now.to(u.years).magnitude
+        year_end_int = int(math.ceil(year_end_float))
+        boundaries = np.arange(year_start_int, year_end_int + 1) * u.years
+
+        for pt, driver_d in self.registries['driver'].items():
+            for driver, driver_key in driver_d.items():
+                driver_ts = self.sts[driver_key]
+                for ghg, ef_by_pt in self.registries['emission_factor'].items():
+                    for sector, ef_by_sector in ef_by_pt[pt].items():
+                        ef_key = ef_by_sector[driver]
+                        ef_ts = self.sts[ef_key]
+                        # todo: verify driver_ts is annual totals
+                        if driver_ts.interpolation == InterpolationMode.no_interpolation:
+                            em = ef_ts * driver_ts * (1 * u.year)
+                        else:
+                            em = (ef_ts * driver_ts).bin_integrals(bin_boundaries=boundaries)
+                        by_sector_ghg_pt_driver[sector, ghg, pt, driver] = em.to(
+                            kt_by_ghg[ghg])
+        return EmissionResults(
+            by_sector_ghg_pt_driver=by_sector_ghg_pt_driver)
 
     def register_subsidy_requirement(self, sts_key):
         self.subsidy_requirements.add(sts_key)
@@ -432,6 +524,7 @@ class State(object):
                 assert new_t_next > self.t_now
                 heapq.heappush(self._heap, (new_t_next, node_idx, prj_identifier))
 
+Scenario = State
 
 
 surface_area_of_earth = 5.1e14 * u.m * u.m

@@ -7,7 +7,7 @@ from sklearn.linear_model import RidgeCV
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
 from .ureg import u
-from .enums import IPCC_Sector, PT
+from .enums import IPCC_Sector, PT, GHG
 from . import sts
 from .barriers import Barrier
 
@@ -243,7 +243,7 @@ def eval_AR123(farm_type):
 
 
 
-class Cattle_Population(Barrier):
+class Cattle_Population_AR(Barrier):
 
     """Historical actuals followed by auto-regressive model of future cattle
     population, followed by constant cyclic repetition of a constant pair of
@@ -279,13 +279,8 @@ class Cattle_Population(Barrier):
     The model does not include features of price.
     """
 
-    @computed_field
-    def farm_type(self) -> object:
-        return FarmType.AllCattle
-
-    @property
-    def ar_context_size(self):
-        return 4
+    ar_context_size: int = 4 # 2 per year
+    farm_type: object = FarmType.AllCattle
 
     @computed_field
     def short_description(self) -> str:
@@ -294,14 +289,6 @@ class Cattle_Population(Barrier):
     @computed_field
     def ipcc_sectors(self) -> list[object]:
         return []
-
-    @computed_field
-    def scenarios(self) -> list[object]:
-        return []
-
-    @computed_field
-    def research(self) -> dict[str, str]:
-        return {}
 
     def on_add_project(self, state):
         stash = state.stash(self)
@@ -342,14 +329,15 @@ class Cattle_Population(Barrier):
                                   ) * hc.t_unit,
                                 v=pt_rollout[self.ar_context_size + step, lti] * hc.v_unit)
 
-                        state.declare_sts(self, hc, write=True,
-                                          name=f'cattle_population_{livestock.value}_{pt.value}')
                         stash.headcounts_by_livestock_pt[livestock, pt] = hc
+                        name = f'cattle_population_{livestock.value}_{pt.value}'
+                        state.declare_sts(self, hc, write=True, name=name)
+                        state.register_driver(pt, livestock, name)
                     else:
                         assert hc.magnitude == 0
 
-            headcounts = list(stash.headcounts_by_livestock_pt.values())
-            ctx.total_cattle_headcount = sum(headcounts[1:], start=headcounts[0])
+            #headcounts = list(stash.headcounts_by_livestock_pt.values())
+            #ctx.total_cattle_headcount = sum(headcounts[1:], start=headcounts[0])
 
         t_step_start = (
             sorted_years(self.farm_type)[-1]
@@ -360,12 +348,12 @@ class Cattle_Population(Barrier):
 
     def step(self, state, current):
         stash = state.stash(self)
-        total_cattle_headcount = 0
+        #total_cattle_headcount = 0
         for hc in stash.headcounts_by_livestock_pt.values():
             hc_now = hc.values[-2] # value from same time-of-year, prev year
-            total_cattle_headcount += hc_now
+            #total_cattle_headcount += hc_now
             hc.append(state.t_now, hc_now * u.cattle)
-        current.total_cattle_headcount = total_cattle_headcount * u.cattle
+        #current.total_cattle_headcount = total_cattle_headcount * u.cattle
         return state.t_now + .5 * u.year
 
 
@@ -414,7 +402,6 @@ class Bovaer_Adoption_Limit(Barrier):
             ctx.too_many_cattle_on_bovaer = sts.SparseTimeSeries(
                 default_value=0 * u.dimensionless)
         # use syntax ctx.too_many_cattle_on_bovaer = Monitor(sts.SparseTimeSeries(...))
-        #state.register_monitor('too_many_cattle_on_bovaer')
         return 2025 * u.years
 
     def step(self, state, current):
@@ -435,6 +422,118 @@ class Bovaer_Adoption_Limit(Barrier):
 
 # TODO: Output-based carbon pricing model for agriculture
 
+class Bovaer_Production_Emission_Factors(Barrier):
+
+    # TODO: make these STS variables, not constants. The price might e.g. come down
+    @computed_field
+    def bovaer_cost(self) -> dict[object, object]:
+        # https://www.producer.com/livestock/new-methane-feed-additive-pleases-producers
+        return {
+            Livestock.Bulls: .50 * u.CAD / u.day / u.cattle,
+            Livestock.DairyCows: 0.50 * u.CAD / u.day / u.cattle,
+            Livestock.BeefCows: 0.50 * u.CAD / u.day / u.cattle,
+            Livestock.DairyHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.BeefHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.SlaughterHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.Steers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.Calves: .20 * u.CAD / u.day / u.cattle,
+        }
+    def on_add_project(self, state):
+
+        with state.defining(self) as ctx:
+
+            # I don't know the details of current or actual production processes.
+            # This number is chosen based on a conversation with Google Gemini
+            # circa April 2026, in which it characterized the production footprint of Bovaer
+            # as 20-50 times less in magnitude compared to the emission
+            # reduction in enteric fermentation
+            ctx.bovaer_production_CO2_per_methane_abated = sts.SparseTimeSeries(
+                default_value=45 * u.kg_CO2 / u.cattle / u.year)
+
+            # TODO: model where the Bovaer is actually produced.
+            for pt in PT:
+                for livestock in Livestock_nonsums:
+                    state.register_emission_factor(
+                        'bovaer_production_CO2_per_methane_abated',
+                        IPCC_Sector.Other_Product_Manufacture_and_Use, GHG.CO2,
+                        pt, livestock)
+
+
+class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
+    """Assume cattle produce methane (less-so if they are fed Bovaer).
+
+    Defines one emission factor time series per livestock type.
+    """
+
+    @computed_field
+    def bovaer_actual_vs_nominal(self) -> float:
+        """What fraction of cattle nominally on bovaer actually eat it properly?"""
+        return .95
+
+    @computed_field
+    def bovaer_methane_reduction(self) -> dict[object, object]:
+        guess = .4
+        return {
+            Livestock.Bulls: guess,
+            Livestock.DairyCows: 0.30, # https://www.dsm-firmenich.com/anh/products-and-services/products/methane-inhibitors/bovaer.html
+            Livestock.BeefCows: .45, # https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html
+            Livestock.DairyHeifers: guess,
+            Livestock.BeefHeifers: guess,
+            Livestock.SlaughterHeifers: guess,
+            Livestock.Steers: guess,
+            Livestock.Calves: guess,
+        }
+
+    def on_add_project(self, state):
+        stash = state.stash(self)
+
+        with state.requiring_current(self) as ctx:
+            # TODO: for each type of cattle, for each province
+            # will be written by Strategy
+            ctx.bovine_population_fraction_on_bovaer = sts.SparseTimeSeries(
+                default_value=0 * u.dimensionless, t_unit=u.years)
+
+        with state.defining(self) as ctx:
+            table = table_A3p4_11()
+            stash.emfac = {}
+
+            for livestock in Livestock_nonsums:
+                name = f'enteric_fermentation_emission_rate_{livestock.value}'
+                stash.emfac[livestock] = table[livestock].copy()
+                state.declare_sts(self, stash.emfac[livestock], write=True, name=name)
+                for pt in PT:
+                    state.register_emission_factor(
+                        driver=livestock,
+                        pt=pt,
+                        ghg=GHG.CH4,
+                        ipcc_sector=IPCC_Sector.Enteric_Fermentation,
+                        sts_key=name)
+
+        # TODO: revisit after switching from step() to fill()
+        # so the start date will be based on where inputs leave off
+        return state.stashes['Cattle_Population_AR'].t_step_start # Why?
+
+    def step(self, state, current):
+        stash = state.stash(self)
+        table = table_A3p4_11()
+        methane_reduction = self.bovaer_methane_reduction
+        actual = self.bovaer_actual_vs_nominal
+        for livestock in Livestock_nonsums:
+            stash.emfac[livestock].append(
+                state.t_now,
+                table[livestock].query(state.t_now)
+                * (
+                    (
+                        (1 - current.bovine_population_fraction_on_bovaer)
+                        * 1 # full rate
+                    )
+                    + (
+                        current.bovine_population_fraction_on_bovaer
+                        * (1 - methane_reduction[livestock] * actual)
+                    )
+                ))
+        return state.t_now + 1 * u.year
+
 
 class Cattle_Enteric_Emissions(Barrier):
     """Assume cattle produce methane (less-so if they are fed Bovaer).
@@ -448,7 +547,8 @@ class Cattle_Enteric_Emissions(Barrier):
     @computed_field
     def ipcc_sectors(self) -> list[object]:
         return [IPCC_Sector.Enteric_Fermentation,
-                IPCC_Sector.Other_Product_Manufacture_and_Use, # TODO: Is this the correct sector?
+                IPCC_Sector.Other_Product_Manufacture_and_Use,
+                # TODO: Is this the correct sector?
                ]
 
     @computed_field
