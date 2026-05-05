@@ -290,6 +290,12 @@ class Cattle_Population_AR(Barrier):
     def ipcc_sectors(self) -> list[object]:
         return []
 
+    @computed_field
+    def cattle_per_farm(self) -> object:
+        # TODO: pull down actual data from https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101
+        return 160 * u.cattle / u.farm
+
+
     def on_add_project(self, state):
         stash = state.stash(self)
         model, scale, valid_steps = train_model(
@@ -304,6 +310,7 @@ class Cattle_Population_AR(Barrier):
 
         with state.defining(self) as ctx:
             stash.headcounts_by_livestock_pt = {}
+            stash.operations_by_pt = {}
             for pti, pt in enumerate(PT):
                 pt_rollout = rollout(
                     farm_type=self.farm_type,
@@ -313,6 +320,8 @@ class Cattle_Population_AR(Barrier):
                     model=model,
                     scale=scale,
                     n_steps=valid_steps)
+
+                cattle_operations = None
 
                 # initialize with historical
                 for lti, livestock in enumerate(Livestock_nonsums):
@@ -333,11 +342,27 @@ class Cattle_Population_AR(Barrier):
                         name = f'cattle_population_{livestock.value}_{pt.value}'
                         state.declare_sts(self, hc, write=True, name=name)
                         state.register_driver(pt, livestock, name)
+
+                        # farm count (fc) from head count (hc)
+                        if cattle_operations is None:
+                            cattle_operations = hc / self.cattle_per_farm
+                        else:
+                            cattle_operations += hc / self.cattle_per_farm
                     else:
                         assert hc.magnitude == 0
 
-            #headcounts = list(stash.headcounts_by_livestock_pt.values())
-            #ctx.total_cattle_headcount = sum(headcounts[1:], start=headcounts[0])
+                if cattle_operations is not None:
+                    cattle_operations_name = f'cattle_operations_{pt.value}'
+                    state.declare_sts(
+                        project=self,
+                        sts=cattle_operations,
+                        write=True,
+                        name=cattle_operations_name)
+                    state.register_driver(
+                        pt,
+                        driver='Cattle Operations',
+                        sts_key=cattle_operations_name)
+                    stash.operations_by_pt[pt] = cattle_operations
 
         t_step_start = (
             sorted_years(self.farm_type)[-1]
@@ -348,12 +373,15 @@ class Cattle_Population_AR(Barrier):
 
     def step(self, state, current):
         stash = state.stash(self)
-        #total_cattle_headcount = 0
-        for hc in stash.headcounts_by_livestock_pt.values():
+        hc_by_pt = {}
+        for (_, pt), hc in stash.headcounts_by_livestock_pt.items():
             hc_now = hc.values[-2] # value from same time-of-year, prev year
-            #total_cattle_headcount += hc_now
+            hc_by_pt.setdefault(pt, 0)
+            hc_by_pt[pt] += hc_now
             hc.append(state.t_now, hc_now * u.cattle)
-        #current.total_cattle_headcount = total_cattle_headcount * u.cattle
+
+        for pt, oc in stash.operations_by_pt.items():
+            oc.append(state.t_now, hc_by_pt[pt] * u.cattle / self.cattle_per_farm)
         return state.t_now + .5 * u.year
 
 
@@ -424,20 +452,6 @@ class Bovaer_Adoption_Limit(Barrier):
 
 class Bovaer_Production_Emission_Factors(Barrier):
 
-    # TODO: make these STS variables, not constants. The price might e.g. come down
-    @computed_field
-    def bovaer_cost(self) -> dict[object, object]:
-        # https://www.producer.com/livestock/new-methane-feed-additive-pleases-producers
-        return {
-            Livestock.Bulls: .50 * u.CAD / u.day / u.cattle,
-            Livestock.DairyCows: 0.50 * u.CAD / u.day / u.cattle,
-            Livestock.BeefCows: 0.50 * u.CAD / u.day / u.cattle,
-            Livestock.DairyHeifers: .35 * u.CAD / u.day / u.cattle,
-            Livestock.BeefHeifers: .35 * u.CAD / u.day / u.cattle,
-            Livestock.SlaughterHeifers: .35 * u.CAD / u.day / u.cattle,
-            Livestock.Steers: .35 * u.CAD / u.day / u.cattle,
-            Livestock.Calves: .20 * u.CAD / u.day / u.cattle,
-        }
     def on_add_project(self, state):
 
         with state.defining(self) as ctx:
@@ -448,15 +462,18 @@ class Bovaer_Production_Emission_Factors(Barrier):
             # as 20-50 times less in magnitude compared to the emission
             # reduction in enteric fermentation
             ctx.bovaer_production_CO2_per_methane_abated = sts.SparseTimeSeries(
-                default_value=45 * u.kg_CO2 / u.cattle / u.year)
+                default_value=45 * u.kg_CO2 / u.cattle / u.year,
+                t_unit=u.years)
 
             # TODO: model where the Bovaer is actually produced.
             for pt in PT:
                 for livestock in Livestock_nonsums:
                     state.register_emission_factor(
-                        'bovaer_production_CO2_per_methane_abated',
-                        IPCC_Sector.Other_Product_Manufacture_and_Use, GHG.CO2,
-                        pt, livestock)
+                        sts_key='bovaer_production_CO2_per_methane_abated',
+                        ipcc_sector=IPCC_Sector.Other_Product_Manufacture_and_Use,
+                        ghg=GHG.CO2,
+                        pt=pt,
+                        driver=livestock)
 
 
 class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
@@ -511,7 +528,7 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
 
         # TODO: revisit after switching from step() to fill()
         # so the start date will be based on where inputs leave off
-        return state.stashes['Cattle_Population_AR'].t_step_start # Why?
+        return state.stashes['Cattle_Population_AR'].t_step_start
 
     def step(self, state, current):
         stash = state.stash(self)
@@ -645,6 +662,8 @@ class Cattle_Enteric_Emissions(Barrier):
                 else:
                     bovine_methane += hc * emfac[livestock]
 
+
+
             ctx.bovine_methane_rate = bovine_methane.to(u.kt_CH4 / u.year)
             ctx.bovaer_cost = sts.SparseTimeSeries(default_value=0 * u.mega_CAD / u.year, t_unit=u.year)
             ctx.bovaer_cost_annual = sts.SparseTimeSeries(default_value=0 * u.mega_CAD, t_unit=u.year)
@@ -765,25 +784,6 @@ class Bovaer_Monitoring(Barrier):
         return f"Assume administering and monitoring costs {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for on-site inspection, and farmers require a subsidy of {self.farm_subsidy} to administer the Bovaer in the first place"
 
     @computed_field
-    def paperwork_monitoring(self) -> object:
-        # Gemini made this up
-        return 1000 * u.CAD / u.farm / u.year
-
-    @computed_field
-    def onsite_monitoring(self) -> object:
-        # assume one visit per year at this rate, which Gemini made up
-        return 3000 * u.CAD / u.farm / u.year
-
-    @computed_field
-    def farm_subsidy(self) -> object:
-        return 5000 * u.CAD / u.farm / u.year
-
-    @computed_field
-    def cattle_per_farm(self) -> object:
-        # TODO: pull down actual data from https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101
-        return 160 * u.cattle / u.farm
-
-    @computed_field
     def ipcc_sectors(self) -> list[object]:
         return [IPCC_Sector.Enteric_Fermentation]
 
@@ -792,29 +792,143 @@ class Bovaer_Monitoring(Barrier):
         return {}
 
     def on_add_project(self, state):
+
         with state.requiring_current(self) as ctx:
-            ctx.bovaer_headcount = sts.SparseTimeSeries(default_value=0 * u.cattle, t_unit=u.year)
+            # TODO: for each type of cattle, for each province
+            # will be written by Strategy
+            ctx.bovine_population_fraction_on_bovaer = sts.SparseTimeSeries(
+                default_value=0 * u.dimensionless, t_unit=u.years)
 
         with state.defining(self) as ctx:
-            ctx.bovaer_monitoring_cost_annual_total = sts.SparseTimeSeries(
-                default_value=0 * u.mega_CAD, t_unit=u.year)
-            ctx.bovaer_farmer_subsidy_annual_total = sts.SparseTimeSeries(
-                default_value=0 * u.mega_CAD, t_unit=u.year)
+            ctx.bovaer_monitoring_admin = sts.SparseTimeSeries(
+                default_value=0 * u.CAD / u.farm / u.year,
+                t_unit=u.year)
+            ctx.bovaer_monitoring_onsite = sts.SparseTimeSeries(
+                default_value=0 * u.CAD / u.farm / u.year,
+                t_unit=u.year)
+            for pt in PT:
+                state.register_subsidy_factor(
+                    pt=pt,
+                    driver='Cattle Operations',
+                    sts_key='bovaer_monitoring_admin',
+                    program='Bovaer Subsidy',
+                    reason='Monitoring - Administration')
+                state.register_subsidy_factor(
+                    pt=pt,
+                    driver='Cattle Operations',
+                    sts_key='bovaer_monitoring_onsite',
+                    program='Bovaer Subsidy',
+                    reason='Monitoring - Onsite')
 
-        state.register_subsidy_requirement('bovaer_monitoring_cost_annual_total')
-
-        state.register_subsidy_requirement('bovaer_farmer_subsidy_annual_total')
-
-        return int(state.t_now.to('year').magnitude) * u.year
+        # TODO: revisit after switching from step() to fill()
+        # so the start date will be based on where inputs leave off
+        return state.stashes['Cattle_Population_AR'].t_step_start
 
     def step(self, state, current):
-        cost_rate = self.onsite_monitoring + self.paperwork_monitoring
-        current.bovaer_monitoring_cost_annual_total = (
-            cost_rate * 1 * u.year
-            / self.cattle_per_farm
-            * current.bovaer_headcount)
-        current.bovaer_farmer_subsidy_annual_total = (
-            current.bovaer_headcount
-            / self.cattle_per_farm
-            * self.farm_subsidy * (1 * u.year))
+        bovaer_onsite_rate = 3000 * u.CAD / u.farm / u.year
+        bovaer_admin_rate = 1000 * u.CAD / u.farm / u.year
+
+        current.bovaer_monitoring_admin = (
+            bovaer_admin_rate
+            * current.bovine_population_fraction_on_bovaer)
+        current.bovaer_monitoring_onsite = (
+            bovaer_onsite_rate
+            * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
+
+
+class Bovaer_Farm_Subsidy(Barrier):
+    """
+    Pay farmers to administer Bovaer.
+    """
+    @computed_field
+    def ipcc_sectors(self) -> list[object]:
+        return [IPCC_Sector.Enteric_Fermentation]
+
+    def on_add_project(self, state):
+
+        with state.requiring_current(self) as ctx:
+            # TODO: for each type of cattle, for each province
+            # will be written by Strategy
+            ctx.bovine_population_fraction_on_bovaer = sts.SparseTimeSeries(
+                default_value=0 * u.dimensionless, t_unit=u.years)
+
+        with state.defining(self) as ctx:
+            ctx.bovaer_farm_subsidy = sts.SparseTimeSeries(
+                default_value=0 * u.CAD / u.farm / u.year,
+                t_unit=u.year)
+            for pt in PT:
+                state.register_subsidy_factor(
+                    pt=pt,
+                    driver='Cattle Operations',
+                    sts_key='bovaer_farm_subsidy',
+                    program='Bovaer Subsidy',
+                    reason='Farm Subsidy')
+
+        # TODO: revisit after switching from step() to fill()
+        # so the start date will be based on where inputs leave off
+        return state.stashes['Cattle_Population_AR'].t_step_start
+
+    def step(self, state, current):
+        bovaer_cost_rate = 5000 * u.CAD / u.farm / u.year
+        current.bovaer_farm_subsidy = (
+            bovaer_cost_rate
+            * current.bovine_population_fraction_on_bovaer)
+        return state.t_now + 1 * u.year
+
+
+class Bovaer_Purchase_Cost(Barrier):
+    """
+    Define subsidy rates for the purchase cost of Bovaer
+    """
+
+    @computed_field
+    def bovaer_cost(self) -> dict[object, object]:
+        # https://www.producer.com/livestock/new-methane-feed-additive-pleases-producers
+        return {
+            Livestock.Bulls: .50 * u.CAD / u.day / u.cattle,
+            Livestock.DairyCows: 0.50 * u.CAD / u.day / u.cattle,
+            Livestock.BeefCows: 0.50 * u.CAD / u.day / u.cattle,
+            Livestock.DairyHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.BeefHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.SlaughterHeifers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.Steers: .35 * u.CAD / u.day / u.cattle,
+            Livestock.Calves: .20 * u.CAD / u.day / u.cattle,
+        }
+
+    def on_add_project(self, state):
+
+        with state.requiring_current(self) as ctx:
+            # TODO: for each type of cattle, for each province
+            # will be written by Strategy
+            ctx.bovine_population_fraction_on_bovaer = sts.SparseTimeSeries(
+                default_value=0 * u.dimensionless, t_unit=u.years)
+
+        for livestock, cost in self.bovaer_cost.items():
+            sts_key = f'bovaer_cost_{livestock.value}'
+            ts = sts.SparseTimeSeries(
+                identifier=sts_key,
+                default_value=cost * 0,
+                t_unit=u.years)
+            state.declare_sts(self, ts, write=True)
+            for pt in PT:
+                state.register_subsidy_factor(
+                    pt=pt,
+                    driver=livestock,
+                    sts_key=sts_key,
+                    program='Bovaer Subsidy',
+                    reason='Bovaer Cost')
+
+        # TODO: revisit after switching from step() to fill()
+        # so the start date will be based on where inputs leave off
+        return state.stashes['Cattle_Population_AR'].t_step_start
+
+    def step(self, state, current):
+        current.bovine_population_fraction_on_bovaer
+        for livestock, cost in self.bovaer_cost.items():
+            sts_key = f'bovaer_cost_{livestock.value}'
+            setattr(current, sts_key, cost * current.bovine_population_fraction_on_bovaer)
+        return state.t_now + 1 * u.year
+
+
+from .strategies.strategy2 import Scale_Bovaer

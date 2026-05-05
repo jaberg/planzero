@@ -28,7 +28,7 @@ u = ureg
 
 
 from . import ipcc_canada
-from .enums import GHG, IPCC_Sector, PT
+from .enums import GHG, IPCC_Sector, PT, SubsidyPrograms
 
 from .sts import SparseTimeSeries, STS, InterpolationMode
 
@@ -202,11 +202,30 @@ class EmissionResults(BaseModel):
 
     def sum(self):
         rval = None
-        for ts in self.by_sector_ghg_pt_driver.values():
+        for ((_, ghg, _, _), ts) in self.by_sector_ghg_pt_driver.items():
+            co2e = ghgvalues.GWP_100[ghg] * ts
+            if rval is None:
+                rval = co2e.sum()
+            else:
+                rval += co2e.sum()
+        if rval is None:
+            raise Exception()
+        return rval
+
+
+class SubsidyResults(BaseModel):
+
+    by_program_reason_pt_driver: dict[tuple[object, object, object, object], object]
+
+    def sum(self):
+        rval = None
+        for ts in self.by_program_reason_pt_driver.values():
             if rval is None:
                 rval = ts.sum()
             else:
                 rval += ts.sum()
+        if rval is None:
+            raise Exception()
         return rval
 
 
@@ -237,7 +256,7 @@ class State(object):
         self.registries = dict(
             emission_factor={},
             driver={},
-            cost_factor={})
+            subsidy_factor={})
 
         self.sts_id_counter = 100
 
@@ -421,7 +440,7 @@ class State(object):
             raise RuntimeError()
         assert sts_key in self.sts
         pt = PT(pt)
-        program = enums.SubsidyPrograms(program)
+        program = SubsidyPrograms(program)
         reason_d = self.registries['subsidy_factor']\
                 .setdefault(program, {})\
                 .setdefault(driver, {})\
@@ -429,19 +448,26 @@ class State(object):
         assert reason not in reason_d
         reason_d[reason] = sts_key
 
-    def compute_annual_emissions(self):
-        by_sector_ghg_pt_driver = {}
+    def annual_bin_boundaries(self):
         year_start_int = int(self.t_start.to(u.years).magnitude)
         year_end_float = self._t_now.to(u.years).magnitude
         year_end_int = int(math.ceil(year_end_float))
         boundaries = np.arange(year_start_int, year_end_int + 1) * u.years
+        return boundaries
+
+    def compute_annual_emissions(self):
+        by_sector_ghg_pt_driver = {}
+        boundaries = self.annual_bin_boundaries()
 
         for pt, driver_d in self.registries['driver'].items():
             for driver, driver_key in driver_d.items():
                 driver_ts = self.sts[driver_key]
                 for ghg, ef_by_pt in self.registries['emission_factor'].items():
-                    for sector, ef_by_sector in ef_by_pt[pt].items():
-                        ef_key = ef_by_sector[driver]
+                    for sector, ef_by_driver in ef_by_pt[pt].items():
+                        if driver not in ef_by_driver:
+                            # not all drivers drive emissions, some are for e.g. subsidies
+                            continue
+                        ef_key = ef_by_driver[driver]
                         ef_ts = self.sts[ef_key]
                         # todo: verify driver_ts is annual totals
                         if driver_ts.interpolation == InterpolationMode.no_interpolation:
@@ -453,8 +479,28 @@ class State(object):
         return EmissionResults(
             by_sector_ghg_pt_driver=by_sector_ghg_pt_driver)
 
-    def register_subsidy_requirement(self, sts_key):
-        self.subsidy_requirements.add(sts_key)
+    def compute_annual_subsidies(self):
+        by_program_reason_pt_driver = {}
+        boundaries = self.annual_bin_boundaries()
+        for pt, driver_d in self.registries['driver'].items():
+            for driver, driver_key in driver_d.items():
+                driver_ts = self.sts[driver_key]
+                for program, sf_by_driver in self.registries['subsidy_factor'].items():
+                    if driver not in sf_by_driver:
+                        # some drivers are just for emissions
+                        continue
+                    for reason, sf_key in sf_by_driver[driver][pt].items():
+                        sf_ts = self.sts[sf_key]
+                        # todo: verify driver_ts is annual totals
+                        if driver_ts.interpolation == InterpolationMode.no_interpolation:
+                            subsidies = sf_ts * driver_ts * (1 * u.year)
+                        else:
+                            subsidies = (sf_ts * driver_ts).bin_integrals(
+                                bin_boundaries=boundaries)
+                        by_program_reason_pt_driver[program, reason, pt, driver] \
+                                = subsidies.to(u.mega_CAD)
+        return SubsidyResults(
+            by_program_reason_pt_driver=by_program_reason_pt_driver)
 
     @property
     def latest(self):

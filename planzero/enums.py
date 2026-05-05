@@ -372,3 +372,7 @@ IPCC_Sector_from_catpath_no_whitespace = {
 IPCC_Sector_from_catpath_with_whitespace = {
     ipcc_sector.catpath_with_whitespace: ipcc_sector
     for ipcc_sector in IPCC_Sector}
+
+
+class SubsidyPrograms(str, enum.Enum):
+    Bovaer_Subsidy = 'Bovaer Subsidy'
