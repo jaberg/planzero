@@ -282,9 +282,13 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
         ],
         other_series=[])
 
-    cost_per_tCO2e = (
-        (subsidy_baseline_total - subsidy_ablated_total).sum()
-        / (ablated_total - baseline_total).sum()).to(u.CAD / u.tonne_CO2e)
+    try:
+        cost_per_tCO2e = (
+            (subsidy_baseline_total - subsidy_ablated_total).sum()
+            / (ablated_total - baseline_total).sum()).to(u.CAD / u.tonne_CO2e)
+    except AssertionError:
+        # this happens in Planet_Model
+        cost_per_tCO2e = float('nan') * u.CAD / u.tonne_CO2e
 
     return templates.TemplateResponse(
         request=request,

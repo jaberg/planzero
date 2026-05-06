@@ -20,4 +20,5 @@ from . import sim
 from .my_functools import cache as _cache
 
 from . import endpoints
+from . import planet_model
 from . import glossary # glossary imports many files, goes last

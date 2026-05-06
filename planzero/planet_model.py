@@ -1,6 +1,11 @@
+from pydantic import BaseModel, computed_field
+import numpy as np
+
 from .my_functools import cache
 
 from . import enums
+from .enums import GHG, PT, IPCC_Sector
+from .sts import STS, InterpolationMode
 from .base import (
     DynamicElement,
     BaseScenarioProject,
@@ -8,6 +13,7 @@ from .base import (
     ureg as u,
     )
 from .ghgvalues import GWP_100
+from .sim import SiteSimulation
 
 surface_area_of_earth = 5.1e14 * u.m * u.m
 
@@ -68,28 +74,21 @@ class AtmosphericChemistry(BaseScenarioProject):
             decay_NF3=1.0,
             )
 
-    def on_add_project(self, state):
-        # TODO: use new ObjTensor support to vectorize this code
+    def sectoral_emissions_contributors_ish(self, state):
+        sectoral_emissions_contributors = {}
+        for key_by_driver in state.registries['driver'].values():
+            for driver, sts_key in key_by_driver.items():
+                state.declare_read_current_sts(self, sts_key)
+                ghg = GHG(sts_key[len('impulse_'):])
+                sectoral_emissions_contributors['Forest_Land'] = {
+                    ghg: [sts_key]}
+        return sectoral_emissions_contributors
 
-        for catpath, contributors in state.sectoral_emissions_contributors.items():
-            # TODO: why not loop over these keys?
-            for sts_key in contributors.get(GHG.CO2, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.CH4, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.N2O, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.HFCs, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.PFCs, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.SF6, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.NF3, []):
-                state.declare_read_current_sts(self, sts_key)
+    def on_add_project(self, state):
+        sectoral_emissions_contributors = self.sectoral_emissions_contributors_ish(state)
 
         with state.defining(self) as ctx:
-            for catpath, contributors in state.sectoral_emissions_contributors.items():
+            for catpath, contributors in sectoral_emissions_contributors.items():
                 any_CO2e_contributors = False
                 if contributors.get(GHG.CO2, []):
                     setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}',
@@ -172,6 +171,7 @@ class AtmosphericChemistry(BaseScenarioProject):
         return int(state.t_now.to(u.years).magnitude + 1) * u.years
 
     def step(self, state, current):
+        sectoral_emissions_contributors = self.sectoral_emissions_contributors_ish(state)
 
         # add up annual emissions from registry
         annual_CO2_mass = 0 * u.kt_CO2
@@ -182,13 +182,14 @@ class AtmosphericChemistry(BaseScenarioProject):
         annual_SF6_mass = 0 * u.kt_SF6
         annual_NF3_mass = 0 * u.kt_NF3
 
-        for catpath, contributors in state.sectoral_emissions_contributors.items():
+        for catpath, contributors in sectoral_emissions_contributors.items():
             catpath_CO2e_mass = 0 * u.kg_CO2e
             any_CO2e_contributors = False
 
             catpath_CO2_contributors = contributors.get(GHG.CO2, [])
             if catpath_CO2_contributors:
-                catpath_CO2_mass = sum(getattr(current, sts_key) for sts_key in catpath_CO2_contributors)
+                catpath_CO2_mass = sum(getattr(current, sts_key) * (1 * u.year)
+                                       for sts_key in catpath_CO2_contributors)
                 try:
                     setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
                 except:
@@ -200,7 +201,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
             catpath_CH4_contributors = contributors.get(GHG.CH4, [])
             if catpath_CH4_contributors:
-                catpath_CH4_mass = sum(getattr(current, sts_key) for sts_key in catpath_CH4_contributors)
+                catpath_CH4_mass = sum(getattr(current, sts_key) * (1 * u.year) for sts_key in catpath_CH4_contributors)
                 try:
                     setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
                 except:
@@ -212,7 +213,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
             catpath_N2O_contributors = contributors.get(GHG.N2O, [])
             if catpath_N2O_contributors:
-                catpath_N2O_mass = sum(getattr(current, sts_key) for sts_key in catpath_N2O_contributors)
+                catpath_N2O_mass = sum(getattr(current, sts_key) * (1 * u.year) for sts_key in catpath_N2O_contributors)
                 try:
                     setattr(current, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', catpath_N2O_mass)
                 except:
@@ -224,7 +225,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
             catpath_HFC_contributors = contributors.get(GHG.HFCs, [])
             if catpath_HFC_contributors:
-                catpath_HFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_HFC_contributors)
+                catpath_HFC_mass = sum(getattr(current, sts_key) * (1 * u.year) for sts_key in catpath_HFC_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
                 catpath_CO2e_mass += catpath_HFC_mass * HFC_GWP_100
                 annual_HFC_mass += catpath_HFC_mass
@@ -232,7 +233,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
             catpath_PFC_contributors = contributors.get(GHG.PFCs, [])
             if catpath_PFC_contributors:
-                catpath_PFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_PFC_contributors)
+                catpath_PFC_mass = sum(getattr(current, sts_key) * (1 * u.year) for sts_key in catpath_PFC_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
                 catpath_CO2e_mass += catpath_PFC_mass * PFC_GWP_100
                 annual_PFC_mass += catpath_PFC_mass
@@ -240,7 +241,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
             catpath_SF6_contributors = contributors.get(GHG.SF6, [])
             if catpath_SF6_contributors:
-                catpath_SF6_mass = sum(getattr(current, sts_key) for sts_key in catpath_SF6_contributors)
+                catpath_SF6_mass = sum(getattr(current, sts_key) * (1 * u.year) for sts_key in catpath_SF6_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
                 catpath_CO2e_mass += catpath_SF6_mass * SF6_GWP_100
                 annual_SF6_mass += catpath_SF6_mass
@@ -248,7 +249,7 @@ class AtmosphericChemistry(BaseScenarioProject):
 
             catpath_NF3_contributors = contributors.get(GHG.NF3, [])
             if catpath_NF3_contributors:
-                catpath_NF3_mass = sum(getattr(current, sts_key) for sts_key in catpath_NF3_contributors)
+                catpath_NF3_mass = sum(getattr(current, sts_key) * (1 * u.year) for sts_key in catpath_NF3_contributors)
                 setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
                 catpath_CO2e_mass += catpath_NF3_mass * NF3_GWP_100
                 annual_NF3_mass += catpath_NF3_mass
@@ -425,35 +426,61 @@ class AtmosphericChemistry(BaseScenarioProject):
         current.DeltaF_NF3 = deltaF_coef_NF3 * conc.to(u.ppb).magnitude
 
 
+from .strategies.strategy2 import Strategy2
 
-class EmissionsImpulseResponse(DynamicElement):
+
+class EmissionsImpulseResponse(Strategy2):
+    """A hypothetical emissions source for testing Planet_Model """
     ghg:object
     impulse_co2e:object = 1_000_000 * u.kg_CO2e
-    catpath:str = 'Forest_Land' # dummy
-    tags:list[str] = ['strategy']
+
+    @computed_field
+    def ipcc_sectors(self) -> list[object]:
+        return []
 
     def on_add_project(self, state):
-        with state.defining(self) as ctx:
-            ctx.impulse_response = SparseTimeSeries(
-                times=[2000 * u.years, 2001 * u.years],
-                values=[self.impulse_co2e / GWP_100[self.ghg], 0.0 * u.kg_CO2e / GWP_100[self.ghg]],
-                default_value=0.0 * u.kg_CO2e / GWP_100[self.ghg])
+        rate = self.impulse_co2e / GWP_100[self.ghg] / u.year
+        state.declare_sts(
+            self,
+            sts=SparseTimeSeries(
+                times=[2000 * u.year, 2001 * u.year],
+                values=[1 * rate, 0 * rate],
+                default_value=0 * rate),
+            name=f'impulse_{self.ghg.value}',
+            write=True)
 
-        # any catpath will do
-        state.register_emission(self.catpath, self.ghg, 'impulse_response')
+        state.declare_sts(
+            self, 
+            sts=SparseTimeSeries(default_value=1.0 * u.dimensionless),
+            name=f'factor_{self.ghg.value}',
+            write=True)
+
+        state.register_driver(
+            pt=PT.XX,
+            driver=f'Hypothetical Emissions Impulse {self.ghg.value}',
+            sts_key=f'impulse_{self.ghg.value}')
+        state.register_emission_factor(
+            pt=PT.XX,
+            driver=f'Hypothetical Emissions Impulse {self.ghg.value}',
+            sts_key=f'factor_{self.ghg.value}',
+            ipcc_sector=IPCC_Sector.Forest_Land, # have to choose something
+            ghg=self.ghg)
 
 
-@cache
-def emissions_impulse_response_project_evaluation(impulse_co2e, years,
-                                                  catpath='Forest_Land'):
-    peval = ProjectEvaluation(
-        projects={ghg: EmissionsImpulseResponse(impulse_co2e=impulse_co2e,
-                                                ghg=ghg,
-                                                catpath=catpath)
-                  for ghg in enums.GHG},
-        common_projects=[AtmosphericChemistry()],
-        present=2000 * u.years,
-    )
-    t_end = (2000 + years) * u.years
-    peval.run_until(t_end)
-    return peval
+class A0_Planet_Model(SiteSimulation):
+    """Visualize the simulation of a simple planetary heat model
+    as driven by hypothetical impulse-responses of greenhouse gases
+    (this is not a model of Canada's sectoral emissions)."""
+
+    @computed_field
+    def t_start_year(self) -> int:
+        return 2000
+
+    def dynamic_elements(self) -> list[DynamicElement]:
+        rval = [AtmosphericChemistry()]
+        rval.extend(
+            [EmissionsImpulseResponse(
+                ghg=ghg,
+                identifier=f'EmissionsImpuseResponse_{ghg.value}')
+             for ghg in GHG])
+        return rval

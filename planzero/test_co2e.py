@@ -3,7 +3,6 @@ import numpy as np
 from .ureg import u
 from .enums import GHG
 from .ghgvalues import GWP_100
-from .planet_model import emissions_impulse_response_project_evaluation
 
 
 def test_co2e(assert_value=0, years=100):

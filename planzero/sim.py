@@ -5,6 +5,7 @@ from functools import cached_property
 from pydantic import BaseModel, computed_field
 import numpy as np
 
+from .enums import IPCC_Sector
 from .ureg import u
 from .base import State
 from .base import Other_NIR_Historical_Actuals
@@ -55,22 +56,33 @@ class SimulationResult(BaseModel):
 
     @cached_property
     def by_ipcc_sector(self) -> StackedAreaEChart:
+        emres = self.state.compute_annual_emissions()
+        sector_totals = {
+            ipcc_sector: emres.total(
+                only_ipcc_sector=ipcc_sector,
+                return_None_instead_of_zero=True)
+            for ipcc_sector in IPCC_Sector}
+
         for_sorting = []
-        for catpath, contributors in self.state.sectoral_emissions_contributors.items():
-            if not contributors:
+        for ipcc_sector, sector_total in sector_totals.items():
+            if sector_total is None:
                 continue
             data = EChartSeriesData(
-                self.state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'],
+                sector_total,
                 times=self.year_times,
                 v_unit=u.Mt_CO2e,
-                url=f'/simulations/{self.simulation_name.lower()}/ipcc-sectors/{catpath}/')
+                url=f'/simulations/{self.simulation_name.lower()}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/')
             values = [vdict['value'] for vdict in data]
             if max(values) <= 0:
                 # all negative
-                for_sorting.append((1.0 / min(values), catpath, data))
+                for_sorting.append((1.0 / min(values),
+                                    ipcc_sector.catpath_with_whitespace,
+                                    data))
             elif min(values) >= 0:
                 # all positive
-                for_sorting.append((max(values), catpath, data))
+                for_sorting.append((max(values),
+                                    ipcc_sector.catpath_with_whitespace,
+                                    data))
             else:
                 # mix of positive and negative entries
                 sink_years = [
@@ -79,8 +91,14 @@ class SimulationResult(BaseModel):
                 source_years = [
                     dict(vdict, value=max(vdict['value'], 0))
                     for vdict in data]
-                for_sorting.append((1.0 / min(values), catpath + '(sink years)', sink_years))
-                for_sorting.append((max(values), catpath + '(source years)', source_years))
+                for_sorting.append(
+                    (1.0 / min(values),
+                     ipcc_sector.catpath_with_whitespace + ' (sink years)',
+                     sink_years))
+                for_sorting.append(
+                    (max(values),
+                     ipcc_sector.catpath_with_whitespace + ' (source years)',
+                     source_years))
 
         return StackedAreaEChart(
             div_id='by_ipcc_sector',
@@ -141,8 +159,8 @@ class SimulationResult(BaseModel):
         """Return an EChart that shows the emissions contributions to this
         sector in the base scenario.
         """
-        from .enums import IPCC_Sector
         ipcc_sector = IPCC_Sector.from_catpath(catpath)
+        emres = self.state.compute_annual_emissions()
 
         return StackedAreaEChart(
             div_id=f'echart_ipcc_sector_{catpath.replace("/", "_")}',
@@ -153,17 +171,16 @@ class SimulationResult(BaseModel):
             yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
             stacked_series=[
                 EChartSeriesStackElem(
-                    name=f'{sts_id}',
+                    name=f'{driver}',
                     data=EChartSeriesData(
-                        self.state.sts[sts_id] * GWP_100[GHG(ghg)],
+                        emres.total(only_ipcc_sector=ipcc_sector,
+                                    only_driver=driver),
                         times=self.year_times,
                         v_unit=u.Mt_CO2e,
                         url=None),
                     emphasis={'disabled': 1}, # prevents visual corruption on my computer
                     )
-                for ghg, contribs in self.state.sectoral_emissions_contributors[
-                    ipcc_sector.catpath_no_whitespace].items()
-                for sts_id in contribs if contribs
+                for driver in emres.drivers
             ],
             other_series=[
                 EChartSeriesBase(
@@ -206,21 +223,18 @@ class SiteSimulation(BaseModel):
 
 
 
-class Extrapolation(SiteSimulation):
-    """Extend statistical trends in emissions contributions"""
+class NIR2025(SiteSimulation):
+    """Visualize the data from National Greenhouse Gas Inventory Report
+    NIR-2025."""
 
     @computed_field
     def t_start_year(self) -> int:
         return 1990
 
     def dynamic_elements(self) -> list[DynamicElement]:
-        return [
-            # standard for viz
-            Other_NIR_Historical_Actuals(),
-            #AtmosphericChemistry(),
-            #SubsidyAccounting(),
-        ]
+        return [Other_NIR_Historical_Actuals()]
 
+    #"""Extend statistical trends in emissions contributions"""
 from . import cattle 
 
 
@@ -246,7 +260,6 @@ class Scaling(SiteSimulation):
             Other_NIR_Historical_Actuals(),
         ]
 
-
 @cache
 def simulation_result(simulation_name) -> SimulationResult:
     site_sim = site_simulations[simulation_name]
@@ -256,7 +269,7 @@ def simulation_result(simulation_name) -> SimulationResult:
             name=f'State_{simulation_name}' + (f'_minus_{exclude_name}' if exclude_name else ''),
             t_start=site_sim.t_start_year * u.years)
         if exclude_name:
-            dynelems = [d for d in site_sim.dynamic_elements() if d.__class__.__name__ != exclude_name]
+            dynelems = [d for d in site_sim.dynamic_elements() if d.identifier != exclude_name]
         else:
             dynelems = site_sim.dynamic_elements()
         state.add_projects(dynelems)
@@ -268,7 +281,7 @@ def simulation_result(simulation_name) -> SimulationResult:
     ablations = {}
     for d in site_sim.dynamic_elements():
         if 'strategy' in d.tags:
-            name = d.__class__.__name__
+            name = d.identifier
             ablations[name] = run_sim(exclude_name=name)
 
     return SimulationResult(

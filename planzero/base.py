@@ -202,15 +202,46 @@ class EmissionResults(BaseModel):
 
     by_sector_ghg_pt_driver: dict[tuple[object, object, object, object], object]
 
-    def total(self):
+    @property
+    def ipcc_sectors(self) -> set[object]:
+        return {
+            ipcc_sector
+            for (ipcc_sector, _, _, _) in self.by_sector_ghg_pt_driver}
+
+    @property
+    def ghgs(self) -> set[object]:
+        return {
+            ghg
+            for (_, ghg, _, _) in self.by_sector_ghg_pt_driver}
+
+    @property
+    def pts(self) -> set[object]:
+        return {
+            pt
+            for (_, _, pt, _) in self.by_sector_ghg_pt_driver}
+
+    @property
+    def drivers(self) -> set[object]:
+        return {
+            driver
+            for (_, _, _, driver) in self.by_sector_ghg_pt_driver}
+
+    def total(self,
+              only_ipcc_sector=None,
+              only_driver=None,
+              return_None_instead_of_zero=False):
         rval = None
-        for ((_, ghg, _, _), ts) in self.by_sector_ghg_pt_driver.items():
+        for ((ipcc_sector, ghg, _, driver), ts) in self.by_sector_ghg_pt_driver.items():
+            if only_ipcc_sector is not None and ipcc_sector != only_ipcc_sector:
+                continue
+            if only_driver is not None and driver != only_driver:
+                continue
             co2e = ghgvalues.GWP_100[ghg] * ts
             if rval is None:
                 rval = co2e
             else:
                 rval += co2e
-        if rval is None:
+        if rval is None and not return_None_instead_of_zero:
             return SparseTimeSeries(
                 default_value=0 * u.kilotonne_CO2e,
                 t_unit=u.year)
@@ -246,14 +277,15 @@ class SubsidyResults(BaseModel):
                 t_unit=u.year)
         return rval
 
-    def sum(self):
+    def sum(self,
+            return_None_instead_of_zero=False):
         rval = None
         for ts in self.by_program_reason_pt_driver.values():
             if rval is None:
                 rval = ts.sum()
             else:
                 rval += ts.sum()
-        if rval is None:
+        if rval is None and not return_None_instead_of_zero:
             raise Exception()
         return rval
 
@@ -432,14 +464,13 @@ class State(object):
         driver_d[driver] = sts_key
 
     def register_driver(self, pt, driver, sts_key):
-        if 1:
-            ts = self.sts[sts_key]
-            if ts.interpolation == InterpolationMode.no_interpolation:
-                assert ts.t_unit == u.years
-                assert all(tt == int(tt) for tt in ts.times)
-            else:
-                # an integral will be computed later
-                pass
+        ts = self.sts[sts_key]
+        if ts.interpolation == InterpolationMode.no_interpolation:
+            assert ts.t_unit == u.years
+            assert all(tt == int(tt) for tt in ts.times)
+        else:
+            # an integral will be computed later
+            pass
 
         if self.emissions_registration_closed:
             raise RuntimeError()

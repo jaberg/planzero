@@ -9,21 +9,9 @@ from . import (
 
 
 def endpoints():
-    rval = [
-        "/",
-        "/ipcc-sectors/",
-        "/strategies/",
-        "/simulations/",
-        "/glossary/",
-        "/about/",
-    ]
+    rval = []
 
-    assert len(ipcc_canada.catpaths) == 71
-    rval.extend([
-        f"/ipcc-sectors/{catpath}/"
-        for catpath in ipcc_canada.catpaths])
-
-    for sim_name, site_sim in sim.site_simulations.items():
+    for sim_name, site_sim in sorted(sim.site_simulations.items()):
         rval.append(f"/simulations/{sim_name}/")
         
         for dynelem in site_sim.dynamic_elements():
@@ -35,6 +23,20 @@ def endpoints():
 
         for catpath in ipcc_canada.catpaths:
             rval.append(f"/simulations/{sim_name}/ipcc-sectors/{catpath}/")
+
+    rval.extend([
+        "/",
+        "/ipcc-sectors/",
+        "/strategies/",
+        "/simulations/",
+        "/glossary/",
+        "/about/",
+    ])
+
+    assert len(ipcc_canada.catpaths) == 71
+    rval.extend([
+        f"/ipcc-sectors/{catpath}/"
+        for catpath in ipcc_canada.catpaths])
 
 
     rval.extend([

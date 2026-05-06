@@ -40,7 +40,6 @@ class BlogPost(BaseModel):
         _classes.append(cls)
 
 
-from .planet_model import emissions_impulse_response_project_evaluation
 from . import enums
 from .ureg import u
 
