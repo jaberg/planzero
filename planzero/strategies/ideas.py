@@ -1399,3 +1399,19 @@ ideas.limit_freight_speed_to_90kph = NewcoIdea(
 # Demonstration of battery dumptruck for mining from Hitachi
 # charges from trolly lines!
 # https://interestingengineering.com/transportation/384-ton-battery-dump-truck
+
+
+# carbon capture
+# negative-carbon cement
+# enhanced rock weathering (e.g. UNDO, Carbon Run)
+# Buying an EV
+# Steel production
+# Fertilizer production
+# Farm machinery
+# on-farm biogas capture
+# rooftop solar
+# highway umbrella solar
+# photovoltaic sail boats for cargo
+# tethered balloon heat sinks, wind turbines, and solar farms, and transportation medium
+# what about India's cattle population!?
+# new process for hydrogen peroxide: https://interestingengineering.com/innovation/solar-hydrogen-peroxide-cornell-breakthrough

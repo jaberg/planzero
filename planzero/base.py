@@ -495,6 +495,9 @@ class State(object):
             for driver, driver_key in driver_d.items():
                 driver_ts = self.sts[driver_key]
                 for ghg, ef_by_pt in self.registries['emission_factor'].items():
+                    if pt not in ef_by_pt:
+                        print('Warning: missing ef', pt, driver, ghg, ef_by_pt.keys())
+                        continue
                     for sector, ef_by_driver in ef_by_pt[pt].items():
                         if driver not in ef_by_driver:
                             # not all drivers drive emissions, some are for e.g. subsidies
@@ -1346,8 +1349,9 @@ class Other_NIR_Historical_Actuals(BaseScenarioProject):
         # has registered an emission, are considered approximate.
         registered_ipcc_sectors = {
             ipcc_sector_key
-            for (ghg_key, pt_key, ipcc_sector_key, driver_key)
-            in state.registries['emission_factor']}
+            for by_pt in state.registries['emission_factor'].values()
+            for by_ipcc_sector in by_pt.values()
+            for ipcc_sector_key in by_ipcc_sector}
 
         non_agg = ipcc_canada.inv[ipcc_canada.inv['Total'] != 'y']
         for catpathww, nonagg_catpath in non_agg.groupby('CategoryPathWithWhitespace'):

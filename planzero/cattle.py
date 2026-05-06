@@ -452,6 +452,14 @@ class Bovaer_Adoption_Limit(Barrier):
 
 class Bovaer_Production_Emission_Factors(Barrier):
 
+    @computed_field
+    def short_description(self) -> str:
+        return f"""Suppose that embedded/production emission of Bovaer is {self.rate}."""
+
+    @computed_field
+    def rate(self) -> object:
+        return 45 * u.kg_CO2 / u.cattle / u.year
+
     def on_add_project(self, state):
 
         with state.defining(self) as ctx:
@@ -462,7 +470,7 @@ class Bovaer_Production_Emission_Factors(Barrier):
             # as 20-50 times less in magnitude compared to the emission
             # reduction in enteric fermentation
             ctx.bovaer_production_CO2_per_methane_abated = sts.SparseTimeSeries(
-                default_value=45 * u.kg_CO2 / u.cattle / u.year,
+                default_value=self.rate,
                 t_unit=u.years)
 
             # TODO: model where the Bovaer is actually produced.
@@ -481,6 +489,7 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
 
     Defines one emission factor time series per livestock type.
     """
+
 
     @computed_field
     def bovaer_actual_vs_nominal(self) -> float:
@@ -781,7 +790,17 @@ class Bovaer_Monitoring(Barrier):
 
     @computed_field
     def short_description(self) -> str:
-        return f"Assume administering and monitoring costs {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for on-site inspection, and farmers require a subsidy of {self.farm_subsidy} to administer the Bovaer in the first place"
+        return f"""Assume administering and monitoring costs
+    {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for
+    on-site inspection"""
+
+    @computed_field
+    def paperwork_monitoring(self) -> object:
+        return 1000 * u.CAD / u.farm / u.year
+
+    @computed_field
+    def onsite_monitoring(self) -> object:
+        return 3000 * u.CAD / u.farm / u.year
 
     @computed_field
     def ipcc_sectors(self) -> list[object]:
@@ -825,8 +844,8 @@ class Bovaer_Monitoring(Barrier):
         return state.stashes['Cattle_Population_AR'].t_step_start
 
     def step(self, state, current):
-        bovaer_onsite_rate = 3000 * u.CAD / u.farm / u.year
-        bovaer_admin_rate = 1000 * u.CAD / u.farm / u.year
+        bovaer_onsite_rate = self.onsite_monitoring
+        bovaer_admin_rate = self.paperwork_monitoring
 
         current.bovaer_monitoring_admin = (
             bovaer_admin_rate
@@ -838,9 +857,15 @@ class Bovaer_Monitoring(Barrier):
 
 
 class Bovaer_Farm_Subsidy(Barrier):
-    """
-    Pay farmers to administer Bovaer.
-    """
+
+    @computed_field
+    def short_description(self) -> str:
+        return f"""Pay farmers {self.subsidy_rate} to administer Bovaer."""
+
+    @computed_field
+    def subsidy_rate(self) -> object:
+        return 5000 * u.CAD / u.farm / u.year
+
     @computed_field
     def ipcc_sectors(self) -> list[object]:
         return [IPCC_Sector.Enteric_Fermentation]
@@ -870,7 +895,7 @@ class Bovaer_Farm_Subsidy(Barrier):
         return state.stashes['Cattle_Population_AR'].t_step_start
 
     def step(self, state, current):
-        bovaer_cost_rate = 5000 * u.CAD / u.farm / u.year
+        bovaer_cost_rate = self.subsidy_rate
         current.bovaer_farm_subsidy = (
             bovaer_cost_rate
             * current.bovine_population_fraction_on_bovaer)

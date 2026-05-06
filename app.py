@@ -29,7 +29,7 @@ import planzero.blog
 import planzero.ipcc_home
 import planzero.est_nir
 import planzero.enums
-from planzero import get_peval
+#from planzero import get_peval
 
 u = planzero.ureg
 
@@ -50,16 +50,16 @@ def app_cache(f):
 
 @app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)
 async def get_strategy_eval(request: Request, strategy_name:str):
-    peval = get_peval()
-    strategy = peval.comparisons[strategy_name].project
-    comparison = peval.comparisons[strategy_name]
+    #peval = get_peval()
+    #strategy = peval.comparisons[strategy_name].project
+    #comparison = peval.comparisons[strategy_name]
     strategy_page = strategy.strategy_page(comparison)
     return templates.TemplateResponse(
         request=request,
         name=f"strategy_page.html",
         context=dict(
             default_context,
-            peval=peval,
+            #peval=peval,
             active_tab='strategies',
             strategy=strategy,
             comparison=comparison,
@@ -111,7 +111,7 @@ def get_ipcc_sector_html(catpath: str):
     return templates.get_template(templatepath_for_catpath(catpath)).render(dict(
         default_context,
         active_tab='ipcc_sectors',
-        peval=get_peval(),
+        #peval=get_peval(),
         stakeholders=planzero.strategies.stakeholders,
         catpath=catpath,
         blogs_by_tag=planzero.blog.blogs_by_tag,
@@ -253,8 +253,8 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
     sim_years = [tt * u.years for tt in sim_years_ints]
     
     # Simple total emissions comparison
-    baseline_total = baseline_state.sts['Predicted_Annual_Emitted_CO2e_mass']
-    ablated_total = ablated_state.sts['Predicted_Annual_Emitted_CO2e_mass']
+    baseline_total = baseline_state.compute_annual_emissions().total()
+    ablated_total = ablated_state.compute_annual_emissions().total()
 
     impact_data = planzero.sim.EChartSeriesData(
         ablated_total - baseline_total, # ablated - baseline = amount saved if ablated > baseline
@@ -279,8 +279,8 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
         other_series=[])
 
     # Simple total subsidy comparison
-    subsidy_baseline_total = baseline_state.sts['AnnualSubsidyTotal']
-    subsidy_ablated_total = ablated_state.sts['AnnualSubsidyTotal']
+    subsidy_baseline_total = baseline_state.compute_annual_subsidies().total()
+    subsidy_ablated_total = ablated_state.compute_annual_subsidies().total()
 
     subsidy_comparison_data = planzero.sim.EChartSeriesData(
         subsidy_baseline_total - subsidy_ablated_total,
@@ -330,7 +330,7 @@ async def get_strategies(request: Request):
         name="strategies.html",
         context=dict(
             default_context,
-            peval=get_peval(),
+            #peval=get_peval(),
             active_tab='strategies',
             npv_unit='MCAD',
             nph_unit='exajoule',
@@ -405,7 +405,7 @@ async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POS
             fade_in_intro=True,
             blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
-            peval=get_peval(),
+            #peval=get_peval(),
             unpublished=unpublished,
             ),
     )

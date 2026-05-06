@@ -1,5 +1,4 @@
 from . import (
-    get_peval,
     ipcc_canada,
     enums,
     blog,
@@ -41,11 +40,5 @@ def endpoints():
     rval.extend([
         f"/blog/{url_filename}/"
         for url_filename in blog._blogs_by_url_filename])
-
-
-    # TODO: deprecate this
-    rval.extend([
-        f"/strategies/{idea_name}/"
-        for idea_name in get_peval().projects])
 
     return rval

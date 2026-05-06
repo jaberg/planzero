@@ -92,6 +92,7 @@ class EChartSeriesBase(BaseModel):
 
 
 def EChartSeriesData(sts, times, v_unit, url):
+    assert times
     values = sts.query(times).to(v_unit).magnitude
     return [{'value': float(vv) if vv == vv else 0, 'url': url}
             for vv in values]
