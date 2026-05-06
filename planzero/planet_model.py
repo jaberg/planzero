@@ -467,7 +467,7 @@ class EmissionsImpulseResponse(Strategy2):
             ghg=self.ghg)
 
 
-class A0_Planet_Model(SiteSimulation):
+class Planet_Model(SiteSimulation):
     """Visualize the simulation of a simple planetary heat model
     as driven by hypothetical impulse-responses of greenhouse gases
     (this is not a model of Canada's sectoral emissions)."""
@@ -481,6 +481,6 @@ class A0_Planet_Model(SiteSimulation):
         rval.extend(
             [EmissionsImpulseResponse(
                 ghg=ghg,
-                identifier=f'EmissionsImpuseResponse_{ghg.value}')
+                identifier=f'EmissionsImpulseResponse_{ghg.value}')
              for ghg in GHG])
         return rval

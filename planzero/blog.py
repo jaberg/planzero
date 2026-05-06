@@ -4,6 +4,7 @@ import datetime
 
 from . import enums
 from . import est_nir
+from . import sim
 
 _classes = []
 _blogs_by_url_filename = {}
@@ -399,7 +400,7 @@ class CNZEAA(BlogPost):
 
 
 class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
-    peval:object
+    sim_result:object
     sts_key:str
     title:str
     legend_loc:str = 'upper right'
@@ -411,10 +412,11 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
         years = [year for year in range(2000, 2101)]
         #years = [year for year in range(1990, 2101)]
         for ghg in enums.GHG:
-            comp = self.peval.comparisons[ghg]
             years_pint = [year * u.year for year in years]
-            energy_A = comp.state_A.sts[self.sts_key].query(years_pint)
-            energy_B = comp.state_B.sts[self.sts_key].query(years_pint)
+            state_A = self.sim_result.state
+            state_B = self.sim_result.ablations[f'EmissionsImpulseResponse_{ghg.value}']
+            energy_A = state_A.sts[self.sts_key].query(years_pint)
+            energy_B = state_B.sts[self.sts_key].query(years_pint)
             plt.plot(years,
                      (energy_A - energy_B).to('terajoules').magnitude,
                      label=ghg)
@@ -431,7 +433,6 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
                          xytext=(2049, 25),
                          xy=(2100, 900),
                          arrowprops=dict(width=1))
-        #plt.grid()
         plt.xlabel(f'Time (years)')
         plt.ylabel(f'Heat (terajoules)')
 
@@ -472,9 +473,6 @@ class GHG_Emissions(BlogPost):
             SF6_df=latex(r"0.57 C"),
             NF3_df=latex(r"0.21 C"),
             )
-        peval = emissions_impulse_response_project_evaluation(
-            impulse_co2e=1_000_000 * u.kg_CO2e,
-            years=100)
 
         super().__init__(
             date=datetime.datetime(2026, 1, 21),
@@ -485,12 +483,12 @@ class GHG_Emissions(BlogPost):
             equations=equations,
             figure_svgs=dict(
                 co2e_v_heat_remaining=GHG_Emissions_CO2e_v_Heat(
-                    peval=peval,
+                    sim_result=sim.simulation_result('Planet_Model'),
                     sts_key='Cumulative_Heat_Energy',
                     title="Heat Remaining After 1-year CO2e-equivalent Emissions",
                     legend_loc='upper right').as_html(),
                 co2e_v_heat_forcing=GHG_Emissions_CO2e_v_Heat(
-                    peval=peval,
+                    sim_result=sim.simulation_result('Planet_Model'),
                     sts_key='Cumulative_Heat_Energy_forcing',
                     title="Cumulative GHG-Trapped Heat",
                     add_circle=True,

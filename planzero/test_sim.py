@@ -20,6 +20,6 @@ def test_planet_model():
             print('no strat', d)
     sim = simulation_result('Planet_Model')
     baseline_state = sim.state
-    ablated_state = sim.ablations.get('EmissionsImpuseResponse_CO2')
+    ablated_state = sim.ablations.get('EmissionsImpulseResponse_CO2')
     if not ablated_state:
         assert 0

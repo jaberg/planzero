@@ -19,6 +19,6 @@ from . import strategies
 from . import sim
 from .my_functools import cache as _cache
 
-from . import endpoints
 from . import planet_model
+from . import endpoints # next-to-last b/c it uses class registries
 from . import glossary # glossary imports many files, goes last
