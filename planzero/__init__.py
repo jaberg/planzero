@@ -1,9 +1,7 @@
 from .base import DynamicElement
 from .base import BaseScenarioProject
-from .base import ProjectEvaluation
 from .base import SparseTimeSeries
 from .base import ureg
-from .base import AtmosphericChemistry
 
 from . import base
 from . import battery_tech
@@ -21,16 +19,5 @@ from . import strategies
 from . import sim
 from .my_functools import cache as _cache
 
-
-@_cache
-def get_peval():
-    peval = base.ProjectEvaluation(
-        projects={strat.identifier: strat
-                  for strat in strategies.standard_strategies()},
-        common_projects=BaseScenarioProject.base_scenario_projects(),
-    )
-    peval.run_until(2125 * ureg.years)
-    return peval
-
 from . import endpoints
-from . import glossary # last
+from . import glossary # glossary imports many files, goes last
