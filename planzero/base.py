@@ -511,8 +511,11 @@ class State(object):
             for driver, driver_key in driver_d.items():
                 driver_ts = self.sts[driver_key]
                 for ghg, ef_by_pt in self.registries['emission_factor'].items():
+                    # for NF3 and SF6, it isn't surprising if some provinces
+                    # report no emissions
                     if pt not in ef_by_pt:
-                        print('Warning: missing ef', pt, driver, ghg, ef_by_pt.keys())
+                        if ghg not in (GHG.NF3, GHG.SF6):
+                            print('Warning: missing ef', pt, driver, ghg, ef_by_pt.keys())
                         continue
                     for sector, ef_by_driver in ef_by_pt[pt].items():
                         if driver not in ef_by_driver:
@@ -706,7 +709,11 @@ class Other_NIR_Historical_Actuals(BaseScenarioProject):
                 for ghg in GHG:
                     values = region_df[ghg.value].values
                     years = region_df['Year'].values
-                    kt_by_yr = {int(year): float(val) for year, val in zip(years, values)}
+                    # TODO: use PT.XX together with national total
+                    # to not lose emissions by setting nan->zero
+                    kt_by_yr = {
+                        int(year): float(val) if np.isfinite(val) else 0.0
+                        for year, val in zip(years, values)}
 
                     if not all(vv == 0 for vv in kt_by_yr.values()):
                         #print(ghg, ipcc_sector, pt)

@@ -205,6 +205,10 @@ class SiteSimulation(BaseModel):
         site_simulations[cls.__name__] = cls()
 
     @computed_field
+    def show_on_simulations_page(self) -> bool:
+        return True
+
+    @computed_field
     def short_description(self) -> str:
         return self.__class__.__doc__
 

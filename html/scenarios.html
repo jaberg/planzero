@@ -30,7 +30,7 @@
           </tr>
     </thead>
     <tbody>
-          {% for ident, obj in planzero.sim.site_simulations.items() %}
+          {% for ident, obj in planzero.sim.site_simulations.items() if obj.show_on_simulations_page %}
           <tr>
               <td>
                   <a href="/scenarios/{{ident}}/">{{ident}}</a>

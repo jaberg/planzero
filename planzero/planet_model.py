@@ -478,6 +478,10 @@ class Planet_Model(SiteSimulation):
     (this is not a model of Canada's sectoral emissions)."""
 
     @computed_field
+    def show_on_simulations_page(self) -> bool:
+        return False
+
+    @computed_field
     def t_start_year(self) -> int:
         return 1999
 
