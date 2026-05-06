@@ -74,19 +74,23 @@ class AtmosphericChemistry(BaseScenarioProject):
             decay_NF3=1.0,
             )
 
-    def sectoral_emissions_contributors_ish(self, state):
-        sectoral_emissions_contributors = {}
+    def contributor_keys(self, state):
         for key_by_driver in state.registries['driver'].values():
             for driver, sts_key in key_by_driver.items():
-                state.declare_read_current_sts(self, sts_key)
-                ghg = GHG(sts_key[len('impulse_'):])
-                sectoral_emissions_contributors['Forest_Land'] = {
-                    ghg: [sts_key]}
+                yield sts_key
+
+    def sectoral_emissions_contributors_ish(self, state):
+        sectoral_emissions_contributors = {}
+        for sts_key in self.contributor_keys(state):
+            ghg = GHG(sts_key[len('impulse_'):])
+            sectoral_emissions_contributors.setdefault('Forest_Land', {})[ghg] = [sts_key]
         return sectoral_emissions_contributors
 
     def on_add_project(self, state):
-        sectoral_emissions_contributors = self.sectoral_emissions_contributors_ish(state)
+        for sts_key in self.contributor_keys(state):
+            state.declare_read_current_sts(self, sts_key)
 
+        sectoral_emissions_contributors = self.sectoral_emissions_contributors_ish(state)
         with state.defining(self) as ctx:
             for catpath, contributors in sectoral_emissions_contributors.items():
                 any_CO2e_contributors = False
@@ -444,6 +448,7 @@ class EmissionsImpulseResponse(Strategy2):
             self,
             sts=SparseTimeSeries(
                 times=[2000 * u.year, 2001 * u.year],
+                t_unit=u.years,
                 values=[1 * rate, 0 * rate],
                 default_value=0 * rate),
             name=f'impulse_{self.ghg.value}',
@@ -451,7 +456,7 @@ class EmissionsImpulseResponse(Strategy2):
 
         state.declare_sts(
             self, 
-            sts=SparseTimeSeries(default_value=1.0 * u.dimensionless),
+            sts=SparseTimeSeries(default_value=1.0 * u.dimensionless, t_unit=u.years),
             name=f'factor_{self.ghg.value}',
             write=True)
 
@@ -474,13 +479,16 @@ class Planet_Model(SiteSimulation):
 
     @computed_field
     def t_start_year(self) -> int:
-        return 2000
+        return 1999
+
+    @computed_field
+    def t_stop_year(self) -> int:
+        return 2100
 
     def dynamic_elements(self) -> list[DynamicElement]:
-        rval = [AtmosphericChemistry()]
-        rval.extend(
-            [EmissionsImpulseResponse(
+        rval = [EmissionsImpulseResponse(
                 ghg=ghg,
                 identifier=f'EmissionsImpulseResponse_{ghg.value}')
-             for ghg in GHG])
+             for ghg in GHG]
+        rval.append(AtmosphericChemistry())
         return rval

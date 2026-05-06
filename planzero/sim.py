@@ -212,6 +212,10 @@ class SiteSimulation(BaseModel):
     def t_start_year(self) -> int:
         raise NotImplementedError()
 
+    @computed_field
+    def t_stop_year(self) -> int:
+        raise 2100
+
     def dynamic_elements(self) -> list[DynamicElement]:
         # TODO: move to model
         raise NotImplementedError()
@@ -273,8 +277,8 @@ def simulation_result(simulation_name) -> SimulationResult:
         else:
             dynelems = site_sim.dynamic_elements()
         state.add_projects(dynelems)
-        state.run_until(2100 * u.years)
-        assert state._t_now >= 2100 * u.years
+        state.run_until(site_sim.t_stop_year * u.years)
+        assert state._t_now >= site_sim.t_stop_year * u.years
         return state
 
     baseline_state = run_sim()
