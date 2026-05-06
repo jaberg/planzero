@@ -214,7 +214,7 @@ class SiteSimulation(BaseModel):
 
     @computed_field
     def t_stop_year(self) -> int:
-        raise 2100
+        return 2100
 
     def dynamic_elements(self) -> list[DynamicElement]:
         # TODO: move to model
