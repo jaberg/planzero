@@ -267,6 +267,7 @@ def simulation_result(simulation_name) -> SimulationResult:
             dynelems = site_sim.dynamic_elements()
         state.add_projects(dynelems)
         state.run_until(2100 * u.years)
+        assert state._t_now >= 2100 * u.years
         return state
 
     baseline_state = run_sim()

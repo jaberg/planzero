@@ -23,7 +23,6 @@ def siteref(term, text=None):
 from .blog import latex
 from . import barriers
 from . import cattle
-from . import csfs
 from . import strategies
 from .sts import STS
 from .base import DynamicElement
@@ -135,9 +134,8 @@ class Dynamic_Element(GlossaryTerm):
     {{lref("Time Series", "time series")|safe}} follows a formula.
     A dynamic element is expected to be a Python code object, that is
     a subclass of either a
-    {{lref("Strategy")|safe}}, a
-    {{lref("Barrier")|safe}}, or a
-    {{lref("Critical Success Factor")|safe}}.
+    {{lref("Strategy")|safe}} or a
+    {{lref("Barrier")|safe}}.
     """
 
     @property
@@ -302,14 +300,6 @@ class Critical_Success_Factor(GlossaryTerm):
     @computed_field
     def aka(self) -> list[str]:
         return ['CSF']
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        return {
-            'Critical Success Factor base class': csfs.CSFs,
-            'Example CSF: Large Oil and Gas Extraction Operations': csfs.CSFs, # TODO
-        }
-
 
 
 class NIR_Model(GlossaryTerm):
