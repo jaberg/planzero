@@ -18,7 +18,6 @@ app.mount("/assets", StaticFiles(directory=f"{htmlroot}/assets/"), name="assets"
 app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images")
 
 templates = Jinja2Templates(
-    #directory=htmlroot,
     env=jinja2.Environment(
         undefined=jinja2.StrictUndefined,
         loader=jinja2.FileSystemLoader(htmlroot),
@@ -29,7 +28,6 @@ import planzero.blog
 import planzero.ipcc_home
 import planzero.est_nir
 import planzero.enums
-#from planzero import get_peval
 
 u = planzero.ureg
 
@@ -47,25 +45,6 @@ def app_cache(f):
         # without reloading anything
         return f
 
-
-@app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)
-async def get_strategy_eval(request: Request, strategy_name:str):
-    #peval = get_peval()
-    #strategy = peval.comparisons[strategy_name].project
-    #comparison = peval.comparisons[strategy_name]
-    strategy_page = strategy.strategy_page(comparison)
-    return templates.TemplateResponse(
-        request=request,
-        name=f"strategy_page.html",
-        context=dict(
-            default_context,
-            #peval=peval,
-            active_tab='strategies',
-            strategy=strategy,
-            comparison=comparison,
-            strategy_page=strategy_page,
-            ),
-    )
 
 @app.get("/ipcc-sectors/", response_class=HTMLResponse)
 async def get_ipcc_sectors(request: Request, error_text:str=None):
@@ -111,7 +90,6 @@ def get_ipcc_sector_html(catpath: str):
     return templates.get_template(templatepath_for_catpath(catpath)).render(dict(
         default_context,
         active_tab='ipcc_sectors',
-        #peval=get_peval(),
         stakeholders=planzero.strategies.stakeholders,
         catpath=catpath,
         blogs_by_tag=planzero.blog.blogs_by_tag,
@@ -330,7 +308,6 @@ async def get_strategies(request: Request):
         name="strategies.html",
         context=dict(
             default_context,
-            #peval=get_peval(),
             active_tab='strategies',
             npv_unit='MCAD',
             nph_unit='exajoule',
@@ -405,7 +382,6 @@ async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POS
             fade_in_intro=True,
             blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
-            #peval=get_peval(),
             unpublished=unpublished,
             ),
     )
