@@ -34,6 +34,7 @@ class SimulationResult(BaseModel):
     def year_ints(self) -> list[int]:
         start = int(self.state.t_start.to(u.years).magnitude)
         now = int(self.state._t_now.to(u.years).magnitude)
+        assert now > start, (self.state.t_start, self.state._t_now)
         return list(range(start, now))
 
     @cached_property
@@ -119,7 +120,7 @@ class SimulationResult(BaseModel):
                     lineStyle=EChartLineStyle(type='dotted', color='#600000'),
                     itemStyle=EChartItemStyle(color='#600000'),
                     data=EChartSeriesData(
-                        self.state.sts[f'AnnualSubsidyTotal'],
+                        self.state.compute_annual_subsidies().total(),
                         times=self.year_times,
                         v_unit=u.giga_CAD,
                         url=None)),
@@ -221,25 +222,11 @@ class Extrapolation(SiteSimulation):
         return [
             # standard for viz
             Other_NIR_Historical_Actuals(),
-            AtmosphericChemistry(),
-            SubsidyAccounting(),
+            #AtmosphericChemistry(),
+            #SubsidyAccounting(),
         ]
 
-from .cattle import (
-    Cattle_Population_AR,
-    Bovaer_Adoption_Limit,
-    Cattle_Enteric_Emissions,
-    Bovaer_Monitoring,
-    )
-
-from .csfs import (
-    Reduce_Methane_per_Cattle_Head,
-    Reduce_Population_Cattle,
-    )
-
-from .strategies.strategy2 import (
-    Scale_Bovaer,
-    )
+from . import cattle 
 
 
 class Scaling(SiteSimulation):
@@ -251,25 +238,19 @@ class Scaling(SiteSimulation):
 
     def dynamic_elements(self) -> list[DynamicElement]:
         return [
-            ### Barriers
-            # cattle & Bovaer
-            Cattle_Population(),
-            Bovaer_Adoption_Limit(),
-            Cattle_Enteric_Emissions(),
-            Bovaer_Monitoring(),
-
-            ### CSFs
-            # Enteric Fermentation
-            Reduce_Methane_per_Cattle_Head(),
-            Reduce_Population_Cattle(),
-
-            ### Strategies
-            Scale_Bovaer(),
+            cattle.Cattle_Population_AR(),
+            cattle.Bovaer_Adoption_Limit(),
+            cattle.Bovaer_Production_Emission_Factors(),
+            cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
+            cattle.Bovaer_Purchase_Cost(),
+            cattle.Bovaer_Farm_Subsidy(),
+            cattle.Bovaer_Monitoring(),
+            cattle.Scale_Bovaer(),
 
             # standard for vis
             Other_NIR_Historical_Actuals(),
-            AtmosphericChemistry(),
-            SubsidyAccounting(),
+            #AtmosphericChemistry(),
+            #SubsidyAccounting(),
         ]
 
 @cache

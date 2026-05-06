@@ -37,7 +37,8 @@
               </td>
               <td>{{obj.short_description}}</td>
               <td>{{"{:.1f}".format(
-                  planzero.sim.simulation_result(ident).state.sts["Predicted_Annual_Emitted_CO2e_mass"].query(2050 * u.year).to(u.Mt_CO2e).magnitude)}}
+                  planzero.sim.simulation_result(ident).state.compute_annual_emissions().total().query(
+                      2050 * u.year).to(u.Mt_CO2e).magnitude)}}
                   Mt{{CO2e|safe}}</td>
           </tr>
           {% endfor %}

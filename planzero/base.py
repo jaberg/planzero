@@ -28,7 +28,9 @@ u = ureg
 
 
 from . import ipcc_canada
-from .enums import GHG, IPCC_Sector, PT, SubsidyPrograms
+from .enums import (
+    GHG, IPCC_Sector, PT, SubsidyPrograms,
+    IPCC_Sector_from_catpath_with_whitespace)
 
 from .sts import SparseTimeSeries, STS, InterpolationMode
 
@@ -200,6 +202,20 @@ class EmissionResults(BaseModel):
 
     by_sector_ghg_pt_driver: dict[tuple[object, object, object, object], object]
 
+    def total(self):
+        rval = None
+        for ((_, ghg, _, _), ts) in self.by_sector_ghg_pt_driver.items():
+            co2e = ghgvalues.GWP_100[ghg] * ts
+            if rval is None:
+                rval = co2e
+            else:
+                rval += co2e
+        if rval is None:
+            return SparseTimeSeries(
+                default_value=0 * u.kilotonne_CO2e,
+                t_unit=u.year)
+        return rval
+
     def sum(self):
         rval = None
         for ((_, ghg, _, _), ts) in self.by_sector_ghg_pt_driver.items():
@@ -209,13 +225,26 @@ class EmissionResults(BaseModel):
             else:
                 rval += co2e.sum()
         if rval is None:
-            raise Exception()
+            return 0 * u.kilotonne_CO2e
         return rval
 
 
 class SubsidyResults(BaseModel):
 
     by_program_reason_pt_driver: dict[tuple[object, object, object, object], object]
+
+    def total(self):
+        rval = None
+        for ts in self.by_program_reason_pt_driver.values():
+            if rval is None:
+                rval = ts
+            else:
+                rval += ts
+        if rval is None:
+            return SparseTimeSeries(
+                default_value=0 * u.mega_CAD,
+                t_unit=u.year)
+        return rval
 
     def sum(self):
         rval = None
@@ -257,7 +286,8 @@ class State(object):
             emission_factor={},
             driver={},
             subsidy_factor={})
-
+        self._computed_annual_emissions = None
+        self._computed_annual_subsidies = None
         self.sts_id_counter = 100
 
     def new_sts_identifier(self):
@@ -456,6 +486,8 @@ class State(object):
         return boundaries
 
     def compute_annual_emissions(self):
+        if self._computed_annual_emissions is not None:
+            return self._computed_annual_emissions
         by_sector_ghg_pt_driver = {}
         boundaries = self.annual_bin_boundaries()
 
@@ -476,10 +508,13 @@ class State(object):
                             em = (ef_ts * driver_ts).bin_integrals(bin_boundaries=boundaries)
                         by_sector_ghg_pt_driver[sector, ghg, pt, driver] = em.to(
                             kt_by_ghg[ghg])
-        return EmissionResults(
+        self._computed_annual_emissions = EmissionResults(
             by_sector_ghg_pt_driver=by_sector_ghg_pt_driver)
+        return self._computed_annual_emissions
 
     def compute_annual_subsidies(self):
+        if self._computed_annual_subsidies is not None:
+            return self._computed_annual_subsidies
         by_program_reason_pt_driver = {}
         boundaries = self.annual_bin_boundaries()
         for pt, driver_d in self.registries['driver'].items():
@@ -499,8 +534,9 @@ class State(object):
                                 bin_boundaries=boundaries)
                         by_program_reason_pt_driver[program, reason, pt, driver] \
                                 = subsidies.to(u.mega_CAD)
-        return SubsidyResults(
+        self._computed_annual_subsidies = SubsidyResults(
             by_program_reason_pt_driver=by_program_reason_pt_driver)
+        return self._computed_annual_subsidies
 
     @property
     def latest(self):
@@ -543,6 +579,13 @@ class State(object):
             sts.plot(t_unit=t_unit)
 
     def run_until(self, t_stop):
+        if self._t_now > t_stop:
+            assert 0
+            return
+
+        self._computed_annual_emissions = None
+        self._computed_annual_subsidies = None
+
         if self._depgraph is None:
             self._depgraph = self.dependency_digraph()
             self._heap = [
@@ -569,6 +612,9 @@ class State(object):
             if new_t_next is not None:
                 assert new_t_next > self.t_now
                 heapq.heappush(self._heap, (new_t_next, node_idx, prj_identifier))
+
+        if not self._heap:
+            self.t_now = t_stop
 
 Scenario = State
 
@@ -1283,27 +1329,66 @@ class Other_NIR_Historical_Actuals(BaseScenarioProject):
         non_agg_years.sort()
         datalen = len(non_agg_years)
         assert ('kt',) == ipcc_canada.inv['Unit'].unique()
-        for_sorting = []
-        for catpath in ipcc_canada.catpaths:
-            catpath_contributors = state.sectoral_emissions_contributors.get(catpath, {})
-            ipcc_sector = IPCC_Sector.from_catpath(catpath)
-            for ghg in GHG:
-                ghg_contributors = catpath_contributors.get(ghg.value, [])
-                if not ghg_contributors:
-                    kt_by_yr = ipcc_canada.annual_sector_ghg_kt_by_year(
-                        ipcc_sector.catpath_with_whitespace,
-                        ghg.value)
+
+        for pt in PT:
+            driver_name = f'NIR Emissions Placeholder - {pt.value}'
+            driver_sts = SparseTimeSeries(
+                identifier=driver_name,
+                default_value=1.0 * u.dimensionless,
+                t_unit=u.year)
+            state.declare_sts(self, sts=driver_sts, write=True)
+            state.register_driver(
+                pt=pt,
+                driver='NIR Emissions Placeholder',
+                sts_key=driver_name)
+
+        # assume that these sectors, for which some dynamic element
+        # has registered an emission, are considered approximate.
+        registered_ipcc_sectors = {
+            ipcc_sector_key
+            for (ghg_key, pt_key, ipcc_sector_key, driver_key)
+            in state.registries['emission_factor']}
+
+        non_agg = ipcc_canada.inv[ipcc_canada.inv['Total'] != 'y']
+        for catpathww, nonagg_catpath in non_agg.groupby('CategoryPathWithWhitespace'):
+            ipcc_sector = IPCC_Sector_from_catpath_with_whitespace[catpathww]
+            if ipcc_sector in registered_ipcc_sectors:
+                continue
+
+            for region, region_df in nonagg_catpath.groupby('Region'):
+                if region.lower() == 'canada':
+                    continue
+                elif region == 'Northwest Territories and Nunavut':
+                    pt = PT.XX
+                else:
+                    pt = PT(region)
+
+                for ghg in GHG:
+                    values = region_df[ghg.value].values
+                    years = region_df['Year'].values
+                    kt_by_yr = {int(year): float(val) for year, val in zip(years, values)}
+
                     if not all(vv == 0 for vv in kt_by_yr.values()):
-                        name = f'Historical_{ghg.value}_from_{catpath}'
-                        scale = 1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O] else 1.0 / ghgvalues.GWP_100[ghg].magnitude
+                        #print(ghg, ipcc_sector, pt)
+                        #print(kt_by_yr)
+                        name = f'Historical {ghg.value} from {ipcc_sector.value} in {pt.value}'
+                        scale = (1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O]
+                                 else 1.0 / ghgvalues.GWP_100[ghg].magnitude)
                         state.declare_sts(
                             project=self,
                             sts=STS(
                                 times=array.array('d', non_agg_years),
                                 t_unit=u.years,
-                                values=array.array('d', [0] + [scale * kt_by_yr[yr] for yr in non_agg_years]),
-                                v_unit=kt_by_ghg[ghg],
+                                values=array.array('d', [0] + [
+                                    scale * kt_by_yr.get(yr, 0)
+                                    for yr in non_agg_years]),
+                                v_unit=kt_by_ghg[ghg] / u.year,
                                 interpolation='current'),
                             name=name,
                             write=True)
-                        state.register_emission(catpath, ghg.value, name)
+                        state.register_emission_factor(
+                            pt=pt,
+                            driver='NIR Emissions Placeholder',
+                            sts_key=name,
+                            ipcc_sector=ipcc_sector,
+                            ghg=ghg)

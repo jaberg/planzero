@@ -39,6 +39,7 @@ test_blogs: .build
 test_200: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
 		-w /mnt/ \
 		-it --rm $(target) \
 		pytest -W error --maxfail=1 -vv test_200.py
@@ -49,6 +50,13 @@ test_ipcc_canada: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		pytest -W error --maxfail=2 -vv test_ipcc_canada.py
+
+test_cattle: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest -W error --maxfail=1 -vv planzero/test_cattle.py
 
 test_mapml: .build
 	docker run \
