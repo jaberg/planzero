@@ -153,10 +153,9 @@ class Glossary(BlogPost):
     This post introduces a modelling framework for PlanZero.
     The framework formalizes the ideas of critical success factors (CSFs), barriers, strategies,
     and scenarios.
-    This post introduces a "Scaling" scenario that estimates what can be achieved by scaling
+    This post introduces a "Scaling" simulation that estimates what can be achieved by scaling
     currently-available products.
     """
-    # renames scenarios -> models
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 4, 19),

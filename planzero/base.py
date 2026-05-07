@@ -81,6 +81,11 @@ class DynamicElement(BaseModel):
         except AttributeError:
             pass
 
+    def see_also_html(self, context_vars) -> list[str]:
+        # Used to render pages about strategies and barriers and xref them to
+        # each other
+        return []
+
     @computed_field
     def extra_ipcc_sectors(self) -> list[object]:
         # TODO: https://github.com/jaberg/planzero/issues/72

@@ -13,9 +13,6 @@
         </p>
     </header>
 
-<strong>Description:</strong>
-{{description_html|safe}}
-
 <p><strong>Page Contents:</strong>
 <ul>
     <li><a href="#metrics">Standard Metrics</a></li>
@@ -36,8 +33,20 @@
         <tr><td>Lifetime cost per tonne {{CO2e|safe}} abated</td><td>{{cost_per_tCO2e}}</td></tr>
     </tbody>
 </table>
-Link to code on GitHub: <a href="{{coderef_url(strategy_class)}}">{{coderef_filepath(strategy_class)}}</a>
 </p>
+<h2 id="description">Description and Links</h2>
+{{description_html|safe}}
+
+{% if see_also %}
+<p>See also:
+<ul>
+    {% for item in see_also %}
+    <li>{{item}}</li>
+    {% endfor %}
+</ul>
+</p>
+{% endif %}
+
 
 <h2 id="emissions">Emissions Impact</h2>
 <p>

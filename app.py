@@ -121,20 +121,9 @@ async def get_ipcc_sectors_category(
             error_text=f"Sorry, we don't have the analysis page for {catpath} yet")
 
 
-@app.get("/barriers/", response_class=HTMLResponse)
-async def get_barriers(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="barriers.html",
-        context=dict(
-            default_context,
-            active_tab='barriers',
-            ),
-    )
-
 @app.get("/scenarios/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
 @app.get("/simulations/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
-async def get_simulation_strategy_impact(request: Request, sim_name: str, barrier_name: str):
+async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier_name: str):
     sim = planzero.sim.simulation_result(sim_name)
     return templates.TemplateResponse(
         request=request,
@@ -303,20 +292,23 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 
     assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
 
+    context = dict(
+        default_context,
+        active_tab='simulations',
+        sim_name=sim_name,
+        strategy_name=strategy_name,
+        strategy_class=baseline_state.projects[strategy_name].__class__,
+        description_html=baseline_state.projects[strategy_name].description_html,
+        impact_chart=impact_chart,
+        subsidies_chart=subsidies_chart,
+        cost_per_tCO2e=cost_per_tCO2e,
+        )
+    strategy_obj = baseline_state.projects[strategy_name]
+    context['see_also'] = strategy_obj.see_also_html(context)
     return templates.TemplateResponse(
         request=request,
         name="strategy_impact.html",
-        context=dict(
-            default_context,
-            active_tab='simulations',
-            sim_name=sim_name,
-            strategy_name=strategy_name,
-            strategy_class=baseline_state.projects[strategy_name].__class__,
-            description_html=baseline_state.projects[strategy_name].description_html,
-            impact_chart=impact_chart,
-            subsidies_chart=subsidies_chart,
-            cost_per_tCO2e=cost_per_tCO2e,
-            ),
+        context=context,
     )
 
 
