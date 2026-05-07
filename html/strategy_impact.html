@@ -64,15 +64,19 @@ Positive values represent emissions avoided (saved) by implementing this strateg
 
 {{subsidies_chart.as_html()|safe}}
 
-<ul class="actions special">
-    <li><a href="/simulations/{{sim_name}}/" class="button">Back to Simulation Overview</a></li>
-</ul>
-
 <h2 id="developments">Posts developing this page</h2>
 <ul>
 {% for blog in blogs_by_tag(strategy_name) %}
 <li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
+</ul>
+
+<!--
+    FOOTER
+-->
+
+<ul class="actions special">
+    <li><a href="/simulations/{{sim_name}}/" class="button">Back to Simulation Overview</a></li>
 </ul>
 
 </section>

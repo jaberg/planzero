@@ -103,7 +103,7 @@ class SimulationResult(BaseModel):
         return StackedAreaEChart(
             div_id='by_ipcc_sector',
             title=EChartTitle(
-                text=f'Emissions by IPCC Sector: {self.simulation_name} simulation',
+                text=f'Emissions by IPCC Sector: {self.simulation_name.replace("_", " ")} simulation',
                 subtext='Hover over data points to see sector labels'),
             xAxis=EChartXAxis(data=self.year_ints),
             yAxis=[
@@ -165,7 +165,7 @@ class SimulationResult(BaseModel):
         return StackedAreaEChart(
             div_id=f'echart_ipcc_sector_{catpath.replace("/", "_")}',
             title=EChartTitle(
-                text=f'{ipcc_sector.value} ({self.simulation_name} simulation)',
+                text=f'{ipcc_sector.value} ({self.simulation_name.replace("_", " ")} simulation)',
                 subtext='Hover over data points to see emissions by usage,'),
             xAxis=EChartXAxis(data=self.year_ints),
             yAxis=EChartYAxis(name='Emissions (Mt CO2e)'),
@@ -300,7 +300,7 @@ class SimulationResult(BaseModel):
         return StackedAreaEChart(
             div_id='impact_chart',
             title=EChartTitle(
-                text=f'Emissions Impact: {strategy_name}',
+                text=f'Emissions Impact: {strategy_name.replace("_", " ")}',
                 subtext=f'Annual kt CO2e saved in {self.simulation_name}'),
             xAxis=EChartXAxis(data=self.year_ints),
             yAxis=[EChartYAxis(name='Emissions Saved (kt CO2e)')],
