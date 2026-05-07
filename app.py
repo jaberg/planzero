@@ -230,31 +230,11 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
     sim_years_ints = np.arange(1990, 2090)
     sim_years = [tt * u.years for tt in sim_years_ints]
     
-    # Simple total emissions comparison
+    impact_chart = sim.strategy_impact_echart(strategy_name)
+
+    # Simple total emissions comparison for cost calculation
     baseline_total = baseline_state.compute_annual_emissions().total()
     ablated_total = ablated_state.compute_annual_emissions().total()
-
-    impact_data = planzero.sim.EChartSeriesData(
-        ablated_total - baseline_total, # ablated - baseline = amount saved if ablated > baseline
-        times=sim_years,
-        v_unit=u.Mt_CO2e,
-        url=None, # TODO: link to this class's code on github
-        )
-
-    impact_chart = planzero.sim.StackedAreaEChart(
-        div_id='impact_chart',
-        title=planzero.sim.EChartTitle(
-            text=f'Emissions Impact: {strategy_name}',
-            subtext=f'Annual Mt CO2e saved in {sim_name}'),
-        xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
-        yAxis=[planzero.sim.EChartYAxis(name='Emissions Saved (Mt CO2e)')],
-        stacked_series=[
-            planzero.sim.EChartSeriesStackElem(
-                name='Emissions Avoided',
-                data=impact_data,
-            )
-        ],
-        other_series=[])
 
     # Simple total subsidy comparison
     subsidy_baseline_total = baseline_state.compute_annual_subsidies().total()

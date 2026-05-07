@@ -190,6 +190,131 @@ class SimulationResult(BaseModel):
                     data=self.echart_ipcc_sector_reference_NIR_values(ipcc_sector)),
             ])
 
+    def strategy_impact_diffs(self, strategy_name:str, eps_kt:float) -> dict:
+        baseline_emres = self.state.compute_annual_emissions()
+        ablated_state = self.ablations.get(strategy_name)
+        if not ablated_state:
+            raise ValueError(f"Strategy not found in this simulation: {strategy_name}")
+        ablated_emres = ablated_state.compute_annual_emissions()
+
+        sector_diffs = {}
+
+        for ipcc_sector in IPCC_Sector:
+            base_total = baseline_emres.total(only_ipcc_sector=ipcc_sector, return_None_instead_of_zero=True)
+            abl_total = ablated_emres.total(only_ipcc_sector=ipcc_sector, return_None_instead_of_zero=True)
+            
+            if base_total is None and abl_total is None:
+                continue
+                
+            if base_total is None:
+                diff = abl_total
+            elif abl_total is None:
+                diff = -base_total
+            else:
+                diff = abl_total - base_total
+
+            assert diff.v_unit == u.kt_CO2e, diff.v_unit
+            if np.abs(diff.values[1:]).max() > eps_kt:
+                print(ipcc_sector, diff)
+                sector_diffs[ipcc_sector] = diff
+            elif 'Other' in ipcc_sector.value:
+                print(ipcc_sector, diff)
+
+        return sector_diffs
+
+    def strategy_impact_echart(self, strategy_name: str) -> StackedAreaEChart:
+        baseline_emres = self.state.compute_annual_emissions()
+        ablated_state = self.ablations.get(strategy_name)
+        if not ablated_state:
+            raise ValueError(f"Strategy not found in this simulation: {strategy_name}")
+        ablated_emres = ablated_state.compute_annual_emissions()
+        
+        sector_diffs = self.strategy_impact_diffs(strategy_name, eps_kt=1)
+
+        for_sorting = []
+        all_positive = True
+        all_negative = True
+        for ipcc_sector, diff_ts in sector_diffs.items():
+            if diff_ts is None:
+                continue
+            data = EChartSeriesData(
+                diff_ts,
+                times=self.year_times,
+                v_unit=u.kt_CO2e,
+                url=f'/simulations/{self.simulation_name}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/'
+            )
+            
+            values = [vdict['value'] for vdict in data]
+                
+            if max(values) <= 0:
+                # all negative
+                for_sorting.append((1.0 / min(values),
+                                    ipcc_sector.catpath_with_whitespace,
+                                    data))
+                all_positive = False
+            elif min(values) >= 0:
+                # all positive
+                for_sorting.append((max(values),
+                                    ipcc_sector.catpath_with_whitespace,
+                                    data))
+                all_negative = False
+            else:
+                # mix of positive and negative entries
+                sink_years = [
+                    dict(vdict, value=min(vdict['value'], 0))
+                    for vdict in data]
+                source_years = [
+                    dict(vdict, value=max(vdict['value'], 0))
+                    for vdict in data]
+                for_sorting.append(
+                    (1.0 / min(values),
+                     ipcc_sector.catpath_with_whitespace + ' (sink years)',
+                     sink_years))
+                for_sorting.append(
+                    (max(values),
+                     ipcc_sector.catpath_with_whitespace + ' (source years)',
+                     source_years))
+                all_positive = False
+                all_negative = False
+
+        if all_positive or all_negative:
+            other_series = []
+        else:
+            baseline_total = baseline_emres.total()
+            ablated_total = ablated_emres.total()
+            impact_data = EChartSeriesData(
+                ablated_total - baseline_total,
+                times=self.year_times,
+                v_unit=u.kt_CO2e,
+                url=None
+            )
+            other_series=[
+                EChartSeriesBase(
+                    name='Net Emissions Avoided',
+                    lineStyle=EChartLineStyle(color='#303030', width=2),
+                    itemStyle=EChartItemStyle(color='#303030'),
+                    data=impact_data,
+                )
+            ]
+
+        return StackedAreaEChart(
+            div_id='impact_chart',
+            title=EChartTitle(
+                text=f'Emissions Impact: {strategy_name}',
+                subtext=f'Annual kt CO2e saved in {self.simulation_name}'),
+            xAxis=EChartXAxis(data=self.year_ints),
+            yAxis=[EChartYAxis(name='Emissions Saved (kt CO2e)')],
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=catpath_plus,
+                    data=data,
+                    emphasis={'disabled': 1},
+                )
+                for _, catpath_plus, data in sorted(for_sorting)
+            ],
+            other_series=other_series,
+            )
+
 from .base import DynamicElement
 
 site_simulations = {}

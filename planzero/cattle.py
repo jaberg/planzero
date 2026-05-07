@@ -454,6 +454,12 @@ class Bovaer_Production_Emission_Factors(Barrier):
 
     def on_add_project(self, state):
 
+        with state.requiring_current(self) as ctx:
+            # TODO: for each type of cattle, for each province
+            # will be written by Strategy
+            ctx.bovine_population_fraction_on_bovaer = sts.SparseTimeSeries(
+                default_value=0 * u.dimensionless, t_unit=u.years)
+
         with state.defining(self) as ctx:
 
             # I don't know the details of current or actual production processes.
@@ -462,7 +468,7 @@ class Bovaer_Production_Emission_Factors(Barrier):
             # as 20-50 times less in magnitude compared to the emission
             # reduction in enteric fermentation
             ctx.bovaer_production_CO2_per_methane_abated = sts.SparseTimeSeries(
-                default_value=self.rate,
+                default_value=0 * self.rate,
                 t_unit=u.years)
 
             # TODO: model where the Bovaer is actually produced.
@@ -474,6 +480,15 @@ class Bovaer_Production_Emission_Factors(Barrier):
                         ghg=GHG.CO2,
                         pt=pt,
                         driver=livestock)
+        # TODO: revisit after switching from step() to fill()
+        # so the start date will be based on where inputs leave off
+        return state.stashes['Cattle_Population_AR'].t_step_start
+
+    def step(self, state, current):
+        current.bovaer_production_CO2_per_methane_abated = (
+            current.bovine_population_fraction_on_bovaer
+            * self.rate)
+        return state.t_now + 1 * u.year
 
 
 class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):

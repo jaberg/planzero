@@ -251,7 +251,9 @@ class EmissionResults(BaseModel):
     def total(self,
               only_ipcc_sector=None,
               only_driver=None,
-              return_None_instead_of_zero=False):
+              return_None_instead_of_zero=False,
+              v_unit=u.kt_CO2e,
+             ):
         rval = None
         for ((ipcc_sector, ghg, _, driver), ts) in self.by_sector_ghg_pt_driver.items():
             if only_ipcc_sector is not None and ipcc_sector != only_ipcc_sector:
@@ -263,11 +265,14 @@ class EmissionResults(BaseModel):
                 rval = co2e
             else:
                 rval += co2e
-        if rval is None and not return_None_instead_of_zero:
-            return SparseTimeSeries(
-                default_value=0 * u.kilotonne_CO2e,
-                t_unit=u.year)
-        return rval
+        if rval is None:
+            if return_None_instead_of_zero:
+                return None
+            else:
+                return SparseTimeSeries(
+                    default_value=0 * v_unit,
+                    t_unit=u.year)
+        return rval.to(v_unit)
 
     def sum(self):
         rval = None
