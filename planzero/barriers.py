@@ -21,14 +21,6 @@ class Barrier(DynamicElement):
         self.tags.add('barrier')
 
     @computed_field
-    def ipcc_sector_values(self) -> list[str]:
-        return [sec.value for sec in self.ipcc_sectors]
-
-    @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return []
-
-    @computed_field
     def short_description(self) -> str:
         return self.__class__.__doc__
 

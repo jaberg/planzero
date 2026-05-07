@@ -77,7 +77,7 @@
             <td><a href="/simulations/{{ident}}/barriers/{{name}}/">{{name}}</a></td>
             <td>{{dyn_elem.short_description}}</td>
             <td>
-                {% for ipcc_sector in dyn_elem.ipcc_sectors %}
+                {% for ipcc_sector in ipcc_sectors_from_dynelem(dyn_elem) %}
                 <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
                 {% if not loop.last %},{% endif%}
                 {% endfor %}

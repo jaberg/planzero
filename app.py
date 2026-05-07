@@ -166,6 +166,18 @@ async def get_scenarios(request: Request):
 @app.get("/scenarios/{ident}/", response_class=HTMLResponse)
 @app.get("/simulations/{ident}/", response_class=HTMLResponse)
 async def get_simulation_page(ident:str, request: Request):
+
+    site_sim = planzero.sim.site_simulations[ident]
+    sim_result = planzero.sim.simulation_result(ident)
+    sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
+
+    def ipcc_sectors_from_dynelem(dynelem):
+        sectors = sectors_by_de.get(dynelem.identifier, set())
+        if len(sectors) < 5:
+            return sectors
+        else:
+            return [] # TODO: better version of "many"
+
     return templates.TemplateResponse(
         request=request,
         name="scenario_template.html",
@@ -173,8 +185,9 @@ async def get_simulation_page(ident:str, request: Request):
             default_context,
             active_tab='simulations',
             ident=ident,
-            site_sim=planzero.sim.site_simulations[ident],
-            sim_result=planzero.sim.simulation_result(ident),
+            ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
+            site_sim=site_sim,
+            sim_result=sim_result,
             ),
     )
 
@@ -307,6 +320,13 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 
 @app.get("/strategies/", response_class=HTMLResponse)
 async def get_strategies(request: Request):
+    sims_by_dynelems = {}
+    for sitesim_name, sitesim in planzero.sim.site_simulations.items():
+        if not sitesim.show_on_simulations_page:
+            continue
+        for dynelem in sitesim.dynamic_elements():
+            sims_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
+                    .add(sitesim_name)
     return templates.TemplateResponse(
         request=request,
         name="strategies.html",
@@ -315,6 +335,7 @@ async def get_strategies(request: Request):
             active_tab='strategies',
             npv_unit='MCAD',
             nph_unit='exajoule',
+            sims_by_dynelems=sims_by_dynelems,
             ),
     )
 
@@ -414,5 +435,6 @@ default_context = dict(
     degrees=planzero.blog.latex(r'^\circ'),
     siteref=planzero.glossary.siteref,
     fade_in_intro=False,
+    printcname=(lambda cname: cname.replace('_', ' ')),
     )
 

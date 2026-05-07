@@ -230,7 +230,6 @@ class SiteSimulation(BaseModel):
                 if de.identifier == identifier]
 
 
-
 class NIR2025(SiteSimulation):
     """Visualize the data from National Greenhouse Gas Inventory Report
     NIR-2025."""

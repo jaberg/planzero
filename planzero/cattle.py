@@ -287,10 +287,6 @@ class Cattle_Population_AR(Barrier):
         return f"Model cattle population, milk and beef production"
 
     @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return []
-
-    @computed_field
     def cattle_per_farm(self) -> object:
         # TODO: pull down actual data from https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101
         return 160 * u.cattle / u.farm
@@ -403,10 +399,6 @@ class Bovaer_Adoption_Limit(Barrier):
         can ultimately rise to {(1 - self.organic_fraction) * 100:.1f}%,
         the remainder of whom are organic farmers who won't adopt it.
         """
-
-    @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return [IPCC_Sector.Enteric_Fermentation]
 
     @computed_field
     def research(self) -> dict[str, str]:
@@ -569,13 +561,6 @@ class Cattle_Enteric_Emissions(Barrier):
     @computed_field
     def short_description(self) -> str:
         return f"Model cattle population, production of methane (considering Bovaer), and cost of Bovaer"
-
-    @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return [IPCC_Sector.Enteric_Fermentation,
-                IPCC_Sector.Other_Product_Manufacture_and_Use,
-                # TODO: Is this the correct sector?
-               ]
 
     @computed_field
     def research(self) -> dict[str, str]:
@@ -803,10 +788,6 @@ class Bovaer_Monitoring(Barrier):
         return 3000 * u.CAD / u.farm / u.year
 
     @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return [IPCC_Sector.Enteric_Fermentation]
-
-    @computed_field
     def research(self) -> dict[str, str]:
         return {}
 
@@ -865,10 +846,6 @@ class Bovaer_Farm_Subsidy(Barrier):
     @computed_field
     def subsidy_rate(self) -> object:
         return 5000 * u.CAD / u.farm / u.year
-
-    @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return [IPCC_Sector.Enteric_Fermentation]
 
     def on_add_project(self, state):
 

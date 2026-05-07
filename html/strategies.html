@@ -8,13 +8,12 @@
         <p>What might we do now, and over the decades to come, to reduce Canada's emissions?
         </p>
     </header>
-    <!--
-        <p>
-        This site offers a strategy-ranking framework based on simple climate and financial modelling. 
-        Annual emissions, like annual cashflow, are not the best way to compare projects.
-        The following scatterplot looks at projects in terms of future-discounted net trapped heat vs. future-discounted net earned money. The projects that trap less heat are associated with lower emissions. A combination of the best projects shows a trajectory toward our net-zero emissions goals.
-        </p>
-    -->
+    <p>
+    This page lists {{siteref("Strategy", "strategies")}} that are implemented in PlanZero
+    and used in at least one <a href="/simulations/">simulation</a>.
+    Click the links in the simulation column to read more about
+    what each strategy, and to see its impact.
+    </p>
 
 <table>
     <thead>
@@ -34,14 +33,13 @@
           </tr>
     </thead>
     <tbody>
-          {% for name, strat in planzero.strategies.strategies.items() %}
+          {% for clsname, strat in planzero.strategies.strategies.items()
+             if clsname in sims_by_dynelems %}
           <tr>
-              <td>{{name.replace('_', ' ')}}</td>
+              <td>{{printcname(clsname)}}</td>
               <td>{{strat.short_description}}</td>
-              <td>{% for sim_name, site_sim in planzero.sim.site_simulations.items()
-                     if site_sim.dynelems_by_id(name)
-                  %}
-                  <a href="/simulations/{{sim_name}}/strategies/{{name}}/">{{sim_name}}</a>
+              <td>{% for sim_name in sorted(sims_by_dynelems[clsname]) %}
+                  <a href="/simulations/{{sim_name}}/strategies/{{clsname}}/">{{printcname(sim_name)}}</a>
                   {% endfor %}</td>
               <td>{% for sector_enum in strat.ipcc_sectors %}
                   <a href="/ipcc-sectors/{{sector_enum.catpath_no_whitespace}}/">{{sector_enum.value}}</a>

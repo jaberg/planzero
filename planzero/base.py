@@ -560,6 +560,33 @@ class State(object):
             by_program_reason_pt_driver=by_program_reason_pt_driver)
         return self._computed_annual_subsidies
 
+    def ipcc_sectors_by_dynamic_element(self):
+        """Return ipcc sectors to which this dynamic element either
+        (a) registers an emission_factor for which there is a driver, or
+        (b) registers a driver for which there are are emission factor(s)
+        """
+        rval = dict()
+        for pt, driver_d in self.registries['driver'].items():
+            for driver, driver_key in driver_d.items():
+                for ghg, ef_by_pt in self.registries['emission_factor'].items():
+                    if pt not in ef_by_pt:
+                        if ghg not in (GHG.NF3, GHG.SF6):
+                            print('Warning: missing ef', pt, driver, ghg, ef_by_pt.keys())
+                        continue
+                    for sector, ef_by_driver in ef_by_pt[pt].items():
+                        if driver not in ef_by_driver:
+                            # not all drivers drive emissions, some are for e.g. subsidies
+                            continue
+                        ef_key = ef_by_driver[driver]
+                        ef_ts = self.sts[ef_key]
+                        # TODO: isn't writer supposed to *be* the identifier??
+                        rval.setdefault(ef_ts.writer.identifier, set()).add(sector)
+
+                        driver_ts = self.sts[driver_key]
+                        rval.setdefault(driver_ts.writer.identifier, set()).add(sector)
+        return rval
+
+
     @property
     def latest(self):
         class Latest(object):
