@@ -190,7 +190,7 @@ class SimulationResult(BaseModel):
                     data=self.echart_ipcc_sector_reference_NIR_values(ipcc_sector)),
             ])
 
-    def strategy_impact_diffs(self, strategy_name:str, eps_kt:float) -> dict:
+    def strategy_emissions_diffs(self, strategy_name:str, eps_kt:float) -> dict:
         baseline_emres = self.state.compute_annual_emissions()
         ablated_state = self.ablations.get(strategy_name)
         if not ablated_state:
@@ -215,10 +215,7 @@ class SimulationResult(BaseModel):
 
             assert diff.v_unit == u.kt_CO2e, diff.v_unit
             if np.abs(diff.values[1:]).max() > eps_kt:
-                print(ipcc_sector, diff)
                 sector_diffs[ipcc_sector] = diff
-            elif 'Other' in ipcc_sector.value:
-                print(ipcc_sector, diff)
 
         return sector_diffs
 
@@ -229,7 +226,7 @@ class SimulationResult(BaseModel):
             raise ValueError(f"Strategy not found in this simulation: {strategy_name}")
         ablated_emres = ablated_state.compute_annual_emissions()
         
-        sector_diffs = self.strategy_impact_diffs(strategy_name, eps_kt=1)
+        sector_diffs = self.strategy_emissions_diffs(strategy_name, eps_kt=1)
 
         for_sorting = []
         all_positive = True
@@ -314,6 +311,65 @@ class SimulationResult(BaseModel):
             ],
             other_series=other_series,
             )
+
+    def strategy_subsidies_diffs(self, strategy_name:str, eps_CAD:float) -> dict:
+        ablated_state = self.ablations.get(strategy_name)
+        if not ablated_state:
+            raise ValueError(f"Strategy not found in this simulation: {strategy_name}")
+        baseline_subs = self.state.compute_annual_subsidies()
+        ablated_subs = ablated_state.compute_annual_subsidies()
+
+        diffs = {}
+
+        for key, base_ts in baseline_subs.by_program_reason_pt_driver.items():
+            abl_ts = ablated_subs.by_program_reason_pt_driver[key]
+            prog, reas, pt, driver = key
+            diff_key = (prog, reas)
+            diff = base_ts - abl_ts
+            assert diff.v_unit == u.mega_CAD, diff.v_unit
+            if np.abs(diff.values[1:]).max() > (eps_CAD / 1_000_000):
+                if diff_key in diffs:
+                    diffs[diff_key] += diff
+                else:
+                    diffs[diff_key] = diff
+
+        return diffs
+
+    def strategy_subsidies_echart(self, strategy_name: str) -> StackedAreaEChart:
+
+        subsidy_diffs = self.strategy_subsidies_diffs(strategy_name,
+                                                      eps_CAD=100_000.)
+        if not subsidy_diffs:
+            return None
+
+        for_sorting = [
+            (np.max(diff.values[1:]),
+             key,
+             diff)
+            for key, diff in subsidy_diffs.items() ]
+
+        subsidies_chart = StackedAreaEChart(
+            div_id='subsidies_chart',
+            title=EChartTitle(
+                text=f'Subsidies Impact: {strategy_name}',
+                subtext=f'Annual cost of subsidies in {self.simulation_name}'),
+            xAxis=EChartXAxis(data=self.year_ints),
+            yAxis=EChartYAxis(name='Subsidies Required (CAD, Millions)'),
+            stacked_series=[
+                EChartSeriesStackElem(
+                    name=f'{program}, {reason}',
+                    data=EChartSeriesData(
+                        diff,
+                        times=self.year_times,
+                        v_unit=u.mega_CAD,
+                        url=None,),
+                    emphasis={'disabled': 1},
+                )
+                for _, (program, reason), diff in sorted(for_sorting)
+            ],
+            other_series=[])
+        return subsidies_chart
+
 
 from .base import DynamicElement
 

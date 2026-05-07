@@ -231,6 +231,7 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
     sim_years = [tt * u.years for tt in sim_years_ints]
     
     impact_chart = sim.strategy_impact_echart(strategy_name)
+    subsidies_chart = sim.strategy_subsidies_echart(strategy_name)
 
     # Simple total emissions comparison for cost calculation
     baseline_total = baseline_state.compute_annual_emissions().total()
@@ -239,28 +240,6 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
     # Simple total subsidy comparison
     subsidy_baseline_total = baseline_state.compute_annual_subsidies().total()
     subsidy_ablated_total = ablated_state.compute_annual_subsidies().total()
-
-    subsidy_comparison_data = planzero.sim.EChartSeriesData(
-        subsidy_baseline_total - subsidy_ablated_total,
-        times=sim_years,
-        v_unit=u.giga_CAD,
-        url=None, # TODO: link to this class's code on github
-        )
-
-    subsidies_chart = planzero.sim.StackedAreaEChart(
-        div_id='subsidies_chart',
-        title=planzero.sim.EChartTitle(
-            text=f'Subsidies Impact: {strategy_name}',
-            subtext=f'Annual cost of subsidies in {sim_name}'),
-        xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
-        yAxis=[planzero.sim.EChartYAxis(name='Subsidies Required (CAD, Billions)')],
-        stacked_series=[
-            planzero.sim.EChartSeriesStackElem(
-                name='Cost Incurred',
-                data=subsidy_comparison_data,
-            )
-        ],
-        other_series=[])
 
     try:
         cost_per_tCO2e = (

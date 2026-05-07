@@ -60,9 +60,11 @@ gas emissions between a full simulation and one where this specific strategy is 
 Positive values represent emissions avoided (saved) by implementing this strategy.
 </p>
 
+{% if subsidies_chart %}
 <h2 id="subsidies">Subsidies Impact</h2>
 
 {{subsidies_chart.as_html()|safe}}
+{% endif %}
 
 <h2 id="developments">Posts developing this page</h2>
 <ul>
