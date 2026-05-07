@@ -182,3 +182,19 @@ class StackedAreaEChart(HTML_element):
         </script>
         <div>
         """
+
+
+import inspect
+def coderef_url(obj):
+    file_path = inspect.getsourcefile(obj)
+    assert file_path.startswith('/mnt/planzero')
+    file_path = file_path[len('/mnt/'):]
+    lines, line_number = inspect.getsourcelines(obj)
+    url = f'https://github.com/jaberg/planzero/blob/main/{file_path}#L{line_number}'
+    return url
+
+def coderef_filepath(obj):
+    file_path = inspect.getsourcefile(obj)
+    assert file_path.startswith('/mnt/planzero')
+    file_path = file_path[len('/mnt/'):]
+    return file_path

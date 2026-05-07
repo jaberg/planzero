@@ -65,6 +65,10 @@ class DynamicElement(BaseModel):
         else:
             return rval
 
+    @computed_field
+    def description_html(self) -> str:
+        return f'<p>{self.description}</p>'
+
     def model_post_init(self, __context):
         super().model_post_init(__context)
         if self.identifier is None:
@@ -76,6 +80,12 @@ class DynamicElement(BaseModel):
             raise Exception()
         except AttributeError:
             pass
+
+    @computed_field
+    def extra_ipcc_sectors(self) -> list[object]:
+        # TODO: https://github.com/jaberg/planzero/issues/72
+        # would eliminate need for this
+        return []
 
     def init_add_subprojects(self, sub_projects):
         self._sub_projects.extend(sub_projects)
@@ -225,6 +235,13 @@ class EmissionResults(BaseModel):
         return {
             driver
             for (_, _, _, driver) in self.by_sector_ghg_pt_driver}
+
+    def drivers_by_sector(self, sector):
+        return {
+            driver
+            for (sector_i, _, _, driver) in self.by_sector_ghg_pt_driver
+            if sector_i == sector
+        }
 
     def total(self,
               only_ipcc_sector=None,
@@ -565,7 +582,7 @@ class State(object):
         (a) registers an emission_factor for which there is a driver, or
         (b) registers a driver for which there are are emission factor(s)
         """
-        rval = dict()
+        rval = {de.identifier: set() for de in self.projects.values()}
         for pt, driver_d in self.registries['driver'].items():
             for driver, driver_key in driver_d.items():
                 for ghg, ef_by_pt in self.registries['emission_factor'].items():
@@ -580,10 +597,10 @@ class State(object):
                         ef_key = ef_by_driver[driver]
                         ef_ts = self.sts[ef_key]
                         # TODO: isn't writer supposed to *be* the identifier??
-                        rval.setdefault(ef_ts.writer.identifier, set()).add(sector)
+                        rval[ef_ts.writer.identifier].add(sector)
 
                         driver_ts = self.sts[driver_key]
-                        rval.setdefault(driver_ts.writer.identifier, set()).add(sector)
+                        rval[driver_ts.writer.identifier].add(sector)
         return rval
 
 

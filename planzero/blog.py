@@ -203,6 +203,7 @@ class ModellingBovaer(BlogPost):
             author="James Bergstra",
             tags={BlogTag.BarrierModelling,
                   enums.IPCC_Sector.Enteric_Fermentation,
+                  'Scale_Bovaer',
                  },
             draft=True,
             )
@@ -493,7 +494,17 @@ class GHG_Emissions(BlogPost):
                     title="Cumulative GHG-Trapped Heat",
                     add_circle=True,
                     legend_loc='upper left').as_html(),
-            ))
+            ),
+            tags=[
+                'EmissionsImpulseResponse_CO2',
+                'EmissionsImpulseResponse_CH4',
+                'EmissionsImpulseResponse_N2O',
+                'EmissionsImpulseResponse_HFCs',
+                'EmissionsImpulseResponse_PFCs',
+                'EmissionsImpulseResponse_SF6',
+                'EmissionsImpulseResponse_NF3',
+            ],
+            )
 
 
 class Contributing(BlogPost):

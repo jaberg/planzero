@@ -41,7 +41,7 @@
               <td>{% for sim_name in sorted(sims_by_dynelems[clsname]) %}
                   <a href="/simulations/{{sim_name}}/strategies/{{clsname}}/">{{printcname(sim_name)}}</a>
                   {% endfor %}</td>
-              <td>{% for sector_enum in strat.ipcc_sectors %}
+              <td>{% for sector_enum in sorted(sectors_by_dynelems[clsname]) %}
                   <a href="/ipcc-sectors/{{sector_enum.catpath_no_whitespace}}/">{{sector_enum.value}}</a>
                   {% if not loop.last %}, {% endif %}
                   {% endfor %}</td>

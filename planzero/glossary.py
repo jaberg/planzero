@@ -5,7 +5,6 @@ their line numbers for constructing github links.
 """
 import jinja2
 from pydantic import BaseModel, computed_field
-import inspect
 
 glossary_terms = {} # classname -> Singleton instance
 glossary_terms_w_aka = {} # string -> Singleton instance
@@ -26,6 +25,7 @@ from . import cattle
 from . import strategies
 from .sts import STS
 from .base import DynamicElement
+from .html import coderef_url
 
 
 class GlossaryTerm(BaseModel):
@@ -69,16 +69,9 @@ class GlossaryTerm(BaseModel):
 
     @computed_field
     def code_links(self) -> dict[str, str]:
-        rval = {}
-        for txt, cls in self.code_refs.items():
-            file_path = inspect.getsourcefile(cls)
-            assert file_path.startswith('/mnt/planzero')
-            file_path = file_path[5:]
-            lines, line_number = inspect.getsourcelines(cls)
-            url = f'https://github.com/jaberg/planzero/blob/main/{file_path}#{line_number}'
-            rval[txt] = url
-
-        return rval
+        return {
+            txt: coderef_url(cls)
+            for txt, cls in self.code_refs.items()}
 
     @property
     def code_refs(self) -> dict[str, object]:

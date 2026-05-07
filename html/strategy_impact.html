@@ -4,15 +4,28 @@
 
 <section class="post">
     <header class="major">
-        <h1>{{strategy_name}} Strategy in {{sim_name}} Simulation</h1>
-        <!--<p>Ablative analysis in Simulation: </p>-->
+        <h1>Strategy: {{printcname(strategy_name)}}</h1>
+        <p>
+        This page shows the marginal impact of the
+        <strong>{{printcname(strategy_name)}}</strong> strategy within the context of the
+        <strong><a href="/simulations/{{sim_name}}/">{{printcname(sim_name)}}</a></strong>
+        simulation.
+        </p>
     </header>
-<p>
-This page shows the marginal impact of the
-<strong>{{strategy_name}}</strong> strategy within the context of the
-<strong><a href="/simulations/{{sim_name}}/">{{sim_name}}</a></strong>
-simulation.
+
+<strong>Description:</strong>
+{{description_html|safe}}
+
+<p><strong>Page Contents:</strong>
+<ul>
+    <li><a href="#metrics">Standard Metrics</a></li>
+    <li><a href="#emissions">Emissions Impact</a></li>
+    <li><a href="#subsidies">Subsidies Impact</a></li>
+    <li><a href="#developments">Posts Developing this Page</a></li>
+</ul>
 </p>
+<h2 id="metrics">Standard Metrics</h2>
+<p>
 <table>
     <thead>
         <tr><th>Metric</th>
@@ -23,6 +36,10 @@ simulation.
         <tr><td>Lifetime cost per tonne {{CO2e|safe}} abated</td><td>{{cost_per_tCO2e}}</td></tr>
     </tbody>
 </table>
+Link to code on GitHub: <a href="{{coderef_url(strategy_class)}}">{{coderef_filepath(strategy_class)}}</a>
+</p>
+
+<h2 id="emissions">Emissions Impact</h2>
 <p>
 The chart below displays the difference in annual greenhouse
 gas emissions between a full simulation and one where this specific strategy is disabled.
@@ -34,10 +51,19 @@ gas emissions between a full simulation and one where this specific strategy is 
 Positive values represent emissions avoided (saved) by implementing this strategy.
 </p>
 
+<h2 id="subsidies">Subsidies Impact</h2>
+
 {{subsidies_chart.as_html()|safe}}
 
 <ul class="actions special">
     <li><a href="/simulations/{{sim_name}}/" class="button">Back to Simulation Overview</a></li>
+</ul>
+
+<h2 id="developments">Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag(strategy_name) %}
+<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
 </ul>
 
 </section>

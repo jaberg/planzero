@@ -6,6 +6,7 @@ from ..enums import IPCC_Sector, PT
 from ..base import DynamicElement
 from .. import sts
 from .. import objtensor
+from ..html import coderef_url
 
 strategies = {} # classname -> Singleton instance
 
@@ -25,18 +26,43 @@ class Strategy2(DynamicElement):
     def ipcc_sector_values(self) -> list[str]:
         return [sec.value for sec in self.ipcc_sectors]
 
+import jinja2
 
 class Scale_Bovaer(Strategy2):
+    """<p>The "Scale Bovaer" strategy implements an assumption that
+    cattle farmers who are modelled as being open to Bovaer usage
+    (according to the assumptions in
+     <a href="{{coderef_url(Bovaer_Adoption_Limit)}}">Bovaer Adoption Limit</a>)
+    actually go for it. This adoption is modelled as a nation-wide
+    proportionality, not province-by-province.</p>
+    """
+    # TODO: add a see-also type mechanism, to look at the effects
+    # on the various barriers affected by this strategy.
 
     @computed_field
     def short_description(self) -> str:
-        return f"Use as much Bovaer as farmers will take"
+        return f"Model that farmers who are open to using Bovaer actually start administering it."
 
     @computed_field
-    def ipcc_sectors(self) -> list[object]:
-        return [IPCC_Sector.Enteric_Fermentation,
-                IPCC_Sector.Other_Product_Manufacture_and_Use, # sync with BovinePopulation
-               ]
+    def description_html(self) -> str:
+        from ..cattle import Bovaer_Adoption_Limit
+
+        template = jinja2.Template(source=self.__doc__)
+        rval = template.render(
+            Bovaer_Adoption_Limit=Bovaer_Adoption_Limit,
+            coderef_url=coderef_url,
+            )
+        return rval
+
+    @computed_field
+    def extra_ipcc_sectors(self) -> list[object]:
+        # TODO: https://github.com/jaberg/planzero/issues/72
+        # would eliminate need for this
+        return [
+            IPCC_Sector.Enteric_Fermentation,
+            IPCC_Sector.Other_Product_Manufacture_and_Use,
+        ]
+
 
     @computed_field
     def research(self) -> dict[str, str]:

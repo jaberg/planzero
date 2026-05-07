@@ -71,7 +71,7 @@ class SimulationResult(BaseModel):
                 sector_total,
                 times=self.year_times,
                 v_unit=u.Mt_CO2e,
-                url=f'/simulations/{self.simulation_name.lower()}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/')
+                url=f'/simulations/{self.simulation_name}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/')
             values = [vdict['value'] for vdict in data]
             if max(values) <= 0:
                 # all negative
@@ -180,7 +180,7 @@ class SimulationResult(BaseModel):
                         url=None),
                     emphasis={'disabled': 1}, # prevents visual corruption on my computer
                     )
-                for driver in emres.drivers
+                for driver in emres.drivers_by_sector(ipcc_sector)
             ],
             other_series=[
                 EChartSeriesBase(

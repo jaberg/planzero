@@ -1,5 +1,5 @@
-import json
 import datetime
+import json
 import os
 
 import numpy as np
@@ -92,7 +92,6 @@ def get_ipcc_sector_html(catpath: str):
         active_tab='ipcc_sectors',
         stakeholders=planzero.strategies.stakeholders,
         catpath=catpath,
-        blogs_by_tag=planzero.blog.blogs_by_tag,
         est_nir=planzero.est_nir,
         ))
 
@@ -161,7 +160,6 @@ async def get_scenarios(request: Request):
             active_tab='simulations',
             ),
     )
-
 
 @app.get("/scenarios/{ident}/", response_class=HTMLResponse)
 @app.get("/simulations/{ident}/", response_class=HTMLResponse)
@@ -303,6 +301,8 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
         # this happens in Planet_Model
         cost_per_tCO2e = float('nan') * u.CAD / u.tonne_CO2e
 
+    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
+
     return templates.TemplateResponse(
         request=request,
         name="strategy_impact.html",
@@ -311,6 +311,8 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
             active_tab='simulations',
             sim_name=sim_name,
             strategy_name=strategy_name,
+            strategy_class=baseline_state.projects[strategy_name].__class__,
+            description_html=baseline_state.projects[strategy_name].description_html,
             impact_chart=impact_chart,
             subsidies_chart=subsidies_chart,
             cost_per_tCO2e=cost_per_tCO2e,
@@ -321,12 +323,19 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 @app.get("/strategies/", response_class=HTMLResponse)
 async def get_strategies(request: Request):
     sims_by_dynelems = {}
+    sectors_by_dynelems = {}
     for sitesim_name, sitesim in planzero.sim.site_simulations.items():
         if not sitesim.show_on_simulations_page:
             continue
+        sim_result = planzero.sim.simulation_result(sitesim_name)
+        sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
         for dynelem in sitesim.dynamic_elements():
             sims_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
                     .add(sitesim_name)
+            sectors_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
+                    .update(sectors_by_de[dynelem.identifier])
+            sectors_by_dynelems[dynelem.__class__.__name__].update(
+                dynelem.extra_ipcc_sectors)
     return templates.TemplateResponse(
         request=request,
         name="strategies.html",
@@ -336,6 +345,7 @@ async def get_strategies(request: Request):
             npv_unit='MCAD',
             nph_unit='exajoule',
             sims_by_dynelems=sims_by_dynelems,
+            sectors_by_dynelems=sectors_by_dynelems,
             ),
     )
 
@@ -379,19 +389,17 @@ async def get_about(request: Request):
         context=dict(
             default_context,
             active_tab='about',
-            blogs_by_tag=planzero.blog.blogs_by_tag,
             ),
     )
 
 @app.get("/glossary/", response_class=HTMLResponse)
-async def get_about(request: Request):
+async def get_glossary(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="glossary.html",
         context=dict(
             default_context,
             active_tab='glossary',
-            blogs_by_tag=planzero.blog.blogs_by_tag,
             ),
     )
 
@@ -434,7 +442,10 @@ default_context = dict(
     CO2e=planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
     degrees=planzero.blog.latex(r'^\circ'),
     siteref=planzero.glossary.siteref,
+    coderef_url=planzero.html.coderef_url,
+    coderef_filepath=planzero.html.coderef_filepath,
     fade_in_intro=False,
     printcname=(lambda cname: cname.replace('_', ' ')),
+    blogs_by_tag=planzero.blog.blogs_by_tag,
     )
 
