@@ -46,15 +46,15 @@ class Scale_Bovaer(Strategy2):
     def see_also_html(self, context_vars) -> list[str]:
         sources = [
             ('<a'
-             'href="/simulations/{{sim_name}}/barriers/Bovaer_Adoption_Limit/">Bovaer'
-             'Adoption Limit</a>, which is the model barrier that sets the rate'
-             'of adoption for this strategy'),
+             ' href="/simulations/{{sim_name}}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' Adoption Limit</a>, which is the model barrier that sets the rate'
+             ' of adoption for this strategy'),
             ('<a'
-            'href="https://github.com/jaberg/planzero/blob/main/planzero/cattle.py">cattle.py</a>,'
-            'which defines several of the barriers relating to this strategy'),
+            ' href="https://github.com/jaberg/planzero/blob/main/planzero/cattle.py">cattle.py</a>,'
+            ' which defines several of the barriers relating to this strategy'),
             ('<a'
-             'href="{{coderef_url(myself.__class__)}}">{{coderef_filepath(myself.__class__)}}</a>,'
-             'the implementation of this strategy'),
+             ' href="{{coderef_url(myself.__class__)}}">{{coderef_filepath(myself.__class__)}}</a>,'
+             ' the implementation of this strategy'),
         ]
         from ..cattle import Bovaer_Adoption_Limit
         render_vars = dict(

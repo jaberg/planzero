@@ -148,17 +148,15 @@ class GPR_Extrapolation(BlogPost):
 
 class Glossary(BlogPost):
     """Another post adding to the About page:
-    a list of terms and acronyms used commonly in posts,
-    including some with specific meanings in the context of PlanZero modelling.
-    This post introduces a modelling framework for PlanZero.
-    The framework formalizes the ideas of critical success factors (CSFs), barriers, strategies,
-    and scenarios.
-    This post introduces a "Scaling" simulation that estimates what can be achieved by scaling
-    currently-available products.
-    """
+    a glossary of terms and acronyms with specific meanings in the context of
+    PlanZero posts.
+    This glossary also introduces modelling terminology to support future posts.
+    The modelling terminology is used to reframe the NIR-reconstruction
+    project within languages of both corporate strategy and of statistical
+    modelling. """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 19),
+            date=datetime.datetime(2026, 5, 5),
             title='A glossary of terms used in specific ways across multiple posts',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
@@ -177,7 +175,7 @@ class About(BlogPost):
     """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 12),
+            date=datetime.datetime(2026, 4, 23),
             title='About this project: rewriting and expanding planzero.ca/about',
             url_filename="2026-04-12-about",
             author="James Bergstra",
@@ -192,11 +190,11 @@ class ModellingBovaer(BlogPost):
     to do a relatively simple bit of modelling: what would happen if Canada's beef
     and dairy farmers gradually transitioned to administring the feed additive Bovaer,
     which reduces methane emissions? A PlanZero model finds that it would remove up to
-    almost 10Mt of emissions, and cost about $175 per tonne removed.
+    almost 10Mt of emissions, and cost about $222 per tonne removed.
     """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 3),
+            date=datetime.datetime(2026, 4, 9),
             title='Modelling a Bovaer Strategy',
             url_filename="2026-04-03-bovaer",
             author="James Bergstra",

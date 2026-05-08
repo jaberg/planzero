@@ -16,6 +16,7 @@
 <p><strong>Page Contents:</strong>
 <ul>
     <li><a href="#metrics">Standard Metrics</a></li>
+    <li><a href="#description">Description and Links</a></li>
     <li><a href="#emissions">Emissions Impact</a></li>
     <li><a href="#subsidies">Subsidies Impact</a></li>
     <li><a href="#developments">Posts Developing this Page</a></li>
@@ -30,7 +31,8 @@
         </tr>
     </thead>
     <tbody>
-        <tr><td>Lifetime cost per tonne {{CO2e|safe}} abated</td><td>{{cost_per_tCO2e}}</td></tr>
+        <tr><td>Lifetime cost per tonne {{CO2e|safe}} abated</td>
+            <td>{{'{:.2f}'.format(cost_per_tCO2e.magnitude)}} CAD / t{{CO2e}}</td></tr>
     </tbody>
 </table>
 </p>
