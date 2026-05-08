@@ -69,9 +69,13 @@ class GlossaryTerm(BaseModel):
 
     @computed_field
     def code_links(self) -> dict[str, str]:
-        return {
-            txt: coderef_url(cls)
-            for txt, cls in self.code_refs.items()}
+        rval = {}
+        for txt, thing in self.code_refs.items():
+            if isinstance(thing, str) and thing.startswith('http'):
+                rval[txt] = thing
+            else:
+                rval[txt] = coderef_url(thing)
+        return rval
 
     @property
     def code_refs(self) -> dict[str, object]:
@@ -110,14 +114,62 @@ class GlossaryTerm(BaseModel):
 
 
 class Time_Series(GlossaryTerm):
-    """A PlanZero modelling data structure for representing a time-varying
-    quantity.
+    """A PlanZero time series is a modelling data structure for representing
+    a time-varying quantity in some unit of measure.
+    The key attributes of a time series are:
+    <ul>
+        <li>a sequence of numeric values the series takes</li>
+        <li>a sequence of times marking <i>when</i> the series takes these values</li>
+        <li>a unit of measure for the values</li>
+        <li>an interpolation mode, indicating how to interpret value for times other than the enumerated ones</li>
+    </ul>
     """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unit_of_Measure': 'the values of a time series are associated with a single unit of measure',
+            'Time_Series_Interpolation_Mode': 'the rule for determining value for un-mentioned times',
+        }
 
     @property
     def code_refs(self) -> dict[str, object]:
         return {
             'Time Series base class': STS,
+        }
+
+class Time_Series_Interpolation_Mode(GlossaryTerm):
+    """<p>The time series interpolation mode is a mechanism that is partly for
+    convenience and partly for error prevention.
+    There are currently two interpolation modes.
+    The value of a time series at times other than those explicitly mentioned is either
+    <ul>
+        <li>"current", defined to be the most recent value of the series</li>
+        <li>"no interpolation", which leaves such values undefined</li>
+    </ul>
+    </p>
+    """
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Time_Series': 'the data structure time series',
+        }
+
+
+class Unit_of_Measure(GlossaryTerm):
+    """A PlanZero unit of measure is one that is registered
+    in the ureg.py file, using the <a
+    href="https://pint.readthedocs.io/en/stable/">Pint unit package</a>.
+    The registry includes standard units of measure in e.g. the metric SI
+    system in addition to various more traditional ones, and also
+    custom units related to PlanZero modelling such as types of coal,
+    greenhouse gases, farms, and vehicles.
+    """
+
+    @property
+    def code_refs(self) -> dict[str, object]:
+        return {
+            'ureg.py': 'https://github.com/jaberg/planzero/blob/main/planzero/ureg.py',
         }
 
 
@@ -354,7 +406,7 @@ class About_Section(GlossaryTerm):
 
 
 class Scenario(GlossaryTerm):
-    """A scenario is a set of time series.
+    """A scenario is a set of time series covering a common time period.
     Typically in PlanZero it is the result of simulating a model.
     """
 

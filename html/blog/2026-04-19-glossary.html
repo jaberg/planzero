@@ -1,0 +1,553 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#computation">Computation and Simulation</a>
+        <ul>
+            <li><a href="#timeseries">Time Series</a></li>
+            <li><a href="#dynelem">Dynamic Element</a></li>
+            <li><a href="#simulation">Simulation</a></li>
+            <li><a href="#scenario">Scenario</a></li>
+        </ul>
+    </li>
+    <li><a href="#modelling">Modelling National Emissions</a>
+        <ul>
+            <li><a href="#formalizing_csfs">Emissions and Costs as Critical Success Factors</a></li>
+            <li><a href="#formalizing_barriers_strategies">Barriers and Strategies</a></li>
+            <li><a href="#scenario_simulation">Scenario Simulation</a></li>
+        </ul>
+    </li>
+    <li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</p>
+
+<h2 id="introduction">Introduction</h2>
+<p>
+PlanZero has been accumulating a lexicon since its first post, but in
+<a href="./2026-04-03-bovaer">modelling Bovaer adoption</a>,
+it became clear to me that the project was entering a new phase.
+I struggled to explain, in that post, what I had done; the first draft was
+very long and difficult to follow.
+Not only did the writing need re-working, but
+PlanZero's implementation itself needed reworking, in order to function
+with the degree of conceptual clarity that I wanted to offer in writing
+about how it worked.
+This is the second of two follow ups, which complete the rewrite.
+The first follow-up post (<a href="./2026-04-12-about">About this project...</a>) introduced, among other things, the "Draft Status"
+to offer a mechanism for this level of re-writing,
+and this post aims to
+bring the conceptual clarity that was missing
+from that first draft.
+This post announces a new <a href="/glossary">glossary</a> page,
+and explains the glossary terms relating to modelling.
+There are already more terms in the glossary than are explained here (almost
+fifty, including terms relating to data sources, climate organizations, and
+source code version control). I'll amend some previous posts to link to the glossary as appropriate,
+and call out glossary additions in new posts going forward.
+</p>
+<p>
+This post is organized into two top-level content sections.
+The first one is about how PlanZero models work at
+a <i>computational level</i>, in terms of
+<a href="#timeseries">time series</a>,
+<a href="#dynelem">dynamic element</a>,
+<a href="#simulation">simulation</a>,
+and <a href="#scenario">scenario</a>.
+This section explains how dynamic elements define recurrent mathematical
+definitions (expressed in Python programming), how those definitions define time series,
+and how simulation of a set of dynamic elements produces a set of time series
+called a scenario.
+It is the closest thing to technical documentation that exists on the website to date,
+and might feel like low-level irrelevant details to some readers; if that's you,
+feel free to skip ahead to the next section on emissions modeling.
+</p>
+<p>
+The second section is about how PlanZero models work at a <i>semantic level</i>,
+as <a href="#modelling">models of emissions and economic activity</a>, in terms of
+<a href="#drivers">drivers</a>,
+<a href="#emfac">emission factors</a>,
+<a href="#subsidy">subsidy programs</a>,
+<a href="#contribution">emission contributions</a>,
+<a href="#strategy">strategies</a>,
+and <a href="#barrier">barriers</a> relating strategies to the critical success factors of emission reduction and cost.
+This section explains how PlanZero models the computation of national emissions,
+as well as the possible effects of new technologies and government programs.
+Bovaer adoption, as the first worked example, has driven many design choices
+here. As the set of strategies grows, I expect the modelling framework to grow too,
+but this is how it works for now.
+</P>
+
+<h2 id="simulation">Simulation Framework</h2>
+<p>
+This section introduces the simulation system used in PlanZero, which involves four concepts:
+<ul>
+    <li>time series, which contain the data of time-varying quantities (such as e.g. temperature, or annual emissions)</li>
+    <li>dynamic elements, which implement rules for the evolution of time series data</li>
+    <li>simulation, which is the computational act of rolling out time series forward in time</li>
+    <li>scenarios, which are the result of simulation</li>
+</ul>
+The next subsections explain each of these in more detail.
+The modelling framework at this level aims to be somewhat flexible.
+For example, it is now used to run the planetary heat simulation
+powering this <a href="/blog/2026-01-21-unfccc">blog post from earlier this year</a>.
+Its main use though,
+is the <a href="#modelling">modelling of National Emissions</a>, which is the focus of
+the next top-level section.
+</p>
+
+<h3 id="timeseries">Time Series</h3>
+<p>
+A time series represents a time-varying quantity in some unit of measure.
+PlanZero posts have used time series
+objects already to represent just about everything that was plotted as a function of time,
+e.g. both the various sectoral emissions of greenhouse gases in the NIR,
+and the attempts to reconstruct them.
+The key attributes of a time series are:
+<ul>
+    <li>a set of <i>what</i> numeric values the series takes</li>
+    <li>a set of times marking <i>when</i> the series takes these values</li>
+    <li>a unit of measure for the values</li>
+    <li>an interpolation mode, indicating how to interpret the value for times other than the enumerated ones.</li>
+</ul>
+A time series is a bit like two matched columns in a spreadsheet:
+one column being the times, and the other being the values.
+Relative to columns in a spreadsheet,
+a time series object restricts all of its values to be in a single common unit of measure,
+and imposes <i>querying semantics</i> on the time series according to the interpolation mode.
+</p>
+<p>
+Time series are important in PlanZero because they are the basis of simulation.
+PlanZero simulates scenarios by repeatedly figuring out what the next value in each time series should be.
+The figuring-out of the next value is done by dynamic elements, which we'll talk about next.
+</p>
+
+<p>
+Time series always have an associated unit of measure,
+as guard against programming and modelling errors.
+Unit conversion is a notorious source of error in systems that are difficult to test.
+One recent high-profile example is the <a href="https://en.wikipedia.org/wiki/Mars_Climate_Orbiter">loss of the Mars Climate Orbiter in 1999</a>.
+PlanZero uses Python's <a href="https://pint.readthedocs.io/en/stable/">pint</a> package to handle units.
+PlanZero has also introduced additional units of measure, such as cattle, farms, CAD, kg-of-{{CO2e|safe}}, in order prevent, for example,
+adding rates of cost per head of cattle to a rate of cost per farm.
+Several programming errors so far in PlanZero development have been caught by this mechanism.
+</p>
+
+<p>
+The time series interpolation mode is a mechanism that is partly for convenience and partly for error prevention.
+There are currently two interpolation modes.
+The value of a time series at times other than those explicitly mentioned is either
+<ul>
+    <li>"current", defined to be the most recent value of the series</li>
+    <li>"no interpolation", which leaves such values undefined</li>
+</ul>
+Arithmetic is defined for time series, and the rules of arithmetic respect these interpolation modes, so that, for example,
+one time series representing the number of cars over time can be multiplied by another time series representing the average rate of emission per vehicle over time,
+and the result will be a time series of the average rate of emission from all vehicles.
+Both of these time series should have the first type of interpolation.
+</p>
+<p>
+If one of the time series represents an annual total though, it should have the second type of interpolation.
+To see why, consider the e.g.  annual total {{CH4|safe}} emissions for Quebec.
+It makes sense to represent annual totals as time series because there is a total for each year, at least over some period.
+However, the total represents a time integral of emissions over a certain period, typically January 1 to Dec 31;
+we can associate that total with a time within each year (such as the beginning or the end),
+but the intention for such totals is to handle them with precision, and the
+total was not meant to apply to other times of the year.
+The rules of time series arithmetic in PlanZero are that "no interpolation" tends to spread:
+adding a "no interpolation" time series to a "current" interpolation time series results in a "no interpolation" time series
+defined at the intersection of times where the argument time series were defined.
+Sometimes, after an elaborate computation, this intersection of times with an associated value is a smaller set than expected.
+It's usually a programming error on my part, that I <i>meant</i> to interpret some of the time series more broadly, but having to
+do this kind of debugging and fix it by choosing a specific point in the implementation logic at which to introduce more points or a "current" interpolation,
+results in implementation logic that I'm more confident in.
+</p>
+
+<p>
+These mechanisms don't guarantee a model is good, but they do
+help ensure that a simulation result reflects the intended modelling
+assumptions.
+</p>
+
+
+<h3 id="dynelem">Dynamic Element</h3>
+
+<p>
+If time series are like the tables of numbers you in spreadsheet columns,
+PlanZero's dynamic elements are like the formulas that define spreadsheet cells.
+Dynamic elements define time series;
+they associate time series with names (unique identifiers), and implement
+logic that defines the times and values of each time series.
+All of the modelling elements in PlanZero models, which define the time series shown in various charts etc., are dynamic elements.
+The logic for defining time series in a dynamic element is of two kinds:
+<ul>
+    <li>initialization, defining some time series regardless of other dynamic elements or time series in a simulation</li>
+    <li>recurrence, updating those time series by reading values from other dynamic elements and time series</li>
+</ul>
+</p>
+<p>
+Dynamic elements are meant to be loosely coupled, in the sense that you can
+define a simulation from any set of dynamic elements.
+This modularity helps with testing, because a dynamic element can be simulated on its own
+or with a small set of related ones, to verify its behaviour quickly and comprehensively.
+This design pattern comes with a danger though, which is that if simulating <i>any</i> set of dynamic elements does <i>something</i>,
+then the fact of many dynamic elements producing a scenario through simulation offers no evidence that the scenario reflects what it is <i>supposed to model</i>.
+Generally, it is hard to verify that a large system of variables governed by modular logic
+is behaving as it should.
+PlanZero helps produce sound models at a computational level by supporting modular testing, and
+<a href="https://github.com/jaberg/planzero/issues/74">could</a> validate that, for example, unused time series are <i>deliberately</i> unused.
+</p>
+
+<h4>Initialization</h4>
+<p>
+With initialization logic, a dynamic element creates time series (singular or
+plural) without reference to other dynamic elements or their time series.
+It declares all of the time series that it intends to read from once they are defined,
+and it declares the ones it intends to write.
+Only one dynamic element is allowed to write to each time series, but it can
+can read from many.
+I think of these time series (to which a dynamic element writes) as <i>belonging</i> to that dynamic element;
+when I refer to a dynamic element's time series, I am referring to these time series to which it defined, and to which it is able to write.
+When declaring an intention to read a time series, a dynamic element must also declare
+whether it intends to read the exactly-current value, or just historical values.
+This is important for scheduling the recurrence computation, the topic of the next section.
+The initialization also defines the <i>first time</i> at which the recurrence
+logic will be required, in order to extend its time series.
+</p>
+<h4>Recurrence</h4>
+<p>
+A dynamic element's recurrence logic serves to update its time series to the present moment of an in-progress simulation.
+Any recurrence logic required for simulation of time series up to some point
+in time is scheduled to run after all of the dynamic element initialization.
+After initialization, all of the time series are ready for reading, so that recurrence logic
+in each dynamic element can read from any time series defined by any dynamic element.
+These reads may only be of the past or present, and may only be of the present
+for the time series declared to be needed for exactly-current reads.
+Recurrence calculations are used to define time series that may change differently
+depending on what other dynamic elements are involved in a simulation.
+At the end of each recurrence calculation, the recurrence logic must report whether (and when) the recurrence should run again
+if the simulation continues to that point.
+</p>
+
+<p>
+Exactly-current reads are special, because it means that the dynamic element
+writing to the other one must update the value of that other time series
+first, before this dynamic element reads the value.
+This exactly-current reading can also create mutual dependency: two dynamic elements
+can define variables and declare that they need to read one another's variables all at exactly-current time.
+The PlanZero simulation engine will refuse to simulate anything in such a situation,
+one or the other of the dynamic elements will need to relax its requirement to read the exactly-current value from the other.
+</p>
+
+<h3 id="simulation">Simulation</h3>
+<p>
+Simulation in PlanZero is the computational process of turning set of dynamic elements into a
+set of time series covering a period of time, called a scenario (more on scenarios next section).
+Simulation begins with the initialization logic of each dynamic element,
+which, together, define all of the time series in a scenario.
+After initialization, the simulation algorithm
+has (1) each time series defined (if only for the earliest times and values), and
+(2) the next time each time series could be defined, by appealing to the recurrence logic of its owner.
+The current simulation algorithm then simply steps forward in chronological order,
+updating each time series until the whole time period required for the simulation has been covered.
+</p>
+<p>
+I believe it is possible to evaluate dynamic elements more efficiently by not
+always going in strictly chronological order, and sometimes evaluating multiple time points at once,
+but the implementation is not simple. There's a note about it in
+<a href="https://github.com/jaberg/planzero/issues/65">this github issue</a>.
+</p>
+
+<h3 id="scenario">Scenario</h3>
+<p>
+A PlanZero scenario is the set of time series that result from simulation, which
+are fully specified by times and values until the end time of the simulation.
+When visualizing a simulation within the <a href="/simulations">Simulations</a> pages
+on this site, it is the scenario data that are used to draw the various
+figures and to compute various statistics.
+</p>
+
+<h2 id="modelling">Modelling National Emissions</h2>
+
+<p>The purpose of PlanZero is to model future scenarios,
+and to explore strategies for how Canada might achieve a net-zero economy.
+I think of this modelling as being a combination of
+strategic management and numerical optimization.
+To explain why, I'll start with the strategic management part of that statement.
+<a href="https://en.wikipedia.org/wiki/Strategic_management">Strategic management</a>, to quote wikipedia,
+"involves the formulation and implementation of the major goals and initiatives taken by an organization's managers on behalf of stakeholders, based on consideration of resources and an assessment of the internal and external environments in which the organization operates."
+If we consider Canada as an organization, the federal government has,
+among its many goals and initiatives, set a goal to achieve net-zero by 2050 (<a href="/blog/2026-02-02-cnzeaa">earlier post</a>, <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/net-zero-emissions-2050.html">government site</a>).
+The word "goal" has a common-sense definition, but in the context of governmental planning and legislation,
+it is also appropriate to interpret it more technically, and for PlanZero,
+the technical definition leads goals to play a precise role in its modelling framework.
+</p>
+<p>
+Strategic management does not offer a single definition of what a goal is, 
+or a canonical articulation of what good management looks like.
+While I would claim only very limited knowledge of that field,
+the planning process of the federal government brings to my mind the framework articulated in
+"<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">The
+    Executive's Guide to Facilitating Strategy</a>" by Michael Wilkinson (which I'll refer to as EGFS).
+In the terminology of the EGFS, an organization's SMART goals (Specific, Measurable, Achievable, Relevant, and Time-bound)
+should be broken down systematically during an implementation planning process into three conceptual kinds of thing: barriers, critical success factors, and strategies.
+All of these things map onto elements of PlanZero models, and the mapping
+helps to explain how a PlanZero model can represent a plan for e.g. Canada's National Emissions.
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Term</th>
+            <th>EGFS</th>
+            <th>PlanZero</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Critical Success Factor (CSF)</strong></td>
+            <td>key conditions that must be created to achieve one or more objectives</td>
+            <td>time series statistics: per-sector emissions being low, zero, or negative; minimal subsidy requirements</td>
+        </tr>
+        <tr>
+            <td><strong>Barrier</strong></td>
+            <td>existing or potential challenges that hinder the achievement of one or more objectives</td>
+            <td>dynamic elements modelling physical, economic, and social factors' influence on one another, emissions, and costs</td>
+        </tr>
+        <tr>
+            <td><strong>Strategy</strong></td>
+            <td>broad activities required to achieve a goal, create a critical condition, or overcome a barrier</td>
+            <td>dynamic elements that are optional, but which influence barriers when present</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>
+PlanZero posts about replicating {{siteref("NIR")|safe}} estimates (such as <a href="/blog/2026-03-31-enteric">"Enteric Fermentation: Emissions Calculations"</a>) have included sections with these names (barriers, critical success factors, strategies),
+and informal thoughts aligned with the EGFS definitions in the table above.
+The modelling framework in this post introduces the PlanZero definitions in the rightmost column,
+as dynamic elements and time series.
+I believe that by organizing time series and dynamic elements according to these labels,
+PlanZero models will be easier to communicate.
+</p>
+
+<p>
+The connection to numeric optimization (mentioned a few paragraphs back) is that strategies can be parameterized, and
+then the question would arise how each strategy in a simulation should be configured
+to e.g. minimize some balance of emissions and cost.
+This could, some day, be an interesting optimization problem.
+For now, however, there are not yet strategies in PlanZero that are configurable in this sense,
+and for the first few that <i>are</i> configurable, I expect manual configuration to be
+effective. It may be a long time before algorithmic search is useful. 
+</p>
+
+<p>
+The next subsections explain how the EGFS concepts of critical success factor, barrier, and strategy
+can be formalized in terms of time series and dynamic elements,
+and used in that way to structure and interpret scenario simulations for the purpose of evaluating strategies.
+</p>
+
+<h3 id="formalizing_csfs">Emissions and Costs as Critical Success Factors</h3>
+
+<p>
+Critical success factors are introduced in EGFS as "key conditions that must be created to achieve one or more objectives."
+In PlanZero, the objective is, for each IPCC sector, to reduce emissions as much as possible, even producing negative emissions when that's possible, by 2050.
+For example, in the case of enteric fermentation, the emissions calculation (see this <a href="/blog/2026-03-31-enteric">earlier post approximating the enteric fermentation emissions</a>)
+could be articulated as the product of two terms (ignoring ruminants other than cattle): number of cattle, and average methane emitted per head of cattle.
+These two terms suggest two critical success factors:
+<ul>
+    <li>Minimize the number of cattle.</li>
+    <li>Minimize the average amount of methane emitted per head of cattle.</li>
+</ul>
+Minimizing either or both of these terms would, mathematically, reduce enteric fermentation emissions.
+Without minimizing one or the other, enteric fermentation emissions will not be reduced.
+Therefore, it's fair to say these are two "key conditions that must be created to achieve one or more objectives" of emissions reduction in this sector.
+</p>
+
+<p>
+There are many such multiplicative pairs in the {{siteref("NIR")|safe}} and {{siteref("NEUD")|safe}}. In both of these databases, the national annual emissions total is ultimately computed
+by a massive sum of products with thousands of terms: a sum over
+<ul><li>IPCC Sectors,</li><li>greenhouse gas types,</li><li>provinces and territories,</li></ul>
+of (a) some amount or level of activity related to an emissions driver, multiplied by (b) an
+{{siteref("Emission Factor", "emission factor")|safe}}
+of how much each greenhouse gas is emitted per unit of amount or activity.
+</p>
+
+<p>
+Heads-of-cattle multiplied by methane-per-head could be one such term (for each province).
+Alternatively there could be separate terms for dairy cows, beef cows, calves, and so on (currently this is how PlanZero does it).
+Other examples could include
+how many small gas batteries are there, and how much do they tend to leak;
+how many cars were there and how much did they emit per year on average?
+There's no single best way to group the terms of this large sum of products, but I'm hoping,
+through the continued sector-by-sector research series, to find a relatively stable
+and useful decomposition for each sector, such that there is data for each term,
+and such that there is some sensible way of modelling the interaction between terms with
+barriers.
+</p>
+
+<p>PlanZero does not yet include explicitly-formalized critical success
+factors for emissions, but if they were formalized, it would be as a triplet of 
+<ul>
+    <li>a time series, e.g. {{CO2e|safe}}/yr for an IPCC sector, greenhouse gas, and province / territory</li>
+    <li>a target value range</li>
+    <li>a target time range</li>
+</ul>
+The first item here, the time series, could be called a
+<a href="https://en.wikipedia.org/wiki/Performance_indicator">Key Performance Indicators</a>
+or KPI.
+Such a critical success factor would be satisfied if and only if the KPI
+had a value within the target value range at a time within the target time range.
+For now, we can look at the graphs in the Simulations and see that any CSFs
+sufficient to guarantee achievement of net-zero by 2050 are nowhere near being satisfied,
+it's not required to formally verify this.
+Still, it's no coincidence that the ingredients for formal CSF verification
+make for good visualizations.
+</p>
+
+<p>
+It is natural to imagine critical success factors for other KPIs beyond emissions,
+the term was not invented for emissions after all.
+PlanZero implements them for subsidy requirements, and I expect over time, more kinds
+of critical success factor will be added to PlanZero models.
+</p>
+
+<h3 id="formalizing_barriers_strategies">Barriers and Strategies</h3>
+
+<p>
+Barriers are introduced in EGFS as "existing or potential challenges that hinder the achievement of one or more objectives"
+and strategies as "broad activities required to achieve a goal, create a critical condition, or overcome a barrier."
+In PlanZero, these two concepts are formalized hand-in-hand:
+EGFS strategies are formalized as relatively simple dynamic elements that represent
+the existence of an approach, such as "feed as many cattle Bovaer as possible";
+and EGFS barriers are formalized as all of the dynamic elements required to model
+the effect of such a strategy on critical success factors,
+such as "how many cattle can be fed Bovaer", "what would it cost", and "how much good would it do?"
+In other figurative words, PlanZero Barriers model how the world might work,
+and provide time series for toggling different behaviours on and off;
+PlanZero strategies are the switches that toggle them.
+</p>
+<P>
+Barrier dynamic elements model
+<ul>
+    <li>how fast strategies will take effect</li>
+    <li>what costs / profits are expected</li>
+    <li>what will happen in the meantime before / as they work</li>
+</ul>
+Strategy dynamic elements model
+<ul>
+    <li>when a strategy should start</li>
+    <li>how to use investment (if applicable)</li>
+</ul>
+Barrier objects in PlanZero have the job of predicting the future.
+I hope, over time, to build up and refine the library of barriers in PlanZero,
+because I believe that this library will become the most valuable component of the project.
+Strategy objects are meant to reflect policy changes or product / project development efforts that could be undertaken.
+</p>
+<!--
+<p>
+With both barriers and strategies being formalized as dynamic elements
+that are moreover developed "hand-in-hand", it's worth clarifying in terms of dynamic elements
+where one ends and the other begins.
+For greater clarity, a PlanZero Strategy is an optional dynamic element
+such that omitted the element mean "not doing" the strategy.
+Omitting a strategy should not compromise the validity of a scenario simulation.
+In contrast, PlanZero barriers implement logic that is integral to the validity of the scenario;
+with regards to enteric fermentation for example,
+cattle produce methane at certain rates (which depend on e.g. Bovaer consumption)
+regardless of whether any cattle are fed Bovaer.
+The logic and assumptions that PlanZero uses to estimate methane emissions from cattle
+is implemented in a dynamic element, and that dynamic element is a barrier.
+This logic should always be included in simulation in order to estimate emissions for the sector.
+</p>
+-->
+
+
+<h3 id="scenario_simulation">Scenario Simulation</h3>
+
+<p>
+Scenarios have been mentioned several times in this post already, but
+this subsection explains what I've meant in more detail.
+In the terms of the previous section (<a href="#simulation">Simulation Framework</a>)
+a PlanZero scenario is a set of dynamic elements, and the time series objects they define.
+In the terms of this section (<a href="#modelling">Scenario Modelling</a>)
+a PlanZero scenario is a set of critical success factors, barriers, and strategy elements, as well as
+a few built-in dynamic elements that, together, are capable of simulating
+the evolution of the emissions sectors used in Canada's 2025 NIR.
+The built-in dynamic elements are capable of simulating future emissions even without
+any critical success factor, barrier, or strategy elements:
+<ul>
+    <li><strong>Other NIR Historic Actuals</strong> defines time series objects for IPCC-sector emissions that haven't been modelled by other dynamic elements.
+        It initializes them with values from the NIR, and projects that they remain constant in the future.</li>
+    <li><strong>Atmospheric Chemistry</strong> combines sectoral GHG emissions into sectoral and national {{CO2e|safe}} totals, and simulates the effect on a simple planetary heat model.</li>
+    <li><strong>Subsidy Accounting</strong> totals any subsidy requirements across barriers. At some point this may include estimated impacts in e.g. healthcare, insurance, climate mitigation projects, and disaster relief; currently it does not.</li>
+</ul>
+Scenario simulation is probably best illustrated by example.
+Without further ado, let's continue to the next section, which describes PlanZero's first scenario:
+a simulation of possible futures with and without scaling the use of the bovine feed additive Bovaer.
+</p>
+This post has introduced PlanZero's simulation framework in terms of computational elements (time series and dynamic elements)
+and in terms of strategic management concepts (critical success factors, barriers, strategies, scenarios).
+The post brings two new tabs to the top of the PlanZero website:
+<a href="/strategies/">strategies</a> lists the strategies implemented in PlanZero, which scenarios include them, and which IPCC Sectors they impact;
+<a href="/scenarios/">scenarios</a> lists the scenarios that are implemented in the software.
+Currently, there is just one strategy (ScaleBovaer) and one scenario (scaling) but it is my intention
+to add more.
+I would like to get into a cadence of alternating between NIR-sector posts and
+scaling-strategy posts.
+I imagine, over time, that PlanZero may grow to include a small number of standard scenarios
+(perhaps "do nothing", "no-subsidies", "what about counting on a few speculative technologies...")
+but I'd concede I'm a bit hazy on how scenarios will be used, so I won't worry about it yet.
+More urgently than scenarios, PlanZero needs strategies (and associated critical success factors and barriers), starting with products and technologies that are closest to mass adoption.
+For anyone that would like to see a more-developed pathways-to-net-zero tracker for Canada, check out <a href="https://dashboard.440megatonnes.ca/">440 Megatones Pathways Tracker</a>, and the research behind it. It's great work and I intend to replicate it to understand it better (<a href="https://github.com/jaberg/planzero/issues/60">github issue</a>).
+
+
+<a href="https://github.com/jaberg/planzero/issues/72">Indirect barrier impact</a>.
+<a href="https://github.com/jaberg/planzero/issues/73">Barrier impact pages, and see-also mechanism to jump between them</a>.
+
+
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>
+As of the authoring of this post, the modelling terms now guide and inform
+the charts and page layouts in the model visualization section of the site,
+which is now, as per the new terminology, called "<a href="/simulations/">Simulations</a>".
+In the analysis of strategies, the charts now visualize the breakdown of emissions changes by sector,
+and the breakdown of subsidy costs by program and payee.
+In the analysis of simulations by IPCC sectors, it is possible to see a breakdown
+by gas, and by contribution (the product of a driver and an emission factor).
+This style of visualization aims for alignment with the style of thinking
+at work in the preparation of e.g. the
+{{siteref("ECCC")|safe}}-maintained {{siteref("National Greenhouse Gas Inventory", "National Inventory")|safe}}, and the
+{{siteref("NRCan")|safe}}-maintained {{siteref("NEUD")|safe}}.
+In the Scaling simulation only the "<a href="/simulations/Scaling/ipcc-sectors/Enteric_Fermentation/">Enteric Fermentation</a>" {{siteref("IPCC Sector", "sector")|safe}} is structured in this way,
+but in future posts I will refactor the per-sector models built for previous posts into this unified system
+so that strategies and barriers can cut across sectoral boundaries.
+</p>
+<p>
+Until next time,
+</p>
+<p>
+- James Bergstra
+</p>
+
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+{% include "post-main.html" %}

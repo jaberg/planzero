@@ -147,17 +147,17 @@ class GPR_Extrapolation(BlogPost):
 
 
 class Glossary(BlogPost):
-    """Another post adding to the About page:
+    """This post announces a new page, a
     a glossary of terms and acronyms with specific meanings in the context of
     PlanZero posts.
     This glossary also introduces modelling terminology to support future posts.
     The modelling terminology is used to reframe the NIR-reconstruction
-    project within languages of both corporate strategy and of statistical
+    project within languages of both strategic management and of statistical
     modelling. """
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 5, 5),
-            title='A glossary of terms used in specific ways across multiple posts',
+            title='New: the PlanZero glossary',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
             tags={BlogTag.About,
