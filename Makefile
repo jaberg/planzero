@@ -37,13 +37,23 @@ test_blogs: .build
 		-it --rm $(target) \
 		pytest -W error --maxfail=1 -vv -k test_each_blog test_200.py
 
-test_200: .build
+test_200_internal: .build
+	# do use memory cache
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-e PLANZERO_USE_DISK_CACHE=0 \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest -W error --maxfail=1 -vv test_200.py
+		pytest -W error -vv -k internal test_200.py
+
+test_200: .build
+	# do use memory cache
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest -W error --maxfail=1 -vv -k endpoints test_200.py
 
 test_ipcc_canada: .build
 	docker run \
