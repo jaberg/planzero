@@ -43,7 +43,7 @@ PlanZero's implementation itself needed reworking, in order to function
 with the degree of conceptual clarity that I wanted to offer in writing
 about how it worked.
 This is the second of two follow ups, which complete the rewrite.
-The first follow-up post (<a href="./2026-04-12-about">About this project...</a>) introduced, among other things, the "Draft Status"
+The first follow-up post (<a href="./2026-04-12-about">About this project...</a>) introduced, among other things, the <a href="./2026-04-12-about#draft-status">"Draft Status"</a>
 to offer a mechanism for this level of re-writing,
 and this post aims to
 bring the conceptual clarity that was missing
@@ -56,7 +56,7 @@ source code version control). I'll amend some previous posts to link to the glos
 and call out glossary additions in new posts going forward.
 </p>
 <p>
-This post is organized into two top-level content sections.
+This post is organized around two top-level content sections.
 The first one is about how PlanZero models work at
 a <i>computational level</i>, in terms of
 <a href="#timeseries">time series</a>,
@@ -79,7 +79,7 @@ as <a href="#modelling">models of emissions and economic activity</a>, in terms 
 <a href="#subsidy">subsidy programs</a>,
 <a href="#contribution">emission contributions</a>,
 <a href="#strategy">strategies</a>,
-and <a href="#barrier">barriers</a> relating strategies to the critical success factors of emission reduction and cost.
+and <a href="#barrier">barriers</a><!-- relating strategies to the critical success factors of emission reduction and cost-->.
 This section explains how PlanZero models the computation of national emissions,
 as well as the possible effects of new technologies and government programs.
 Bovaer adoption, as the first worked example, has driven many design choices
@@ -281,25 +281,35 @@ figures and to compute various statistics.
 <p>The purpose of PlanZero is to model future scenarios,
 and to explore strategies for how Canada might achieve a net-zero economy.
 I think of this modelling as being a combination of
-strategic management and numerical optimization.
-To explain why, I'll start with the strategic management part of that statement.
+strategic management, machine learning, and numerical optimization.
+Numerical optimization may perhaps some day play a role in optimizing the use
+of a large set of strategies, but that day is still some ways off.
+Machine learning may perhaps be useful in establishing good baselines for strategy evaluation,
+and I'd like to explore it in near-term future work.
+For now though, this section uses concepts from strategic management
+to explain how PlanZero models are organized and presented
+via the "Simulations" pages of this site.
+</p>
+
+<p>
 <a href="https://en.wikipedia.org/wiki/Strategic_management">Strategic management</a>, to quote wikipedia,
 "involves the formulation and implementation of the major goals and initiatives taken by an organization's managers on behalf of stakeholders, based on consideration of resources and an assessment of the internal and external environments in which the organization operates."
 If we consider Canada as an organization, the federal government has,
 among its many goals and initiatives, set a goal to achieve net-zero by 2050 (<a href="/blog/2026-02-02-cnzeaa">earlier post</a>, <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/net-zero-emissions-2050.html">government site</a>).
-The word "goal" has a common-sense definition, but in the context of governmental planning and legislation,
-it is also appropriate to interpret it more technically, and for PlanZero,
-the technical definition leads goals to play a precise role in its modelling framework.
+The word "goal" has a common-sense definition,
+but in the context of governmental planning and legislation,
+it is also appropriate to interpret it more technically.
+For PlanZero, the technical definition leads goals to play a precise role in its modelling framework.
 </p>
+
 <p>
-Strategic management does not offer a single definition of what a goal is, 
-or a canonical articulation of what good management looks like.
-While I would claim only very limited knowledge of that field,
-the planning process of the federal government brings to my mind the framework articulated in
+Academics and practicing managers have developed numerous models and frameworks to assist in strategic decision-making, but for the formal modeling elements in PlanZero,
+I chose to draw from
 "<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">The
-    Executive's Guide to Facilitating Strategy</a>" by Michael Wilkinson (which I'll refer to as EGFS).
+    Executive's Guide to Facilitating Strategy</a>" by Michael Wilkinson (published 2011,
+which I'll refer to as EGFS).
 In the terminology of the EGFS, an organization's SMART goals (Specific, Measurable, Achievable, Relevant, and Time-bound)
-should be broken down systematically during an implementation planning process into three conceptual kinds of thing: barriers, critical success factors, and strategies.
+should be broken down during a planning process into three conceptual kinds of thing: barriers, critical success factors, and strategies.
 All of these things map onto elements of PlanZero models, and the mapping
 helps to explain how a PlanZero model can represent a plan for e.g. Canada's National Emissions.
 </p>
@@ -325,7 +335,7 @@ helps to explain how a PlanZero model can represent a plan for e.g. Canada's Nat
         <tr>
             <td><strong>Strategy</strong></td>
             <td>broad activities required to achieve a goal, create a critical condition, or overcome a barrier</td>
-            <td>dynamic elements that are optional, but which influence barriers when present</td>
+            <td>dynamic elements that are optional, but which influence barriers when present, to create critical conditions</td>
         </tr>
     </tbody>
 </table>
@@ -339,6 +349,7 @@ I believe that by organizing time series and dynamic elements according to these
 PlanZero models will be easier to communicate.
 </p>
 
+<!--
 <p>
 The connection to numeric optimization (mentioned a few paragraphs back) is that strategies can be parameterized, and
 then the question would arise how each strategy in a simulation should be configured
@@ -348,6 +359,7 @@ For now, however, there are not yet strategies in PlanZero that are configurable
 and for the first few that <i>are</i> configurable, I expect manual configuration to be
 effective. It may be a long time before algorithmic search is useful. 
 </p>
+-->
 
 <p>
 The next subsections explain how the EGFS concepts of critical success factor, barrier, and strategy
@@ -359,7 +371,7 @@ and used in that way to structure and interpret scenario simulations for the pur
 
 <p>
 Critical success factors are introduced in EGFS as "key conditions that must be created to achieve one or more objectives."
-In PlanZero, the objective is, for each IPCC sector, to reduce emissions as much as possible, even producing negative emissions when that's possible, by 2050.
+In PlanZero, the objective is, for each IPCC sector, to reduce emissions as much as possible, even producing negative emissions when that's possible, and furthermore, to do so by 2050.
 For example, in the case of enteric fermentation, the emissions calculation (see this <a href="/blog/2026-03-31-enteric">earlier post approximating the enteric fermentation emissions</a>)
 could be articulated as the product of two terms (ignoring ruminants other than cattle): number of cattle, and average methane emitted per head of cattle.
 These two terms suggest two critical success factors:
@@ -509,6 +521,62 @@ rather than simplified caricatures.
     TS_bovaer_cost(["Cost: Annual Bovaer per cattle type (Time Series)"])
 </pre>
 </p>
+<p>
+Since the PlanZero site only uses simulations to investigate national emissions models,
+I sometimes use the terms interchangeably, even though they refer
+to distinct conceptual levels.
+As of writing, the "Simulations" tab of the site lists two items,
+which could just as well be described as two models.
+The first one, <a href="/scenarios/NIR2025/">NIR2025</a>,
+comprises a single barrier that initializes time series corresponding to the data from the 2025
+National Inventory Report. That dynamic element has no recurrent logic,
+so the time series do not change after year 2023.
+The second one, <a href="/scenarios/Scaling/">Scaling</a>,
+incorporates the NIR2025 data for all but two sectors (Enteric Fermentation, and Industrial Processes / Other Product Manufacture and Use), which are defined instead according to the model
+presented in <a href="./2026-04-03-bovaer">modelling Bovaer adoption</a>.
+<table id="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Name
+              </th>
+              <th>
+                  Short Description
+              </th>
+              <th>
+                  Predicted Emissions 2050
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+
+          <tr>
+              <td>
+                  <a href="/scenarios/NIR2025/">NIR2025</a>
+              </td>
+              <td>Visualize the data from National Greenhouse Gas Inventory Report
+    NIR-2025.</td>
+              <td>681.7
+                  Mt<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mrow><mi mathvariant="normal">C</mi><mi mathvariant="normal">O</mi></mrow><mn>2</mn></msub><mi mathvariant="normal">e</mi></mrow></math></td>
+          </tr>
+
+          <tr>
+              <td>
+                  <a href="/scenarios/Scaling/">Scaling</a>
+              </td>
+              <td>Model maximal deployment of existing products</td>
+              <td>671.5
+                  Mt<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mrow><mi mathvariant="normal">C</mi><mi mathvariant="normal">O</mi></mrow><mn>2</mn></msub><mi mathvariant="normal">e</mi></mrow></math></td>
+          </tr>
+
+    </tbody>
+</table>
+Future work will extend this list with National Inventory Reports from more
+years (2026 was released recently), and with at least one "Extrapolation" model
+that predicts future emissions by extending statistical trends.
+The "Scaling" model will change in future with the addition of more strategies,
+and the incorporation of a baseline from the "Extrapolation" model.
+</p>
 
 <h2 id="conclusion">Conclusion</h2>
 
@@ -524,13 +592,13 @@ as well as several other terms that have come up in previous posts
 (e.g. {{siteref("NIR")|safe}}, {{siteref("NEUD")|safe}}, {{siteref("Net Zero")|safe}}).
 The two previous posts, still in draft,
 which introduced the
-<a href="">Bovaer strategy</a> and
-which presented the analogy of <a href="">posts as revision announcements</a>
+TODO <a href="">Bovaer strategy</a> and
+which presented the analogy of TODO <a href="">posts as revision announcements</a>,
 have been updated with glossary links and expanded
 to include the more-detailed ablative analysis made possible by
-the drivers and emissions factors now used by barriers.
+the drivers and emissions factors now used by barrier elements.
 From now on, this glossary can provide a basis of general documentation, 
-and save me having to repeat definitions across posts.
+and save me having to repeat definitions across posts (and you, dear reader, from having to read them).
 </p>
 
 <!--
@@ -577,8 +645,9 @@ In the "<a href="/simulations/Scaling">Scaling</a>" simulation, only the
 {{siteref("IPCC Sector", "sector")|safe}} is structured in this way as of writing,
 but in future posts I will incorporate the per-sector models built for previous posts into this unified system.
 </p>
+
 <p>
-Before I incorporate the per-sector models though, a slight detour: I will make a post about predictions.
+Before I incorporate the per-sector models though, I would like to make a post about predictions.
 I will continue to use enteric emissions and cattle as the working example,
 and compare two ways to make predictions about them based on historical patterns and trends,
 rather than hypothetical strategies.
