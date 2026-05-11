@@ -347,6 +347,21 @@ class Critical_Success_Factor(GlossaryTerm):
         return ['CSF']
 
 
+class Key_Performance_Indicator(GlossaryTerm):
+    """
+    A Key Performance Indicator (KPI) in PlanZero is the time series associated with
+    a critical success factor.
+    A critical success factor represents what must be true of one or more KPIs
+    as a necessary (if not sufficient) condition to achieve a goal.
+    Typically the KPI value must be within a certain range over some period of time.
+    """
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['KPI']
+
+
+
 class NIR_Model(GlossaryTerm):
     """
     An NIR model is a model that can generate time series corresponding to

@@ -22,8 +22,9 @@ Table of Contents:
     <li><a href="#modelling">Modelling National Emissions</a>
         <ul>
             <li><a href="#formalizing_csfs">Emissions and Costs as Critical Success Factors</a></li>
-            <li><a href="#formalizing_barriers_strategies">Barriers and Strategies</a></li>
-            <li><a href="#scenario_simulation">Scenario Simulation</a></li>
+            <li><a href="#strategy">Strategies: broad activities that could be pursued, or not</a></li>
+            <li><a href="#barrier">Barriers: connecting strategies to outcomes</a></li>
+            <li><a href="#emissions-model">National Emissions Model</a></li>
         </ul>
     </li>
     <li><a href="#conclusion">Conclusion</a></li>
@@ -319,7 +320,7 @@ helps to explain how a PlanZero model can represent a plan for e.g. Canada's Nat
         <tr>
             <td><strong>Barrier</strong></td>
             <td>existing or potential challenges that hinder the achievement of one or more objectives</td>
-            <td>dynamic elements modelling physical, economic, and social factors' influence on one another, emissions, and costs</td>
+            <td>dynamic elements modelling physical, economic, ecological, and social factors' influence on one another, emissions, and costs</td>
         </tr>
         <tr>
             <td><strong>Strategy</strong></td>
@@ -401,8 +402,10 @@ factors for emissions, but if they were formalized, it would be as a triplet of
     <li>a target time range</li>
 </ul>
 The first item here, the time series, could be called a
-<a href="https://en.wikipedia.org/wiki/Performance_indicator">Key Performance Indicators</a>
-or KPI.
+<i>key performance indicator</i>, or KPI
+(see also
+<a href="https://en.wikipedia.org/wiki/Performance_indicator">wikipedia</a>,
+{{siteref("KPI", "glossary")|safe}}).
 Such a critical success factor would be satisfied if and only if the KPI
 had a value within the target value range at a time within the target time range.
 For now, we can look at the graphs in the Simulations and see that any CSFs
@@ -419,118 +422,170 @@ PlanZero implements them for subsidy requirements, and I expect over time, more 
 of critical success factor will be added to PlanZero models.
 </p>
 
-<h3 id="formalizing_barriers_strategies">Barriers and Strategies</h3>
+<h3 id="strategy">Strategies: broad activities that could be pursued, or not</h3>
 
 <p>
-Barriers are introduced in EGFS as "existing or potential challenges that hinder the achievement of one or more objectives"
-and strategies as "broad activities required to achieve a goal, create a critical condition, or overcome a barrier."
-In PlanZero, these two concepts are formalized hand-in-hand:
-EGFS strategies are formalized as relatively simple dynamic elements that represent
-the existence of an approach, such as "feed as many cattle Bovaer as possible";
-and EGFS barriers are formalized as all of the dynamic elements required to model
-the effect of such a strategy on critical success factors,
-such as "how many cattle can be fed Bovaer", "what would it cost", and "how much good would it do?"
-In other figurative words, PlanZero Barriers model how the world might work,
-and provide time series for toggling different behaviours on and off;
-PlanZero strategies are the switches that toggle them.
+Strategies are defined in EGFS as
+"broad activities required to achieve a goal, create a critical condition, or overcome a barrier."
+In PlanZero,
+strategies are dynamic elements that influence barriers (see below) to affect critical
+success factors such as emissions and costs.
+PlanZero barriers and strategies are both dynamic elements in PlanZero.
+The difference between them is that PlanZero strategies should be optional,
+whereas barriers should not.
+PlanZero strategy [dynamic] elements are meant to represent real-life strategies that could be pursued, or not pursued;
+including a strategy in a model means pursuing it,
+and not-including that strategy in the model should mean not-pursuing it.
+The effect of a strategy can be determined by simulating a model with the strategy included,
+and then again without including it, and comparing the two scenarios.
+PlanZero performs this comparison (called {{siteref("Ablative Analysis")|safe}}) automatically
+to produce charts and analysis for strategies in a simulation.
+What counts as a "broad activity" in EGFS is the <i>only</i> kind of activity reflected in PlanZero.
+Detailed planning of how to pursue a strategy in real life is beyond the scope of PlanZero modelling.
 </p>
-<P>
-Barrier dynamic elements model
+
+
+<h3 id="barrier">Barriers: connecting strategies to outcomes</h3>
+
+<p>
+Barriers are defined in EGFS as "existing or potential challenges that
+hinder the achievement of one or more objectives".
+In PlanZero, barriers are the dynamic elements that do almost all of the modelling work;
+they define time series for various physical, economic, ecological, or social
+factors, they relate these time series to one another, and
+they relate them as well to critical success factors
+such as emissions and costs.
+In this way, the PlanZero barrier [dynamic] elements don't so much just model
+challenges and hinderences, so much as <i>all</i> of the relationship between
+strategies and objectives.
+Barrier dynamic elements model, e.g.
 <ul>
     <li>how fast strategies will take effect</li>
     <li>what costs / profits are expected</li>
     <li>what will happen in the meantime before / as they work</li>
+    <li>how will strategies affect one another</li>
 </ul>
-Strategy dynamic elements model
-<ul>
-    <li>when a strategy should start</li>
-    <li>how to use investment (if applicable)</li>
-</ul>
-Barrier objects in PlanZero have the job of predicting the future.
 I hope, over time, to build up and refine the library of barriers in PlanZero,
 because I believe that this library will become the most valuable component of the project.
-Strategy objects are meant to reflect policy changes or product / project development efforts that could be undertaken.
 </p>
-<!--
-<p>
-With both barriers and strategies being formalized as dynamic elements
-that are moreover developed "hand-in-hand", it's worth clarifying in terms of dynamic elements
-where one ends and the other begins.
-For greater clarity, a PlanZero Strategy is an optional dynamic element
-such that omitted the element mean "not doing" the strategy.
-Omitting a strategy should not compromise the validity of a scenario simulation.
-In contrast, PlanZero barriers implement logic that is integral to the validity of the scenario;
-with regards to enteric fermentation for example,
-cattle produce methane at certain rates (which depend on e.g. Bovaer consumption)
-regardless of whether any cattle are fed Bovaer.
-The logic and assumptions that PlanZero uses to estimate methane emissions from cattle
-is implemented in a dynamic element, and that dynamic element is a barrier.
-This logic should always be included in simulation in order to estimate emissions for the sector.
-</p>
--->
 
 
-<h3 id="scenario_simulation">Scenario Simulation</h3>
+<h3 id="emissions-model">National Emissions Model</h3>
 
 <p>
-Scenarios have been mentioned several times in this post already, but
-this subsection explains what I've meant in more detail.
-In the terms of the previous section (<a href="#simulation">Simulation Framework</a>)
-a PlanZero scenario is a set of dynamic elements, and the time series objects they define.
-In the terms of this section (<a href="#modelling">Scenario Modelling</a>)
-a PlanZero scenario is a set of critical success factors, barriers, and strategy elements, as well as
-a few built-in dynamic elements that, together, are capable of simulating
-the evolution of the emissions sectors used in Canada's 2025 NIR.
-The built-in dynamic elements are capable of simulating future emissions even without
-any critical success factor, barrier, or strategy elements:
-<ul>
-    <li><strong>Other NIR Historic Actuals</strong> defines time series objects for IPCC-sector emissions that haven't been modelled by other dynamic elements.
-        It initializes them with values from the NIR, and projects that they remain constant in the future.</li>
-    <li><strong>Atmospheric Chemistry</strong> combines sectoral GHG emissions into sectoral and national {{CO2e|safe}} totals, and simulates the effect on a simple planetary heat model.</li>
-    <li><strong>Subsidy Accounting</strong> totals any subsidy requirements across barriers. At some point this may include estimated impacts in e.g. healthcare, insurance, climate mitigation projects, and disaster relief; currently it does not.</li>
-</ul>
-Scenario simulation is probably best illustrated by example.
-Without further ado, let's continue to the next section, which describes PlanZero's first scenario:
-a simulation of possible futures with and without scaling the use of the bovine feed additive Bovaer.
+A National Emissions Model, sometimes what I just call a "model", is a set of
+dynamic elements that register time series as drivers and emissions factors, so that
+when they are simulated, the resulting scenario includes emissions of the kind that
+are reported in the National Inventory Reports.
+If a model attempts to be predictive of the future, these emissions time series
+are its predictions.
+The dynamic elements that register drivers and emissions factors are barrier elements,
+so for that reason barrier elements are required in a national emissions model.
+A national emissions model does not need any strategies.
 </p>
-This post has introduced PlanZero's simulation framework in terms of computational elements (time series and dynamic elements)
-and in terms of strategic management concepts (critical success factors, barriers, strategies, scenarios).
-The post brings two new tabs to the top of the PlanZero website:
-<a href="/strategies/">strategies</a> lists the strategies implemented in PlanZero, which scenarios include them, and which IPCC Sectors they impact;
-<a href="/scenarios/">scenarios</a> lists the scenarios that are implemented in the software.
-Currently, there is just one strategy (ScaleBovaer) and one scenario (scaling) but it is my intention
-to add more.
-I would like to get into a cadence of alternating between NIR-sector posts and
-scaling-strategy posts.
-I imagine, over time, that PlanZero may grow to include a small number of standard scenarios
-(perhaps "do nothing", "no-subsidies", "what about counting on a few speculative technologies...")
-but I'd concede I'm a bit hazy on how scenarios will be used, so I won't worry about it yet.
-More urgently than scenarios, PlanZero needs strategies (and associated critical success factors and barriers), starting with products and technologies that are closest to mass adoption.
-For anyone that would like to see a more-developed pathways-to-net-zero tracker for Canada, check out <a href="https://dashboard.440megatonnes.ca/">440 Megatones Pathways Tracker</a>, and the research behind it. It's great work and I intend to replicate it to understand it better (<a href="https://github.com/jaberg/planzero/issues/60">github issue</a>).
 
+<p>
+I would like to illustrate national emissions models, but they are
+hard to show.  The following diagram is a first attempt at drawing a part of
+PlanZero model. It looks only at the use of Bovaer model, looks only
+at one kind of cost, looks only at the effect on one IPCC Sector, and ignores that separate
+time series are defined for each of several cattle types, as well as most provinces
+and territories. Still it begins to show something of the kind of dependency relationship
+that flows through from strategies, through barriers, to emissions and costs.
+Perhaps some day, this sort of visualization can be used to explore implemented models
+rather than simplified caricatures.
 
-<a href="https://github.com/jaberg/planzero/issues/72">Indirect barrier impact</a>.
-<a href="https://github.com/jaberg/planzero/issues/73">Barrier impact pages, and see-also mechanism to jump between them</a>.
-
-
+<pre class="mermaid">
+    flowchart TD
+    DE_scale[["Scale Bovaer (Strategy)"]] --> TS_frac_on_bovaer
+    TS_frac_on_bovaer(["Fraction of cattle on Bovaer (Time Series)"]) --> DE_cattle_enteric_emissions
+    DE_cattle_enteric_emissions["Cattle Enteric Emission Rates (Barrier)"] --> TS_cattle_emfacs
+    TS_cattle_emfacs(["Emission factor: annual methane per cattle type (Time Series)"])
+    DE_limit["Limit Bovaer Adoption (Barrier)"] --> TS_farmers_open_to_bovaer
+    TS_farmers_open_to_bovaer(["Driver: Farmers open to Bovaer (Time Series)"]) -.->|Scale Bovaer does not use current value| DE_scale
+    TS_frac_on_bovaer --> DE_limit
+    TS_frac_on_bovaer --> DE_purchase_cost
+    DE_purchase_cost["Bovaer Purchasing (Barrier)"] --> TS_bovaer_cost
+    TS_bovaer_cost(["Cost: Annual Bovaer per cattle type (Time Series)"])
+</pre>
+</p>
 
 <h2 id="conclusion">Conclusion</h2>
 
 <p>
-As of the authoring of this post, the modelling terms now guide and inform
+This post has introduced PlanZero's
+modelling and simulation framework in terms of
+computational elements (time series and dynamic elements)
+and in terms of strategic management (critical success factors,
+barriers, strategies).
+The post brings with it a new tab at the top of the PlanZero website:
+a <a href="/glossary/">glossary</a> listing these terms,
+as well as several other terms that have come up in previous posts
+(e.g. {{siteref("NIR")|safe}}, {{siteref("NEUD")|safe}}, {{siteref("Net Zero")|safe}}).
+The two previous posts, still in draft,
+which introduced the
+<a href="">Bovaer strategy</a> and
+which presented the analogy of <a href="">posts as revision announcements</a>
+have been updated with glossary links and expanded
+to include the more-detailed ablative analysis made possible by
+the drivers and emissions factors now used by barriers.
+From now on, this glossary can provide a basis of general documentation, 
+and save me having to repeat definitions across posts.
+</p>
+
+<!--
+
+<h3>Future Work</h3>
+<p>
+In the course of preparing this post and the previous two,
+several areas of possible future work came a little more clearly into view.
+Model visualization was one such area: the graph above is neat and tidy, but
+it had to be made manually as an illustrative example. It would be more useful if
+such a graph could be rendered automatically from an actual model, perhaps via
+some kind of interactive interface that allowed a user to explore a few
+elements at a time.
+GH ISSUE
+</p>
+
+<p>A simpler application of graph analysis would be to calculate which IPCC
+sectors are affected by which strategies and barriers indirectly. In the graph above, we can
+see that the "Scale Bovaer" strategy affects enteric emissions because they
+are connected by a directed path in the graph.
+This is much easier than interactive graph visualization, and would help summarize
+the effects of barrier and strategy elements in the tables within the "Simulations" pages.
+<a href="https://github.com/jaberg/planzero/issues/72">Indirect barrier impact</a>.
+Similarly, it might be helpful to automatically generate "see also" links for barriers
+that have common influences and effects.
+<a href="https://github.com/jaberg/planzero/issues/73">Barrier impact pages, and see-also mechanism to jump between them</a>.
+</p>
+-->
+
+<p>
+As of the authoring of this post, the modelling terms defined here now guide and inform
 the charts and page layouts in the model visualization section of the site,
 which is now, as per the new terminology, called "<a href="/simulations/">Simulations</a>".
 In the analysis of strategies, the charts now visualize the breakdown of emissions changes by sector,
 and the breakdown of subsidy costs by program and payee.
 In the analysis of simulations by IPCC sectors, it is possible to see a breakdown
-by gas, and by contribution (the product of a driver and an emission factor).
+by contribution (the product of a driver and an emission factor).
 This style of visualization aims for alignment with the style of thinking
 at work in the preparation of e.g. the
 {{siteref("ECCC")|safe}}-maintained {{siteref("National Greenhouse Gas Inventory", "National Inventory")|safe}}, and the
 {{siteref("NRCan")|safe}}-maintained {{siteref("NEUD")|safe}}.
-In the Scaling simulation only the "<a href="/simulations/Scaling/ipcc-sectors/Enteric_Fermentation/">Enteric Fermentation</a>" {{siteref("IPCC Sector", "sector")|safe}} is structured in this way,
-but in future posts I will refactor the per-sector models built for previous posts into this unified system
-so that strategies and barriers can cut across sectoral boundaries.
+In the "<a href="/simulations/Scaling">Scaling</a>" simulation, only the
+"<a href="/simulations/Scaling/ipcc-sectors/Enteric_Fermentation/">Enteric Fermentation</a>"
+{{siteref("IPCC Sector", "sector")|safe}} is structured in this way as of writing,
+but in future posts I will incorporate the per-sector models built for previous posts into this unified system.
+</p>
+<p>
+Before I incorporate the per-sector models though, a slight detour: I will make a post about predictions.
+I will continue to use enteric emissions and cattle as the working example,
+and compare two ways to make predictions about them based on historical patterns and trends,
+rather than hypothetical strategies.
+Assuming that goes well, I'll follow up with posts making similar kinds of predictions for
+other sectors studied in previous PlanZero posts.
+The result will be a new "Extrapolation" model carrying on current trends, and a
+better baseline against which to evaluate possible strategies in the "Scaling" model.
 </p>
 <p>
 Until next time,
@@ -550,4 +605,8 @@ Until next time,
 </ul>
 </section>
 </div>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
 {% include "post-main.html" %}
