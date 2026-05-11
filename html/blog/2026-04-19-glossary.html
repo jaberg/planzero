@@ -370,68 +370,85 @@ and used in that way to structure and interpret scenario simulations for the pur
 <h3 id="formalizing_csfs">Emissions and Costs as Critical Success Factors</h3>
 
 <p>
-Critical success factors are introduced in EGFS as "key conditions that must be created to achieve one or more objectives."
-In PlanZero, the objective is, for each IPCC sector, to reduce emissions as much as possible, even producing negative emissions when that's possible, and furthermore, to do so by 2050.
-For example, in the case of enteric fermentation, the emissions calculation (see this <a href="/blog/2026-03-31-enteric">earlier post approximating the enteric fermentation emissions</a>)
-could be articulated as the product of two terms (ignoring ruminants other than cattle): number of cattle, and average methane emitted per head of cattle.
-These two terms suggest two critical success factors:
-<ul>
-    <li>Minimize the number of cattle.</li>
-    <li>Minimize the average amount of methane emitted per head of cattle.</li>
-</ul>
-Minimizing either or both of these terms would, mathematically, reduce enteric fermentation emissions.
-Without minimizing one or the other, enteric fermentation emissions will not be reduced.
-Therefore, it's fair to say these are two "key conditions that must be created to achieve one or more objectives" of emissions reduction in this sector.
-</p>
-
-<p>
-There are many such multiplicative pairs in the {{siteref("NIR")|safe}} and {{siteref("NEUD")|safe}}. In both of these databases, the national annual emissions total is ultimately computed
-by a massive sum of products with thousands of terms: a sum over
-<ul><li>IPCC Sectors,</li><li>greenhouse gas types,</li><li>provinces and territories,</li></ul>
-of (a) some amount or level of activity related to an emissions driver, multiplied by (b) an
-{{siteref("Emission Factor", "emission factor")|safe}}
-of how much each greenhouse gas is emitted per unit of amount or activity.
-</p>
-
-<p>
-Heads-of-cattle multiplied by methane-per-head could be one such term (for each province).
-Alternatively there could be separate terms for dairy cows, beef cows, calves, and so on (currently this is how PlanZero does it).
-Other examples could include
-how many small gas batteries are there, and how much do they tend to leak;
-how many cars were there and how much did they emit per year on average?
-There's no single best way to group the terms of this large sum of products, but I'm hoping,
-through the continued sector-by-sector research series, to find a relatively stable
-and useful decomposition for each sector, such that there is data for each term,
-and such that there is some sensible way of modelling the interaction between terms with
-barriers.
-</p>
-
-<p>PlanZero does not yet include explicitly-formalized critical success
-factors for emissions, but if they were formalized, it would be as a triplet of 
+Critical success factors are introduced in EGFS as "key conditions that must be created to achieve one or more objectives"
+and the articulation of critical success factors is recommended
+as a prelude to building strategies.
+In PlanZero, there is a specific objective:
+the objective is to reduce emissions as much as possible for each IPCC sector, even producing negative emissions as applicable, and to achieve net zero emissions by 2050.
+PlanZero does not include explicitly-formalized critical success
+factors in its models, but if they were formalized, I expect they would be formalized as a
+triplet of 
 <ul>
     <li>a time series, e.g. {{CO2e|safe}}/yr for an IPCC sector, greenhouse gas, and province / territory</li>
     <li>a target value range</li>
     <li>a target time range</li>
 </ul>
-The first item here, the time series, could be called a
+wherein the first item, the time series, might be called a 
 <i>key performance indicator</i>, or KPI
 (see also
 <a href="https://en.wikipedia.org/wiki/Performance_indicator">wikipedia</a>,
 {{siteref("KPI", "glossary")|safe}}).
-Such a critical success factor would be satisfied if and only if the KPI
-had a value within the target value range at a time within the target time range.
-For now, we can look at the graphs in the Simulations and see that any CSFs
-sufficient to guarantee achievement of net-zero by 2050 are nowhere near being satisfied,
-it's not required to formally verify this.
-Still, it's no coincidence that the ingredients for formal CSF verification
-make for good visualizations.
+PlanZero has formalized KPIs (more on these below), but it does not have formalized critical success factors.
+The reason is no modelling technicality, it is a very central, real issue.
+It is relatively obvious that
+the metrics of e.g. {{CO2e|safe}}/yr for each IPCC sector are imporant in tracking progress to net zero, because the objective is literally that these numbers sum to zero by 2050.
+However the question of exactly what each annual sector total needs to be,
+by what date, is hotly contested,
+because it's possible that some of these annual emissions may be negative by 2050,
+and that other of the sectors can therefore remain positive (which is expected to be easier).
+How negative some of them may be, and how positive some of them can
+get-away-with-being, so to speak, is one of the biggest real-life challenges
+in planning a net-zero feature.
+</p>
+<p>
+At some point, PlanZero may include explicit critical success factors
+in order to determine automatically whether or not (or with what
+probability) a model achieves net-zero by 2050.
+For now, no model comes close, so no automatic assessment is required.
+</p>
+
+
+<p>
+Coming back to Performance Indicators ({{siteref("KPI", "KPIs")|safe}}),
+specific KPIs have been formalized as being important to PlanZero models.
+The three types of <i>base KPI</i> in PlanZero are
+<ul>
+    <li>{{siteref("Driver", "drivers")|safe}},
+        which are measures of activity or stock, and which are
+        associated with a province or territory</li>
+    <li>{{siteref("Emission Factor", "emission factors")|safe}},
+        which are factors of proportionality between drivers
+        and greenhouse gases, specific to an IPCC Sector,
+        which may be associated with a specific province
+        or territory</li>
+    <li>{{siteref("Subsidy Factor", "subsidy factors")|safe}},
+        which are factors of proportionality between drivers
+        and dollar amounts, which are associated with real or hypothetical
+        public funding programs</li>
+</ul>
+Base KPIs are used to define <i>derived KPIs</i> by multiplying
+drivers with their corresponding emission factors (and/or subsidy factors),
+and adding up the resulting terms to calculate IPCC sectoral emissions totals,
+and total program subsidy requirements.
 </p>
 
 <p>
-It is natural to imagine critical success factors for other KPIs beyond emissions,
-the term was not invented for emissions after all.
-PlanZero implements them for subsidy requirements, and I expect over time, more kinds
-of critical success factor will be added to PlanZero models.
+For example, in the case of enteric fermentation
+(see this <a href="/blog/2026-03-31-enteric">earlier post approximating the enteric fermentation emissions</a>)
+the emissions calculation 
+can be approximated as the product of two terms (ignoring ruminants other than cattle): number of cattle, and average methane emitted per head of cattle.
+These two terms correspond to two base KPIs:
+<ul>
+    <li>number of cattle (a driver)</li>
+    <li>average amount of methane emitted per head of cattle per unit time (an emission factor)</li>
+</ul>
+Alternatively, there could be a larger set of base KPIs, such as separate driver and
+emissions factor terms for dairy cows, beef cows, and calves, and for each
+province and territory (currently this is how PlanZero does it).
+There's no uniquely optimal set of base KPIs.
+I am hoping, through the continued sector-by-sector research series, to find a relatively stable
+and useful decomposition for each sector, such that there is data for each term,
+and there can be sensible causal modelling of the interaction between time series.
 </p>
 
 <h3 id="strategy">Strategies: broad activities that could be pursued, or not</h3>
@@ -440,8 +457,8 @@ of critical success factor will be added to PlanZero models.
 Strategies are defined in EGFS as
 "broad activities required to achieve a goal, create a critical condition, or overcome a barrier."
 In PlanZero,
-strategies are dynamic elements that influence barriers (see below) to affect critical
-success factors such as emissions and costs.
+strategies are dynamic elements that influence barriers (see below) to affect
+KPIs such as emissions and costs.
 PlanZero barriers and strategies are both dynamic elements in PlanZero.
 The difference between them is that PlanZero strategies should be optional,
 whereas barriers should not.

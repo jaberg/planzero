@@ -275,38 +275,51 @@ class IPCC_Sector_Contributor(GlossaryTerm):
 
 class Emission_Factor(GlossaryTerm):
     """<p>
-    Category emissions are typically a sum of products (e.g. amount of activity
+    IPCC sector emissions are generally defined as a sum of products (e.g.
+    amount of activity
     multiplied by emissions per unit of activity,
-    summed over one or more activities that count toward the category);
-    in this typical case, each of the emission-contributing activities corresponds
-    to an {{lref("Emissions Source")|safe}} and
+    summed over one or more activities that count toward the category).
+    Each of the emission-contributing activities corresponds
+    to an {{lref("Driver")|safe}} and
     the emission of each greenhouse gas per unit of activity is referred to as
     an Emission Factor.
     </p>
     <p>
     An Emission Factor is a time series, whose unit is an amount of
     mass (of greenhouse gas) per unit activity (or if not "activity",
-    whatever makes sense for the {{lref("Emissions Source", "emission
-    contributor")|safe}}).
+    whatever makes sense for the {{lref("Driver", "driver")|safe}}.</p>"""
+
+
+class Driver(GlossaryTerm):
+    """<p>A quantity of activity or stock, typically associated with a province or
+    territory.
+    {{lref("Barrier")|safe}} dynamic elements can register
+    {{lref("Time Series", "time series")|safe}} as drivers.
+    Drivers are meant to drive emission KPIs via emission factors,
+    and subsidy KPIs via subsidy factors.
     </p>
-    """
 
-
-class Emissions_Source(GlossaryTerm):
-    """<p>
-    Category emissions are typically a sum of products (e.g. amount of activity
+    <p>
+    IPCC sector emissions are typically a sum of products (e.g. amount of activity
     multiplied by emissions per unit of activity,
     summed over one or more activities that count toward the category);
     in this typical case, each of the emission-contributing activities
     corresponds
-    to an {{lref("Emissions Source")|safe}} and
+    to a driver, and
     the emission of each greenhouse gas per unit of activity is referred to as
-    an Emission Factor.
+    an {{lref("Emission Factor")|safe}}.
     </p>
     <p>
-    An Emission Source is a time series, whose unit is typically an amount of
-    activity (in whatever unit is appropriate for the emissions source) per
-    unit time.</p>"""
+    An Driver is a time series, whose unit is typically an amount of
+    activity (in whatever unit is appropriate for the emissions source) totalled
+    per year in a non-interpolating time series.
+    </p>"""
+
+
+class Subsidy_Factor(GlossaryTerm):
+    """<p>A subsidy factor is a constant of proportionality between
+    a {{lref("Driver")|safe}} and a real or hypothetical funding program.</p>
+    """
 
 
 class Critical_Success_Factor(GlossaryTerm):
