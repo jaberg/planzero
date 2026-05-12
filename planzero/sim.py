@@ -207,11 +207,11 @@ class SimulationResult(BaseModel):
                 continue
                 
             if base_total is None:
-                diff = abl_total
+                diff = -abl_total
             elif abl_total is None:
-                diff = -base_total
+                diff = base_total
             else:
-                diff = abl_total - base_total
+                diff = base_total - abl_total
 
             assert diff.v_unit == u.kt_CO2e, diff.v_unit
             if np.abs(diff.values[1:]).max() > eps_kt:
@@ -280,14 +280,14 @@ class SimulationResult(BaseModel):
             baseline_total = baseline_emres.total()
             ablated_total = ablated_emres.total()
             impact_data = EChartSeriesData(
-                ablated_total - baseline_total,
+                baseline_total - ablated_total,
                 times=self.year_times,
                 v_unit=u.kt_CO2e,
                 url=None
             )
             other_series=[
                 EChartSeriesBase(
-                    name='Net Emissions Avoided',
+                    name='Net Emissions Delta',
                     lineStyle=EChartLineStyle(color='#303030', width=2),
                     itemStyle=EChartItemStyle(color='#303030'),
                     data=impact_data,
@@ -300,7 +300,7 @@ class SimulationResult(BaseModel):
                 text=f'Emissions Impact: {strategy_name.replace("_", " ")}',
                 subtext=f'Annual kt CO2e saved in {self.simulation_name}'),
             xAxis=EChartXAxis(data=self.year_ints),
-            yAxis=[EChartYAxis(name='Emissions Saved (kt CO2e)')],
+            yAxis=[EChartYAxis(name='Emissions Delta (kt CO2e)')],
             stacked_series=[
                 EChartSeriesStackElem(
                     name=catpath_plus,
@@ -357,7 +357,7 @@ class SimulationResult(BaseModel):
             yAxis=EChartYAxis(name='Subsidies Required (CAD, Millions)'),
             stacked_series=[
                 EChartSeriesStackElem(
-                    name=f'{program}, {reason}',
+                    name=f'{program.value}: {reason}',
                     data=EChartSeriesData(
                         diff,
                         times=self.year_times,

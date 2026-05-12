@@ -270,3 +270,15 @@ demo_sc_32_10_0130_01: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero.sc_3210013001
+
+
+html/blog/2026-04-03-bovaer_assets:
+	# these asset files are meant to be stored in git
+	# the script is used during development to re-generate them
+	# after the post is beyond amendment, this build script could be removed
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -c "import planzero; planzero.blog.ModellingBovaer.generate_assets()"

@@ -121,6 +121,11 @@ class StackedAreaEChart(HTML_element):
     other_series: list[EChartSeriesBase]
     legend: dict | None = None
 
+    def save_as(self, filepath):
+        # called from Makefile to create snapshots for posts
+        with open(filepath, 'w') as ofile:
+            ofile.write(self.as_html())
+
     def as_html(self):
         newline = '\n'
         return f"""

@@ -33,7 +33,7 @@ class Scale_Bovaer(Strategy2):
     cattle farmers who are modelled as being open to Bovaer usage
     (according to the assumptions in
      <a href="{{coderef_url(Bovaer_Adoption_Limit)}}">Bovaer Adoption Limit</a>)
-    actually go for it. This adoption is modelled as a nation-wide
+    are subsized by public funds, and go for it. This adoption is modelled as a nation-wide
     proportionality, not province-by-province.</p>
     """
     # TODO: add a see-also type mechanism, to look at the effects
@@ -41,7 +41,7 @@ class Scale_Bovaer(Strategy2):
 
     @computed_field
     def short_description(self) -> str:
-        return f"Model that farmers who are open to using Bovaer actually start administering it."
+        return f"Model that farmers who are open to using Bovaer are subsidized to start administering it."
 
     def see_also_html(self, context_vars) -> list[str]:
         sources = [

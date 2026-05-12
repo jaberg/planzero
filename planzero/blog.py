@@ -205,6 +205,16 @@ class ModellingBovaer(BlogPost):
             draft=True,
             )
 
+    @staticmethod
+    def generate_assets():
+        scaling = sim.simulation_result('Scaling')
+        scaling.by_ipcc_sector.save_as(
+            'html/blog/2026-04-03-bovaer_by-ipcc-sector.html')
+        scaling.strategy_impact_echart('Scale_Bovaer').save_as(
+            'html/blog/2026-04-03-bovaer_strategy-emissions.html')
+        scaling.strategy_subsidies_echart('Scale_Bovaer').save_as(
+            'html/blog/2026-04-03-bovaer_strategy-subsidies.html')
+
 
 class IPCC_HeavyDutyDieselVehicles(BlogPost):
     """Eighth in the sector-by-sector National Greenhouse Gas Inventory series:
