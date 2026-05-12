@@ -36,7 +36,7 @@ in terms of the role of posts relative to other facets of the project.
 My intent is partly to prepare
 for a future in which others may contribute to PlanZero,
 and partly to keep myself focused by articulating a process that I believe I should follow.
-This post re-articulates the project mission and vision, and recognizes the
+This post refreshes the project mission and vision, and recognizes the
 contributors that are helping to bring it together.
 This post supercedes the thinking in <a href="/blog/2026-01-06-contributing">"Contributing (even for myself)"</a>, from January 2026, and replaces the
 previous content of the About page,
@@ -60,7 +60,8 @@ and other macro trends that might influence future emissions.
 
 <!-- themes, guiding principles -->
 <p>
-There have been, and thankfully continue to be, many efforts to model future emissions in the world:
+There have been, and thankfully continue to be,
+many efforts to model future emissions in the world:
 the effect they have on the climate, and the effect various technologies may exert on emission rates.
 As I build up a bibliography (<a href="https://github.com/jaberg/planzero/issues/63">not yet started as of April 2026</a>) this PlanZero site will situate itself in the context of ongoing and previous work.
 I believe that PlanZero is differentiated from other efforts in (a) focusing on Canada, and
@@ -141,29 +142,40 @@ some project themes:
 <h3 id="revision-control">Preface: Revision Control as Mechanism and Inspiration</h3>
 <p>
 As a preface to explaining how posts are supposed to work in PlanZero,
-it is worth saying how revision control, and <a href="https://git-scm.com/">git</a> in particular, have at least revolutionized, if not fundamentally enabled,
+it is worth saying how revision control,
+and <a href="https://git-scm.com/">git</a> in particular,
+have at least revolutionized, if not fundamentally enabled,
  <a href="https://en.wikipedia.org/wiki/Open-source_software">open-source software</a>.
 Open-source software is developed in many ways, but the most canonical style is
 by a loosely-organized community
-of contributors, each of whom has a copy of the software (called a <i>branch</i>, or <i>fork</i> of the code), and can develop it
-however, and whenever they please (by making <i>commits</i> of changes to their <i>branch</i>).
+of contributors, each of whom has a copy of the software
+(called a <i>{{siteref("Git Branch", "branch")|safe}}</i>,
+or <i>{{siteref("Git Fork", "fork")|safe}}</i> of the code), and can develop it
+however, and whenever they please (by
+making <i>{{siteref("Git Commit", "local commits")|safe}}</i> of changes to their
+<i>{{siteref("Git Branch", "branch")|safe}}</i> of source code).
 Development would not be efficient,
 if not for revision-control systems that
 allow such developers to stitch their private improvements back together into
-a coherent, improved, software system (this stitching is called a <i>merge</i> in git).
+a coherent, improved, software system (this stitching is called a
+<i>{{siteref("Git Merge", "merge")|safe}}</i> in git).
 Despite challenges such as weak coordination and predictable governance issues,
 open-source communities have developed and
 maintained
 some of the most complex and most stable software in the world,
-including <a href="https://github.com/torvalds/libgit2">git itself</a> (of course),
+including <a href="https://github.com/torvalds/libgit2">git itself</a>,
 the <a href="https://github.com/torvalds/linux">Linux operating system</a>,
 <a href="https://github.com/pangeo-data/awesome-open-climate-science#general-purpose">simulation tools for mathematical modelling</a>,
 and many
 <a href="https://github.com/pangeo-data/awesome-open-climate-science">models used for atmospheric, ocean, and climate science</a>.
+I have made PlanZero an open source project because I believe that
+that it will require the support, at some point, of an open-source community.
 </p>
 
 <p>
-This pattern applies at two conceptual levels with regards to PlanZero.
+This pattern of iteratively
+patching up and extending open source software
+applies at two conceptual levels with regards to PlanZero.
 As a lower level, PlanZero follows this pattern, by using git via GitHub.
 As a higher level, PlanZero uses posts to mark significant changes
 to the underlying project code, including the structure and visualizations
@@ -244,7 +256,7 @@ If a post is not in draft, then
         post introducing the superceding content</li>
 </ul>
 All such changes will be tracked in git in any event.
-Git history should only be amended in order to remove accidentally committed
+{{siteref("Git History", "Git history")|safe}} should only be amended in order to remove accidentally committed
 material, including sensitive or confidential material.
 </p>
 <p>
@@ -269,7 +281,7 @@ When a non-draft post is amended to include a link to a superceding post,
 the amendment should mention a date e.g. "(Edited April 25, 2026: new post X covers this topic differently...)" but this date too can be approximate.
 </p>
 <p>
-PlanZero's git history has a precise history
+PlanZero's {{siteref("Git History", "git history")|safe}} records a precise history
 of which files were edited in what ways on which dates and times.
 This history is
 detailed and accurate, although it reflects the

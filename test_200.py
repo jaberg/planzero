@@ -25,6 +25,7 @@ def test_internal_links(endpoint):
     # Extract all href attributes, excluding fragments and query parameters
     html = response.text
     links = re.findall(r'href=["\']([^"\'#?]+)["\']', html)
+    assert 'StrictUndefined' not in html
 
     for link in set(links):
         # Skip external protocols

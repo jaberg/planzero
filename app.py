@@ -324,6 +324,7 @@ def get_blog_html(post_name: str):
 
 
 @app.get("/blog/{post_name}", response_class=HTMLResponse)
+@app.get("/post/{post_name}", response_class=HTMLResponse)
 async def get_blog(request: Request, post_name:str):
     try:
         html = get_blog_html(post_name)
@@ -355,6 +356,7 @@ async def get_glossary(request: Request):
     )
 
 @app.get("/index.html", response_class=HTMLResponse)
+@app.get("/posts/", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POSTS):
     return templates.TemplateResponse(

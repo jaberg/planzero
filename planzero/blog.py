@@ -30,6 +30,10 @@ class BlogPost(BaseModel):
     concept_only: bool = False # there is no html for this post object
     tags: set[str] = set()
 
+    @property
+    def siteref(self):
+        return f'/post/{self.url_filename}'
+
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
             kwargs = dict(kwargs, about=self.__class__.__doc__)
@@ -179,7 +183,8 @@ class About(BlogPost):
             title='About this project: rewriting and expanding planzero.ca/about',
             url_filename="2026-04-12-about",
             author="James Bergstra",
-            tags={BlogTag.About,},
+            tags={BlogTag.About,
+                 },
             draft=True,
             )
 
