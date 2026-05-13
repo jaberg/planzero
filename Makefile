@@ -7,6 +7,7 @@ target = ${PROJECTNAME}
 bash: .build
 	docker run \
 		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
 		-w /mnt/ \
 		-it --rm $(target) \
 		bash
@@ -36,12 +37,23 @@ test_blogs: .build
 		-it --rm $(target) \
 		pytest -W error --maxfail=1 -vv -k test_each_blog test_200.py
 
-test_200: .build
+test_200_internal: .build
+	# do use memory cache
 	docker run \
 		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
 		-w /mnt/ \
 		-it --rm $(target) \
-		pytest -W error --maxfail=1 -vv test_200.py
+		pytest -W error -vv -k internal test_200.py
+
+test_200: .build
+	# do use memory cache
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest -W error --maxfail=1 -vv -k endpoints test_200.py
 
 test_ipcc_canada: .build
 	docker run \
@@ -49,6 +61,13 @@ test_ipcc_canada: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		pytest -W error --maxfail=2 -vv test_ipcc_canada.py
+
+test_cattle: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		pytest -W error --maxfail=1 -vv planzero/test_cattle.py
 
 test_mapml: .build
 	docker run \
@@ -251,3 +270,15 @@ demo_sc_32_10_0130_01: .build
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero.sc_3210013001
+
+
+html/blog/2026-04-03-bovaer_assets:
+	# these asset files are meant to be stored in git
+	# the script is used during development to re-generate them
+	# after the post is beyond amendment, this build script could be removed
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -c "import planzero; planzero.blog.ModellingBovaer.generate_assets()"

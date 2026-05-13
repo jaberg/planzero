@@ -1,7 +1,7 @@
 from pydantic import Field, computed_field
 
 from .ureg import u
-from .enums import IPCC_Sector, StandardScenarios, PT
+from .enums import IPCC_Sector, PT
 from .base import DynamicElement
 from . import sts
 from . import objtensor
@@ -21,8 +21,9 @@ class Barrier(DynamicElement):
         self.tags.add('barrier')
 
     @computed_field
-    def ipcc_sector_values(self) -> list[str]:
-        return [sec.value for sec in self.ipcc_sectors]
+    def short_description(self) -> str:
+        return self.__class__.__doc__
+
 
 
 from . import cattle

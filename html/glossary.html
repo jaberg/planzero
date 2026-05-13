@@ -5,7 +5,7 @@
 <section class="post">
     <header class="major">
         <h1>PlanZero Glossary</h1>
-        <p>Terms, acronyms, and conceptual modelling framework</p>
+        <p>Terms, acronyms, data sources, and the conceptual modelling framework used to implement PlanZero.</p>
     </header>
 
     <style>
@@ -28,11 +28,11 @@
 
 <p>
 Term list:
-<ul>
+<ol>
 {% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
 <li><a href="#{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</a></li>
 {% endfor %}
-</ul>
+</ol>
 </p>
 
 {% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
@@ -52,11 +52,14 @@ Term list:
     </ul>
     </p>
 {% endif %}
-{% if obj.see_also %}
+{% if obj.see_also or obj.as_discussed_in_posts %}
     <p><strong style="color: #666;">See Also</strong>
     <ul>
-    {% for term, ref_text in obj.see_also.items() %}
-    <li><a href="#{{planzero.glossary.glossary_terms_w_aka[term].__class__.__name__}}">{{term}}</a> - {{ref_text}}</li>
+    {% for term, ref_text in sorted(obj.see_also.items()) %}
+    <li><a href="#{{planzero.glossary.glossary_terms_w_aka[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
+    {% endfor %}
+    {% for obj, hashref, descr in obj.as_discussed_in_posts %}
+    <li>[Post] <a href="{{obj.siteref}}{{hashref}}">{{obj.title}}</a> - {{descr}}</li>
     {% endfor %}
     </ul>
     </p>

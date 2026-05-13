@@ -28,9 +28,11 @@ u = ureg
 
 
 from . import ipcc_canada
-from .enums import GHG, IPCC_Sector
+from .enums import (
+    GHG, IPCC_Sector, PT, SubsidyPrograms,
+    IPCC_Sector_from_catpath_with_whitespace)
 
-from .sts import SparseTimeSeries, STS
+from .sts import SparseTimeSeries, STS, InterpolationMode
 
 
 class DynamicElement(BaseModel):
@@ -63,6 +65,10 @@ class DynamicElement(BaseModel):
         else:
             return rval
 
+    @computed_field
+    def description_html(self) -> str:
+        return f'<p>{self.description}</p>'
+
     def model_post_init(self, __context):
         super().model_post_init(__context)
         if self.identifier is None:
@@ -74,6 +80,17 @@ class DynamicElement(BaseModel):
             raise Exception()
         except AttributeError:
             pass
+
+    def see_also_html(self, context_vars) -> list[str]:
+        # Used to render pages about strategies and barriers and xref them to
+        # each other
+        return []
+
+    @computed_field
+    def extra_ipcc_sectors(self) -> list[object]:
+        # TODO: https://github.com/jaberg/planzero/issues/72
+        # would eliminate need for this
+        return []
 
     def init_add_subprojects(self, sub_projects):
         self._sub_projects.extend(sub_projects)
@@ -196,6 +213,110 @@ class Stash(object):
     pass
 
 
+class EmissionResults(BaseModel):
+
+    by_sector_ghg_pt_driver: dict[tuple[object, object, object, object], object]
+
+    @property
+    def ipcc_sectors(self) -> set[object]:
+        return {
+            ipcc_sector
+            for (ipcc_sector, _, _, _) in self.by_sector_ghg_pt_driver}
+
+    @property
+    def ghgs(self) -> set[object]:
+        return {
+            ghg
+            for (_, ghg, _, _) in self.by_sector_ghg_pt_driver}
+
+    @property
+    def pts(self) -> set[object]:
+        return {
+            pt
+            for (_, _, pt, _) in self.by_sector_ghg_pt_driver}
+
+    @property
+    def drivers(self) -> set[object]:
+        return {
+            driver
+            for (_, _, _, driver) in self.by_sector_ghg_pt_driver}
+
+    def drivers_by_sector(self, sector):
+        return {
+            driver
+            for (sector_i, _, _, driver) in self.by_sector_ghg_pt_driver
+            if sector_i == sector
+        }
+
+    def total(self,
+              only_ipcc_sector=None,
+              only_driver=None,
+              return_None_instead_of_zero=False,
+              v_unit=u.kt_CO2e,
+             ):
+        rval = None
+        for ((ipcc_sector, ghg, _, driver), ts) in self.by_sector_ghg_pt_driver.items():
+            if only_ipcc_sector is not None and ipcc_sector != only_ipcc_sector:
+                continue
+            if only_driver is not None and driver != only_driver:
+                continue
+            co2e = ghgvalues.GWP_100[ghg] * ts
+            if rval is None:
+                rval = co2e
+            else:
+                rval += co2e
+        if rval is None:
+            if return_None_instead_of_zero:
+                return None
+            else:
+                return SparseTimeSeries(
+                    default_value=0 * v_unit,
+                    t_unit=u.year)
+        return rval.to(v_unit)
+
+    def sum(self):
+        rval = None
+        for ((_, ghg, _, _), ts) in self.by_sector_ghg_pt_driver.items():
+            co2e = ghgvalues.GWP_100[ghg] * ts
+            if rval is None:
+                rval = co2e.sum()
+            else:
+                rval += co2e.sum()
+        if rval is None:
+            return 0 * u.kilotonne_CO2e
+        return rval
+
+
+class SubsidyResults(BaseModel):
+
+    by_program_reason_pt_driver: dict[tuple[object, object, object, object], object]
+
+    def total(self):
+        rval = None
+        for ts in self.by_program_reason_pt_driver.values():
+            if rval is None:
+                rval = ts
+            else:
+                rval += ts
+        if rval is None:
+            return SparseTimeSeries(
+                default_value=0 * u.mega_CAD,
+                t_unit=u.year)
+        return rval
+
+    def sum(self,
+            return_None_instead_of_zero=False):
+        rval = None
+        for ts in self.by_program_reason_pt_driver.values():
+            if rval is None:
+                rval = ts.sum()
+            else:
+                rval += ts.sum()
+        if rval is None and not return_None_instead_of_zero:
+            raise Exception()
+        return rval
+
+
 class State(object):
     t_start = 1990 * u.years
 
@@ -203,13 +324,6 @@ class State(object):
         self.t_start = t_start
         self._t_now = t_start # always in some unit of time, not always the same unit
         self.sts = {}  # the sts objects built up by rolling simulation forward
-
-        # TODO: index by enums.IPCC_Sector
-        self.sectoral_emissions_contributors = {
-            catpath: {}
-            for catpath in sorted(ipcc_canada.catpaths)}
-
-        self.subsidy_requirements = set()
 
         self.projects = {}
         self.project_writes = {} # prj.identifier -> set of string names
@@ -220,7 +334,12 @@ class State(object):
         self._depgraph = None
         self.name = name
         self.emissions_registration_closed = False
-
+        self.registries = dict(
+            emission_factor={},
+            driver={},
+            subsidy_factor={})
+        self._computed_annual_emissions = None
+        self._computed_annual_subsidies = None
         self.sts_id_counter = 100
 
     def new_sts_identifier(self):
@@ -345,6 +464,9 @@ class State(object):
         for _, _, project in order:
             self.add_project(project)
 
+    def add_dynamic_elements(self, dynamic_elements):
+        return self.add_projects(dynamic_elements)
+
     @property
     def t_now(self):
         return self._t_now
@@ -354,15 +476,143 @@ class State(object):
         assert t_next >= self._t_now
         self._t_now = t_next
 
-    def register_emission(self, category_path, ghg, sts_key):
+    def register_emission_factor(self, pt, driver, sts_key, ipcc_sector, ghg):
         if self.emissions_registration_closed:
             raise RuntimeError()
-        assert ghg == GHG(ghg)
+        ipcc_sector = IPCC_Sector(ipcc_sector)
+        ghg = GHG(ghg)
+        pt = PT(pt)
         assert sts_key in self.sts
-        self.sectoral_emissions_contributors[category_path].setdefault(ghg, []).append(sts_key)
+        driver_d = self.registries['emission_factor']\
+                .setdefault(ghg, {})\
+                .setdefault(pt, {}) \
+                .setdefault(ipcc_sector, {})
+        assert driver not in driver_d
+        driver_d[driver] = sts_key
 
-    def register_subsidy_requirement(self, sts_key):
-        self.subsidy_requirements.add(sts_key)
+    def register_driver(self, pt, driver, sts_key):
+        ts = self.sts[sts_key]
+        if ts.interpolation == InterpolationMode.no_interpolation:
+            assert ts.t_unit == u.years
+            assert all(tt == int(tt) for tt in ts.times)
+        else:
+            # an integral will be computed later
+            pass
+
+        if self.emissions_registration_closed:
+            raise RuntimeError()
+        pt = PT(pt)
+        assert sts_key in self.sts
+        driver_d = self.registries['driver']\
+                .setdefault(pt, {})
+        assert driver not in driver_d
+        driver_d[driver] = sts_key
+
+    def register_subsidy_factor(self, pt, driver, sts_key, program, reason):
+        if self.emissions_registration_closed:
+            raise RuntimeError()
+        assert sts_key in self.sts
+        pt = PT(pt)
+        program = SubsidyPrograms(program)
+        reason_d = self.registries['subsidy_factor']\
+                .setdefault(program, {})\
+                .setdefault(driver, {})\
+                .setdefault(pt, {})
+        assert reason not in reason_d
+        reason_d[reason] = sts_key
+
+    def annual_bin_boundaries(self):
+        year_start_int = int(self.t_start.to(u.years).magnitude)
+        year_end_float = self._t_now.to(u.years).magnitude
+        year_end_int = int(math.ceil(year_end_float))
+        boundaries = np.arange(year_start_int, year_end_int + 1) * u.years
+        return boundaries
+
+    def compute_annual_emissions(self):
+        if self._computed_annual_emissions is not None:
+            return self._computed_annual_emissions
+        by_sector_ghg_pt_driver = {}
+        boundaries = self.annual_bin_boundaries()
+
+        for pt, driver_d in self.registries['driver'].items():
+            for driver, driver_key in driver_d.items():
+                driver_ts = self.sts[driver_key]
+                for ghg, ef_by_pt in self.registries['emission_factor'].items():
+                    # for NF3 and SF6, it isn't surprising if some provinces
+                    # report no emissions
+                    if pt not in ef_by_pt:
+                        if ghg not in (GHG.NF3, GHG.SF6):
+                            print('Warning: missing ef', pt, driver, ghg, ef_by_pt.keys())
+                        continue
+                    for sector, ef_by_driver in ef_by_pt[pt].items():
+                        if driver not in ef_by_driver:
+                            # not all drivers drive emissions, some are for e.g. subsidies
+                            continue
+                        ef_key = ef_by_driver[driver]
+                        ef_ts = self.sts[ef_key]
+                        # todo: verify driver_ts is annual totals
+                        if driver_ts.interpolation == InterpolationMode.no_interpolation:
+                            em = ef_ts * driver_ts * (1 * u.year)
+                        else:
+                            em = (ef_ts * driver_ts).bin_integrals(bin_boundaries=boundaries)
+                        by_sector_ghg_pt_driver[sector, ghg, pt, driver] = em.to(
+                            kt_by_ghg[ghg])
+        self._computed_annual_emissions = EmissionResults(
+            by_sector_ghg_pt_driver=by_sector_ghg_pt_driver)
+        return self._computed_annual_emissions
+
+    def compute_annual_subsidies(self):
+        if self._computed_annual_subsidies is not None:
+            return self._computed_annual_subsidies
+        by_program_reason_pt_driver = {}
+        boundaries = self.annual_bin_boundaries()
+        for pt, driver_d in self.registries['driver'].items():
+            for driver, driver_key in driver_d.items():
+                driver_ts = self.sts[driver_key]
+                for program, sf_by_driver in self.registries['subsidy_factor'].items():
+                    if driver not in sf_by_driver:
+                        # some drivers are just for emissions
+                        continue
+                    for reason, sf_key in sf_by_driver[driver][pt].items():
+                        sf_ts = self.sts[sf_key]
+                        # todo: verify driver_ts is annual totals
+                        if driver_ts.interpolation == InterpolationMode.no_interpolation:
+                            subsidies = sf_ts * driver_ts * (1 * u.year)
+                        else:
+                            subsidies = (sf_ts * driver_ts).bin_integrals(
+                                bin_boundaries=boundaries)
+                        by_program_reason_pt_driver[program, reason, pt, driver] \
+                                = subsidies.to(u.mega_CAD)
+        self._computed_annual_subsidies = SubsidyResults(
+            by_program_reason_pt_driver=by_program_reason_pt_driver)
+        return self._computed_annual_subsidies
+
+    def ipcc_sectors_by_dynamic_element(self):
+        """Return ipcc sectors to which this dynamic element either
+        (a) registers an emission_factor for which there is a driver, or
+        (b) registers a driver for which there are are emission factor(s)
+        """
+        rval = {de.identifier: set() for de in self.projects.values()}
+        for pt, driver_d in self.registries['driver'].items():
+            for driver, driver_key in driver_d.items():
+                for ghg, ef_by_pt in self.registries['emission_factor'].items():
+                    if pt not in ef_by_pt:
+                        if ghg not in (GHG.NF3, GHG.SF6):
+                            print('Warning: missing ef', pt, driver, ghg, ef_by_pt.keys())
+                        continue
+                    for sector, ef_by_driver in ef_by_pt[pt].items():
+                        if driver not in ef_by_driver:
+                            # not all drivers drive emissions, some are for e.g. subsidies
+                            continue
+                        ef_key = ef_by_driver[driver]
+                        ef_ts = self.sts[ef_key]
+                        # TODO: isn't writer supposed to *be* the identifier??
+                        rval[ef_ts.writer.identifier].add(sector)
+
+                        driver_ts = self.sts[driver_key]
+                        rval[driver_ts.writer.identifier].add(sector)
+        return rval
+
 
     @property
     def latest(self):
@@ -405,6 +655,13 @@ class State(object):
             sts.plot(t_unit=t_unit)
 
     def run_until(self, t_stop):
+        if self._t_now > t_stop:
+            assert 0
+            return
+
+        self._computed_annual_emissions = None
+        self._computed_annual_subsidies = None
+
         if self._depgraph is None:
             self._depgraph = self.dependency_digraph()
             self._heap = [
@@ -432,422 +689,10 @@ class State(object):
                 assert new_t_next > self.t_now
                 heapq.heappush(self._heap, (new_t_next, node_idx, prj_identifier))
 
+        if not self._heap:
+            self.t_now = t_stop
 
-
-surface_area_of_earth = 5.1e14 * u.m * u.m
-
-molar_mass_CH4 = 16.0 * u.g / u.mol
-molar_mass_CO2 = 44.0 * u.g / u.mol
-molar_mass_N2O = 44.01 * u.g / u.mol
-
-atmospheric_conc_per_mass_CO2 = (1 * u.ppm) / (7.8 * u.gigatonne_CO2)
-atmospheric_conc_per_mass_CH4 = (1 * u.ppm) / (7.8 * u.gigatonne_CH4) * molar_mass_CO2 / molar_mass_CH4
-atmospheric_conc_per_mass_N2O = (1 * u.ppm) / (7.8 * u.gigatonne_N2O) * molar_mass_CO2 / molar_mass_N2O
-atmospheric_conc_per_mass_HFC = (1 * u.ppb) / (18.0 * u.megatonne_HFC) # HFC-134a (most common HFC)
-atmospheric_conc_per_mass_PFC = (1 * u.ppb) / (15.6 * u.megatonne_PFC) # CF4 (most common PFC)
-atmospheric_conc_per_mass_SF6 = (1 * u.ppb) / (25.9 * u.megatonne_SF6)
-atmospheric_conc_per_mass_NF3 = (1 * u.ppb) / (12.6 * u.megatonne_NF3)
-
-
-deltaF_coef_N2O = 0.12 * u.watt / (u.m * u.m) * surface_area_of_earth
-deltaF_coef_HFC = 0.16 * u.watt / (u.m * u.m) * surface_area_of_earth
-deltaF_coef_PFC = 0.08 * u.watt / (u.m * u.m) * surface_area_of_earth
-deltaF_coef_SF6 = 0.57 * u.watt / (u.m * u.m) * surface_area_of_earth
-deltaF_coef_NF3 = 0.21 * u.watt / (u.m * u.m) * surface_area_of_earth
-
-
-# TODO: use values in .ghgvalues
-CO2_GWP_100 = 1.0 * u.kg_CO2e / u.kg_CO2
-CH4_GWP_100 = 28.0 * u.kg_CO2e / u.kg_CH4
-N2O_GWP_100 = 265.0 * u.kg_CO2e / u.kg_N2O
-HFC_GWP_100 = 1_430 * u.kg_CO2e / u.kg_HFC
-PFC_GWP_100 = 6_630 * u.kg_CO2e / u.kg_PFC
-SF6_GWP_100 = 23_500 * u.kg_CO2e / u.kg_SF6
-NF3_GWP_100 = 16_100 * u.kg_CO2e / u.kg_NF3
-
-
-
-class AtmosphericChemistry(BaseScenarioProject):
-    """Combine GHG emissions into a CO2e estimate using GWP-100 emission factors,
-    and also simulate a simple radiative forcing and planetary heating model.
-    """
-    methane_decay_timescale:float = 10.0
-
-    may_register_emissions:bool = False
-    requires_emissions_registration_closed:bool = True
-
-    stepsize:object
-    decay_N2O:object
-    decay_HFC:object
-    decay_PFC:object
-    decay_SF6:object
-    decay_NF3:object
-
-    def __init__(self, stepsize=1.0 * u.years):
-        super().__init__(
-            stepsize=stepsize,
-            decay_N2O=(1 - stepsize / (114 * u.years)),
-            decay_HFC=(1 - stepsize / (14 * u.years)),
-            decay_PFC=1.0,
-            decay_SF6=1.0,
-            decay_NF3=1.0,
-            )
-
-    def on_add_project(self, state):
-        # TODO: use new ObjTensor support to vectorize this code
-
-        for catpath, contributors in state.sectoral_emissions_contributors.items():
-            # TODO: why not loop over these keys?
-            for sts_key in contributors.get(GHG.CO2, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.CH4, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.N2O, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.HFCs, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.PFCs, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.SF6, []):
-                state.declare_read_current_sts(self, sts_key)
-            for sts_key in contributors.get(GHG.NF3, []):
-                state.declare_read_current_sts(self, sts_key)
-
-        with state.defining(self) as ctx:
-            for catpath, contributors in state.sectoral_emissions_contributors.items():
-                any_CO2e_contributors = False
-                if contributors.get(GHG.CO2, []):
-                    setattr(ctx, f'Predicted_Annual_Emitted_CO2_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_CO2, t_unit=u.year))
-                    any_CO2e_contributors = True
-                if contributors.get(GHG.CH4, []):
-                    setattr(ctx, f'Predicted_Annual_Emitted_CH4_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_CH4, t_unit=u.year))
-                    any_CO2e_contributors = True
-                if contributors.get(GHG.N2O, []):
-                    setattr(ctx, f'Predicted_Annual_Emitted_N2O_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_N2O, t_unit=u.year))
-                    any_CO2e_contributors = True
-                if contributors.get(GHG.HFCs, []):
-                    setattr(ctx, f'Predicted_Annual_Emitted_HFC_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_HFC, t_unit=u.year))
-                    any_CO2e_contributors = True
-                if contributors.get(GHG.PFCs, []):
-                    setattr(ctx, f'Predicted_Annual_Emitted_PFC_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_PFC, t_unit=u.year))
-                    any_CO2e_contributors = True
-                if contributors.get(GHG.SF6, []):
-                    setattr(ctx, f'Predicted_Annual_Emitted_SF6_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_SF6, t_unit=u.year))
-                    any_CO2e_contributors = True
-                if contributors.get(GHG.NF3, []):
-                    setattr(ctx, f'Predicted_Annual_Emitted_NF3_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_NF3, t_unit=u.year))
-                    any_CO2e_contributors = True
-                if any_CO2e_contributors:
-                    setattr(ctx, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}',
-                            SparseTimeSeries(unit=u.kt_CO2e, t_unit=u.year))
-
-            ctx.Predicted_Annual_Emitted_CO2_mass = SparseTimeSeries(
-                unit=u.kt_CO2, interpolation='no_interpolation', t_unit=u.year)
-            ctx.Predicted_Annual_Emitted_CH4_mass = SparseTimeSeries(
-                unit=u.kt_CH4, interpolation='no_interpolation', t_unit=u.year)
-            ctx.Predicted_Annual_Emitted_N2O_mass = SparseTimeSeries(
-                unit=u.kt_N2O, interpolation='no_interpolation', t_unit=u.year)
-            ctx.Predicted_Annual_Emitted_HFC_mass = SparseTimeSeries(
-                unit=u.kt_HFC, interpolation='no_interpolation', t_unit=u.year)
-            ctx.Predicted_Annual_Emitted_PFC_mass = SparseTimeSeries(
-                unit=u.kt_PFC, interpolation='no_interpolation', t_unit=u.year)
-            ctx.Predicted_Annual_Emitted_SF6_mass = SparseTimeSeries(
-                unit=u.kt_SF6, interpolation='no_interpolation', t_unit=u.year)
-            ctx.Predicted_Annual_Emitted_NF3_mass = SparseTimeSeries(
-                unit=u.kt_NF3, interpolation='no_interpolation', t_unit=u.year)
-            ctx.Predicted_Annual_Emitted_CO2e_mass = SparseTimeSeries(
-                unit=u.kt_CO2e, interpolation='no_interpolation', t_unit=u.year)
-
-            # XXX : what year do these numbers represent? How can this be a default value
-            # when the simulated years are a parameter of the state?
-            ctx.Atmospheric_CO2_conc = SparseTimeSeries(unit=u.ppm, default_value=400.0 * u.ppm, t_unit=u.year)
-            ctx.Atmospheric_CH4_conc = SparseTimeSeries(unit=u.ppb, default_value=1775.0 * u.ppb, t_unit=u.year)
-            ctx.Atmospheric_N2O_conc = SparseTimeSeries(unit=u.ppb, default_value=336.0 * u.ppb, t_unit=u.year)
-
-            # Gemini says these data are from NOAA and are accurate for January 2026
-            ctx.Atmospheric_HFC_conc = SparseTimeSeries(unit=u.ppb, default_value=0.1345 * u.ppb, t_unit=u.year)
-            ctx.Atmospheric_PFC_conc = SparseTimeSeries(unit=u.ppb, default_value=0.0902 * u.ppb, t_unit=u.year)
-            ctx.Atmospheric_SF6_conc = SparseTimeSeries(unit=u.ppb, default_value=0.0124 * u.ppb, t_unit=u.year)
-            ctx.Atmospheric_NF3_conc = SparseTimeSeries(unit=u.ppb, default_value=0.0036 * u.ppb, t_unit=u.year)
-
-            ctx.DeltaF_CO2 = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_CH4 = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_N2O = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_HFC = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_PFC = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_SF6 = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_NF3 = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_forcing = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-            ctx.DeltaF_feedback = SparseTimeSeries(unit=u.petawatt, t_unit=u.year)
-
-            # Heat Energy forcing is the heat equivalent to net annual cashflow, an annual integral
-            ctx.Annual_Heat_Energy_forcing = SparseTimeSeries(default_value=0 * u.exajoule, t_unit=u.year)
-            ctx.Cumulative_Heat_Energy_forcing = SparseTimeSeries(default_value=0 * u.exajoule, t_unit=u.year)
-            ctx.Heat_Energy_imbalance = SparseTimeSeries(unit=u.exajoule, t_unit=u.year)
-            ctx.Cumulative_Heat_Energy = SparseTimeSeries(default_value=0.0 * u.exajoule, t_unit=u.year)
-            ctx.Ocean_Temperature_Anomaly = SparseTimeSeries(default_value=1.3 * u.kelvin, t_unit=u.year)
-
-        return int(state.t_now.to(u.years).magnitude + 1) * u.years
-
-    def step(self, state, current):
-
-        # add up annual emissions from registry
-        annual_CO2_mass = 0 * u.kt_CO2
-        annual_CH4_mass = 0 * u.kt_CH4
-        annual_N2O_mass = 0 * u.kt_N2O
-        annual_HFC_mass = 0 * u.kt_HFC
-        annual_PFC_mass = 0 * u.kt_PFC
-        annual_SF6_mass = 0 * u.kt_SF6
-        annual_NF3_mass = 0 * u.kt_NF3
-
-        for catpath, contributors in state.sectoral_emissions_contributors.items():
-            catpath_CO2e_mass = 0 * u.kg_CO2e
-            any_CO2e_contributors = False
-
-            catpath_CO2_contributors = contributors.get(GHG.CO2, [])
-            if catpath_CO2_contributors:
-                catpath_CO2_mass = sum(getattr(current, sts_key) for sts_key in catpath_CO2_contributors)
-                try:
-                    setattr(current, f'Predicted_Annual_Emitted_CO2_mass_{catpath}', catpath_CO2_mass)
-                except:
-                    print(catpath_CO2_contributors)
-                    raise
-                catpath_CO2e_mass += catpath_CO2_mass * CO2_GWP_100
-                annual_CO2_mass += catpath_CO2_mass
-                any_CO2e_contributors = True
-
-            catpath_CH4_contributors = contributors.get(GHG.CH4, [])
-            if catpath_CH4_contributors:
-                catpath_CH4_mass = sum(getattr(current, sts_key) for sts_key in catpath_CH4_contributors)
-                try:
-                    setattr(current, f'Predicted_Annual_Emitted_CH4_mass_{catpath}', catpath_CH4_mass)
-                except:
-                    print(catpath_CH4_contributors)
-                    raise
-                catpath_CO2e_mass += catpath_CH4_mass * CH4_GWP_100
-                annual_CH4_mass += catpath_CH4_mass
-                any_CO2e_contributors = True
-
-            catpath_N2O_contributors = contributors.get(GHG.N2O, [])
-            if catpath_N2O_contributors:
-                catpath_N2O_mass = sum(getattr(current, sts_key) for sts_key in catpath_N2O_contributors)
-                try:
-                    setattr(current, f'Predicted_Annual_Emitted_N2O_mass_{catpath}', catpath_N2O_mass)
-                except:
-                    print(catpath_N2O_contributors)
-                    raise
-                catpath_CO2e_mass += catpath_N2O_mass * N2O_GWP_100
-                annual_N2O_mass += catpath_N2O_mass
-                any_CO2e_contributors = True
-
-            catpath_HFC_contributors = contributors.get(GHG.HFCs, [])
-            if catpath_HFC_contributors:
-                catpath_HFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_HFC_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_HFC_mass_{catpath}', catpath_HFC_mass)
-                catpath_CO2e_mass += catpath_HFC_mass * HFC_GWP_100
-                annual_HFC_mass += catpath_HFC_mass
-                any_CO2e_contributors = True
-
-            catpath_PFC_contributors = contributors.get(GHG.PFCs, [])
-            if catpath_PFC_contributors:
-                catpath_PFC_mass = sum(getattr(current, sts_key) for sts_key in catpath_PFC_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_PFC_mass_{catpath}', catpath_PFC_mass)
-                catpath_CO2e_mass += catpath_PFC_mass * PFC_GWP_100
-                annual_PFC_mass += catpath_PFC_mass
-                any_CO2e_contributors = True
-
-            catpath_SF6_contributors = contributors.get(GHG.SF6, [])
-            if catpath_SF6_contributors:
-                catpath_SF6_mass = sum(getattr(current, sts_key) for sts_key in catpath_SF6_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_SF6_mass_{catpath}', catpath_SF6_mass)
-                catpath_CO2e_mass += catpath_SF6_mass * SF6_GWP_100
-                annual_SF6_mass += catpath_SF6_mass
-                any_CO2e_contributors = True
-
-            catpath_NF3_contributors = contributors.get(GHG.NF3, [])
-            if catpath_NF3_contributors:
-                catpath_NF3_mass = sum(getattr(current, sts_key) for sts_key in catpath_NF3_contributors)
-                setattr(current, f'Predicted_Annual_Emitted_NF3_mass_{catpath}', catpath_NF3_mass)
-                catpath_CO2e_mass += catpath_NF3_mass * NF3_GWP_100
-                annual_NF3_mass += catpath_NF3_mass
-                any_CO2e_contributors = True
-
-            if any_CO2e_contributors:
-                setattr(current, f'Predicted_Annual_Emitted_CO2e_mass_{catpath}', catpath_CO2e_mass)
-
-
-        current.Predicted_Annual_Emitted_CO2_mass = annual_CO2_mass
-        current.Predicted_Annual_Emitted_CH4_mass = annual_CH4_mass
-        current.Predicted_Annual_Emitted_N2O_mass = annual_N2O_mass
-        current.Predicted_Annual_Emitted_HFC_mass = annual_HFC_mass
-        current.Predicted_Annual_Emitted_PFC_mass = annual_PFC_mass
-        current.Predicted_Annual_Emitted_SF6_mass = annual_SF6_mass
-        current.Predicted_Annual_Emitted_NF3_mass = annual_NF3_mass
-        current.Predicted_Annual_Emitted_CO2e_mass = (
-            CO2_GWP_100 * annual_CO2_mass
-            + CH4_GWP_100 * annual_CH4_mass
-            + N2O_GWP_100 * annual_N2O_mass
-            + HFC_GWP_100 * annual_HFC_mass
-            + PFC_GWP_100 * annual_PFC_mass
-            + SF6_GWP_100 * annual_SF6_mass
-            + NF3_GWP_100 * annual_NF3_mass
-        )
-
-        fraction_of_emitted_CO2_that_becomes_atmospheric = .45
-
-        # apply an atmospheric climate model
-        annual_CO2_mass_atmospheric = (
-            annual_CO2_mass
-            * fraction_of_emitted_CO2_that_becomes_atmospheric)
-        annual_CH4_mass_atmospheric = annual_CH4_mass * 1.0 # no such discounting of CH4
-
-        annual_emitted_CO2_in_atmosphere_as_concentration = (
-            annual_CO2_mass_atmospheric
-            * atmospheric_conc_per_mass_CO2)
-
-        annual_emitted_CH4_in_atmosphere_as_concentration = (
-            annual_CH4_mass_atmospheric
-            / (2.78 * u.megatonne_CH4 / u.ppb)
-        ).to(u.ppb)
-
-        # TODO this should be multiplied by stepsize, not 1 year implicitly,
-        #      and this process should be tested for robustness to step size
-        tau_ch4 = 12.0 # years
-        annual_ch4_to_co2_decay = (
-            state.latest.Atmospheric_CH4_conc
-            / tau_ch4)
-
-        current.Atmospheric_CH4_conc = (
-            state.latest.Atmospheric_CH4_conc
-            + annual_emitted_CH4_in_atmosphere_as_concentration
-            + 180 * u.ppb # baseline from other sources
-            - annual_ch4_to_co2_decay)
-
-        # no decay is assumed for CO2
-        current.Atmospheric_CO2_conc = (
-            state.latest.Atmospheric_CO2_conc
-            + annual_emitted_CO2_in_atmosphere_as_concentration
-            + 2 * u.ppm # baseline from other sources
-            + (annual_ch4_to_co2_decay
-               * fraction_of_emitted_CO2_that_becomes_atmospheric)
-        )
-
-        reference_CO2_conc = 280.0 * u.ppm
-        current.DeltaF_CO2 = (
-            5.35 * u.watt / (u.m * u.m)
-            * surface_area_of_earth
-            * np.log(current.Atmospheric_CO2_conc.to(u.ppm).magnitude
-                     / reference_CO2_conc.to(u.ppm).magnitude))
-
-        reference_CH4_conc = 722.0 * u.ppb
-        current.DeltaF_CH4 = (
-            0.036 * u.watt / (u.m * u.m)
-            * surface_area_of_earth
-            * (np.sqrt(current.Atmospheric_CH4_conc.to(u.ppb).magnitude)
-               - np.sqrt(reference_CH4_conc.to(u.ppb).magnitude)))
-
-        self.step_N2O(state, current, annual_N2O_mass)
-        self.step_HFC(state, current, annual_HFC_mass)
-        self.step_PFC(state, current, annual_PFC_mass)
-        self.step_SF6(state, current, annual_SF6_mass)
-        self.step_NF3(state, current, annual_NF3_mass)
-
-        current.DeltaF_forcing = (
-            current.DeltaF_CO2
-            + current.DeltaF_CH4
-            + current.DeltaF_N2O
-            + current.DeltaF_HFC
-            + current.DeltaF_PFC
-            + current.DeltaF_SF6
-            + current.DeltaF_NF3
-        )
-
-        current.DeltaF_feedback = (
-            -1.3 * u.watt / (u.m * u.m) / u.kelvin
-            * surface_area_of_earth
-            * state.latest.Ocean_Temperature_Anomaly)
-
-        current.Annual_Heat_Energy_forcing = (
-            self.stepsize # integrate over duration of stepsize aka 1 year
-            * current.DeltaF_forcing)
-
-        current.Cumulative_Heat_Energy_forcing = (
-            state.latest.Cumulative_Heat_Energy_forcing
-            + self.stepsize # integrate over duration of stepsize aka 1 year
-            * current.DeltaF_forcing)
-
-        current.Heat_Energy_imbalance = (
-            self.stepsize # integrate over duration of stepsize aka 1 year
-            * (current.DeltaF_forcing + current.DeltaF_feedback))
-
-        specific_heat_of_top_200m_of_ocean = 151200.0 * u.exajoule / u.kelvin * 2
-        current.Ocean_Temperature_Anomaly = (
-            state.latest.Ocean_Temperature_Anomaly
-            + (current.Heat_Energy_imbalance
-               / (specific_heat_of_top_200m_of_ocean)))
-
-        current.Cumulative_Heat_Energy = (
-            state.latest.Cumulative_Heat_Energy
-            + current.Heat_Energy_imbalance)
-
-        return int(state.t_now.to(u.years).magnitude + 1) * u.years
-
-    def step_N2O(self, state, current, annual_N2O_mass):
-        conc = state.latest.Atmospheric_N2O_conc
-
-        conc += atmospheric_conc_per_mass_N2O * annual_N2O_mass
-        conc *= self.decay_N2O
-        current.Atmospheric_N2O_conc = conc
-
-        reference_N2O_conc = 270.0 * u.ppb
-
-        current.DeltaF_N2O = (
-            deltaF_coef_N2O
-            * (np.sqrt(conc.to(u.ppb).magnitude)
-               - np.sqrt(reference_N2O_conc.to(u.ppb).magnitude)))
-
-    def step_HFC(self, state, current, annual_HFC_mass):
-        conc = state.latest.Atmospheric_HFC_conc
-
-        conc += atmospheric_conc_per_mass_HFC * annual_HFC_mass
-        conc *= self.decay_HFC
-        current.Atmospheric_HFC_conc = conc
-
-        current.DeltaF_HFC = deltaF_coef_HFC * conc.to(u.ppb).magnitude
-
-    def step_PFC(self, state, current, annual_PFC_mass):
-        conc = state.latest.Atmospheric_PFC_conc
-
-        conc += atmospheric_conc_per_mass_PFC * annual_PFC_mass
-        conc *= self.decay_PFC
-        current.Atmospheric_PFC_conc = conc
-
-        current.DeltaF_PFC = deltaF_coef_PFC * conc.to(u.ppb).magnitude
-
-    def step_SF6(self, state, current, annual_SF6_mass):
-        conc = state.latest.Atmospheric_SF6_conc
-
-        conc += atmospheric_conc_per_mass_SF6 * annual_SF6_mass
-        conc *= self.decay_SF6
-        current.Atmospheric_SF6_conc = conc
-
-        current.DeltaF_SF6 = deltaF_coef_SF6 * conc.to(u.ppb).magnitude
-
-    def step_NF3(self, state, current, annual_NF3_mass):
-        conc = state.latest.Atmospheric_NF3_conc
-
-        conc += atmospheric_conc_per_mass_NF3 * annual_NF3_mass
-        conc *= self.decay_NF3
-        current.Atmospheric_NF3_conc = conc
-
-        current.DeltaF_NF3 = deltaF_coef_NF3 * conc.to(u.ppb).magnitude
+Scenario = State
 
 class GeometricHumanPopulationForecast(BaseScenarioProject):
     rate:float = 1.014
@@ -868,270 +713,6 @@ class GeometricHumanPopulationForecast(BaseScenarioProject):
         return state.t_now + self.stepsize
 
 
-class ProjectComparison(object):
-    def __init__(self, state_A, state_B, present, project):
-        self.state_A = state_A # state with project
-        self.state_B = state_B # baseline state
-        self.present = present
-        self.project = project
-
-    def _years(self):
-        t_start = min(self.state_A.t_start, self.state_B.t_start)
-        t_stop = max(self.state_A.t_now, self.state_B.t_now)
-        start_year = int(t_start.to('years').magnitude)
-        stop_year = int(t_stop.to('years').magnitude) + 1
-        years = np.arange(start_year, stop_year) * u.years
-        return years
-
-    def years_as_list(self):
-        return [int(year.to('years').magnitude) for year in self._years()]
-
-    @property
-    def _present_year_int(self):
-        return int(self.present.to('years').magnitude)
-
-    def _net_present_envelope(self, years, base_rate):
-        present_year_int = self._present_year_int
-        envelope = [0] * len(years)
-        for ii, year in enumerate(years):
-            year_int = int(year.to('years').magnitude)
-            if year_int >= present_year_int:
-                envelope[ii] = base_rate ** (year_int - present_year_int)
-        return np.asarray(envelope)
-
-    def net_present_discounted_sum(self, base_rate, key):
-        years = self._years()
-        vals_A = self.state_A.sts[key].query(years)
-        vals_B = self.state_B.sts[key].query(years)
-        diff = vals_A - vals_B
-        envelope = self._net_present_envelope(years, base_rate)
-        return np.cumsum(diff.magnitude * envelope)[-1] * diff.u
-
-    def net_present_CO2e(self, base_rate):
-        return self.net_present_discounted_sum(
-            base_rate,
-            key='Predicted_Annual_Emitted_CO2e_mass')
-
-    def net_present_heat(self, base_rate):
-        return self.net_present_discounted_sum(
-            base_rate,
-            key='Annual_Heat_Energy_forcing')
-
-    def net_present_value(self, base_rate):
-        if self.project.after_tax_cashflow_name in self.state_B.sts:
-            raise NotImplementedError()
-        years = self._years()
-        envelope = self._net_present_envelope(years, base_rate)
-        cashflow = self.state_A.sts[self.project.after_tax_cashflow_name].query(years)
-        return np.cumsum(cashflow.magnitude * envelope)[-1] * cashflow.u
-
-    def cost_per_ton_CO2e(self, base_rate):
-        npv = self.net_present_value(base_rate=base_rate)
-        npc = self.net_present_CO2e(base_rate=base_rate)
-        if npc >= 0:
-            return float('nan') * u.CAD / u.tonne_CO2e
-        return (npv / npc).to(u.CAD / u.tonne_CO2e)
-
-    def echart_series_Mt(self, A_or_B, catpath, stack=None, name=None):
-        years = self._years()
-        if A_or_B == "A":
-            state = self.state_A
-        elif A_or_B == "B":
-            state = self.state_B
-        else:
-            raise NotImplementedError(A_or_B)
-        predictions = state.sts[f'Predicted_Annual_Emitted_CO2e_mass_{catpath}'].query(
-            years)
-        data = [{'value': float(datum.to(u.megatonne_CO2e).magnitude),
-                 'url': f'/ipcc-sectors/{catpath}'.replace(' ', '_')}
-                for datum in predictions]
-        rval = dict(
-            name=name or catpath,
-            type='line',
-            #areaStyle={},
-            #emphasis={'focus': 'series'},
-            data=data)
-        if stack:
-            rval['stack'] = stack
-        return rval
-
-
-class ProjectEvaluation(object):
-    def __init__(self, projects, common_projects, alt_project=None, present=None):
-        self.projects = projects # dict
-        self.common_projects = common_projects
-        self.present = (
-            time.time() * u.seconds + 1970 * u.years
-            if present is None else present)
-
-        self.comparisons = {}
-        self.states = {}
-        default_state = None
-        for eval_name, prj in projects.items():
-            if isinstance(prj, (list, tuple)):
-                raise NotImplementedError()
-            else:
-                state_A = State(name=f'StateA_{eval_name}')
-                state_A.add_project(prj)
-                state_A.add_projects(common_projects)
-                if default_state is None:
-                    default_state = State(name=f'Baseline')
-                    default_state.add_projects(common_projects)
-                self.comparisons[eval_name] = ProjectComparison(
-                    state_A=state_A,
-                    state_B=default_state,
-                    present=self.present,
-                    project=prj)
-                self.states[state_A.name] = state_A
-                self.states[default_state.name] = default_state
-
-    def run_until(self, t_stop):
-        for state in self.states.values():
-            state.run_until(t_stop)
-
-    def all_sts_names(self):
-        rval = set()
-        for state in self.states.values():
-            rval.update(state.sts.keys())
-        return rval
-
-    def plot(self, t_unit='years', **kwargs):
-
-        sorted_sts_names = list(sorted(self.all_sts_names()))
-
-        if len(sorted_sts_names) <= 1:
-            fig = plt.figure()
-            rows = 1
-            cols = 1
-        elif len(sorted_sts_names) <= 6:
-            fig = plt.figure(figsize=[12, 8])
-            rows = 2
-            cols = 3
-        elif len(sorted_sts_names) <= 15:
-            rows = 5
-            cols = 3
-            fig = plt.figure(figsize=[12, (len(sorted_sts_names) // cols + 1) * 5.5])
-        elif len(sorted_sts_names) <= 28:
-            rows = 7
-            cols = 4
-            fig = plt.figure(figsize=[15, (len(sorted_sts_names) // cols + 1) * 5.5])
-        else:
-            raise NotImplementedError()
-        fig.set_layout_engine("constrained")
-
-        for ii, sts_name in enumerate(sorted_sts_names):
-            plt.subplot(rows, cols, ii + 1)
-            for state in self.states.values():
-                if sts_name in state.sts:
-                    state.sts[sts_name].plot(t_unit=t_unit, annotate=True, label=state.name)
-
-    def plot_nph_vs_npv(self, discount_rate, nph_unit='exajoule', npv_unit='MCAD'):
-        base_rate = (1 - discount_rate)
-        eval_names = []
-        nph1s = []
-        npv1s = []
-        for eval_name, cmp in self.comparisons.items():
-            nph1 = cmp.net_present_heat(base_rate=base_rate)
-            npv1 = cmp.net_present_value(base_rate=base_rate)
-            eval_names.append(eval_name)
-            nph1s.append(nph1.to(nph_unit).magnitude)
-            npv1s.append(npv1.to(npv_unit).magnitude)
-
-        plt.figure()
-        plt.title(f'Future-Discounted Project Comparison @ {discount_rate * 100:.1f}% ({base_rate ** 100:.2f} at 100 years)')
-        plt.scatter(npv1s, nph1s)
-        for ii, eval_name in enumerate(eval_names):
-            plt.annotate(eval_name, (npv1s[ii], nph1s[ii]))
-        plt.xlabel(f'Net Present Value ({npv_unit})')
-        plt.ylabel(f'Net Present Heat Forcing ({nph_unit})')
-
-    def iter_npv_nph_evalname(self, discount_rate):
-        base_rate = (1 - discount_rate)
-        for eval_name, cmp in self.comparisons.items():
-            nph = cmp.net_present_heat(base_rate=base_rate)
-            npv = cmp.net_present_value(base_rate=base_rate)
-            yield npv, nph, eval_name
-
-
-class IPCC_Forest_Land_Model(BaseScenarioProject):
-    stepsize:object = 1.0 * u.years
-
-    def on_add_project(self, state):
-        with state.requiring_current(self) as ctx:
-
-            ctx.Other_Forest_Land_CO2 = SparseTimeSeries(
-                default_value=40.0 * u.Mt_CO2)
-
-        state.register_emission('Forest_Land', GHG.CO2, 'Other_Forest_Land_CO2')
-
-
-class IPCC_Transport_RoadTransportation_LightDutyGasolineTrucks(BaseScenarioProject):
-    stepsize:object = 1.0 * u.years
-
-    def on_add_project(self, state):
-        with state.requiring_current(self) as ctx:
-            ctx.human_population = SparseTimeSeries(
-                times=[state.t_now],
-                values=[27_685_730 * u.people])
-            ctx.Government_LightDutyGasolineTrucks_ZEV_fraction = SparseTimeSeries(
-                default_value=0 * u.dimensionless)
-            ctx.Other_LightDutyGasolineTrucks_ZEV_fraction = SparseTimeSeries(
-                default_value=0 * u.dimensionless)
-
-        with state.defining(self) as ctx:
-            # https://www.canada.ca/en/treasury-board-secretariat/services/innovation/greening-government/government-canada-greenhouse-gas-emissions-inventory.html
-            # not exactly using ^^ but guessing based on that and Gemini estimation
-
-            # TODO: factor in CO2e footprint of manufacturing each type of vehicle
-
-            # TODO: factor in the emissions of electricity generation in each province
-            #       and the population of each province
-
-            ctx.Government_LightDutyGasolineTrucks_CO2 = SparseTimeSeries(
-                default_value=0 * u.Mt_CO2)
-            ctx.Other_LightDutyGasolineTrucks_CO2 = SparseTimeSeries(
-                default_value=0 * u.Mt_CO2)
-
-        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', GHG.CO2, 'Other_LightDutyGasolineTrucks_CO2')
-        state.register_emission('Transport/Road_Transportation/Light-Duty_Gasoline_Trucks', GHG.CO2, 'Government_LightDutyGasolineTrucks_CO2')
-        return state.t_now + self.stepsize
-
-    def step(self, state, current):
-        coefficient = 1_200 * u.kg_CO2 / u.people
-        current.Government_LightDutyGasolineTrucks_CO2 = (
-            current.human_population * coefficient * .025
-            * (1 * u.dimensionless - current.Government_LightDutyGasolineTrucks_ZEV_fraction))
-        current.Other_LightDutyGasolineTrucks_CO2 = (
-            current.human_population * coefficient * .975
-            * (1 * u.dimensionless - current.Other_LightDutyGasolineTrucks_ZEV_fraction))
-        return state.t_now + self.stepsize
-
-
-class SubsidyAccounting(BaseScenarioProject):
-    """Tally up annual subsidy amounts required by barriers and strategies."""
-
-    def on_add_project(self, state):
-        for sts_key in state.subsidy_requirements:
-            state.declare_read_current_sts(self, sts_key)
-        with state.defining(self) as ctx:
-            ctx.AnnualSubsidyTotal = STS(
-                times=array.array('d', []),
-                values=array.array('d', [float('nan')]),
-                t_unit=u.year,
-                v_unit=u.CAD,
-                interpolation='no_interpolation')
-        return state.t_now.to('year').magnitude * u.year
-
-    def step(self, state, current):
-        zero = 0 * u.CAD
-        total = zero
-        for sts_key in state.subsidy_requirements:
-            subtotal = getattr(current, sts_key)
-            assert subtotal >= zero # sign convention and nan-check
-            total += subtotal
-        current.AnnualSubsidyTotal = total
-        return state.t_now + 1 * u.year
-
 from . import ipcc_canada
 from . import ghgvalues
 
@@ -1144,27 +725,71 @@ class Other_NIR_Historical_Actuals(BaseScenarioProject):
         non_agg_years.sort()
         datalen = len(non_agg_years)
         assert ('kt',) == ipcc_canada.inv['Unit'].unique()
-        for_sorting = []
-        for catpath in ipcc_canada.catpaths:
-            catpath_contributors = state.sectoral_emissions_contributors.get(catpath, {})
-            ipcc_sector = IPCC_Sector.from_catpath(catpath)
-            for ghg in GHG:
-                ghg_contributors = catpath_contributors.get(ghg.value, [])
-                if not ghg_contributors:
-                    kt_by_yr = ipcc_canada.annual_sector_ghg_kt_by_year(
-                        ipcc_sector.catpath_with_whitespace,
-                        ghg.value)
+
+        for pt in PT:
+            driver_name = f'NIR Emissions Placeholder - {pt.value}'
+            driver_sts = SparseTimeSeries(
+                identifier=driver_name,
+                default_value=1.0 * u.dimensionless,
+                t_unit=u.year)
+            state.declare_sts(self, sts=driver_sts, write=True)
+            state.register_driver(
+                pt=pt,
+                driver='NIR Emissions Placeholder',
+                sts_key=driver_name)
+
+        # assume that these sectors, for which some dynamic element
+        # has registered an emission, are considered approximate.
+        registered_ipcc_sectors = {
+            ipcc_sector_key
+            for by_pt in state.registries['emission_factor'].values()
+            for by_ipcc_sector in by_pt.values()
+            for ipcc_sector_key in by_ipcc_sector}
+
+        non_agg = ipcc_canada.inv[ipcc_canada.inv['Total'] != 'y']
+        for catpathww, nonagg_catpath in non_agg.groupby('CategoryPathWithWhitespace'):
+            ipcc_sector = IPCC_Sector_from_catpath_with_whitespace[catpathww]
+            if ipcc_sector in registered_ipcc_sectors:
+                continue
+
+            for region, region_df in nonagg_catpath.groupby('Region'):
+                if region.lower() == 'canada':
+                    continue
+                elif region == 'Northwest Territories and Nunavut':
+                    pt = PT.XX
+                else:
+                    pt = PT(region)
+
+                for ghg in GHG:
+                    values = region_df[ghg.value].values
+                    years = region_df['Year'].values
+                    # TODO: use PT.XX together with national total
+                    # to not lose emissions by setting nan->zero
+                    kt_by_yr = {
+                        int(year): float(val) if np.isfinite(val) else 0.0
+                        for year, val in zip(years, values)}
+
                     if not all(vv == 0 for vv in kt_by_yr.values()):
-                        name = f'Historical_{ghg.value}_from_{catpath}'
-                        scale = 1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O] else 1.0 / ghgvalues.GWP_100[ghg].magnitude
+                        #print(ghg, ipcc_sector, pt)
+                        #print(kt_by_yr)
+                        name = f'Historical {ghg.value} from {ipcc_sector.value} in {pt.value}'
+                        scale = (1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O]
+                                 else 1.0 / ghgvalues.GWP_100[ghg].magnitude)
                         state.declare_sts(
                             project=self,
                             sts=STS(
                                 times=array.array('d', non_agg_years),
                                 t_unit=u.years,
-                                values=array.array('d', [0] + [scale * kt_by_yr[yr] for yr in non_agg_years]),
-                                v_unit=kt_by_ghg[ghg],
+                                values=array.array('d', [0] + [
+                                    scale * kt_by_yr.get(yr, 0)
+                                    for yr in non_agg_years]),
+                                v_unit=kt_by_ghg[ghg] / u.year,
                                 interpolation='current'),
                             name=name,
                             write=True)
-                        state.register_emission(catpath, ghg.value, name)
+                        state.register_emission_factor(
+                            pt=pt,
+                            driver='NIR Emissions Placeholder',
+                            sts_key=name,
+                            ipcc_sector=ipcc_sector,
+                            ghg=ghg)

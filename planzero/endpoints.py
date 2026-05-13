@@ -1,49 +1,46 @@
 from . import (
-    get_peval,
     ipcc_canada,
     enums,
     blog,
     strategies,
-    barriers
+    barriers,
+    sim,
     )
 
 
 def endpoints():
-    rval = [
+    rval = []
+
+    for sim_name, site_sim in sorted(sim.site_simulations.items()):
+        rval.append(f"/simulations/{sim_name}/")
+        
+        for dynelem in site_sim.dynamic_elements():
+            if 'strategy' in dynelem.tags:
+                rval.append(f"/simulations/{sim_name}/strategies/{dynelem.identifier}/")
+
+            if 'barrier' in dynelem.tags:
+                rval.append(f"/simulations/{sim_name}/barriers/{dynelem.identifier}/")
+
+        for catpath in ipcc_canada.catpaths:
+            rval.append(f"/simulations/{sim_name}/ipcc-sectors/{catpath}/")
+
+    rval.extend([
         "/",
         "/ipcc-sectors/",
         "/strategies/",
-        "/scenarios/",
+        "/simulations/",
+        "/glossary/",
         "/about/",
-    ]
+    ])
 
     assert len(ipcc_canada.catpaths) == 71
     rval.extend([
         f"/ipcc-sectors/{catpath}/"
         for catpath in ipcc_canada.catpaths])
 
-    for scenario in enums.StandardScenarios:
-        rval.append(f"/scenarios/{scenario.value}/")
-        
-        for strategy, obj in strategies.strategies.items():
-            if scenario in obj.scenarios:
-                rval.append(f"/scenarios/{scenario.value}/strategies/{strategy}/")
-
-        for barrier in barriers.barriers:
-            rval.append(f"/scenarios/{scenario.value}/barriers/{barrier}/")
-
-        for catpath in ipcc_canada.catpaths:
-            rval.append(f"/scenarios/{scenario.value}/ipcc-sectors/{catpath}/")
-
 
     rval.extend([
         f"/blog/{url_filename}/"
         for url_filename in blog._blogs_by_url_filename])
-
-
-    # TODO: deprecate this
-    rval.extend([
-        f"/strategies/{idea_name}/"
-        for idea_name in get_peval().projects])
 
     return rval

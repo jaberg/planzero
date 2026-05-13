@@ -4,14 +4,16 @@
 
 <section class="post">
     <header class="major">
-        <h1>Scenarios</h1>
-        <p>What future scenarios are modelled in PlanZero?</p>
+        <h1>Simulations</h1>
+        <p>{{siteref("Simulation", "Simulations")|safe}}
+        in PlanZero are the
+        {{siteref("Rollout", "rollout")|safe}} of
+        {{siteref("Model", "models")|safe}}
+        into the future,
+        for visualization and analysis.<p>
     </header>
-<p>
 
-</p>
-
-<h2>Sortable Table</h2>
+    <!--<h2>Sortable Table</h2>-->
 
 <table id="gemini-sort-data-table">
     <thead>
@@ -28,13 +30,16 @@
           </tr>
     </thead>
     <tbody>
-          {% for ident, obj in planzero.scenarios.scenarios.items() %}
+          {% for ident, obj in planzero.sim.site_simulations.items() if obj.show_on_simulations_page %}
           <tr>
               <td>
                   <a href="/scenarios/{{ident}}/">{{ident}}</a>
               </td>
-              <td>{{obj.short_descr}}</td>
-              <td>{{"{:.1f}".format(planzero.sim.sim_scenario(ident).state.sts["Predicted_Annual_Emitted_CO2e_mass"].query(2050 * u.year).to(u.Mt_CO2e).magnitude)}} Mt{{CO2e|safe}}</td>
+              <td>{{obj.short_description}}</td>
+              <td>{{"{:.1f}".format(
+                  planzero.sim.simulation_result(ident).state.compute_annual_emissions().total().query(
+                      2050 * u.year).to(u.Mt_CO2e).magnitude)}}
+                  Mt{{CO2e|safe}}</td>
           </tr>
           {% endfor %}
     </tbody>

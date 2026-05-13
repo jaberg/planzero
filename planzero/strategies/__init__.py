@@ -14,21 +14,6 @@ from .ideas import Idea
 from .strategy2 import Strategy2, strategies
 
 
-# carbon capture
-# negative-carbon cement
-# enhanced rock weathering (e.g. UNDO, Carbon Run)
-# Buying an EV
-# Steel production
-# Fertilizer production
-# Farm machinery
-# on-farm biogas capture
-# rooftop solar
-# highway umbrella solar
-# photovoltaic sail boats for cargo
-# tethered balloon heat sinks, wind turbines, and solar farms, and transportation medium
-# what about India's cattle population!?
-# new process for hydrogen peroxide: https://interestingengineering.com/innovation/solar-hydrogen-peroxide-cornell-breakthrough
-
 class ComboA(Strategy):
     """
     A set of recommended strategies for which forecasts are available.

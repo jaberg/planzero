@@ -374,6 +374,5 @@ IPCC_Sector_from_catpath_with_whitespace = {
     for ipcc_sector in IPCC_Sector}
 
 
-class StandardScenarios(str, enum.Enum):
-    Scaling = 'scaling'
-    Extrapolating = 'extrapolating'
+class SubsidyPrograms(str, enum.Enum):
+    Bovaer_Subsidy = 'Bovaer Subsidy'

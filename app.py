@@ -1,5 +1,5 @@
-import json
 import datetime
+import json
 import os
 
 import numpy as np
@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import jinja2
 
 app = FastAPI()
 
@@ -16,14 +17,17 @@ htmlroot = 'html'
 app.mount("/assets", StaticFiles(directory=f"{htmlroot}/assets/"), name="assets")
 app.mount("/images", StaticFiles(directory=f"{htmlroot}/images/"), name="images")
 
-templates = Jinja2Templates(directory=htmlroot)
+templates = Jinja2Templates(
+    env=jinja2.Environment(
+        undefined=jinja2.StrictUndefined,
+        loader=jinja2.FileSystemLoader(htmlroot),
+        ))
 
 import planzero
 import planzero.blog
 import planzero.ipcc_home
 import planzero.est_nir
 import planzero.enums
-from planzero import get_peval
 
 u = planzero.ureg
 
@@ -41,25 +45,6 @@ def app_cache(f):
         # without reloading anything
         return f
 
-
-@app.get("/strategies/{strategy_name}/", response_class=HTMLResponse)
-async def get_strategy_eval(request: Request, strategy_name:str):
-    peval = get_peval()
-    strategy = peval.comparisons[strategy_name].project
-    comparison = peval.comparisons[strategy_name]
-    strategy_page = strategy.strategy_page(comparison)
-    return templates.TemplateResponse(
-        request=request,
-        name=f"strategy_page.html",
-        context=dict(
-            default_context,
-            peval=peval,
-            active_tab='strategies',
-            strategy=strategy,
-            comparison=comparison,
-            strategy_page=strategy_page,
-            ),
-    )
 
 @app.get("/ipcc-sectors/", response_class=HTMLResponse)
 async def get_ipcc_sectors(request: Request, error_text:str=None):
@@ -105,10 +90,8 @@ def get_ipcc_sector_html(catpath: str):
     return templates.get_template(templatepath_for_catpath(catpath)).render(dict(
         default_context,
         active_tab='ipcc_sectors',
-        peval=get_peval(),
         stakeholders=planzero.strategies.stakeholders,
         catpath=catpath,
-        blogs_by_tag=planzero.blog.blogs_by_tag,
         est_nir=planzero.est_nir,
         ))
 
@@ -138,64 +121,73 @@ async def get_ipcc_sectors_category(
             error_text=f"Sorry, we don't have the analysis page for {catpath} yet")
 
 
-@app.get("/barriers/", response_class=HTMLResponse)
-async def get_barriers(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="barriers.html",
-        context=dict(
-            default_context,
-            active_tab='barriers',
-            ),
-    )
-
-@app.get("/scenarios/{scenario_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
-async def get_scenario_strategy_impact(request: Request, scenario_name: str, barrier_name: str):
-    sim = planzero.sim.sim_scenario(scenario_name)
+@app.get("/scenarios/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier_name: str):
+    sim = planzero.sim.simulation_result(sim_name)
     return templates.TemplateResponse(
         request=request,
         name="scenario_barrier.html",
         context=dict(
             default_context,
             sim=sim,
-            active_tab='scenarios',
-            scenario_name=scenario_name,
+            active_tab='simulations',
+            sim_name=sim_name,
             barrier_name=barrier_name,
             ),
     )
 
 
 @app.get("/scenarios/", response_class=HTMLResponse)
+@app.get("/simulations/", response_class=HTMLResponse)
 async def get_scenarios(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="scenarios.html",
         context=dict(
             default_context,
-            active_tab='scenarios',
+            active_tab='simulations',
             ),
     )
 
-
 @app.get("/scenarios/{ident}/", response_class=HTMLResponse)
-async def get_scenario_page(ident:str, request: Request):
+@app.get("/simulations/{ident}/", response_class=HTMLResponse)
+async def get_simulation_page(ident:str, request: Request):
+
+    site_sim = planzero.sim.site_simulations[ident]
+    sim_result = planzero.sim.simulation_result(ident)
+    sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
+
+    def ipcc_sectors_from_dynelem(dynelem):
+        sectors = sectors_by_de.get(dynelem.identifier, set())
+        if len(sectors) < 5:
+            return sectors
+        else:
+            return [] # TODO: better version of "many"
+
     return templates.TemplateResponse(
         request=request,
         name="scenario_template.html",
         context=dict(
             default_context,
-            active_tab='scenarios',
+            active_tab='simulations',
             ident=ident,
+            ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
+            site_sim=site_sim,
+            sim_result=sim_result,
             ),
     )
 
 
-@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
-@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
-@app.get("/scenarios/{scenario_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
-async def get_scenario_ipcc_sectors_category(
+@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
+@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
+@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
+async def get_simulation_ipcc_sectors_category(
     request: Request,
-    scenario_name: str,
+    sim_name: str,
     category: str,
     subcategory: str = None,
     subsubcategory: str = None):
@@ -207,7 +199,7 @@ async def get_scenario_ipcc_sectors_category(
     else:
         catpath = f'{category}'
 
-    sim = planzero.sim.sim_scenario(scenario_name)
+    sim = planzero.sim.simulation_result(sim_name)
     chart = sim.echart_ipcc_sector(catpath)
 
     return templates.TemplateResponse(
@@ -215,8 +207,8 @@ async def get_scenario_ipcc_sectors_category(
         name="scenario_ipcc_sector.html",
         context=dict(
             default_context,
-            active_tab='scenarios',
-            scenario_name=scenario_name,
+            active_tab='simulations',
+            sim_name=sim_name,
             ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
             catpath=catpath,
             chart=chart,
@@ -224,101 +216,87 @@ async def get_scenario_ipcc_sectors_category(
     )
 
 
-@app.get("/scenarios/{scenario_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
-async def get_scenario_strategy_impact(request: Request, scenario_name: str, strategy_name: str):
-    sim = planzero.sim.sim_scenario(scenario_name)
+@app.get("/scenarios/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+async def get_simulations_strategy_impact(request: Request, sim_name: str, strategy_name: str):
+    sim = planzero.sim.simulation_result(sim_name)
     baseline_state = sim.state
     ablated_state = sim.ablations.get(strategy_name)
     if not ablated_state:
-        raise HTTPException(status_code=404, detail="Strategy not found in this scenario")
+        raise HTTPException(status_code=404, detail="Strategy not found in this simulation")
     
     # Calculate impact (baseline - ablated)
     # This assumes we want to show emissions saved
     sim_years_ints = np.arange(1990, 2090)
     sim_years = [tt * u.years for tt in sim_years_ints]
     
-    # Simple total emissions comparison
-    baseline_total = baseline_state.sts['Predicted_Annual_Emitted_CO2e_mass']
-    ablated_total = ablated_state.sts['Predicted_Annual_Emitted_CO2e_mass']
+    impact_chart = sim.strategy_impact_echart(strategy_name)
+    subsidies_chart = sim.strategy_subsidies_echart(strategy_name)
 
-    impact_data = planzero.sim.EChartSeriesData(
-        ablated_total - baseline_total, # ablated - baseline = amount saved if ablated > baseline
-        times=sim_years,
-        v_unit=u.Mt_CO2e,
-        url=None, # TODO: link to this class's code on github
-        )
-
-    impact_chart = planzero.sim.StackedAreaEChart(
-        div_id='impact_chart',
-        title=planzero.sim.EChartTitle(
-            text=f'Emissions Impact: {strategy_name}',
-            subtext=f'Annual Mt CO2e saved in {scenario_name}'),
-        xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
-        yAxis=[planzero.sim.EChartYAxis(name='Emissions Saved (Mt CO2e)')],
-        stacked_series=[
-            planzero.sim.EChartSeriesStackElem(
-                name='Emissions Avoided',
-                data=impact_data,
-            )
-        ],
-        other_series=[])
+    # Simple total emissions comparison for cost calculation
+    baseline_total = baseline_state.compute_annual_emissions().total()
+    ablated_total = ablated_state.compute_annual_emissions().total()
 
     # Simple total subsidy comparison
-    subsidy_baseline_total = baseline_state.sts['AnnualSubsidyTotal']
-    subsidy_ablated_total = ablated_state.sts['AnnualSubsidyTotal']
+    subsidy_baseline_total = baseline_state.compute_annual_subsidies().total()
+    subsidy_ablated_total = ablated_state.compute_annual_subsidies().total()
 
-    subsidy_comparison_data = planzero.sim.EChartSeriesData(
-        subsidy_baseline_total - subsidy_ablated_total,
-        times=sim_years,
-        v_unit=u.giga_CAD,
-        url=None, # TODO: link to this class's code on github
+    try:
+        cost_per_tCO2e = (
+            (subsidy_baseline_total - subsidy_ablated_total).sum()
+            / (ablated_total - baseline_total).sum()).to(u.CAD / u.tonne_CO2e)
+    except AssertionError:
+        # this happens in Planet_Model
+        cost_per_tCO2e = float('nan') * u.CAD / u.tonne_CO2e
+
+    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
+
+    context = dict(
+        default_context,
+        active_tab='simulations',
+        sim_name=sim_name,
+        strategy_name=strategy_name,
+        strategy_class=baseline_state.projects[strategy_name].__class__,
+        description_html=baseline_state.projects[strategy_name].description_html,
+        impact_chart=impact_chart,
+        subsidies_chart=subsidies_chart,
+        cost_per_tCO2e=cost_per_tCO2e,
         )
-
-    subsidies_chart = planzero.sim.StackedAreaEChart(
-        div_id='subsidies_chart',
-        title=planzero.sim.EChartTitle(
-            text=f'Subsidies Impact: {strategy_name}',
-            subtext=f'Annual cost of subsidies in {scenario_name}'),
-        xAxis=planzero.sim.EChartXAxis(data=sim_years_ints.tolist()),
-        yAxis=[planzero.sim.EChartYAxis(name='Subsidies Required (CAD, Billions)')],
-        stacked_series=[
-            planzero.sim.EChartSeriesStackElem(
-                name='Cost Incurred',
-                data=subsidy_comparison_data,
-            )
-        ],
-        other_series=[])
-
-    cost_per_tCO2e = (
-        (subsidy_baseline_total - subsidy_ablated_total).sum()
-        / (ablated_total - baseline_total).sum()).to(u.CAD / u.tonne_CO2e)
-
+    strategy_obj = baseline_state.projects[strategy_name]
+    context['see_also'] = strategy_obj.see_also_html(context)
     return templates.TemplateResponse(
         request=request,
         name="strategy_impact.html",
-        context=dict(
-            default_context,
-            active_tab='scenarios',
-            scenario_name=scenario_name,
-            strategy_name=strategy_name,
-            impact_chart=impact_chart,
-            subsidies_chart=subsidies_chart,
-            cost_per_tCO2e=cost_per_tCO2e,
-            ),
+        context=context,
     )
 
 
 @app.get("/strategies/", response_class=HTMLResponse)
 async def get_strategies(request: Request):
+    sims_by_dynelems = {}
+    sectors_by_dynelems = {}
+    for sitesim_name, sitesim in planzero.sim.site_simulations.items():
+        if not sitesim.show_on_simulations_page:
+            continue
+        sim_result = planzero.sim.simulation_result(sitesim_name)
+        sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
+        for dynelem in sitesim.dynamic_elements():
+            sims_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
+                    .add(sitesim_name)
+            sectors_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
+                    .update(sectors_by_de[dynelem.identifier])
+            sectors_by_dynelems[dynelem.__class__.__name__].update(
+                dynelem.extra_ipcc_sectors)
     return templates.TemplateResponse(
         request=request,
         name="strategies.html",
         context=dict(
             default_context,
-            peval=get_peval(),
             active_tab='strategies',
             npv_unit='MCAD',
             nph_unit='exajoule',
+            sims_by_dynelems=sims_by_dynelems,
+            sectors_by_dynelems=sectors_by_dynelems,
             ),
     )
 
@@ -346,6 +324,7 @@ def get_blog_html(post_name: str):
 
 
 @app.get("/blog/{post_name}", response_class=HTMLResponse)
+@app.get("/post/{post_name}", response_class=HTMLResponse)
 async def get_blog(request: Request, post_name:str):
     try:
         html = get_blog_html(post_name)
@@ -362,23 +341,22 @@ async def get_about(request: Request):
         context=dict(
             default_context,
             active_tab='about',
-            blogs_by_tag=planzero.blog.blogs_by_tag,
             ),
     )
 
 @app.get("/glossary/", response_class=HTMLResponse)
-async def get_about(request: Request):
+async def get_glossary(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="glossary.html",
         context=dict(
             default_context,
             active_tab='glossary',
-            blogs_by_tag=planzero.blog.blogs_by_tag,
             ),
     )
 
 @app.get("/index.html", response_class=HTMLResponse)
+@app.get("/posts/", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POSTS):
     return templates.TemplateResponse(
@@ -390,7 +368,6 @@ async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POS
             fade_in_intro=True,
             blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
-            peval=get_peval(),
             unpublished=unpublished,
             ),
     )
@@ -417,5 +394,11 @@ default_context = dict(
     N2O=planzero.blog.latex(r"\mathrm N_2 \mathrm O"),
     CO2e=planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
     degrees=planzero.blog.latex(r'^\circ'),
+    siteref=planzero.glossary.siteref,
+    coderef_url=planzero.html.coderef_url,
+    coderef_filepath=planzero.html.coderef_filepath,
+    fade_in_intro=False,
+    printcname=(lambda cname: cname.replace('_', ' ')),
+    blogs_by_tag=planzero.blog.blogs_by_tag,
     )
 

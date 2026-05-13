@@ -92,6 +92,7 @@ class EChartSeriesBase(BaseModel):
 
 
 def EChartSeriesData(sts, times, v_unit, url):
+    assert times
     values = sts.query(times).to(v_unit).magnitude
     return [{'value': float(vv) if vv == vv else 0, 'url': url}
             for vv in values]
@@ -119,6 +120,11 @@ class StackedAreaEChart(HTML_element):
     stacked_series: list[EChartSeriesBase]
     other_series: list[EChartSeriesBase]
     legend: dict | None = None
+
+    def save_as(self, filepath):
+        # called from Makefile to create snapshots for posts
+        with open(filepath, 'w') as ofile:
+            ofile.write(self.as_html())
 
     def as_html(self):
         newline = '\n'
@@ -181,3 +187,19 @@ class StackedAreaEChart(HTML_element):
         </script>
         <div>
         """
+
+
+import inspect
+def coderef_url(obj):
+    file_path = inspect.getsourcefile(obj)
+    assert file_path.startswith('/mnt/planzero'), file_path
+    file_path = file_path[len('/mnt/'):]
+    lines, line_number = inspect.getsourcelines(obj)
+    url = f'https://github.com/jaberg/planzero/blob/main/{file_path}#L{line_number}'
+    return url
+
+def coderef_filepath(obj):
+    file_path = inspect.getsourcefile(obj)
+    assert file_path.startswith('/mnt/planzero'), file_path
+    file_path = file_path[len('/mnt/'):]
+    return file_path

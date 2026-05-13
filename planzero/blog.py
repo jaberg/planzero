@@ -4,6 +4,7 @@ import datetime
 
 from . import enums
 from . import est_nir
+from . import sim
 
 _classes = []
 _blogs_by_url_filename = {}
@@ -29,6 +30,10 @@ class BlogPost(BaseModel):
     concept_only: bool = False # there is no html for this post object
     tags: set[str] = set()
 
+    @property
+    def siteref(self):
+        return f'/post/{self.url_filename}'
+
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
             kwargs = dict(kwargs, about=self.__class__.__doc__)
@@ -40,7 +45,6 @@ class BlogPost(BaseModel):
         _classes.append(cls)
 
 
-from .planet_model import emissions_impulse_response_project_evaluation
 from . import enums
 from .ureg import u
 
@@ -147,20 +151,17 @@ class GPR_Extrapolation(BlogPost):
 
 
 class Glossary(BlogPost):
-    """Another post adding to the About page:
-    a list of terms and acronyms used commonly in posts,
-    including some with specific meanings in the context of PlanZero modelling.
-    This post introduces a modelling framework for PlanZero.
-    The framework formalizes the ideas of critical success factors (CSFs), barriers, strategies,
-    and scenarios.
-    This post introduces a "Scaling" scenario that estimates what can be achieved by scaling
-    currently-available products.
-    """
-    # renames scenarios -> models
+    """This post announces a new page, a
+    a glossary of terms and acronyms with specific meanings in the context of
+    PlanZero posts.
+    This glossary also introduces modelling terminology to support future posts.
+    The modelling terminology is used to reframe the NIR-reconstruction
+    project within languages of both strategic management and of statistical
+    modelling. """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 19),
-            title='A glossary of terms used in specific ways across multiple posts',
+            date=datetime.datetime(2026, 5, 5),
+            title='New: the PlanZero glossary',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
             tags={BlogTag.About,
@@ -178,11 +179,12 @@ class About(BlogPost):
     """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 12),
+            date=datetime.datetime(2026, 4, 23),
             title='About this project: rewriting and expanding planzero.ca/about',
             url_filename="2026-04-12-about",
             author="James Bergstra",
-            tags={BlogTag.About,},
+            tags={BlogTag.About,
+                 },
             draft=True,
             )
 
@@ -193,19 +195,30 @@ class ModellingBovaer(BlogPost):
     to do a relatively simple bit of modelling: what would happen if Canada's beef
     and dairy farmers gradually transitioned to administring the feed additive Bovaer,
     which reduces methane emissions? A PlanZero model finds that it would remove up to
-    almost 10Mt of emissions, and cost about $175 per tonne removed.
+    almost 10Mt of emissions, and cost about $222 per tonne removed.
     """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 3),
+            date=datetime.datetime(2026, 4, 9),
             title='Modelling a Bovaer Strategy',
             url_filename="2026-04-03-bovaer",
             author="James Bergstra",
             tags={BlogTag.BarrierModelling,
                   enums.IPCC_Sector.Enteric_Fermentation,
+                  'Scale_Bovaer',
                  },
             draft=True,
             )
+
+    @staticmethod
+    def generate_assets():
+        scaling = sim.simulation_result('Scaling')
+        scaling.by_ipcc_sector.save_as(
+            'html/blog/2026-04-03-bovaer_by-ipcc-sector.html')
+        scaling.strategy_impact_echart('Scale_Bovaer').save_as(
+            'html/blog/2026-04-03-bovaer_strategy-emissions.html')
+        scaling.strategy_subsidies_echart('Scale_Bovaer').save_as(
+            'html/blog/2026-04-03-bovaer_strategy-subsidies.html')
 
 
 class IPCC_HeavyDutyDieselVehicles(BlogPost):
@@ -382,7 +395,7 @@ class IPCC_PublicElectricity(BlogPost):
 class CNZEAA(BlogPost):
     """A brief introduction to the Canadian Net-Zero Emissions Accountability
     Act, the federal implementation of Canada’s obligations under the Paris
-    Accords.
+    Agreement.
     """
     CNZEAA_targets:list[float]
     net_emissions_total_without_LULUCF:list[float]
@@ -390,7 +403,7 @@ class CNZEAA(BlogPost):
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 2, 2),
-            title="Paris Accords and the CNZEAA",
+            title="The Paris Agreement and the CNZEAA",
             url_filename="2026-02-02-cnzeaa",
             author="James Bergstra",
             CNZEAA_targets=list(ipcc_canada.CNZEAA_targets()),
@@ -400,7 +413,7 @@ class CNZEAA(BlogPost):
 
 
 class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
-    peval:object
+    sim_result:object
     sts_key:str
     title:str
     legend_loc:str = 'upper right'
@@ -412,10 +425,11 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
         years = [year for year in range(2000, 2101)]
         #years = [year for year in range(1990, 2101)]
         for ghg in enums.GHG:
-            comp = self.peval.comparisons[ghg]
             years_pint = [year * u.year for year in years]
-            energy_A = comp.state_A.sts[self.sts_key].query(years_pint)
-            energy_B = comp.state_B.sts[self.sts_key].query(years_pint)
+            state_A = self.sim_result.state
+            state_B = self.sim_result.ablations[f'EmissionsImpulseResponse_{ghg.value}']
+            energy_A = state_A.sts[self.sts_key].query(years_pint)
+            energy_B = state_B.sts[self.sts_key].query(years_pint)
             plt.plot(years,
                      (energy_A - energy_B).to('terajoules').magnitude,
                      label=ghg)
@@ -432,7 +446,6 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
                          xytext=(2049, 25),
                          xy=(2100, 900),
                          arrowprops=dict(width=1))
-        #plt.grid()
         plt.xlabel(f'Time (years)')
         plt.ylabel(f'Heat (terajoules)')
 
@@ -473,9 +486,6 @@ class GHG_Emissions(BlogPost):
             SF6_df=latex(r"0.57 C"),
             NF3_df=latex(r"0.21 C"),
             )
-        peval = emissions_impulse_response_project_evaluation(
-            impulse_co2e=1_000_000 * u.kg_CO2e,
-            years=100)
 
         super().__init__(
             date=datetime.datetime(2026, 1, 21),
@@ -486,17 +496,27 @@ class GHG_Emissions(BlogPost):
             equations=equations,
             figure_svgs=dict(
                 co2e_v_heat_remaining=GHG_Emissions_CO2e_v_Heat(
-                    peval=peval,
+                    sim_result=sim.simulation_result('Planet_Model'),
                     sts_key='Cumulative_Heat_Energy',
                     title="Heat Remaining After 1-year CO2e-equivalent Emissions",
                     legend_loc='upper right').as_html(),
                 co2e_v_heat_forcing=GHG_Emissions_CO2e_v_Heat(
-                    peval=peval,
+                    sim_result=sim.simulation_result('Planet_Model'),
                     sts_key='Cumulative_Heat_Energy_forcing',
                     title="Cumulative GHG-Trapped Heat",
                     add_circle=True,
                     legend_loc='upper left').as_html(),
-            ))
+            ),
+            tags=[
+                'EmissionsImpulseResponse_CO2',
+                'EmissionsImpulseResponse_CH4',
+                'EmissionsImpulseResponse_N2O',
+                'EmissionsImpulseResponse_HFCs',
+                'EmissionsImpulseResponse_PFCs',
+                'EmissionsImpulseResponse_SF6',
+                'EmissionsImpulseResponse_NF3',
+            ],
+            )
 
 
 class Contributing(BlogPost):
