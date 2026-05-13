@@ -5,7 +5,7 @@
 <section class="post">
     <header class="major">
         <h1>PlanZero Glossary</h1>
-        <p>Terms, acronyms, and conceptual modelling framework</p>
+        <p>Terms, acronyms, data sources, and the conceptual modelling framework used to implement PlanZero.</p>
     </header>
 
     <style>
@@ -55,7 +55,7 @@ Term list:
 {% if obj.see_also or obj.as_discussed_in_posts %}
     <p><strong style="color: #666;">See Also</strong>
     <ul>
-    {% for term, ref_text in obj.see_also.items() %}
+    {% for term, ref_text in sorted(obj.see_also.items()) %}
     <li><a href="#{{planzero.glossary.glossary_terms_w_aka[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
     {% endfor %}
     {% for obj, hashref, descr in obj.as_discussed_in_posts %}
