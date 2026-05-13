@@ -60,9 +60,10 @@ class GlossaryTerm(BaseModel):
 
     @computed_field
     def all_names(self) -> list[str]:
-        #rval = [self.__class__.__name__]
-        rval = []
-        rval.append(self.__class__.__name__.replace('_', ' '))
+        rval = [self.__class__.__name__]
+        #rval = []
+        if '_' in self.__class__.__name__:
+            rval.append(self.__class__.__name__.replace('_', ' '))
         return rval + self.aka
 
     @computed_field
@@ -252,12 +253,6 @@ class Dynamic_Element(GlossaryTerm):
             'Simulation': 'dynamic elements provide the initialization and recurrence logic to define time series by simulation',
         }
 
-    @computed_field
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#dynelem', "see section on Computation and Simulation"),
-        ]
-
     @property
     def code_refs(self) -> dict[str, object]:
         return {
@@ -329,6 +324,14 @@ class Barrier(GlossaryTerm):
     </p>
     """ 
 
+    @computed_field
+    def as_discussed_in_posts(self) -> dict[str, str]:
+        return [
+            (blog.Glossary(),
+             '#barrier',
+             'see section "Barriers: Connecting Strategies to Outcomes"'),
+        ]
+
     @property
     def code_refs(self) -> dict[str, object]:
         return {
@@ -343,6 +346,7 @@ class Barrier(GlossaryTerm):
             'Model': 'a set of dynamic elements, including barriers, that make a prediction',
             'NIR_Model': "a model of Canada's future emissions",
             'Simulation': 'the computation of scenarios from models',
+            'EGFS': "PlanZero adopts the Barrier term and definition from The Executive Guide to Facilitating Strategy.",
         }
 
 
@@ -480,7 +484,8 @@ class Critical_Success_Factor(GlossaryTerm):
     for any or all of some period of time.
     The term Critical Success Factor has a
     <a href="https://en.wikipedia.org/wiki/Critical_success_factor">long history</a>.
-    PlanZero's use of the term is based on the definition from {{lref("EGFS")|safe}}.
+    PlanZero's use of the term is based on the definition from {{lref("EGFS")|safe}}, 
+    which is a "key conditions that must be created to achieve one or more objectives."
     </p>
     """
 
@@ -488,8 +493,8 @@ class Critical_Success_Factor(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'EGFS': 'The Executive Guide to Facilitating Strategy',
-            'Models Section': 'models section of PlanZero website',
-            'Critical Success Factor': 'an emissions contribution to an IPCC Sector',
+            'IPCC_Sector_Contribution': 'an emissions contribution to an IPCC Sector',
+            'KPI': 'Key Performance Indicators are the time series contemplated by Critical Success Factors',
         }
 
     @computed_field
@@ -814,14 +819,14 @@ class GitHub_Repository(GlossaryTerm):
 
     @computed_field
     def aka(self) -> list[str]:
-        return ['repo', 'repository']
+        return ['GitHub Repo', 'repository', 'repo']
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
             'GitHub': "the site that hosts GitHub code repositories",
             'Git': "the version control system upon which GitHub operates",
-            'Git_Fork': "A repo can be forked to create a downstream copy of an upstream repo"
+            'GitHub_Fork': "A repo can be forked to create a downstream copy of an upstream repo"
         }
 
 class GitHub_Fork(GlossaryTerm):
@@ -870,7 +875,7 @@ or running a command such as <pre>git log --all --decorate --oneline --graph</pr
     def see_also(self) -> dict[str, str]:
         return {
             'Git_Commit': "a node of a git [change] graph",
-            'Git_Repo': "a copy of a git graph",
+            'GitHub Repo': "a git graph hosted on GitHub",
             'Git_Branch': "a named subgraph of ancestors of a particular commit",
         }
 
@@ -879,6 +884,10 @@ class GitHub(GlossaryTerm):
     """<p>GitHub (<a href="https://github.com/">site</a>, <a href="https://en.wikipedia.org/wiki/GitHub">wikipedia</a>) is a web service for using the git version
     control system over the internet to collaborate on software projects. Circa 2023, it was the world's largest source code host, with over 100 million developers, and 420 million code repositories.</p>
     """
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['GH']
 
     @property
     def see_also(self) -> dict[str, str]:
@@ -929,7 +938,7 @@ class GitHub_Pull_Request(GlossaryTerm):
         return {
             'Git_Branch': "a pull request is a request to merge two branches",
             'Main_Branch': "submit a pull request to this branch when a new development is ready",
-            'Git_Fork': "typically a pull request represents a request to merge code from a branch in one fork (maintained by one person) into a branch on another fork (maintained by another person)"
+            'GitHub_Fork': "typically a pull request represents a request to merge code from a branch in one fork (maintained by one person) into a branch on another fork (maintained by another person)"
         }
 
 
@@ -1380,7 +1389,7 @@ class Rollout(GlossaryTerm):
                 "The set of time series that result"
                 " from simulating a model (a scenario may be called a rollout)"),
             'Time Series': "the data structures being rolled out, or making up a rollout",
-            'Dynamic Elements': "the model elements being rolled out",
+            'Dynamic Element': "the model elements being rolled out",
         }
 
 
@@ -1439,7 +1448,7 @@ class Simulation(GlossaryTerm):
                 "The set of time series that result"
                 " from simulating a model"),
             'Time Series': "the data structures built up by simulation",
-            'Dynamic Elements': "the model elements providing initialization and recurrence logic",
+            'Dynamic Element': "the model elements providing initialization and recurrence logic",
             "Rollout": "a synonym for either simulation or scenario, depending on context",
             "Simulations_Section": "Pages on the PlanZero site showing simulation results",
         }
@@ -1454,8 +1463,9 @@ class Ablative_Analysis(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Strategy': 'ablative analysis is used to evaluate strategies',
-            'Simulation': 'implements ablative analysis',
+            'Strategy': 'Strategies within models are are ablated in order to assess their impact.',
+            'Simulation': 'Ablative analysis is part of model simulation.',
+            'Simulations_Section': 'Strategies within simulations are evaluated and characterized based on an ablative analysis.',
         }
 
 

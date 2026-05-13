@@ -11,6 +11,7 @@
 Table of Contents:
 <ul>
     <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#overview">Glossary Overview</a></li>
     <li><a href="#computation">Computation and Simulation</a>
         <ul>
             <li><a href="#timeseries">Time Series</a></li>
@@ -56,8 +57,9 @@ source code version control). I'll amend some previous posts to link to the glos
 and call out glossary additions in new posts going forward.
 </p>
 <p>
-This post is organized around two top-level content sections.
-The first one is about how PlanZero models work at
+This post is organized around three top-level content sections.
+The first one is an <a href="#overview">overview</a> of the new <a href="/glossary">glossary</a>.
+The second one is about how PlanZero models work at
 a <i>computational level</i>, in terms of
 <a href="#timeseries">time series</a>,
 <a href="#dynelem">dynamic element</a>,
@@ -72,20 +74,79 @@ and might feel like low-level irrelevant details to some readers; if that's you,
 feel free to skip ahead to the next section on emissions modeling.
 </p>
 <p>
-The second section is about how PlanZero models work at a <i>semantic level</i>,
-as <a href="#modelling">models of emissions and economic activity</a>, in terms of
-<a href="#drivers">drivers</a>,
-<a href="#emfac">emission factors</a>,
-<a href="#subsidy">subsidy programs</a>,
-<a href="#contribution">emission contributions</a>,
-<a href="#strategy">strategies</a>,
-and <a href="#barrier">barriers</a><!-- relating strategies to the critical success factors of emission reduction and cost-->.
+The third section is about how PlanZero models work at a <i>semantic level</i>,
+as <a href="#modelling">models of emissions and economic activity</a>, in terms of e.g.
+drivers,
+emission factors,
+subsidy programs,
+emission contributions,
+strategies,
+and barriers.
 This section explains how PlanZero models the computation of national emissions,
 as well as the possible effects of new technologies and government programs.
 Bovaer adoption, as the first worked example, has driven many design choices
 here. As the set of strategies grows, I expect the modelling framework to grow too,
 but this is how it works for now.
 </P>
+
+<h2 id="overview">Glossary Overview</h2>
+
+<p>
+As of the writing of this post,
+PlanZero's <a href="/glossary/">glossary</a> defines and cross-references
+the following 58 terms:
+<table>
+    <tbody>
+        <tr>
+    {% for ii, (clsname, obj) in enumerate(sorted(planzero.glossary.glossary_terms.items())) %}
+    {% if ii and ii % 3 == 0 %}</tr><tr>{% endif %}
+    <td><a href="#{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</a></td>
+    {% endfor %}
+        </tr>
+    </tbody>
+</table>
+</p>
+
+<p>
+The terms were chosen somewhat ad-hoc based on my recollection of key topics
+from posts to date.
+Terminology of emissions and greenhouse gases links to
+<a href="/blog/2026-01-21-unfccc">A Model of Greenhouse Gas Emissions</a>, from January 21.
+Terms relating to IPCC, Paris Agreements, UNFCC, CNZEAA and so on link to
+<a href="/blog/2026-02-02-cnzeaa">The Paris Agreement and the CNZEAA</a>.
+Several terms relating to NIR modelling e.g. NIR, NGGI, NEUD, NRCan, ECCC
+link implicitly and/or explicitly to NIR-modelling posts I've been writing over
+the past few months.
+Terms relating to git and GitHub relate somewhat to the previous
+"<a href="/blog/2026-04-12-about#revision-control">About This Project...</a>" post,
+but also aim to provide some onboarding documentation to future readers
+I hope to have, who might be interested in collaboration on this project.
+The glossary also defines terms that have been used implicitly in
+the recent post on <a href="/blog/2026-04-03-bovaer">Bovaer Modelling</a>,
+such as Model, Scenario, Simulation, Strategy, Barrier, and KPI.
+The glossary also defines key terms of the computational modelling framework
+that underlies PlanZero's simulation results, such as Time Series, Dynamic Element, and Scenario,
+because they are so closely related to the modelling terms, and
+they may some day be useful as preliminary developer documentation.
+</p>
+<p>
+I haven't written about how PlanZero works before, and writing about
+how it worked made me think about how it worked,
+which made me realize that it should work better.
+Writing this glossary post, has, consequently, been one of the largest
+efforts of any post written to date.
+Among many changes (see {{siteref("GH")|safe}} {{siteref("PR")|safe}}  <a href="https://github.com/jaberg/planzero/pull/78/changes">#78</a>)
+the most impactful is probably the conceptual clarification of Scenario and Simulation,
+which has led to improved visualizations, as well as the improved handling of KPIs (see below), which have enabled much better
+visualization of the impact of strategies.
+Visualizing and analyzing the impacts of strategies is one of the
+core capabilities that PlanZero needs to be good at, so I think the effort was time well spent.
+The rest of this post introduces the computational and modelling terms in
+narrative form, so that their entries in the glossary can be reasonably short,
+and link to this post for more context.
+</p>
+
+
 
 <h2 id="simulation">Simulation Framework</h2>
 <p>
@@ -546,11 +607,11 @@ rather than simplified caricatures.
 </pre>
 </p>
 <p>
-Since the PlanZero site only uses simulations to investigate national emissions models,
+Since the PlanZero site usually uses simulations to investigate national emissions models,
 I sometimes use the terms interchangeably, even though they refer
 to distinct conceptual levels.
 As of writing, the "Simulations" tab of the site lists two items,
-which could just as well be described as two models.
+which correspond to two models.
 The first one, <a href="/scenarios/NIR2025/">NIR2025</a>,
 comprises a single barrier that initializes time series corresponding to the data from the 2025
 National Inventory Report. That dynamic element has no recurrent logic,
@@ -616,8 +677,8 @@ as well as several other terms that have come up in previous posts
 (e.g. {{siteref("NIR")|safe}}, {{siteref("NEUD")|safe}}, {{siteref("Net Zero")|safe}}).
 The two previous posts, still in draft,
 which introduced the
-TODO <a href="">Bovaer strategy</a> and
-which presented the analogy of TODO <a href="">posts as revision announcements</a>,
+<a href="/blog/2026-04-03-bovaer">Bovaer strategy</a> and
+which presented the analogy of <a href="/blog/2026-04-12-about#revision-control">posts as revision announcements</a>,
 have been updated with glossary links and expanded
 to include the more-detailed ablative analysis made possible by
 the drivers and emissions factors now used by barrier elements.

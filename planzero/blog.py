@@ -395,7 +395,7 @@ class IPCC_PublicElectricity(BlogPost):
 class CNZEAA(BlogPost):
     """A brief introduction to the Canadian Net-Zero Emissions Accountability
     Act, the federal implementation of Canada’s obligations under the Paris
-    Accords.
+    Agreement.
     """
     CNZEAA_targets:list[float]
     net_emissions_total_without_LULUCF:list[float]
@@ -403,7 +403,7 @@ class CNZEAA(BlogPost):
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 2, 2),
-            title="Paris Accords and the CNZEAA",
+            title="The Paris Agreement and the CNZEAA",
             url_filename="2026-02-02-cnzeaa",
             author="James Bergstra",
             CNZEAA_targets=list(ipcc_canada.CNZEAA_targets()),
