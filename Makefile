@@ -12,6 +12,13 @@ bash: .build
 		-it --rm $(target) \
 		bash
 
+bash_disk_cache: .build
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target) \
+		bash
+
 jupyter: .build
 	docker run \
 		-e PLANZERO_USE_DISK_CACHE=0 \
