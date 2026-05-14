@@ -137,18 +137,20 @@ async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier
             ),
     )
 
+@app_cache
+def get_simulations_html():
+    return templates.get_template('scenarios.html').render(dict(
+        default_context,
+        active_tab='simulations',
+        ))
+
 
 @app.get("/scenarios/", response_class=HTMLResponse)
 @app.get("/simulations/", response_class=HTMLResponse)
 async def get_scenarios(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="scenarios.html",
-        context=dict(
-            default_context,
-            active_tab='simulations',
-            ),
-    )
+    html = get_simulations_html()
+    return HTMLResponse(content=html)
+
 
 @app.get("/scenarios/{ident}/", response_class=HTMLResponse)
 @app.get("/simulations/{ident}/", response_class=HTMLResponse)
@@ -215,10 +217,8 @@ async def get_simulation_ipcc_sectors_category(
             ),
     )
 
-
-@app.get("/scenarios/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
-@app.get("/simulations/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
-async def get_simulations_strategy_impact(request: Request, sim_name: str, strategy_name: str):
+@app_cache
+def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
     sim = planzero.sim.simulation_result(sim_name)
     baseline_state = sim.state
     ablated_state = sim.ablations.get(strategy_name)
@@ -264,11 +264,14 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
         )
     strategy_obj = baseline_state.projects[strategy_name]
     context['see_also'] = strategy_obj.see_also_html(context)
-    return templates.TemplateResponse(
-        request=request,
-        name="strategy_impact.html",
-        context=context,
-    )
+    return templates.get_template('strategy_impact.html').render(context)
+
+
+@app.get("/scenarios/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+@app.get("/simulations/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+async def get_simulations_strategy_impact(request: Request, sim_name: str, strategy_name: str):
+    html = get_simulations_strategy_impact_html(sim_name, strategy_name)
+    return HTMLResponse(content=html)
 
 
 @app.get("/strategies/", response_class=HTMLResponse)
@@ -344,16 +347,19 @@ async def get_about(request: Request):
             ),
     )
 
+
+@app_cache
+def get_glossary_html():
+    return templates.get_template('glossary.html').render(dict(
+        default_context,
+        active_tab='glossary',
+        ))
+
 @app.get("/glossary/", response_class=HTMLResponse)
 async def get_glossary(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="glossary.html",
-        context=dict(
-            default_context,
-            active_tab='glossary',
-            ),
-    )
+    html = get_glossary_html()
+    return HTMLResponse(content=html)
+
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/posts/", response_class=HTMLResponse)
