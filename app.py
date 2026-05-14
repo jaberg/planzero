@@ -152,10 +152,8 @@ async def get_scenarios(request: Request):
     return HTMLResponse(content=html)
 
 
-@app.get("/scenarios/{ident}/", response_class=HTMLResponse)
-@app.get("/simulations/{ident}/", response_class=HTMLResponse)
-async def get_simulation_page(ident:str, request: Request):
-
+@app_cache
+def get_simulations_page_html(ident:str):
     site_sim = planzero.sim.site_simulations[ident]
     sim_result = planzero.sim.simulation_result(ident)
     sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
@@ -167,18 +165,22 @@ async def get_simulation_page(ident:str, request: Request):
         else:
             return [] # TODO: better version of "many"
 
-    return templates.TemplateResponse(
-        request=request,
-        name="scenario_template.html",
-        context=dict(
+    return templates.get_template("scenario_template.html").render(
+        dict(
             default_context,
             active_tab='simulations',
             ident=ident,
             ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
             site_sim=site_sim,
             sim_result=sim_result,
-            ),
-    )
+            ))
+
+
+@app.get("/scenarios/{ident}/", response_class=HTMLResponse)
+@app.get("/simulations/{ident}/", response_class=HTMLResponse)
+async def get_simulation_page(ident:str, request: Request):
+    html = get_simulations_page_html(ident)
+    return HTMLResponse(content=html)
 
 
 @app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
