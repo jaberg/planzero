@@ -4694,3 +4694,50 @@ input, select, textarea {
 		}
 
 	}
+
+@media print {
+    @page {
+        /* Set top and bottom margins */
+        margin-top: 2cm;
+        margin-bottom: 2cm;
+
+        /* Optional: Set left and right margins */
+        margin-left: 1cm;
+        margin-right: 1cm;
+    }
+
+	html {
+		font-size: 65% !important;
+	}
+
+	#header, #nav, #intro, #footer, #copyright, .actions, .button {
+		display: none !important;
+	}
+
+	#wrapper {
+		padding: 0.5in !important;
+	}
+
+	#main {
+		width: 100% !important;
+		max-width: none !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		background-color: transparent !important;
+		border: none !important;
+	}
+
+	#main > * {
+		padding: 2rem 2rem 1rem 2rem !important;
+		border-top: 0.75in !important;
+		border-bottom: 0.75in !important;
+	}
+
+	body {
+		line-height: 1.5 !important;
+	}
+
+	p {
+		margin: 0 0 1rem 0 !important;
+	}
+}
