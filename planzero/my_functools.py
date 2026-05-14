@@ -17,6 +17,6 @@ def cache(f):
         global _disk_cache
         if _disk_cache is None:
             _disk_cache = diskcache.Cache(CACHE_DIR)
-        return _disk_cache.memoize()(f)
+        return functools.cache(_disk_cache.memoize()(f))
     else:
         return functools.cache(f)

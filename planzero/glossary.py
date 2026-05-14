@@ -78,7 +78,9 @@ class GlossaryTerm(BaseModel):
             if isinstance(thing, str) and thing.startswith('http'):
                 rval[txt] = thing
             elif isinstance(thing, functools._lru_cache_wrapper):
-                rval[txt] = coderef_url(thing.__wrapped__)
+                while hasattr(thing, '__wrapped__'):
+                    thing = thing.__wrapped__
+                rval[txt] = coderef_url(thing)
             else:
                 rval[txt] = coderef_url(thing)
         return rval
