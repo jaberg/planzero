@@ -351,8 +351,8 @@ class SimulationResult(BaseModel):
         subsidies_chart = StackedAreaEChart(
             div_id='subsidies_chart',
             title=EChartTitle(
-                text=f'Subsidies Impact: {strategy_name}',
-                subtext=f'Annual cost of subsidies in {self.simulation_name}'),
+                text=f'Subsidies Impact: {strategy_name.replace("_", " ")}',
+                subtext=f'Annual cost of subsidies in {self.simulation_name.replace("_", " ")}'),
             xAxis=EChartXAxis(data=self.year_ints),
             yAxis=EChartYAxis(name='Subsidies Required (CAD, Millions)'),
             stacked_series=[

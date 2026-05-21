@@ -11,9 +11,9 @@
 Table of Contents:
 <ul>
     <li><a href="#introduction">Introduction</a></li>
-    <li><a href="#enteric-fermentation">Recall Emissions Calculation for Enteric Fermentation</a></li>
+    <li><a href="#enteric-fermentation">Review of Emissions Calculation for Enteric Fermentation</a></li>
     <li><a href="#model">A Model of Bovaer Adoption</a></li>
-    <li><a href="#simulation">Simulating the Model</a></li>
+    <li><a href="#simulation">Simulation Results</a></li>
     <li><a href="#conclusion">Conclusion</a></li>
 </ul>
 </p>
@@ -21,78 +21,100 @@ Table of Contents:
 <h2 id="introduction">Introduction</h2>
 
 <p>
-This post represents a break from the series replicating 2025 National
-Inventory Report sectoral totals, to do some relatively simple modelling, of
-what the impact might be
+Several recent posts, indeed almost all of them,
+have been about replicating per-IPCC-sector emissions from the 2025 National
+Inventory Report.
+But the reason PlanZero is named as it is, is that it's supposed to include
+some models (potential plans) of the future.
+This post breaks from the series replicating emissions histories in order
+to test that the research on emissions histories is laying a useful foundation
+for modelling future scenarios.
+Specifically, it follows up on the recent post on
+<a href="/blog/2026-03-31-enteric">Enteric Fermentation</a>
+and looks at the potential impact
 if beef and dairy farmers were to gradually transition to administering Bovaer.
+</p>
+<p>
 Bovaer is a brand name for a feed additive for cattle and sheep, also known as
 <a href="https://en.wikipedia.org/wiki/3-Nitrooxypropanol">3-Nitrooxypropanol,
     also known as 3-NOP</a>.
-It is a synthetic organic compound that, when added to ruminant livestock feed
+It is a synthetic organic compound (organic as in
+<a href="https://en.wikipedia.org/wiki/Organic_compound">carbon-containing-molecules</a>,
+not organic as in pesticide-free) that, when added to ruminant livestock feed
 in the correct manner,
 has the effect of inhibiting methane production in their first stomach.
 Bovaer is <a href="https://www.dsm-firmenich.com/anh/news/press-releases/2024/2024-01-31-canada-approves-bovaer-as-first-feed-ingredient-to-reduce-methane-emissions-from-cattle.html">approved for use in Canada</a>.
 The modelling presented in this post codifies assumptions about what Bovaer does,
 how much it costs, which kinds of cattle would consume it,
-how long it would take farmers to adopt it (and how many might might never adopt it),
+that most farmers would adopt it at a certain price,
+how long it would take them to do so,
 how much it might cost to verify that farmers are administering it
-correctly, and what fraction of purchased Bovaer is actually making it
-into cattle as intended.
-The results of the modelling are now visible as part of a
-"<a href="/simulations/Scaling">Scaling</a>" simulation,
-looking at the "<a href="/simulations/Scaling/strategies/Scale_Bovaer/">Scale Bovaer</a>" strategy.
+correctly, and what fraction of purchased Bovaer actually make it
+into cattle as intended vs. e.g. accidental waste.
+The results of the modelling are now included as part of a
+"<a href="/simulations/Scaling">Scaling</a>" simulation on a revised simulations page,
+and specifically associated with the "<a href="/simulations/Scaling/strategies/Scale_Bovaer/">Scale Bovaer</a>" strategy.
 </p>
 
 <p>
 This post does not establish a position on the question of whether Canada
 should fund Bovaer.
-There are a number of reasons for not leaping to conclusions, foremost among them being
-(1) that Bovaer is the only strategy implemented in the PlanZero model at this
-time so there's no less-expensive or more-expensive alternatives with which to compare,
-and
-(2) that anyway the model makes no attempt to anticipate government decision-making.
+There are a number of reasons not to leap to conclusions, foremost being
+that Bovaer is the only strategy implemented in the PlanZero model at this
+time so there's no comparison to alternatives.
 What the post does do,
-is calculate that Bovaer usage represents a strategy that costs about $222/t{{CO2e|safe}} according
-to the modelling assumptions below.
+is calculate that under a set of modelling assumptions,
+Bovaer usage represents a strategy that
+can remove up to 10 Mt {{CO2e}} annually at a cost of about $222/t{{CO2e|safe}}.
 </p>
 
 <p>The post is organized as follows:
 <ul>
-    <li><a href="#enteric-fermentation">Recall how the Enteric Fermentation Calculation Works</a>:
+    <li><a href="#enteric-fermentation">Review of Emissions Calculation for Enteric Fermentation</a>:
         what factors drive enteric fermentation emissions,
         and how does the strategy aim to help?</li>
-    <li><a href="#model">A Model Bovaer Adoption</a>:
-        what intermediate things relate our strategy
-        to the critical success factors?</li>
-    <li><a href="#simulation">Simulating the Model</a>:
-        when we simulate a model with these assumptions, what happens?</li>
-    <li><a href="#conclusion">Conclusion</a>: what can we conclude from this simulation,
-    and what's next for PlanZero?</li>
+    <li><a href="#model">A Model of Bovaer Adoption</a>:
+        through what time-varying variables does the adoption of Bovaer
+        influence the annual emissions calculation?</li>
+    <li><a href="#simulation">Simulation Results</a>:
+        PlanZero models can be extrapolated into the future to produce hypothetical scenarios
+        based on modelling assumptions. What does a future with Bovaer adoption look like?</li>
+    <li><a href="#conclusion">Conclusion</a>: what can we conclude from the simulation,
+    results, and what's next for PlanZero?</li>
 </ul>
 </p>
 
 
-<h2 id="csfs">Enteric Fermentation Emissions Key Performance Indicators</h2>
+<h2 id="enteric-fermentation">Review of Emissions Calculation for Enteric Fermentation</h2>
 
 <p>
 Recall from this
 <a href="/blog/2026-03-31-enteric">earlier
-    post approximating the enteric fermentation emissions</a>,
-that the {{siteref("NIR", "NIR-2025")|safe}} enteric fermentation emissions were well approximated by a sum
+    post analyzing the enteric fermentation emissions</a>,
+that the {{siteref("NIR", "NIR-2025")|safe}} enteric fermentation emissions were
+accurately approximated by a sum
 over
 (a) provinces and territories and
-(b) cattle types (dairy cows, beef cows, dairy heifers, beef heifers, slaughter heifers, steers, bulls, calves),
-of an emissions contribution;
-in which the emissions contribution was itself calculated as the product of
-how many heads of each type of cattle there were (of that type, and in that region), and how much methane
-each type of cattle emitted per year (called an {{siteref("Emission Factor", "emission factor")|safe}}).
-These quantities are the {{siteref("Key Performance Indicator", "Key Performance Indicators (KPIs)")|safe}} related
-to Enteric Fermentation in PlanZero.
+(b) cattle types (dairy cows, beef heifers, calves, etc.),
+of an emissions contribution.
+Each emissions contribution
+was the product of
+<ul>
+    <li>headcount: how many heads of each type of cattle there were (per-type, and per-region), and</li>
+    <li>{{siteref("Emission Factor", "emission factor")|safe}}: how much methane each type of cattle emitted on an annual basis, per head</li>
+</ul>
+This approximation was somewhat inaccurate by ignoring other livestock types
+such as sheep, swine, and poultry, but the emissions from cattle make up
+over 95% of the sector total, so the simplified estimator is about 95% accurate.
 </p>
 
 <p>
+The headcounts (per-type, per-region)
+and emission factors (per-type, per-region) are
+the key time-varying quantities that support the calculation
+of enteric fermentation emissions.
 The next section explains a hypothetical Bovaer adoption process that
-affects these KPIs and lowers emissions.
+affects these time-varying quantities and lowers emissions in future years beyond 2026.
 </p>
 
 <h2 id="#model">A Model of Bovaer Adoption</h2>
@@ -105,27 +127,34 @@ This post supposes that some unspecified balance of federal
 and provincial governments decide to drive Bovaer adoption with subsidies.
 </p>
 <p>
-The PlanZero model of this adoption process works technically by re-defining
-some of the KPIs of Enteric Fermentation.
-Not the number of cattle &mdash; Bovaer is considered safe and the subsidy is
-not expected to be so large that it drives a significant number of farmers
-into or out of the farming business.
-But the emission factors regarding the rate of methane emission per head are
-redefined as falling to some degree,
-proportional to published methane reduction rates from the manufacturer
-(i.e. 30% for dairy cows, and 45% for beef cows, <a
+The PlanZero model of this adoption process works by defining
+some of the key time-varying quantities supporting the enteric fermentation
+emissions calculation so that they take different values in future years depending
+on the level of Bovaer adoption.
+With regards to <i>headcounts</i>, the model in this post assumes
+that Bovaer adoption has no impact on headcounts.
+Bovaer is considered safe and the subsidy is
+not expected to be so large that it drives farmers into or out of the farming business.
+With regards to <i>emission factors</i>,
+the model in this post is that methane emissions from cattle will drop
+if Bovaer is administered; in particular, that it will drop
+according to published methane reduction rates from the manufacturer
+( up to i.e. 30% for dairy cows, and 45% for beef cows, <a
 href="https://www.dsm-firmenich.com/anh/products-and-services/products/methane-inhibitors/bovaer.html">link</a>).
-The constant of proportionality is
-a new time series introduced for this model, which is a single
-time-varying number for the whole of Canada: the fraction of cattle
-on Bovaer.
+Whether the emission factors drop by 0% or 30% for dairy cows in a particular region
+depends on what fraction are consuming Bovaer. If no cattle are consuming Bovaer,
+then the drop in average methane emission per head will be 0% and if all of them
+are consuming Bovaer, then the drop will be 30%.
 </p>
 
 <p>
+The fraction of cattle consuming Bovaer is a new time-varying quantity
+that is introduced by this model.
 The fraction of cattle on Bovaer starts at zero, and is modelled as
-either remaining constant, or increasing by some amount up to 5% of farmers per year.
+either remaining constant, or increasing by 5% of farmers per year.
 I chose this number as providing a rate of change
-on a similar time scale to equipment turnover.
+on a similar time scale to equipment turnover, as a general rate of change
+in farming operations.
 I imagined I was modelling the effect of a hypothetical farm subsidy program
 that paid farmers to administer Bovaer.
 It allows for a transition to nearly 100% Bovaer usage between 2030 and 2050.
@@ -134,38 +163,43 @@ over time, it drives several effects:
 <ul>
     <li>methane emissions from dairy cows drop by 30%, as per <a href="https://www.dsm-firmenich.com/anh/products-and-services/products/methane-inhibitors/bovaer.html">manufacturer claim</a></li>
     <li>methane emissions from beef cows drop by 45%, as per <a href="https://www.dsm-firmenich.com/anh/products-and-services/products/methane-inhibitors/bovaer.html">manufacturer claim</a></li>
-    <li>methane emissions from other cattle drop by 40% (I guessed this number)</li>
+    <li>methane emissions from other cattle drop by 40% (I guestimated this number, as being between 30% and 45%)</li>
     <li>carbon emissions rise by 45 kg {{CO2e|safe}}/head/year to account for
-        the production of Bovaer (I guessed this number)</li>
-    <li>subsidy payments to farmers rise to an average of $5000/farm/year (I chose this number for a hypothetical subsidy program)</li>
-    <li>on-site monitoring costs rise to an average of $3000/farm/year (I chose this number)</li>
-    <li>offsite-site monitoring costs rise to an average of $1000/farm/year (I chose this number)</li>
+        the production of Bovaer (I guessed this number based on an AI recommendation)</li>
+    <li>subsidy payments to farmers rise to an average of $5000/farm/year (I estimated this number for a hypothetical subsidy program, so that it would be larger than the monitoring costs)</li>
+    <li>on-site monitoring costs rise to an average of $3000/farm/year (I estimated this number to budget for a a few multi-hour professional service calls using specialized equipment)</li>
+    <li>offsite-site monitoring costs rise to an average of $1000/farm/year (I estimated this number to be a relatively small fraction of the subsidy program)</li>
     <li>Bovaer purchase costs rise to an average of $182/head/year for adult cattle,
         $127/head/year for steers and heifers, and $73/head/year for calves
         (based on estimates from <a href="https://www.producer.com/livestock/new-methane-feed-additive-pleases-producers/">this article on producer.com</a>)</li>
 </ul>
 The fraction of cattle on Bovaer only rises to 99% instead of 100% to account
-for the fraction of farms that produce organic milk and dairy. That fraction is
-currently about 1%, and organic certification does not permit Bovaer usage.
-The model assumes a constant 160 cattle / farm on average, rather than the
-<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101">actual farm data available from Statistics Canada</a> which has hovered around 160 in recent years.
+for the fraction of farms that produce organic milk and dairy. I estimated that fraction
+to be about 1% (based on <a href="https://www150.statcan.gc.ca/n1/daily-quotidien/220511/dq220511a-eng.htm">3% of Canadian farms being organic in 2021</a> and most organic farms focusing on fruits and vegetables), and organic certification does not permit Bovaer usage.
+The model assumes a constant 160 cattle / farm on average, based on
+<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3210015101">the actual number hovering around 160 in recent years</a>.
 The production capacity of Bovaer is not modelled; it is assumed that sufficient production
 could be ramped up over this period of time to meet demand at the prices in the model.
-The model also doesn't model any change to the insurance landscape for farmers,
+The model also doesn't model any change to farmers' insurance needs,
 although there may be some cost there as well that would add cost to the program.
+The model in this post implicitly assumes that it is a complete model,
+and that nothing else changes in the National Greenhouse Gas Inventory
+after 2026 except the gradual adoption of Bovaer.
+</p>
+
+<p>
+The subsidy program assumed in this model is hypothetical, there is no current subsidy program
+at the federal level or in any province or territory that aims to work in this way.
 </p>
 
 
 
-<h2 id="simulation">Simulating the Model</h2>
+<h2 id="simulation">Simulation Results</h2>
 <p>
-The PlanZero software can simulate this model, and roll out the year-by-year consequences
-of the modelling assumptions above.
-Note that the model implicitly assumes that it is complete,
-and that nothing else changes in the National Greenhouse Gas Inventory
-after 2026 except the gradual adoption of Bovaer.
-Assuming farmers actually go for the $5000/year deal they're offered,
-the following figure  is what the inventory would look like out to 2050 and
+The PlanZero software can {{siteref("Rollout", "roll out")|safe}}
+the year-by-year consequences of the modelling assumptions above to create a hypothetical scenario covering future years.
+With the assumptions listed above,
+the following figure is what the inventory would look like out to 2050 and
 beyond.
 </p>
 
@@ -174,40 +208,35 @@ beyond.
 <p>
 For most sectors, the figure shows historical actuals until 2023,
 followed by constant projections.
-For the <a
-    href="/simulations/Scaling/ipcc-sectors/Enteric_Fermentation/">"Enteric
-    Fermentation" sector (scaling scenario)</a>, we see a steady reduction in
-emissions as
-our simulated farmers adopt Bovaer at 5% / year.
-At the same time, we see a steady (although smaller) rise in emissions in the <a
-    href="/simulations/Scaling/ipcc-sectors/Other_Product_Manufacture_and_Use/">"Other
-    Product Manufacture and Use"</a> sector.
-After all eligible farms have adopted Bovaer, annual emissions are reduced by
-9.5 Mt {{CO2e|safe}}.
-The magnitude of subsidy required is shown in dark red, and plotted against
-the right vertical axis in billions of dollars.
-As farmers adopt Bovaer it rises to a total of about 2.1 billion dollars per
-year.
-Since Bovaer usage and cost is proportional and synchronous, the cost of emissions reduction from
-using Bovaer can be computed directly by dividing these two numbers: 2.1 billion dollars / 9.5 Mt {{CO2e|safe}} equates to $222.94 / t{{CO2e|safe}}.
-</p>
-<p>
-The impact of the strategy on the overall national picture is
-significant, but still relatively small (about 1.3%).
-Ablative analysis (looking at the results with and without the strategy)
+I want to make a habit of including this style of figure in strategy-analysis posts
+because I believe it is important to keep the big picture in mind.
+That said, the impact of Bovaer adoption is small,
+and does not stand out visually on the scale of
+national emissions in recent years (it reduces the total by about 1.3%).
+{{siteref("Ablative Analysis", "Ablative analysis")|safe}} (looking at simulation results with and without the strategy)
 can visualize the effects of a single strategy more clearly.
 The following two strategy-specific figures plot the impact on emissions, and required subsidies.
 </p>
 
 {% include "blog/2026-04-03-bovaer_strategy-emissions.html" %}
+
 <p>
-In this first strategy-specific figure, the difference between the scenarios
-with and without Bovaer adoption is shown in terms of emissions. Two IPCC sectors
-are affected: "Enteric Emissions" and "Industrial / Other Product Manufacture and Use".
-Enteric emissions are reduced by a little over 10 Mt{{CO2e|safe}},
-and the emissions associated with Bovaer production are modelled as rising by
-a smaller amount, of 510 kt{{CO2e|safe}}.
-The net effect is a reduction by about 9.5 Mt{{CO2e|safe}}.
+With regards to the emissions impact of Bovaer we see no reduction in emissions
+until 2030, when the modelled subsidy programs are in place. After 2030
+we see a large decline in enteric fermentation emissions, and a small increase
+in "Other Product Manufacture and Use" to account for the production of Bovaer.
+For the <a
+    href="/simulations/Scaling/ipcc-sectors/Enteric_Fermentation/">"Enteric
+    Fermentation" sector</a>, we see a steady reduction in
+emissions from 2030 to 2050 as
+our simulated farmers adopt Bovaer at 5% per year.
+Enteric emissions are ultimately reduced by a little over 10 Mt{{CO2e|safe}}.
+At the same time, we see a steady (although smaller) rise in emissions in the <a
+    href="/simulations/Scaling/ipcc-sectors/Other_Product_Manufacture_and_Use/">"Other
+    Product Manufacture and Use"</a> sector,
+which ultimately rise to about 510 kt{{CO2e|safe}}.
+After all eligible farms have adopted Bovaer, net annual emissions are reduced by
+9.5 Mt {{CO2e|safe}}.
 </p>
 
 {% include "blog/2026-04-03-bovaer_strategy-subsidies.html" %}
@@ -221,10 +250,9 @@ purchasing Bovaer, offsite and onsite monitoring activities, and compensating
 farmers for the work and risk of administering Bovaer.
 The cost is modelled as rising to about $2.1 billion per year, without
 factoring in any currency inflation.
-The subsidy program here is hypothetical, there is no current subsidy program
-at the federal level or in any province or territory that aims to work in this way.
+Since Bovaer usage and cost is proportional and synchronous, the cost of emissions reduction from
+using Bovaer can be computed directly by dividing these two numbers: 2.1 billion dollars / 9.5 Mt {{CO2e|safe}} equates to $222.94 / t{{CO2e|safe}}.
 </p>
-
 
 
 <h2 id="conclusion">Conclusion</h2>
@@ -242,103 +270,138 @@ to deliver up to 9.5Mt {{CO2e|safe}}/year of emissions reductions by 2050 at a
 cost of about $222/t{{CO2e|safe}}.
 </p>
 <p>
-Writing this post, and thinking of these numbers &mdash;
-9.5Mt {{CO2e|safe}}/year by 2050 for $222/t{{CO2e|safe}} &mdash;
-I feel like a blind person first setting foot on an unexplored world of possible
-futures. I am surrounded by potential issues and unknowns; now what?
-I must really like making models.
-I know others have done this sort of modelling before, so perhaps I should
-imagine instead that I've blind-folded myself and landed on a crowded beach.
-Either way, if the reader will indulge me, I will articulate the potential issues and
-unknowns that come to my mind, as many possible directions for next steps:
+The strategy assumes government subsidy programs that do not exist at either
+the federal level or provincial level.
+I believe there will not likely be such a strategy any time soon, because
+Bovaer adoption is considered by industry experts to be too expensive.
+This PlanZero estimate of $222/t{{CO2e|safe}} would be consistent
+with that assessment, in the sense that the benchmark price defined by
+e.g. Canada's Output-Based Carbon Pricing system has historically been less than 
+$100/t{{CO2e|safe}}, and has <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/pricing-pollution-how-it-will-work.html">recently been re-negotiated</a> to rise
+only to $140/t{{CO2e|safe}} by 2040, instead of $170/t{{CO2e|safe}} by 2030.
+A Bovaer strategy would have to be viable at e.g. $130/t{{CO2e|safe}}
+in order for large emitters to pay into a Bovaer subsidy fund rather than
+simply pay the benchmark penalty rate into the more general OBPS fund.
+</p>
+
+
+<p>
+Writing this first strategy-analysis post was difficult, and presented
+several behind-the-scenes challenges for me. I'd like to mention some of the
+biggest ones, so that I can link to <a href="https://github.com/jaberg/planzero/issues">GitHub Issues</a> meant to serve as reminders
+that they need attention in the form of future work.
 <ul>
-    <li>How does this estimate compare with conventional wisdom on the price
-        of Bovaer in Canada?</li>
-    <li>What other technologies are on the table at a hypothetical budget of $222/t?</li>
-    <li>Could e.g. drones or flyovers monitor enteric emissions at lower cost?
-        How much would the cost of this strategy need to come down for it to
-        be viable?</li>
-    <li>I think people ultimately want to hear positions on matters of debate,
-        not simulation results and model predictions. How might PlanZero take
-        positions while remaining rooted in data and open source modelling?</li>
-    <li>PlanZero needs to include more strategies, such as, at minimum:
-        <ul>
-            <li><a href="https://github.com/jaberg/planzero/issues/53">Solar</a>,
-                <a href="https://github.com/jaberg/planzero/issues/54">wind</a>,
-                <a href="https://github.com/jaberg/planzero/issues/55">tidal</a>,
-                <a href="https://github.com/jaberg/planzero/issues/71">geothermal</a>,
-                and/or <a href="https://github.com/jaberg/planzero/issues/56">nuclear energy</a>
-                for grid-scale power generation</li>
-            <li><a href="https://github.com/jaberg/planzero/issues/57">EVs for light-duty vehicles</a></li>
-            <li>Heat pumps for <a href="https://github.com/jaberg/planzero/issues/58">residential</a> and
-                <a href="https://github.com/jaberg/planzero/issues/59">commercial/institutional</a> heating
-            </li>
-            <li><a href="https://github.com/jaberg/planzero/issues/70">Carbon Capture and [Utilization] and Storage</a></li>
-        </ul>
-    </li>
-    <li>How can I relate PlanZero to other modelling efforts more generally?
-        (see <a href="https://github.com/jaberg/planzero/issues/63">gh issue re: Bibliography</a>)</li>
-    <li>I can't always write one post at a time. There was too much information
-        in the first version of this post, and it was a jumble.
+    <li>Ideally PlanZero would implement a dynamic bibliography,
+        which would allow the implementation software to summarize the active set of assumptions when viewing standard analysis and summary pages for strategies and models
+        (e.g. annotated links to data source, papers, website, books,
+        other software, other models, etc.;
+        <a href="https://github.com/jaberg/planzero/issues/63">gh issue re: Dynamic Bibliography</a>)</li>
+    <li>The first version of this post was too long and scattered.
         I really like the
-        linearity and typical scope of the posts so far, how can
-        I work my way through big chunks when required?
-        (<i>Edit: this has been addressed for now through introducion of
+        linearity and typical scope of the posts so far; how can
+        I work my way through big chunks of communication work when required?
+        (<i>Edit: this has been addressed to some degree through introducion of
             <a href="/about/#draft-status">"Draft Status"</a>
         as described in subsequent post <a href="/blog/2026-04-12-about">"About this project..."
-            April 12, 2026</a>.</i>)
+            April 12, 2026</a>, although I still might prefer <a href="https://github.com/jaberg/planzero/issues/80">a system for hosting
+            posts from un-merged branches</a>.</i>)
     </li>
-    <li>If the strategy analysis in this post is any indication,
-        modelling many strategies across many sectors is going to get
-        complicated.
-        How should this complexity be managed in terms of communication,
-        and in terms of implementation?
-        I've used the terminology of {{siteref("CSF", "critical success factor")|safe}},
-        {{siteref("Barrier", "barrier")|safe}},
+    <li>If this post is any indication,
+        the modelling of multiple strategies across multiple sectors will be complicated.
+        How should PlanZero organize and manage this complexity in terms of
+        both communication and technical implementation?
+        I've introduced terminology such as 
         {{siteref("Strategy", "strategy")|safe}},
         {{siteref("Model", "model")|safe}},
-        and {{siteref("Scenario", "scenario")|safe}} in this post; time will tell how much it helps.
-        (<i>Edit: these terms have been removed from this post,
-            and introduced instead via a design documentation post
+        {{siteref("Simulation", "simulation")|safe}},
+        and {{siteref("Scenario", "scenario")|safe}} in this post,
+        but I relied on their conventional English definitions.
+        Unbeknownst to the reader,
+        I was trying to use these terms according to precise meanings within a conceptual
+        framework of PlanZero's modelling system, but the explanation
+        of the conceptual framework was lengthy and distracted from the
+        strategy-analysis narrative.
+        How might I introduce this conceptual framework?
+        (<i>Edit: this conceptual framework has been
+            introduced instead via a design documentation post
             <a href="/blog/2026-04-19-glossary">"New: The PlanZero Glossary", April 19, 2026</a>
-            and the <a href="/glossary/">glossary</a> page on the PlanZero site.</i>)
+            and the <a href="/glossary/">glossary</a> page on the PlanZero site;
+            also, this page has been updated with links to the glossary.</i>)
     </li>
-    <li>Probabilities and uncertainty is critical to this sort of modelling,
+    <li>Probability and uncertainty is critical to this sort of modelling,
         and is completely absent from all PlanZero posts to date, including
-        this one.</li>
+        this one. Some of the assumptions made in this model are relatively coarse guestimates (will farmers be motivated at $5000?), some of the assumptions may be more precise (I expect the 30% methane reduction for dairy cattle depends on some factors, but has been studied and measured precisely), and some of the uncertainties will vary in time
+        (the size of Canada's cattle herd can be estimated with relatively high certainty for 2026, and with ever-lower certainty ever-further into the future).
+        I believe one of the greatest challenges to planning around
+        climate change is that it's difficult to characterize and bear in mind
+        all of the uncertainties involved.
+        I would like for PlanZero's models, simulations, scenarios,
+        analysis and visualizations to all work together to wrangle these
+        various kinds of uncertainties into comprehensible results, but the
+        multi-faceted effort required has hardly begun.
+        I've created a few starting points such as <a href="https://github.com/jaberg/planzero/issues/81">Estimate some uncertainties around the Bovaer Strategy</a>
+        as a direct follow-up to this post, and <a href="https://github.com/jaberg/planzero/issues/52">Support uncertainty in timeseries values</a> for some more foundational work,
+        but I expect this to be more of a long-running theme than a discrete issue that can be
+        defined and resolved.
+    </li>
     <li>PlanZero assumes decision-making entities will decide things in certain ways,
         such as farmers adopting Bovaer at $5000/year, and voters supporting governments
-        that offer certain programs. How might this decision-making be
-        modelled rather than assumed?</li>
+        that budget for subsidy programs. How might this decision-making be
+        modelled rather than assumed?
+        A similar phenomenon seems to come up with regards to the adoption of
+        EVs and heat pumps at different rates in response to various subsidy amounts.
+        I expect there are <a href="https://github.com/jaberg/planzero/issues/82">general models or patterns
+            the sorts of behaviour change / technology adoption scenarios</a>
+        that PlanZero aims to model, but I don't know what they are, or when or how to use them.
+    </li>
 </ul>
 </p>
 
 <p>
-All that said, I intend to work toward
-a forecast of the National Greenhouse Gas Inventory.
-I would like to use a best-guess forecast as the baseline for ablative
-analysis of strategies, rather than simply extending most-recent data as if
-the future will most-likely be a snapshot of the latest year in the latest {{siteref("NIR")|safe}}.
-At the same time, there is at least some interest in short-term
-forecasts of the {{siteref("National Greenhouse Gas Inventory")|safe}},
-as evidenced by e.g.
-<a href="https://440megatonnes.ca/early-estimate-of-national-emissions/">
-440 MegaTonnes' Early Estimate of National Emissions</a>.
-I'm curious where that interest comes from.
-The next two posts after this one take a step back from modelling to reflect on
-my development process and to document what exactly is a model in PlanZero.
-After those, I'll return to modelling,
-and introduce a generic baseline statistical model for
-national inventory forecasting.
-It will predict something, and force some discussion of probabilities and
-uncertainty.
-Beyond that, I'll be interested in being able to say something about whether that baseline
-is more accurate or less accurate than the early estimator presented by 440 megatonnes.
-Now that NIR-2026 has been released, we can score its predictions.
+On a more straightforward note, I think PlanZero is better off
+now with its first strategy analysis than it was before,
+and
+PlanZero should include more strategies.
+There are several large scale, large impact, low-cost strategies
+that are at various stages of planning and implementation on the national stage,
+which PlanZero should model in order to make informed predictions
+of future emissions:
+<ul>
+    <li><a href="https://github.com/jaberg/planzero/issues/53">Solar</a>,
+    <a href="https://github.com/jaberg/planzero/issues/54">wind</a>,
+    <a href="https://github.com/jaberg/planzero/issues/55">tidal</a>,
+    <a href="https://github.com/jaberg/planzero/issues/71">geothermal</a>,
+    and/or <a href="https://github.com/jaberg/planzero/issues/56">nuclear energy</a>
+    for grid-scale power generation</li>
+    <li><a href="https://github.com/jaberg/planzero/issues/57">EVs for light-duty vehicles</a></li>
+    <li>Heat pumps for <a href="https://github.com/jaberg/planzero/issues/58">residential</a> and
+    <a href="https://github.com/jaberg/planzero/issues/59">commercial/institutional</a> heating
+    </li>
+    <li><a href="https://github.com/jaberg/planzero/issues/70">Carbon Capture and [Utilization] and Storage</a></li>
+</ul>
 </p>
 
 <p>
-Until then,
+All that said, I like to close with next steps, and
+the three highest priorities to address with follow-up work are,
+I think:
+<ol>
+    <li>Procedural: working with posts in a Draft Status [Edit: Addressed in <a href="/blog/2026-04-12-about">"About this project..."
+            April 12, 2026</a>.]</li>
+    <li>Documentation: thinking through and articulating the conceptual framework of PlanZero models
+    [Edit: Addressed in <a href="/blog/2026-04-19-glossary">"New: The PlanZero Glossary", April 19, 2026</a>.]</li>
+    <li>Handling and Communicating Uncertainty: what kinds of uncertainty are there, and how can they be reflected in PlanZero visualizations and analysis?</li>
+</ol>
+Draft-Status efforts for the first two are live on this site already,
+as I remove the Draft status from this post.
+Work has begun on the third area of priority,
+which will re-examine the simulation and analysis
+of this post with uncertainty estimates for both the baseline and Bovaer-usage
+scenarios.
+</p>
+
+<p>
+Signing off until the next post,
 </p>
 <p>
 - James Bergstra

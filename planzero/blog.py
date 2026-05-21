@@ -191,11 +191,12 @@ class About(BlogPost):
 
 class ModellingBovaer(BlogPost):
     """
-    This post breaks from the sector-by-sector National Greenhouse Gas Inventory
-    to do a relatively simple bit of modelling: what would happen if Canada's beef
+    This post breaks from the sector-by-sector
+    analysis of the National Greenhouse Gas Inventory
+    to do a bit of modelling: what would happen if Canada's beef
     and dairy farmers gradually transitioned to administring the feed additive Bovaer,
-    which reduces methane emissions? A PlanZero model finds that it would remove up to
-    almost 10Mt of emissions, and cost about $222 per tonne removed.
+    which reduces methane emissions? A PlanZero model finds that it could eventually
+    remove 10Mt of annual emissions, and cost about $222 per tonne removed.
     """
     def __init__(self):
         super().__init__(
@@ -207,7 +208,7 @@ class ModellingBovaer(BlogPost):
                   enums.IPCC_Sector.Enteric_Fermentation,
                   'Scale_Bovaer',
                  },
-            draft=True,
+            draft=False,
             )
 
     @staticmethod
