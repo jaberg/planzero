@@ -194,7 +194,7 @@ class ModellingBovaer(BlogPost):
     This post breaks from the sector-by-sector
     analysis of the National Greenhouse Gas Inventory
     to do a bit of modelling: what would happen if Canada's beef
-    and dairy farmers gradually transitioned to administring the feed additive Bovaer,
+    and dairy farmers gradually transitioned to administering the feed additive Bovaer,
     which reduces methane emissions? A PlanZero model finds that it could eventually
     remove 10Mt of annual emissions, and cost about $222 per tonne removed.
     """
