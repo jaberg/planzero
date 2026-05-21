@@ -329,7 +329,7 @@ def get_blog_html(post_name: str):
 
 
 @app.get("/blog/{post_name}", response_class=HTMLResponse)
-@app.get("/post/{post_name}", response_class=HTMLResponse)
+@app.get("/posts/{post_name}", response_class=HTMLResponse)
 async def get_blog(request: Request, post_name:str):
     try:
         html = get_blog_html(post_name)
