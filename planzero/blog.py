@@ -70,32 +70,6 @@ class HTML_Matplotlib_Figure(HTML_element):
         return svg_string
 
 
-class UncertaintyReductionForCattleEnteric(BlogPost):
-    # Reducing Uncertainty with a better model
-
-    """
-    introduces a new scenario based on statistical modelling and
-    extrapolation of current trends. This "extrapolating" scenario is
-    especially useful for near-term forecasting (near-casting).
-    Near-casting can be more accurate than simply
-    re-using prior-year estimates because Statistics Canada releases some indicator
-    variables with less delay than the ECCC releases the annual NIR.
-    """
-    def __init__(self):
-        super().__init__(
-            date=datetime.datetime(2026, 4, 21),
-            title='Uncertainty in Scenario Forecasting',
-            url_filename="2026-04-21-nearcasting", # rename?
-            author="James Bergstra",
-            tags={BlogTag.BarrierModelling,
-                  BlogTag.NIR_Modelling,
-                  'Enteric Emissions'},
-            concept_only=True,
-            published=False,
-            draft=True,
-            )
-
-
 class Uncertainty(BlogPost):
 
     """
@@ -148,6 +122,64 @@ class GPR_Extrapolation(BlogPost):
             published=False,
             draft=True,
             )
+
+
+class UncertaintyEstimationForEntericFermentation(BlogPost):
+    # Uncertainty with a better model
+
+    """
+    TODO
+    """
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 5, 20),
+            title='Estimating Uncertainty in the Bovaer Adoption Model',
+            url_filename="2026-05-20-forecasting-enteric-emissions",
+            author="James Bergstra",
+            tags={BlogTag.BarrierModelling,
+                  BlogTag.NIR_Modelling,
+                  'Enteric Emissions'},
+            published=True,
+            draft=True,
+            )
+
+    def headcount_history(self):
+        from .html import (
+            EChartTitle,
+            EChartXAxis,
+            EChartYAxis,
+            EChartSeriesStackElem,
+            EChartSeriesBase,
+            EChartSeriesData,
+            EChartLineStyle,
+            EChartItemStyle,
+            StackedAreaEChart)
+
+        from .sc_3210013001 import (
+            FarmType, Livestock, Livestock_nonsums, SurveyDate,
+            number_of_cattle_by_class_and_farm_type_combined_surveys)
+
+        data_pt, data_ca = number_of_cattle_by_class_and_farm_type_combined_surveys()
+
+        total = data_ca[Livestock.TotalCattle, FarmType.AllCattle]
+
+        chart = StackedAreaEChart(
+            div_id='headcount_history_chart',
+            title=EChartTitle(
+                text=f'Historical variation in cattle population',
+                subtext=None),
+                #subtext=f'Historical variation in cattle population'),
+            xAxis=EChartXAxis(data=total.times),
+            yAxis=EChartYAxis(name='Combined counts of all cattle types (heads)'),
+            stacked_series=[],
+            other_series=[
+                EChartSeriesBase(
+                    name='Total Headcount',
+                    #lineStyle=EChartLineStyle(type='dotted', color='#606060'),
+                    #itemStyle=EChartItemStyle(color='#606060'),
+                    data=total.values[1:]),
+            ])
+        return chart
 
 
 class Glossary(BlogPost):

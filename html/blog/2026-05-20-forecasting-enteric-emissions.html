@@ -1,0 +1,388 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+<header class="major">
+    <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+    <h1>{% if not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+    <p>{{blog.about}}</p>
+</header>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>
+PlanZero aspires to simulate the effects of strategies,
+in order to predict their likely impact on national emissions over the coming decades.
+The earlier post on <a href="/posts/2026-04-03-bovaer">modelling a Bovaer strategy</a>
+for example, concluded that Bovaer could save about 9.5Mt {{CO2e|safe}} annually.
+As the saying goes though: "<a href="https://quoteinvestigator.com/2013/10/20/no-predict/">prediction is hard, especially about the future</a>."
+For example,
+one key assumption supporting that conclusion was an assumption that the cattle
+population would remain constant in number and composition, and fixed
+at the average population in 2023.
+Historically the cattle population
+has fluctuated, arguably due to e.g.
+price and availability of feedstock,
+price and availability of land, domestic and international demand for
+beef and dairy products, drought, extreme temperatures, and even a recent
+innovation of "beef on dairy" operations enabled by new breeding technology.
+In the future, the cattle population will continue to fluctuate
+to some degree, due to at least those reasons.
+The result in the previous post did not include how much such
+fluctuations might affect the savings from Bovaer,
+this post brings estimates of uncertainty to the earlier conclusion
+that Bovaer could save up to 9.5 Mt{{CO2e|safe}} annually.
+</p>
+
+<p>
+Also, going forward, PlanZero's analysis should always include estimates of uncertainty.
+This post brings a new guiding principle to the PlanZero's
+"About" page, to the effect that that PlanZero will strive to <i>always</i> include language
+and measures of uncertainty alongside all its narrative and visual
+predictions.
+The quote that "prediction is hard, especially about the future",
+is funny because it is superficially redundant,
+resonnant with common sense,
+and nontrivially, frustratingly true in statistical methods.
+Statistical methods can estimate uncertainties in various ways,
+but there is no "best method".
+Furthermore, all methods struggle to incorporate
+the infamous "<a href="https://hbr.org/2017/10/simple-ways-to-spot-unknown-unknowns">unknown unknowns</a>" that are nevertheless important for long-term corporate planning.
+I believe that the <i>general</i> difficulty of discussing differences in prior beliefs
+regarding the probability of things,
+compounded by the <i>technical</i> difficulty of estimating model uncertainty from data,
+amounts to one of the biggest obstacles to collective action to address climate change.
+I would like for PlanZero to take a best effort approach to estimating and communicating
+the uncertainty around its predictions.
+This post brings some updates to the simulation visualizations to show
+uncertainty estimates by default.
+</p>
+
+<P>
+ORGANIZATION OF POST
+</p>
+
+<p>
+New terms introduced in this post:
+<ul>
+    <li>scenario-based planning</li>
+    <li>optimization-based planning</li>
+    <li>uncertainty quantification</li>
+    <li>probability distribution</li>
+    <li>aleatoric uncertainty</li>
+    <li>epistemic uncertainty</li>
+    <li>narrative scenario</li>
+    <li>parametric probability distribution</li>
+    <li>mixture model</li>
+</ul>
+</p>
+
+<h2>Uncertainty Quantification</h2>
+<p>
+<a href="https://en.wikipedia.org/wiki/Uncertainty_quantification">Uncertainty
+    Quantification</a>
+is the science of quantitative characterization and estimation of uncertainties.
+There are multiple kinds of uncertainty in discussions of modelling,
+but before we introduce them, it is helpful to clarify what exactly
+is the phenomenon to be modelled: what are the uncertainties <i>about</i>?
+For PlanZero, at the highest level, the predictions are about the
+{{siteref("National Greenhouse Gas Inventory")|safe}}.
+Specifically though, the 
+{{siteref("National Greenhouse Gas Inventory")|safe}} is published in
+the form of annual {{siteref("NIR", "National Inventory Reports")|safe}}, and
+immediately this presents some challenges.
+These challenges correspond to uncertainties.
+The types of uncertainty in the last column are explained below.
+<table>
+    <thead>
+        <tr>
+            <th>Challenge</th><th>Uncertainty</th><th>Uncertainty Type</th>
+        </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>The protocols for measuring IPCC-sector emissions are not always identical from one NIR to the next.</td>
+        <td>The definitions to be used in future NIR categories are not certain.</td>
+        <td>Aleatoric</td>
+    </tr>
+    <tr>
+        <td>The emissions data in each NIR are estimates.</td>
+        <td>Their true values are not certain.</td>
+        <td>Epistemic</td>
+    </tr>
+    <tr>
+        <td>There is just one NIR per year, and it is published with
+            a 16-month delay (NIRs are numbered for the year they are
+            published), and many emissions-related data sources don't go back
+            very many years.</td>
+        <td>When we have a predictive model, we can't be very certain
+            about how close it is to the true measurements because
+            we can only evaluate predictions on a few years of data.</td>
+        <td>Epistemic</td>
+    </tr>
+    <tr>
+        <td>The set of domestic activities and strategies driving emissions
+            trends is not the primary focus of the NIR, and is only partially
+            identified by e.g. the NIR.</td>
+        <td>We can't be very certain about which strategies to include
+            in our predictive models, or how those strategies should be implemented
+            within our predictive models.</td>
+        <td>Epistemic</td>
+    </tr>
+    <tr>
+        <td>Emissions are largely driven by influences such as trade
+            agreements, global market forces, population dynamics,
+            innovation and technology adoption,
+            land use,
+            and an ever-changing climate itself.</td>
+        <td>These drivers are all somewhat uncertain, especially further
+            into the future.</td>
+        <td>Significantly Aleatoric</td>
+    </tr>
+    </tbody>
+</table>
+</p>
+
+<p>
+Two broad kinds of uncertainty are distinguished in the quantification of uncertainty:
+Epistemic and Aleatoric uncertainty.
+In theory,
+<ul><li>epistimic (or epistemological) uncertainty refers to a lack
+of knowledge or information about either the state of the world,
+or the processes at work in it; and</li>
+    <li>aleatoric uncertainty refers to the effect of randomness.</li>
+</ul>
+In practice, the distinction is only sometimes helpful.
+For an example where it is helpful, consider
+a situation in which we are missing key
+data that would inform the parameter of a model (such as, perhaps,
+the cost of on-site monitoring of Bovaer usage).
+In such a situation, it's natural to suppose the model parameter
+might be drawn from some distribution of plausible values and describe
+the resulting uncertainty in predictions as epistemic.
+</p>
+<p>
+For an example of when the distinction is not very helpful,
+consider a situation in which data is to be explained,
+and two models are equally good at explaining results before 2022,
+but differ in what they predict beyond 2022.
+Then, if we considered that the models were <i>accurate</i> until 2022,
+we might think either model might the right one, and
+the uncertainty resulting from their diverging predictions was an epistemic one.
+On the other hand,
+if we considered that the models were both <i>inaccurate</i> up until 2022,
+we might be inclined to dismiss the data as random, and describe the uncertainty
+in predicting the future as aleatoric even though the models made different predictions
+for future years.
+Limited in utility though it may be,
+the terminology of epistemic and aleatoric uncertainty reinforces an
+important and inescapable point: that aleatoric uncertainty exists,
+and serves to constrain our predictions to be at least somewhat uncertain.
+</p>
+
+<h2>Probability Distributions and Alternate Narratives</h2>
+
+<p>
+Another two broad kinds of uncertainty are reflected in the use of probability distributions and narrative scenarios in planning.
+A common way to talk about probability distributions is in terms of <i>confidence intervals</i>.
+A confidence interval is an expression of uncertainty based on the shape of a probability distribution.
+When someone says "There is a 95% chance that a solar panel plant will sustain such-and-such production at such-and-such cost for between 20 and 30 years."
+they are expressing an interval (20-30 years) and a degree of confidence (95%),
+for a statistic (the working life of a solar panel plant) based on a belief regarding the probabilities of various true values for the statistic, which is called a probability distribution.
+Once a probability distribution has been estimated for a statistic, then other kinds of statements are possible too, beyond statements of confidence intervals:
+what is the most likely value of the statistic, the expected value, the probability that it turns out to be above or below some threshold, and so on.
+Probability distributions are most useful when
+<ul>
+    <li>we are <i>sure</i> what variables the statistic depends on (e.g. labour and land costs, equipment type)</li>
+    <li>we are <i>sure</i> we have a complete picture of how the statistic might depends on these variables</li>
+    <li>we are <i>unsure</i> what value these variables [will] have,
+        but we <i>are sure</i> we can assign probability distributions to them in a way that most people would agree with</li>
+</ul>
+because when all these conditions are all met, we can use computational and algebraic techniques to transform the input probability distributions
+into the output statistic's probability distribution.
+This enables lots of useful things: we can establish confidence intervals as
+mentioned above, and use the distribution to maybe minimize some risk/reward
+tradeoff depending on what the statistic is about.
+The reason for uncertainty in input variables may be either epistemic or aleatoric, it doesn't affect the methods
+for translating input uncertainty into output uncertainty.
+All that said, the three conditions are not all generally met, and in the more general case (of gross epistemic uncertainty)
+planners typically fall back on a very human way of dealing with uncertainty: narratives.
+</p>
+
+<p>
+In the general case, when planners are <i>unsure</i> that they have a complete picture of how an output statistic
+might conceivably depend on input variables
+(in which case they are also generally unsure of the full set of input variables that may affect that statistic)
+then they typically fall back to a different style of thinking, which I'll call <i>scenario narratives</i>.
+For planning purposes, scenario narratives are typically a small number (usually 3 to 5) of carefully-chosen, internally consistent narratives about the future,
+which are chosen to open decion-makers' minds to the range of what could potentially unfold.
+For some examples related to our solar panel plant,
+we might use narrative scenarios to explore
+what might happen if a technology breakthrough enables a superior new type of panel after 5 years,
+or what might happen if the government changes the subsidy programs for solar project developers or large electricity consumers to use
+specific types of power generation technology,
+or the international flow of oil is disrupted by war or trade policy.
+Narrative scenarios are especially appropriate for exploring "black swan" events, but even the variety of events above
+(which have all happened within the last few years to some degree)
+is difficult to reflect in probability distributions.
+Narrative scenarios should be consistent with any and all data that is available,
+but they are relatively unconstrained in what they suppose may happen in the future, and in how they suppose the future world will work.
+Reasonable people will not agree on which scenarios are the most salient, or how to assign probabilities to them.
+</p>
+
+<h2>Uncertainty in PlanZero</h2>
+<p>
+PlanZero represents and sometimes quantifies uncertainty using multiple mechanisms.
+At the highest level of gross epistemic uncertainty, PlanZero represents
+narrative scenarios as simulations.
+Simulations, like narrative scenarios, are discrete, internally consistent statements about the future.
+When the set of {{siteref("Dynamic Element", "dynamic elements")|safe}}
+being simulated reflects the narrative scenario and corresponds to a {{siteref("NIR Model")|safe}},
+then the result of simulation is a {{siteref("Scenario", "scenario")|safe}} (a set of {{siteref("Time Series", "time series")|safe}})
+that corresponds so closely to the "narrative scenario" that I think it's appropriate they share the word "scenario" in their names.
+Different narrative scenarios should be created in PlanZero through different choices of {{siteref("Barrier")|safe}} elements.
+Scenario-based planning is supported in PlanZero by creating multiple models, each with a single strategy of interest, but each
+with a different set of barriers.
+</p>
+<p>
+That said, the set of time series comprising a single PlanZero scenario are not constrained to represent just a single possible future.
+Among a PlanZero scenario's time series, there may be for example, the upper and lower bounds on the possible value of a statistic (such as the number of cattle);
+in this way, a single PlanZero scenario may represent the set of all possible futures that satisfy those bounds.
+Furthermore, the set of time series in a single PlanZero scenario may be organized in such a way that they reflect
+e.g. 1000 possible futures (or even 1000 parametrized sets of futures) based on different random numbers, drawn to reflect aleatoric uncertainty in
+some aspect of a model.
+</p>
+
+<p>
+Considering the generality of what may, at least conceptually, be possible within a single PlanZero scenario,
+I should acknowledge that it is even possible to compose them.
+For example, it's possible to imagine a single PlanZero scenario that reflects
+a 50% probability that our solar panel plant faces competition from new technology after 5 years,
+a 25% chance that there's no new technology, but interest rates rise sharply after 3 years,
+and a 25% chance that some other narrative scenario unfolds.
+It is conceptually straightforward to weigh each of the {{siteref("KPI", "KPIs")|safe}} of each scenario by the corresponding probability of that scenario
+to compute weighted KPIs.
+Such a combination of possibilities by probabilities is called a {{siteref("Mixture Model", "mixture model")|safe}} in probabilistic modelling.
+This, finally, brings us to the technical innovation for PlanZero brought about by this post.
+This post brings support for mixture models to PlanZero Scenarios.
+</p>
+
+<h2>Narrative Scenarios Bearing on Enteric Fermentation Emissions</h2>
+
+<p>
+Enteric fermentation emissions in Canada are mostly from cattle (95%),
+and mostly explained by the multiplication of two time-varying quantities:
+the number of cattle,
+and the average amount of methane produced per head of cattle, per year.
+The average amount of methane produced per head has 
+</p>
+
+What PlanZero can do, is to use data to evaluate models, and then
+extrapolate to conclude that
+IF the future is like the past, in terms of the data we have,
+THEN we can we can expect such-and-such range of scenarios.
+That is the kind of 
+
+This post presents the first example of modelling the
+future of an IPCC-sector regardless of the infuence of a strategy.
+The next post will follow up on this one with a way to estimate and
+communicate <i>uncertainty</i> in predictions of the future arising from
+a number of sources.
+
+The posts from [THIS SERIES TODO] have re-traced the way emissions are
+calculated from geographic, ecological, and economic facts and statistics.
+Statistics Canada, alas, only gets us so far; statistical tables used in
+PlanZero are published with various delays, and none of them tells us what we
+want to know about the future.  That said, none of the actively maintained
+data sources are as delayed as Environment and Climate Change Canada's
+publication of the National Inventory Report (NIR). An NIR is published
+annually in April, covering emissions up to the December that was 16 months
+prior, so for example, the report used for PlanZero's NIR-modelling port
+was the 2025 report (NIR-2025), whose most-recent data was for the year 2023.
+
+The in-filling of emissions to the present moment is sometimes called near-casting
+[CITATION].
+I think the use of the term nearcasting is somewhat dangerous,
+because it evokes in me the idea that since the forecast is not far into the future,
+it must be more accurate. This is not necessarily the case;
+the rhetorical appeal to intuition is presumptuous,
+potentially misleading, and the idea that more-distant
+projections are less-trustworthy should be similarly nuanced.
+
+What's critical is to represent degrees of certainty and uncertainty.
+There is uncertainty, to various degrees, throughout these models:
+<ul>
+<li>statistics from historical years may be best understood as random variables with distributions, variance, bounds, and so on.</li>
+<li>models relating statistics to emissions may be best understood as model families, whose parameters are not known with certainty</li>
+<li>time series about which we have historical statistics may appear to evolve according to patterns;
+    diverse models might fit the historical patterns similarly well, yet predict different futures</li>
+</ul>
+I would like for PlanZero to reflect all of these sources of uncertainty in 
+modelling the future, so that where there is low uncertainty,
+there is a plausible and credible prediction that does not depend on whether the prediction
+is about something in the near or far future.
+
+For example, rainfall and daily high temperature seem hard to predict more
+than 2 weeks from the present. I expect it's because many weather models that fit historical data disagree on predictions at that horizon.
+In contrast
+
+
+
+PlanZero aims to encourage a lower-emissions future is
+support planning is by anticipating what the future
+might look like with well-est
+
+My main goal in working on PlanZero is to inform some kinds of planning, by, for example,
+
+
+Near-term forecasting, sometimes shorted as <i>near-casting</i> of the National
+Greenhouse Gas Inventory
+
+k
+
+
+
+
+<p>
+Pick a horizon arbitrarily? 10 years? Trying to predict further ahead seems silly in
+view of changing policies and technology landscape.
+</p>
+
+<p>
+Pick a sector: Enteric Fermentation. Why?
+<ul>
+    <li>effort - it's already implemented as a Barrier (from TODO this post)</li>
+    <li>data - statistics Canada's data goes back to the 1940s</li>
+    <li>simplicity - just a few tables are involved, just one IPCC sector</li>
+</ul>
+Future work will have to revisit the sectors that were the focus of previous NIR-modelling posts,
+modify their emissions models to be barriers (in the recently-introduced PlanZero style), and
+make some attempt at statistical forecasting.
+</p>
+
+<p>
+<ul>
+    <li>number of cattle</li>
+    <li>cattle imports and exports</li>
+    <li>slaughter, beef production</li>
+    <li>dairy production</li>
+    <li>drought</li>
+    <li>grain price</li>
+    <li>grain production https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=3210035901</li>
+    <li>monthly grain production https://www150.statcan.gc.ca/t1/tbl1/en/cv.action?pid=3210035101</li>
+    <li>US exchange rate</li>
+</ul>
+</p>
+
+
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+{% include "post-main.html" %}
