@@ -175,7 +175,6 @@ class About(BlogPost):
     """Briefly going meta: refining the vision and mission,
     acknowledging the project contributors, and 
     explaining how posts themselves are meant to work as a mechanism for developing PlanZero.
-    The content of this post also now appears on the site's "About" page.
     """
     def __init__(self):
         super().__init__(
