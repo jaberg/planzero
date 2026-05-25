@@ -32,8 +32,14 @@ RUN apt-get install -y build-essential
 RUN pip install --no-cache-dir xarray netCDF4 matplotlib cartopy
 RUN pip install --no-cache-dir scikit-learn
 
-COPY . /content
+COPY ./planzero /content/planzero
+COPY ./data /content/data
+COPY ./html /content/html
+COPY ./cache /content/cache
+COPY ./app.py /content/app.py
+COPY ./warmup.py /content/warmup.py
 WORKDIR /content
+
 ENV PLANZERO_DATA="/content/data"
 ENV PLANZERO_USE_DISK_CACHE="1"
 ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
