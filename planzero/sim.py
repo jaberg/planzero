@@ -8,7 +8,7 @@ import numpy as np
 from .enums import IPCC_Sector
 from .ureg import u
 from .base import State
-from .base import Other_NIR_Historical_Actuals
+from . import nir2025
 
 from .html import (
     EChartTitle,
@@ -420,7 +420,7 @@ class NIR2025(SiteSimulation):
         return 1990
 
     def dynamic_elements(self) -> list[DynamicElement]:
-        return [Other_NIR_Historical_Actuals()]
+        return [nir2025.NIR2025()]
 
     #"""Extend statistical trends in emissions contributions"""
 from . import cattle 
@@ -445,7 +445,7 @@ class Scaling(SiteSimulation):
             cattle.Scale_Bovaer(),
 
             # standard for vis
-            Other_NIR_Historical_Actuals(),
+            nir2025.NIR2025(skip_registered_sectors=True),
         ]
 
 @cache

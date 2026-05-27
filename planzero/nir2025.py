@@ -6,7 +6,7 @@ import pandas as pd
 
 from . import ipcc_canada
 from . import ghgvalues
-from .base import Other_NIR_Historical_Actuals, State, DynamicElement
+from .base import State, DynamicElement
 from .enums import (
     IPCC_Sector,
     IPCC_Sector_from_catpath_with_whitespace,
@@ -40,6 +40,7 @@ def co2e_objtensors():
     assert ('kt',) == inv['Unit'].unique()
 
     rval_pt[:] = 0 * u.kt_CO2e
+    rval_ca[:] = 0 * u.kt_CO2e
 
     inv['CategoryPathWithWhitespace'] = (
         #inv['Source'].fillna('').astype(str) + '/' +
@@ -86,10 +87,11 @@ def co2e_objtensors():
                             for yr in nir2025_year_ints]),
                         v_unit=u.kt_CO2e,
                         interpolation='no_interpolation')
-                    if pt is None:
-                        rval_ca[ipcc_sector, ghg] = ts_zero
-                    else:
-                        rval_pt[ipcc_sector, ghg, pt] = ts_zero
+                    if any(vv != 0 for vv in ts_zero.values[1:]):
+                        if pt is None:
+                            rval_ca[ipcc_sector, ghg] = ts_zero
+                        else:
+                            rval_pt[ipcc_sector, ghg, pt] = ts_zero
                 else:
                     # we already set it to zero in initialization above
                     pass
@@ -101,8 +103,11 @@ def co2e_objtensors():
     # protocols or data sources.
     for sector in IPCC_Sector:
         for ghg in GHG:
-            assert np.isfinite(rval_ca[sector, ghg].values[1:]).all()
+            if isinstance(rval_ca[sector, ghg], STS):
+                assert np.isfinite(rval_ca[sector, ghg].values[1:]).all()
             diff = rval_ca[sector, ghg] - rval_pt[sector, ghg].sum()
+            if not isinstance(diff, STS):
+                continue
             if abs(np.asarray(diff.values[1:])).max() < 5:  # kt_CO2e
                 continue
             if sector in [IPCC_Sector.Non_Energy_Products_from_Fuels_and_Solvent_Use]:
@@ -179,8 +184,6 @@ class NIR2025(DynamicElement):
 
         co2e_pt, co2e_ca = co2e_objtensors()
 
-        import time
-        t0 = time.time()
         for (sector, ghg, pt), offset in co2e_pt.ravel_keys_offsets():
             obj = co2e_pt.buf[offset]
             if not isinstance(obj, STS):
@@ -216,7 +219,6 @@ class NIR2025(DynamicElement):
                 sts_key=name,
                 ipcc_sector=sector,
                 ghg=ghg)
-        print('loop', time.time() - t0)
 
 
 def foo_prediction_algo(train_valid_thresh_year, horizon):
@@ -227,18 +229,12 @@ def foo_prediction_algo(train_valid_thresh_year, horizon):
 
 
 def NIR2025_EmissionsResults():
-    import time
-    t0 = time.time()
     state = State(
         name=f'foo',
         t_start=1990 * u.years)
     state.add_project(NIR2025())
     state.run_until(2024 * u.years)
-    print('ER A', time.time() - t0)
-
-
     rval = state.compute_annual_emissions()
-    print('ER B', time.time() - t0)
     return rval
 
 

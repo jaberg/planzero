@@ -17,22 +17,19 @@ import numpy as np
 import pandas as pd
 import pint
 from pydantic import BaseModel, computed_field
+
 from .ureg import ureg, kt_by_ghg
 u = ureg
 
-
-# TODO: a global table of official floating-point values of year-start times,
-#       for use by annual step functions, accounting math etc.
-#       to avoid floating point rounding errors where years are supposed to line up
-#       Same for months, maybe weeks.
-
-
-from . import ipcc_canada
+from . import ghgvalues
+from .sts import SparseTimeSeries, STS, InterpolationMode
 from .enums import (
-    GHG, IPCC_Sector, PT, SubsidyPrograms,
+    GHG,
+    IPCC_Sector,
+    PT,
+    SubsidyPrograms,
     IPCC_Sector_from_catpath_with_whitespace)
 
-from .sts import SparseTimeSeries, STS, InterpolationMode
 
 
 class DynamicElement(BaseModel):
@@ -753,85 +750,3 @@ class GeometricHumanPopulationForecast(BaseScenarioProject):
     def step(self, state, current):
         current.human_population *= self.rate
         return state.t_now + self.stepsize
-
-
-from . import ipcc_canada
-from . import ghgvalues
-
-class Other_NIR_Historical_Actuals(BaseScenarioProject):
-    """Populate otherwise-missing IPCC Categories with historical actuals from NIR-2025
-    """
-
-    driver_interpolation_mode:str = 'current'
-
-    def on_add_project(self, state):
-        non_agg_years = list(set(ipcc_canada.non_agg['Year'].unique()))
-        non_agg_years.sort()
-        datalen = len(non_agg_years)
-        assert ('kt',) == ipcc_canada.inv['Unit'].unique()
-
-        for pt in PT:
-            driver_name = f'NIR Emissions Placeholder - {pt.value}'
-            driver_sts = SparseTimeSeries(
-                identifier=driver_name,
-                default_value=1.0 * u.dimensionless,
-                t_unit=u.year)
-            state.declare_sts(self, sts=driver_sts, write=True)
-            state.register_driver(
-                pt=pt,
-                driver='NIR Emissions Placeholder',
-                sts_key=driver_name)
-
-        # assume that these sectors, for which some dynamic element
-        # has registered an emission, are considered approximate.
-        registered_ipcc_sectors = {
-            ipcc_sector_key
-            for by_pt in state.registries['emission_factor'].values()
-            for by_ipcc_sector in by_pt.values()
-            for ipcc_sector_key in by_ipcc_sector}
-
-        non_agg = ipcc_canada.inv[ipcc_canada.inv['Total'] != 'y']
-        for catpathww, nonagg_catpath in non_agg.groupby('CategoryPathWithWhitespace'):
-            ipcc_sector = IPCC_Sector_from_catpath_with_whitespace[catpathww]
-            if ipcc_sector in registered_ipcc_sectors:
-                continue
-
-            for region, region_df in nonagg_catpath.groupby('Region'):
-                if region.lower() == 'canada':
-                    continue
-                elif region == 'Northwest Territories and Nunavut':
-                    pt = PT.XX
-                else:
-                    pt = PT(region)
-
-                for ghg in GHG:
-                    values = region_df[ghg.value].values
-                    years = region_df['Year'].values
-                    # TODO: use PT.XX together with national total
-                    # to not lose emissions by setting nan->zero
-                    kt_by_yr = {
-                        int(year): float(val) if np.isfinite(val) else 0.0
-                        for year, val in zip(years, values)}
-
-                    if not all(vv == 0 for vv in kt_by_yr.values()):
-                        name = f'Historical {ghg.value} from {ipcc_sector.value} in {pt.value}'
-                        scale = (1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O]
-                                 else 1.0 / ghgvalues.GWP_100[ghg].magnitude)
-                        state.declare_sts(
-                            project=self,
-                            sts=STS(
-                                times=array.array('d', non_agg_years),
-                                t_unit=u.years,
-                                values=array.array('d', [0] + [
-                                    scale * kt_by_yr.get(yr, 0)
-                                    for yr in non_agg_years]),
-                                v_unit=kt_by_ghg[ghg] / u.year,
-                                interpolation='current'),
-                            name=name,
-                            write=True)
-                        state.register_emission_factor(
-                            pt=pt,
-                            driver='NIR Emissions Placeholder',
-                            sts_key=name,
-                            ipcc_sector=ipcc_sector,
-                            ghg=ghg)
