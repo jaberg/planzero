@@ -599,7 +599,7 @@ rather than simplified caricatures.
     DE_cattle_enteric_emissions["Cattle Enteric Emission Rates (Barrier)"] --> TS_cattle_emfacs
     TS_cattle_emfacs(["Emission factor: annual methane per cattle type (Time Series)"])
     DE_limit["Limit Bovaer Adoption (Barrier)"] --> TS_farmers_open_to_bovaer
-    TS_farmers_open_to_bovaer(["Driver: Farmers open to Bovaer (Time Series)"]) -.->|Scale Bovaer does not use current value| DE_scale
+    TS_farmers_open_to_bovaer(["Driver: Farmers open to Bovaer (Time Series)"]) -.->|Back-link uses delayed value| DE_scale
     TS_frac_on_bovaer --> DE_limit
     TS_frac_on_bovaer --> DE_purchase_cost
     DE_purchase_cost["Bovaer Purchasing (Barrier)"] --> TS_bovaer_cost

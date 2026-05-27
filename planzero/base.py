@@ -251,7 +251,7 @@ class EmissionResults(BaseModel):
     def total(self,
               only_ipcc_sector=None,
               only_driver=None,
-              return_None_instead_of_zero=False,
+              return_None_instead_of_zero=False, # TODO: rename e.g. *may* return None instead of zero?
               v_unit=u.kt_CO2e,
              ):
         rval = None
@@ -285,6 +285,19 @@ class EmissionResults(BaseModel):
         if rval is None:
             return 0 * u.kilotonne_CO2e
         return rval
+
+    def co2e_sum_over_drivers(self):
+        # aka reduce to an NIR-style data structure
+        rval = {}
+        for ((sector, ghg, pt, driver), ts) in self.by_sector_ghg_pt_driver.items():
+            co2e = ghgvalues.GWP_100[ghg] * ts
+            key = (sector, ghg, pt)
+            if key in rval:
+                rval[key] += co2e
+            else:
+                rval[key] = co2e
+        return rval
+
 
 
 class SubsidyResults(BaseModel):
@@ -528,11 +541,16 @@ class State(object):
         boundaries = np.arange(year_start_int, year_end_int + 1) * u.years
         return boundaries
 
-    def compute_annual_emissions(self):
+    def compute_annual_emissions(self, int_year_range=None):
         if self._computed_annual_emissions is not None:
             return self._computed_annual_emissions
         by_sector_ghg_pt_driver = {}
-        boundaries = self.annual_bin_boundaries()
+        if int_year_range is None:
+            boundaries = self.annual_bin_boundaries()
+        else:
+            start, stop = int_year_range
+            boundaries = np.arange(start, stop) * u.years
+            assert boundaries.ndim == 1
 
         for pt, driver_d in self.registries['driver'].items():
             for driver, driver_key in driver_d.items():
@@ -550,10 +568,34 @@ class State(object):
                             continue
                         ef_key = ef_by_driver[driver]
                         ef_ts = self.sts[ef_key]
-                        # todo: verify driver_ts is annual totals
                         if driver_ts.interpolation == InterpolationMode.no_interpolation:
-                            em = ef_ts * driver_ts * (1 * u.year)
+                            # driver_ts should be an annual total
+                            # TODO: verify the unit is years, and there are no
+                            # fractional times
+                            if int_year_range is None:
+                                assert driver_ts.t_unit == u.year
+                                if start > driver_ts.times[0] or stop <= driver_ts.times[-1]:
+                                    sub_driver_ts = STS(
+                                        times=array.array('d', [yr for yr in driver_ts.times
+                                                                if start <= yr < stop]),
+                                        values=array.array(
+                                            'd',
+                                            [float('nan')]
+                                            + [vv for vv, yr in zip(driver_ts.values[1:], driver_ts.times)
+                                               if start <= yr < stop]),
+                                        interpolation_mode=InterpolationMode.no_interpolation,
+                                        v_unit=driver_ts.v_unit,
+                                        t_unit=driver_ts.t_unit)
+                                else:
+                                    sub_driver_ts = driver_ts
+                                em = ef_ts * sub_driver_ts * (1 * u.year)
+                            else:
+                                em = ef_ts * driver_ts
                         else:
+                            # TODO: this is slow, with no single bottleneck
+                            # suggestion - switch to a numpy-backed instead of array-backed
+                            # TimeSeries object, so that there's more opportunities for
+                            # vectorization before writing code in numba/Rust.
                             em = (ef_ts * driver_ts).bin_integrals(bin_boundaries=boundaries)
                         by_sector_ghg_pt_driver[sector, ghg, pt, driver] = em.to(
                             kt_by_ghg[ghg])
@@ -720,6 +762,8 @@ class Other_NIR_Historical_Actuals(BaseScenarioProject):
     """Populate otherwise-missing IPCC Categories with historical actuals from NIR-2025
     """
 
+    driver_interpolation_mode:str = 'current'
+
     def on_add_project(self, state):
         non_agg_years = list(set(ipcc_canada.non_agg['Year'].unique()))
         non_agg_years.sort()
@@ -770,8 +814,6 @@ class Other_NIR_Historical_Actuals(BaseScenarioProject):
                         for year, val in zip(years, values)}
 
                     if not all(vv == 0 for vv in kt_by_yr.values()):
-                        #print(ghg, ipcc_sector, pt)
-                        #print(kt_by_yr)
                         name = f'Historical {ghg.value} from {ipcc_sector.value} in {pt.value}'
                         scale = (1.0 if ghg in [GHG.CO2, GHG.CH4, GHG.N2O]
                                  else 1.0 / ghgvalues.GWP_100[ghg].magnitude)
