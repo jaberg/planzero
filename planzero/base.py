@@ -296,7 +296,6 @@ class EmissionResults(BaseModel):
         return rval
 
 
-
 class SubsidyResults(BaseModel):
 
     by_program_reason_pt_driver: dict[tuple[object, object, object, object], object]
@@ -546,7 +545,10 @@ class State(object):
             boundaries = self.annual_bin_boundaries()
         else:
             start, stop = int_year_range
-            boundaries = np.arange(start, stop) * u.years
+            start == int(start)
+            stop == int(stop)
+            assert (start, stop) == tuple(int_year_range)
+            boundaries = np.arange(start, stop + 1) * u.years
             assert boundaries.ndim == 1
 
         for pt, driver_d in self.registries['driver'].items():

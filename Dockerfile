@@ -31,6 +31,7 @@ RUN apt-get update
 RUN apt-get install -y build-essential
 RUN pip install --no-cache-dir xarray netCDF4 matplotlib cartopy
 RUN pip install --no-cache-dir scikit-learn
+RUN pip install --no-cache-dir jax
 
 COPY ./planzero /content/planzero
 COPY ./data /content/data
