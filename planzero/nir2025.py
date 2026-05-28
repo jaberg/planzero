@@ -256,16 +256,16 @@ def SoftmaxGP_MAP_NIR2025(discrepancy_threshold_ktCO2e=10):
     for (sector, ghg), discrepancy_by_yr in discrepancies.items():
         sector_idx = idx_of_sector[sector]
         ghg_idx = idx_of_ghg[ghg]
-        if discrepancy_by_yr.min() < discrepancy_threshold_ktCO2e:
-            rval[sector_idx, ghg_idx] = ktCO2e_pt[sector_idx, ghg_idx]
-            rval[sector_idx, ghg_idx][np.isnan(rval[sector_idx, ghg_idx])] = 0
-            tmp_by_yr = np.sum(rval[sector_idx, ghg_idx], axis=0) + 1e-6
-            rval[sector_idx, ghg_idx] *= ktCO2e_ca[sector_idx, ghg_idx] / tmp_by_yr
-        else:
+        if discrepancy_by_yr.max() > discrepancy_threshold_ktCO2e:
             rval[sector_idx, ghg_idx] = SoftmaxGP_MAP_sector_ghg(
                 sector, ghg,
                 ktCO2e_pt[sector_idx, ghg_idx],
                 ktCO2e_ca[sector_idx, ghg_idx]).T
+        else:
+            rval[sector_idx, ghg_idx] = ktCO2e_pt[sector_idx, ghg_idx]
+            rval[sector_idx, ghg_idx][np.isnan(rval[sector_idx, ghg_idx])] = 0
+            tmp_by_yr = np.sum(rval[sector_idx, ghg_idx], axis=0) + 1e-6
+            rval[sector_idx, ghg_idx] *= ktCO2e_ca[sector_idx, ghg_idx] / tmp_by_yr
     return rval
 
 
