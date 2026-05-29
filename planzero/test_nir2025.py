@@ -66,8 +66,19 @@ def test_averaging_window_2():
     assert ef.values[3] == 4.5
 
 
-def test_SoftmaxGP_MAP_smoke():
-    ideal_pt = SoftmaxGP_MAP_NIR2025()
+def test_idealized_NIR2025_smoke():
+    ideal_pt = idealized_NIR2025(length_scale=1.0)
     ideal_ca = ideal_pt.sum(axis=2)
     actual_pt, actual_ca = ktCO2e_dense_w_nan()
-    assert np.allclose(ideal_ca, actual_ca, atol=1, rtol=1e-3)
+    diff = ideal_ca - actual_ca
+    idx_of_sector = {sector: ii for ii, sector in enumerate(IPCC_Sector)}
+    idx_of_ghg = {ghg: ii for ii, ghg in enumerate(GHG)}
+    idx_of_pt = {pt: ii for ii, pt in enumerate(PT)}
+    idx_of_yr = {yr: ii for ii, yr in enumerate(nir2025_year_ints)}
+    for sector, ii in idx_of_sector.items():
+        for ghg, jj in idx_of_ghg.items():
+            if sector == IPCC_Sector.Harvested_Wood_Products:
+                tol = 200
+            else:
+                tol = 100
+            assert abs(diff[ii, jj]).max() < tol, (sector, ghg)

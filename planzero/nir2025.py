@@ -145,81 +145,95 @@ def discrepancies_by_sector_ghg(arr_pt, arr_ca, idx_of_sector, idx_of_ghg):
     return rval
 
 
-def softmax(z):
-    # Softmax transformation (Always sums to 10)
-    # TODO: stabilized softmax (logsum)
-    exp_z = jnp.exp(z)
-    denom = jnp.sum(exp_z, axis=1) + 1.0
-
-    return jnp.column_stack([exp_z[:, ii] / denom for ii in range(z.shape[1])] + [1.0 / denom])
-
-
-def SoftmaxGP_MAP_objective(params, L, obs_data, mask, noise_std, jnp_ca):
+def idealized_NIR2025_objective(params, L, obs_data, mask, noise_std, jnp_ca,
+                                PT_mean, PT_var, CA_mean, CA_var,
+                                national_preference
+                               ):
     """Pure JAX description of the loss function."""
     n_timesteps, n_PTs = obs_data.shape
-    vparams = params.reshape((n_timesteps, n_PTs - 1))
+    vparams = params.reshape((n_timesteps, n_PTs))
 
-    # Prior Penalty (Smoothness)
-    prior_loss = 0.5 * jnp.sum(params ** 2)
+    prior_loss = 0.5 * jnp.sum(params ** 2) * .1
 
-    # Latent space mapping
-    z = L @ vparams # (n_points, n_PTs - 1)
+    z = (L @ vparams) * jnp.sqrt(PT_var) + PT_mean
 
     # XXX assumes that all provincial emissions have the same sign in every year
     #     which in principle seems like a bug, but which in practice seems to
     #     be at least approximately true?
-    recon = jnp_ca[:, None] * softmax(z)
+    CA_est = z.sum(axis=1)
 
     # Likelihood Loss (Masked safely without NaN propagation)
-    sq_errors = (obs_data - recon) ** 2
-    masked_errors = jnp.where(mask, sq_errors, 0.0)
-    likelihood_loss = jnp.sum(masked_errors / (2.0 * noise_std[:, None] ** 2))
-
-    return prior_loss + likelihood_loss
-
-
-SoftmaxGP_MAP_loss_and_grad_fn = jax.jit(
-    jax.value_and_grad(SoftmaxGP_MAP_objective))
+    CA_sqerr = (jnp_ca - CA_est) ** 2
+    PT_sqerr = jnp.where(mask, (obs_data - z) ** 2, 0.0)
+    likelihood_loss_CA = national_preference * CA_sqerr.sum() / CA_var
+    likelihood_loss_PT = (PT_sqerr / PT_var).sum()
+    loss = prior_loss + likelihood_loss_CA + likelihood_loss_PT
+    return loss
 
 
-def SoftmaxGP_MAP_sector_ghg(sector, ghg, block_pt, block_ca):
+idealized_NIR2025_loss_and_grad_fn = jax.jit(
+    jax.value_and_grad(idealized_NIR2025_objective))
+
+
+def idealized_sector_ghg(sector, ghg, block_pt, block_ca,
+                         length_scale,
+                         national_preference):
+    # In future, the length scale can be parameterized, and optimized,
+    # but just hard-code it for now, and make up a number.
+
     n_PTs, n_timesteps = block_pt.shape
-    observed_data = block_pt.T.copy()
+    observed_data = block_pt.T.copy()  # (timesteps, n_PTs)
+
+    # for each year, an equally-distributed portion of the discrepancy
     obs_noise_std = jnp.array(
-        abs(np.nansum(block_pt, axis=0) - block_ca) / (n_PTs - 1) + 1e-6)
+        abs(np.nansum(block_pt, axis=0) - block_ca) / n_PTs + 1e-6)
 
     valid_mask_jnp = jnp.array(~np.isnan(observed_data))
 
-    # Replace NaNs with 0.0 so they don't corrupt JAX's gradient calculations
+    # Replace NaNs with 0.0 so they don't slow down JAX's gradient
+    # calculations (neither the zeros nor NaNs should affect the result)
     clean_obs_jnp = jnp.array(
         np.where(np.isnan(observed_data), 0.0, observed_data))
     jnp_ca = jnp.array(block_ca) # 1D
 
-    # Compute the static Cholesky factor matrix using NumPy
-    # In future, the length scale can be parameterized, and optimized,
-    # but just hard-code it for now, and make up a number.
-    length_scale = 1.5
-    def rbf_kernel(t1, t2, l):
-        return np.exp(-0.5 * (t1[:, None] - t2[None, :]) ** 2 / l ** 2)
+    PT_mean = jnp.nanmean(observed_data, axis=0)
+    # the prior variance in PT is tricky, because sometimes
+    # all provinces report all zeros, but the national total
+    # is a few Mt (e.g. Ammonia Production). The strategy here
+    # is to define the prior to be very weak
+    PT_var = jnp.maximum(
+        jnp.nanvar(observed_data, axis=0) + jnp.var(jnp_ca),
+        0.1) # epsilon floor
+    assert PT_var.shape == (n_PTs,)
+    CA_mean = jnp.mean(jnp_ca)
+    CA_var = jnp.maximum(jnp.var(jnp_ca), 0.1)
+
+    # L_jnp: the Cholesky factor matrix
+    def rbf_kernel(t1, t2):
+        return np.exp(-0.5 * (t1[:, None] - t2[None, :]) ** 2 / length_scale ** 2)
     for eps in [1e-8, 1e-7, 1e-6, 1e-5]:
         try:
-            K = (rbf_kernel(nir2025_year_ints, nir2025_year_ints, length_scale)
+            K = (rbf_kernel(nir2025_year_ints, nir2025_year_ints)
                  + 1e-6 * np.eye(n_timesteps))
             L_jnp = jnp.array(np.linalg.cholesky(K))
             break
-        except:
+        except Exception as err:
+            print(err)
             continue
     else:
         raise RuntimeError('Matrix so bad it could not be fixed')
 
-    initial_guess = np.zeros((n_PTs - 1) * n_timesteps)
+    initial_guess = np.zeros(n_PTs * n_timesteps)
 
     def scipy_solver_wrapper(params):
         """Wrapper that translates JAX arrays back into standard NumPy format
         for SciPy."""
-        loss, grad = SoftmaxGP_MAP_loss_and_grad_fn(
+        loss, grad = idealized_NIR2025_loss_and_grad_fn(
             params,
-            L_jnp, clean_obs_jnp, valid_mask_jnp, obs_noise_std, jnp_ca)
+            L_jnp, clean_obs_jnp, valid_mask_jnp, obs_noise_std, jnp_ca,
+            PT_mean, PT_var, CA_mean, CA_var,
+            national_preference,
+            )
         return float(loss), np.array(grad)
 
     res = minimize(
@@ -230,22 +244,24 @@ def SoftmaxGP_MAP_sector_ghg(sector, ghg, block_pt, block_ca):
         options={'maxiter': 500}
     )
 
-    opt_v = res.x.reshape((n_timesteps, n_PTs - 1))
-    fit_z = L_jnp @ opt_v
-    inferred_series = jnp_ca[:, None] * softmax(fit_z)
+    opt_v = res.x.reshape((n_timesteps, n_PTs))
+    inferred_series = (L_jnp @ opt_v) * jnp.sqrt(PT_var) + PT_mean
     return inferred_series
 
 
 @cache
-def SoftmaxGP_MAP_NIR2025(discrepancy_threshold_ktCO2e=10):
+def idealized_NIR2025(discrepancy_threshold_ktCO2e=10,
+                      national_preference=10,
+                      length_scale=.25,
+                     ):
     """Return an idealized NIR2025-like dataset by maximizing likelihood
-    of a Gaussian Process latent model to re-partition national emissions totals
+    of a latent model that reconciles national emissions totals
     across provinces and territories.
     """
     rval = np.zeros(
         (len(IPCC_Sector),
          len(GHG),
-         len(PT) - 1,
+         len(PT) - 1, # don't count PT.XX
          len(nir2025_year_ints)))
 
     idx_of_sector = {sector: ii for ii, sector in enumerate(IPCC_Sector)}
@@ -257,10 +273,12 @@ def SoftmaxGP_MAP_NIR2025(discrepancy_threshold_ktCO2e=10):
         sector_idx = idx_of_sector[sector]
         ghg_idx = idx_of_ghg[ghg]
         if discrepancy_by_yr.max() > discrepancy_threshold_ktCO2e:
-            rval[sector_idx, ghg_idx] = SoftmaxGP_MAP_sector_ghg(
+            rval[sector_idx, ghg_idx] = idealized_sector_ghg(
                 sector, ghg,
                 ktCO2e_pt[sector_idx, ghg_idx],
-                ktCO2e_ca[sector_idx, ghg_idx]).T
+                ktCO2e_ca[sector_idx, ghg_idx],
+                length_scale=length_scale,
+                national_preference=national_preference).T
         else:
             rval[sector_idx, ghg_idx] = ktCO2e_pt[sector_idx, ghg_idx]
             rval[sector_idx, ghg_idx][np.isnan(rval[sector_idx, ghg_idx])] = 0
