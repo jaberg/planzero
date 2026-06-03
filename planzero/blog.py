@@ -119,33 +119,29 @@ class Uncertainty(BlogPost):
             draft=True,
             )
 
-class GPR_Extrapolation(BlogPost):
-    """This post introduces probabilistic forecasting to PlanZero.
-    There are lots of ways the future could go!
-    PlanZero aspires to model a representative set of futures in terms of the
-    sorts of time series that make up its scenarios.
-    This post introduces the statistical modelling technique of Gaussian Process Regression
-    to generate future scenarios that similar in mean, variance, and
-    rate of change to the past.
-    These models don't incorporate driving factors such as climate influences,
-    foreign exchange rates, international supply and demand, or trade policies,
-    but they probably improve the obviously-wrong-looking flat lines currently
-    extending to the right of year 2023 for each emission sector.
+class RandomWalks(BlogPost):
     """
-    # * extends models
-    #
-    #
+    This post looks at the the NIR-2025 National Inventory Report,
+    for the first time in PlanZero,
+    through the lens of probabilistic modelling.
+    The emissions in each sector, for each greenhouse gas,
+    are modelled as coming from a two-step autoregressive process (AR2),
+    with the national total being the sum of provincial and territorial emissions.
+    This model provides a baseline for filling in missing data,
+    interpreting mismatches in provincial, territorial, and national totals,
+    and predicting future emissions.
+    It is compared with an even simpler baseline, and shown to usually be a better
+    predictor of the future.
+    """
 
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 25),
-            title='Improving Baseline Emission Estimates with Gaussian Process Regression',
-            url_filename="2026-04-25-GPR", # rename?
+            date=datetime.datetime(2026, 5, 26),
+            title='Two Probabilistic Models of NIR-2025',
+            url_filename="2026-05-26-simple-linear-model", # rename?
             author="James Bergstra",
             tags={BlogTag.BarrierModelling,
                   BlogTag.NIR_Modelling},
-            concept_only=True,
-            published=False,
             draft=True,
             )
 

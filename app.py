@@ -408,5 +408,6 @@ default_context = dict(
     fade_in_intro=False,
     printcname=(lambda cname: cname.replace('_', ' ')),
     blogs_by_tag=planzero.blog.blogs_by_tag,
+    latex=planzero.blog.latex,
     )
 
