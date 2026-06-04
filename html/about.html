@@ -14,7 +14,6 @@ Table of Contents:
     <li><a href="#contributors">Contributors</a></li>
     <li><a href="#posting-policy">Guidance Re: Posts</a>
         <ul>
-            <li><a href="#revision-control">Preface: Revision Control as Mechanism and Inspiration</a></li>
             <li><a href="#post-purpose">The Purpose of Posts</a></li>
             <li><a href="#draft-status">Draft Status</a></li>
             <li><a href="#post-dates">Post Dates</a></li>
@@ -30,9 +29,9 @@ Table of Contents:
 <!-- vision -->
 <p>
 PlanZero is an independent research project to model how Canada might achieve zero
-net emissions. The long-term vision is that it can quantify the opportunities
+net emissions. The long-term vision is that it will quantify the opportunities
 associated with strategies &mdash;
-such as public and private research and development efforts, and public policies &mdash;
+such as public and private research and product development efforts, and public policies &mdash;
 and situate them in comprehensive long-term scenarios based on
 projections of Canada's possible future
 <a href="https://climate-scenarios.canada.ca/?page=main">climate</a>,
@@ -50,17 +49,12 @@ I believe that PlanZero is differentiated from other efforts in (a) focusing on 
 (b) in being structured as an open-source software project.
 I hope, over time, that because of this differentiation,
 it may engage the community of Canadian students at
-undergraduate and graduate levels:
+undergraduate and graduate levels, to:
 <ul>
-<li>to help some learn about the diverse challenges of transitioning to a net-zero economy
-</li>
-<li>to help some build compelling models of strategies that can and should be put into action</li>
-<li>
-    to help some learn about participating in distributed open projects
-</li>
-<li>
-    to help some learn about software engineering, architecture, and statistical modelling
-</li>
+<li>learn about the diverse challenges of transitioning to a net-zero economy</li>
+<li>develop compelling models of strategies that can and should be put into action</li>
+<li>practice software engineering, architecture, and statistical modelling</li>
+<li>participate in distributed open-source projects</li>
 </ul>
 </p>
 
@@ -68,16 +62,16 @@ undergraduate and graduate levels:
 <p>
 As the project matures in depth and breadth,
 I hope it becomes a resource that can
-help shape public policy, and guide capital investment into research and technology development.
+inform public discourse, shape public policy, and guide capital investment into research and technology development.
 </p>
 
 <!--<h2 id="Glossary"></h2>-->
 
 <h2 id="contributors">Contributors</h2>
 <ul>
-    <li><b>Myself, James Bergstra</b>,
+    <li><b>Myself, <a href="https://www.linkedin.com/in/james-bergstra/">James Bergstra, Ph.D.</a></b>,
         the project's lead author and developer.
-        James is supported by his long-suffering wife, who endures the first drafts of so many posts, provides invaluable feedback and support, and wishes to remain anonymous.</li>
+        James is supported by his patient and thoughtful wife, who endures the first drafts of so many posts, provides invaluable feedback and support, and wishes to remain anonymous.</li>
     </li>
     <li><b><a href="https://uwaterloo.ca/geography-environmental-management/profiles/seth-wynes">Professor Seth Wynes, Ph.D.</a></b>,
         an Assistant Professor in the Department of Geography and Environmental
@@ -93,143 +87,60 @@ help shape public policy, and guide capital investment into research and technol
 <p>
 I think of the PlanZero project in terms of the following facets:
 <ol>
-    <li>code (GitHub) - the state and history of all data, code, and content, in git</li>
-    <li>issues (GitHub) - a set of likely next steps, a rough roadmap</li>
+    <li>simulations and strategies - the data modelling and analysis pages</li>
     <li>posts - a narrative history of the development of the PlanZero site</li>
     <li>about - project overview, direction, acknowledgements</li>
-    <li>rest of PlanZero site - the summary of PlanZero modelling and research</li>
+    <li>code ({{siteref("GitHub")|safe}}) - the state and history of all data, code, and content, in git</li>
+    <li>{{siteref("GitHub Issue", "issues")|safe}} (GitHub) - a set of likely next steps, a rough roadmap</li>
 </ol>
-Posts have emerged as the most engaging facet.
+Posts have emerged as an engaging facet.
 The guidelines in this section
 aim to articulate why I think they are working, and ensure they continue to support
-some project themes:
-<ul>
-    <li><strong>Focus</strong>: posts tie code changes to justifiable improvements to the site content</li>
-    <li><strong>Convenience</strong>: posts make it convenient and comfortable for people to
-        follow project developments without visiting the planzero site</li>
-    <li><strong>Accessibility</strong>: provide a narrative history and onboarding tool so people
-        can tune in as the project develops, even as the site content gets more complicated and elaborate</li>
-</ul>
+the project.
 </p>
-
-<h3 id="revision-control">Preface: Revision Control as Mechanism and Inspiration</h3>
-<p>
-As a preface to explaining how posts are supposed to work in PlanZero,
-it is worth saying how revision control, and <a href="https://git-scm.com/">git</a> in particular, have at least revolutionized, if not fundamentally enabled,
- <a href="https://en.wikipedia.org/wiki/Open-source_software">open-source software</a>.
-Open-source software is developed in many ways, but the most canonical style is
-by a loosely-organized community
-of contributors, each of whom has a copy of the software (called a <i>branch</i>, or <i>fork</i> of the code), and can develop it
-however, and whenever they please (by making <i>commits</i> of changes to their <i>branch</i>).
-Development would not be efficient,
-if not for revision-control systems that
-allow such developers to stitch their private improvements back together into
-a coherent, improved, software system (this stitching is called a <i>merge</i> in git).
-Despite challenges such as weak coordination and predictable governance issues,
-open-source communities have developed and
-maintained
-some of the most complex and most stable software in the world,
-including <a href="https://github.com/torvalds/libgit2">git itself</a> (of course),
-the <a href="https://github.com/torvalds/linux">Linux operating system</a>,
-<a href="https://github.com/pangeo-data/awesome-open-climate-science#general-purpose">simulation tools for mathematical modelling</a>,
-and many
-<a href="https://github.com/pangeo-data/awesome-open-climate-science">models used for atmospheric, ocean, and climate science</a>.
-</p>
-
-<p>
-This pattern applies at two conceptual levels with regards to PlanZero.
-As a lower level, PlanZero follows this pattern, by using git via GitHub.
-As a higher level, PlanZero uses posts to mark significant changes
-to the underlying project code, including the structure and visualizations
-elsewhere in the site. At this higher level, the rest of the site is like the
-"coherent, improved software system" with an ever-expanding set of models, visualizations,
-analyses etc. that nevertheless remain internally consistent;
-and the posts narrate the incremental changes that have lead from the start of the project to the current state.
-PlanZero's git history also includes a sort of <a href="https://github.com/jaberg/planzero/commits/main/">narrative of commit messages</a>, but these messages are small, text-only, and not written for the audience of the site itself. 
-</p>
-
 
 <h3 id="post-purpose">The Purpose of Posts</h3>
 <p>
-With the preface stated,
-the purpose of posts can be stated more succinctly:
-it is to document why and how something elsewhere on the site has changed.
-Typically both the post and the change-elsewhere are
-part of a combined implementation effort (what might naturally be a branch, in git),
-that is merged together into the main project branch.
-Git commit messages should describe and justify the changes associated with
-each git commit in language familiar to a project contributor.
-A git pull request on GitHub should describe and justify an entire branch worth of changes
-in language oriented to a project contributor.
-Such a branch and pull request should include at least one new post that
-describes and justifies the entire branch worth of changes to anyone visiting
-the PlanZero site.
-</p>
-<p>
-The following table compares and constrasts the various summaries that arise
-in the course of working on PlanZero:
-<table>
-    <thead>
-        <tr><th>summary</th><th>git association</th><th>scope</th><th>audience</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>GitHub pull request</td><td>branch</td><td>one per site improvement</td><td>contributor / developer</td></tr>
-        <tr><td>PlanZero post</td><td>branch</td><td>at least one per branch</td><td>site visitor</td></tr>
-        <tr><td>git commit message</td><td>commit</td><td>typically many per branch</td><td>contributor / developer</td></tr>
-    </tbody>
-</table>
+Most succinctly: the purpose of PlanZero posts is to document why and how something elsewhere on the site has changed.
+Posts provide an ongoing narrative documentation of PlanZero's core
+contribution, which is its modelling.
+They are sent out for feedback and engagement after changes have been merged
+to the project's codebase and site, in order to keep development focused.
 </p>
 
-<p>A corollary to this bit of guidance, is that if there is no visible change to the site other than the post itself,
-then there is nothing beyond the post itself in need of explanation,
-and arguably there should be no post at all.
-For example, a communication of the form "Group of people X should do Y instead of Z"
-should generally not be a post on PlanZero (unless e.g. the group of people is PlanZero contributors and the post is about a change to the About page).
-The closest message might be something like
-"Because of some new modelling or data added to PlanZero, we see that if group of people X did Y instead of Z,
-it would change such-and-such impact from A to B."
-In future there may be a "Perspectives" or "Recommendations" section with examples of using
-PlanZero to weigh in on public debate, but there is <a href="https://github.com/jaberg/planzero/issues/66">not yet such a section</a>.
-</p>
+<p>A corollary, is that without a material change to the code or site,
+there should perhaps not be a PlanZero post.
+PlanZero posts are not meant to be vehicles for news or opinion,
+except in justification of material changes to modelling or analysis.
+(There's <a href="https://github.com/jaberg/planzero/issues/66">an idea</a>
+for a "Perspectives" or "Recommendations" section
+in which PlanZero maintains positions on matters of public debate, but
+it hasn't been developed yet.)</p>
 
 <h3 id="draft-status">Draft Status</h3>
 
 <p>A post can have a status of "Draft".
 This status determines how the post should be displayed, and how it may be revised.
-The purpose of these policies
-is to respect the PlanZero audience's time.
+The purpose of draft status is to highlight that posts that <i>don't</i>
+have draft status are intended to be stable, out of respect for readers.
 After someone has generously volunteered their time and
 energy to understanding a post on PlanZero, it would be rude of us to confuse them
-or devalue what they've understood by changing the content of a page after they've read it.
+or devalue what they've understood, by changing the content of a page after they've read it.
+If a post is a draft, then:
+<ul>
+    <li>The word "DRAFT" appears in large letters in the title, wherever it appears.</li>
+    <li>The content of the post is not stable.</li>
+    <li>The text of the post is subject to change without notice.</li>
+    <li>The entire post may be hidden, withdrawn, removed, etc.</li>
+</ul>
+If a post is not in draft, then it should never be materially changed.
+If aspects of a post are superceded, they will be amended to link to the new
+post(s) introducing the superceding content.
+(All such changes will be tracked in git in any event.
+Git history should only be amended in order to remove accidentally committed
+material, including sensitive or confidential material.)
 </p>
 
-<p>
-If a post is a draft, then
-<ul>
-    <li>the word "DRAFT" appears in large letters in the title, wherever it appears</li>
-    <li>the text of the post is subject to change without notice</li>
-    <li>the entire post may be hidden, withdrawn, removed, etc.</li>
-</ul>
-If a post is not in draft, then
-<ul>
-    <li>no such word such as "DRAFT" appears in the title</li>
-    <li>it should never be materially changed</li>
-    <li>if it is superceded, it should be amended to include a link to the new
-        post introducing the superceding content</li>
-</ul>
-All such changes will be tracked in git in any event.
-Git history should only be amended in order to remove accidentally committed
-material, including sensitive or confidential material.
-</p>
-<p>
-Moving a post from draft to non-draft status is the occasion for broader
-communication.
-In future a post leaving draft status may somewhat automatically lead to broadcast on e.g.
-mailing list, substack, X (twitter), slackbot, facebook, LinkedIn, and/or
-other ways of getting messages out, but I <a href="https://github.com/jaberg/planzero/issues/67">haven't decided how to handle that
-    yet</a>.
-For now I'll transmit posts manually, in an ad-hoc manner.
-</p>
 <h3 id="post-dates">Post Dates</h3>
 <p>
 Posts have dates, but those dates should be interpreted as approximate.
@@ -250,28 +161,32 @@ detailed and accurate, although it reflects the
 development process commit-by-commit rather than the narrative presented by the
 posts.
 </p>
-<h3 id="post-authorship">Post Authorship and Acknowledgements</h3>
-<p>
-Post authorship and acknowledgements should follow what I think of as academic
-convention, which is to say that it's not easy to articulate a policy.
-At one end of a spectrum: someone that has done all of the work and written
-the post itself is typically an author.
-At the other end of that spectrum: a funding agency with little knowledge of the
-work is typically recognized via acknowledgement.
-In between, it's case by case management of contributor and audience expectations, project precedent,
-and community conventions.
-</p>
 
-<h3 id="link-lifetime">Page, Post, and Link Lifetime and Durability</h3>
+<h3 id="post-authorship">Post Authorship</h3>
+
+<p>PlanZero posts have authors and the authors' name(s) appear on the post.
+So far I've been a solo author, however I've had help from all of the contributors mentioned above.
+I don't think there's a comprehensive way to express who should be included among authors of a post,
+but as a rule of thumb, the authors of a post are the people who can answer to the questions
+"Why did you write that post?" and "Why did it say what it said?"
+That said, I will always strive to give credit where credit is due.
+PlanZero hasn't yet benefited from funding or sponsorship, but if that happens,
+I will acknowledge it publicly.</p>
+
+<h3 id="contributing">Post Drafting Guidance for Contributors</h3>
+
 <p>
-Generally, pages hosted under https://planzero.ca are not guaranteed to remain as they are.
-They may be improved, but they may also change to mean slightly different things, be separated across multiple pages, joined together, or disappear entirely.
-If a page is simply moved to a new path, the old path may or may not re-direct to the old one.
-</p>
-<p>
-The exception to this general rule is the posts: 
-The posts should remain at their urls, and continue to feature the same
-content that they had when they left "Draft" status.
+PlanZero is an open-source project. You are welcome to make a fork on GitHub,
+and I'd be delighted to learn more about your interest via
+e.g. either <a href="https://www.linkedin.com/in/james-bergstra/">LinkedIn</a>
+or <a href="https://github.com/jaberg/planzero">GitHub</a>.
+If you'd like to contribute back to the project, even better.
+If you <i>do</i> get as far as contemplating a contribution,
+have a look at <a href="/blog/2026-04-12-about#drafting-guidance">post-drafting
+guidance for contributors</a>.
+It's far from developer documentation but it's a start.
+Please do get in touch as mentioned above though, I looking forward
+to hearing from you.
 </p>
 
 <h2 id="manifesto">Manifesto (Dec 5, 2025)</h2>

@@ -172,9 +172,9 @@ class Glossary(BlogPost):
             )
 
 class About(BlogPost):
-    """Briefly going meta: refining the vision and mission,
+    """Going meta: Refining the vision and mission,
     acknowledging the project contributors, and 
-    explaining how posts themselves are meant to work as a mechanism for developing PlanZero.
+    explaining how posts are meant to work as a mechanism for developing PlanZero.
     """
     def __init__(self):
         super().__init__(
@@ -184,7 +184,6 @@ class About(BlogPost):
             author="James Bergstra",
             tags={BlogTag.About,
                  },
-            draft=True,
             )
 
 
