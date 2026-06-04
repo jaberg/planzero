@@ -145,6 +145,23 @@ class RandomWalks(BlogPost):
             draft=True,
             )
 
+    def figure_normal(self,):
+        import numpy as np
+        import numpyro.distributions as dist
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(self):
+                fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(8, 4))
+                ax0.set_title("Normal(0, 5)")
+                x = np.linspace(-20, 20, 100)
+                ax0.plot(x, np.exp(dist.Normal(0, 5).log_prob(x)))
+                ax0.set_ylabel('Density')
+
+                ax1.set_title("Exponential(1)")
+                x = np.linspace(0, 10, 100)
+                ax1.plot(x, np.exp(dist.Exponential(1).log_prob(x)))
+                plt.tight_layout()
+        return RVAL()
+
 
 class Glossary(BlogPost):
     """This post announces a new page, a

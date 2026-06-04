@@ -1,0 +1,287 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</p>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>
+PlanZero has used many kinds of data to date, starting with the 2025 {{siteref("NIR")}},
+but it has not employed probabilistic modelling.
+This post introduces probabilistic modelling techniques to PlanZero.
+Probabilistic modelling is good for reconciling multiple data sources, but
+this post starts with just one: NIR-2025.<!--LINK-->
+The post introduces two models &mdash; a straw-man "Constant" model,
+and a demonstrably and qualitatively superior 2-step autoregressive model &mdash;
+and shows how to compare them mathematically as predictors of the future.
+Probabilistic modelling is compatible with the scenario analysis used to
+evaluate <i>strategies</i> (like e.g. Bovaer adoption), and for strategies
+that are already active, inference algorithms
+can even assess whether strategies are working as intended (at least relative to data and a model);
+but illustrating how this can be done will wait for a future post.
+</p>
+
+<p>
+A probabilistic model (also statistical model, stochastic model, or graphical model),
+can do any or all of the following things:
+<ul>
+    <li>assess the probability of data (typically higher is better)</li>
+    <li>generate plausible data, by sampling</li>
+    <li>support infererence of meaningful <i>latent variables</i>, such as the
+        parameters of appropriately-chosen probability distributions over
+        oberved data</li>
+</ul>
+This post focuses on basic concepts of probabilistic modelling,
+applying all three capabilities above to the NIR-2025 data,
+and numerically assessing whether one model is a better predictor of the future than another model.
+It does this by first developing a very simple model.
+Even though this first model is essentially just mean and variance (<a href="#constant">Modelling NIR-2025 with Constants</a>),
+it still goes through the motions of Bayesian modelling because
+those motions can be repeated to understand more elaborate models, such
+as the two-step autogressive model that's developed in the following section (<a href="#ar2">Modelling NIR-2025 with an AR2 Process</a>).
+</p>
+
+
+<h2 id="motivation">Motivation for Probabilic Modelling</h2>
+
+<p>
+A probabilistic model is a hypothesis about how some aspect of the world
+works, which makes predictions about some data that we have. 
+Taking the NIR-2025 for example, as our data set, we might hypothesize (hypothesis 1) that for each
+<ul>
+    <li>year, from 1990 to 2023,</li>
+    <li>province and territory (I'll call these just "territories"),</li>
+    <li>IPCC sector (I'll call these just "sectors"),</li>
+    <li>and greenhouse gas,</li>
+</ul>
+there is a quantity, in units of e.g. kt{{CO2e}} that has been estimated in support of
+Canada's reporting obligations under the Paris Agreement.
+Furtheremore, we might hypothesize (hypothesis 2) that the various national totals are sums
+of these territorial emissions.
+</p>
+
+<p>Alas, neither of these hypotheses is strictly true.
+They are true for the majority of years, territories, sectors, and gases, but there are
+counter-examples to both.
+Counter to hypothesis 1, there are 81 records missing from the IPCC Sector relating to stationary combustion in the construction industry.
+Counter to hypothesis 2, estimated national emissions related to harvested wood products were sometimes only about 70% of the total (negative) emissions estimated
+by provinces, a difference exceeding 50 Mt{{CO2e}} (almost 10% of the national total) in some years.
+If we define discrepancy as the maximum difference over years and provinces, the biggest ones (over 1Mt{{CO2e}})
+are listed in the following table.
+There are 11 records in the table, out of a total of 486 combinations of sector and GHG.
+At the level of 100kt{{CO2e}} discrepancy, there are about twice as many records, and 
+at the level of 10kt{{CO2e}} discrepancy, twice as many again.
+I defined "Relative Discrepancy" as the discrepancy divided by the greater of itself and the root mean square of national totals,
+as a way to relate discrepancies to the scale of numbers in their sectors.
+<table id="gemini-sort-data-table">
+    <thead>
+        <tr><th>IPCC Sector</th><th>GHG</th><th>Max Discrepancy (kt{{CO2e}})</th><th>Relative Discrepancy</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Petroleum Refining Industries</td><td>{{CO2}}</td><td>2430.85</td><td>14.4%</td></tr>
+        <tr><td>Commercial and Institutional</td><td>{{CO2}}</td><td>1271.44</td><td>4.1%</td></tr>
+        <tr><td>Cement Production</td><td>{{CO2}}</td><td>2421.59</td><td>36.7%</td></tr>
+        <tr><td>Lime Production</td><td>{{CO2}}</td><td>1421.05</td><td>84.4%</td></tr>
+        <tr><td>Ammonia Production</td><td>{{CO2}}</td><td>3090.34</td><td>100.0%</td></tr>
+        <tr><td>Nitric Acid Production</td><td>{{N2O}}</td><td>1097.89</td><td>100.0%</td></tr>
+        <tr><td>Petrochemical and Carbon Black Production</td><td>{{CO2}}</td><td>4398.65</td><td>100.0%</td></tr>
+        <tr><td>Non-Energy Products from Fuels and Solvent Use</td><td>{{CO2}}</td><td>7395.02</td><td>67.7%</td></tr>
+        <tr><td>Non-Energy Products from Fuels and Solvent Use</td><td>{{N2O}}</td><td>1068.83</td><td>100.0%</td></tr>
+        <tr><td>Forest Land</td><td>{{CO2}}</td><td>1731.42</td><td>2.1%</td></tr>
+        <tr><td>Harvested Wood Products</td><td>{{CO2}}</td><td>53296.13</td><td>100.0%</td></tr>
+    </tbody>
+</table>
+We can see that for several modest-to-minor sectors, the size of the
+discrepancy is sometimes at the same order of magnitude as the national total,
+and even for large sectors such as harvested wood products and [static combustion in] commercial and institutional environments,
+there are significant discrepancies.
+</p>
+
+<p>
+Bayesian reasoning involves trading off two sensible but not-always-compatible ways to think:
+trusting your hypothesis about how you think things work (sometimes called your <i>prior</i> beliefs),
+and trusting your observations about what is actually happening.
+The data in the NIR-2025 is not meant to be interpreted too literally.
+In fact, NIR-2025 includes per-sector estimates of uncertainty on national totals for the base year (1990) and the most-recent year (2023).
+These uncertainties should be considered a <i>lower bound</i>on our uncertainty about these numbers.
+It can also happen, from time to time, that the protocols for estimating emissions are updated;
+this happened a few years ago in the area of vented {{CH4}}, which causes a re-assessment of the past estimates,
+and a change that went beyond the previously-estimated uncertainty.
+Maybe there really was a set of territorial estimates that added up the published national totals,
+it was just that one or more provinces and territories estimated the wrong values.
+Or maybe the provinces used more appropriate data and the national estimate was off.
+Or maybe they were both off.
+A probabilistic model together with a Bayesian inference algorithm can produce
+<i>posterior</i> estimates of what most-plausibly actually happened
+given the data, its uncertainty, and a conviction that territorial
+totals should add up to national ones.
+</p>
+
+<h2 id="constant">Modelling NIR-2025 with Constants</h2>
+
+<p>
+One greatly-simplifying modelling hypothesis we could make
+is that sectoral emissions (per territory, per GHG)
+aren't actually changing at all over time, we just measure them
+in some way that makes it appear as if they are changing from year to
+year according to trends (but such trends are just in our imagination if
+they're anywhere at all).
+My goal with this section isn't to investigate a model that anyone in
+particular believes to be true,
+it's to go through the steps of modelling and analysis for a model that
+is relatively simple to illustrate, communicate, etc.
+We will see later, that this is a less-likely model than one that
+recognizes temporal trends.
+(Happily, this was also my intuition.)
+</p>
+
+<p>
+Some background on probability notation is required, in order to express probability models.
+<ul>
+    <li> {{latex("P(X=0)")}} means there's a number we don't know, we're calling it {{latex("X")}}, and this is the probability it is actually 0.
+        {{latex("X")}} is called a <i>random variable</i>.</li>
+    <li> {{latex("P(X)")}} is the table (possibly infinitely large in theory) of all the values {{latex("X")}} might take, and their probabilities</li>
+    <li> {{latex("P(0)")}} is sloppy shorthand for {{latex("P(X=0)")}} when it's clear from surrounding context we're talking about {{latex("X")}}</li>
+    <li> {{latex("\\mathcal{N}(\\mu, \\sigma^2)")}} is a Normal distribution, which is non-negative function that sums (integrates) to 1. It is parameterized by two numbers:
+        {{latex("\\mu")}} the mean, and {{latex("\\sigma^2")}} the variance.</li>
+    <li> {{latex("X ~\\sim~ \\mathcal{N}(0, 1)")}} means {{latex("X")}} is a random variable, and its corresponding distribution {{latex("P(X)")}} is the thing to the right of the "{{latex("\sim")}}" symbol</li>
+    <li> {{latex("P(A=0, B=1)")}} means there's multiple numbers we don't know, and this is the probability that they <i>both</i> actually have these specific values.</li>
+    <li> {{latex("P(A=0| B=1)")}} is the probability that {{latex("A=0")}} if we make an additional assumption about {{latex("B")}}, namely that it is 1.
+        If A and B are not independent, then knowing something about B tells us something about A; in other words, changes what would otherwise have been our {{latex("P(A)")}}.
+    </li>
+</ul>
+Probabilistic modelling is a huge topic.
+I think it's typically introduced in secondary
+school, and covered in greater detail at various university levels,
+often with application to areas of science, engineering, medicine,
+social studies, mathematics etc. where probabilities are used.
+For more information and orientation, see e.g. wikipedia (
+<a href="https://en.wikipedia.org/wiki/Statistical_model">Statistical Model</a>,
+<a href="https://en.wikipedia.org/wiki/Graphical_model">Graphical Models</a>),
+many tutorials online specific to probabilistic programming software packages
+(e.g. Stan, PyMC, Pyro; PlanZero is currently using NumPyro but that might change in the future)
+or a textbook such as 
+<a href="https://www.penguinrandomhouse.com/books/654485/probabilistic-graphical-models-by-daphne-koller-and-nir-friedman/">Probabilistic Graphical Models (Koller and Friedman, 2009)</a>
+for greater depth.
+</p>
+
+<p>
+The following non-time-varying graphical model for NIR data will be our subject for the rest of this section.
+<table>
+    <tr><td>{{latex("X_{(s,g,r,t)} ~\\sim~ \\mathcal{N}(\\mu_{(s,g, r)}, \\sigma_{(s,g, r, t)}^2)")}}</td>
+        <td>Suppose that for each sector {{latex("s")}},
+        greenhouse gas {{latex("g")}},
+        region {{latex("r")}} (province or territory),
+        and time {{latex("t")}} (annual total),
+        suppose there's a number we don't know (random variable X)
+        that's normally distributed about some regional mean {{latex("\\mu_{(s, g, r)}")}},
+        and with some variance {{latex("\\sigma^2_{(s, g, r, t)}")}}.</td>
+    </tr>
+    <tr><td>{{latex("Y_{(s,g,t)} ~\\sim~ \\mathcal{N}(\sum_{r \in \\mathrm{regions}}\\mu_{(s,g, r)}, \\sigma_{(s,g)}^2)")}}</td>
+        <td>Suppose further that for each sector {{latex("s")}},
+        greenhouse gas {{latex("g")}},
+        and time {{latex("t")}} (annual total),
+        some number we don't know (random variable Y)
+        is normally distributed about a mean that is the sum of the regional means,
+        with a variance {{latex("\\sigma^2_{(s, g)}")}}.</td>
+    </tr>
+    <tr><td>{{latex("\\mu_{(s,g,r)} ~\\sim~ \\mathcal{N}(0, 5)")}}</td><td>
+            Suppose the regional mean emissions are probably around 0, plus or minus 10.
+            It is customary to scale data to be in this range before modelling them, so each emissions time series is scaled to have a mean squared value of 1.
+            After this scaling, plus-or-minus 10 is a relatively un-opinionated prior as to
+            what {{latex("\\mu")}} should be, relative to the NIR data, which will probably say that {{latex("\\mu")}} should be somewhere in the range of plus-or-minus 1.</td></tr>
+    <tr><td>{{latex("\\sigma_{(s,g,r)} ~\\sim~ \\mathcal{Exp}(1)")}} </td><td>Suppose regional variances are probably tiny, but could potentially be somewhat large.</td></tr>
+</table>
+The prior densities for the {{latex("\\mu")}} and {{latex("\\sigma")}} terms
+are illustrated below.
+{{blog.figure_normal()|safe}}
+</p>
+
+<p>Having made these suppositions above, and finally making one last pair,
+namely that {{latex("X = \\mathrm{NIR_{(2025, regional)}}")}}
+and {{latex("Y = \\mathrm{NIR_{(2025, national)}}")}},
+we have ourselves a model of NIR-2025, and we can ask:
+what are {{latex("\\mu")}} and {{latex("\\sigma")}}?
+They are the valuable output of this modelling exercise after all,
+particularly {{latex("\\mu")}}, which is positioned as the
+true underlying emission rate for each sector, region, and gas,
+which adds up neatly to each national total.
+The Bayesian answer to this question is a joint probabilility distribution:
+</p>
+
+<p>
+{{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(2025, regional)}}, Y=\\mathrm{NIR_{(2025, national)}})", "block")}}
+</p>
+
+<p>
+This distribution is a called a <i>posterior</i> distribution because it's
+conditioning on our data.
+Generally, the posterior distribution of a graphical model's <i>latent variables</i>
+(variables that aren't directly observed, in this case
+{{latex("\\mu")}} and
+{{latex("\\sigma")}}) is not a distribution with a neat and tidy formula such as a normal or exponential.
+Even though, in general, we cannot write down a neat and tidy form for a posterior distribution,
+it is nevertheless often possible to work with these distributions algorithmically,
+via <i>inference</i> algorithms.
+It is, admittedly, 
+possible to write down a neat and tidy formula for the latent variables in this
+particular graphical model,
+but I want to ignore that in order to demonstrate the more general
+technique of using inference algorithms.
+This first model was chosen for being simple rather than being good,
+and we'll need inference algorithms later when we're looking at another model
+that employs an autoregressive process.
+The next section uses an inference algorithm in the
+<a href="https://num.pyro.ai/en/stable/">NumPyro software library</a> to draw
+samples from {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(2025, regional)}},
+Y=\\mathrm{NIR_{(2025, national)}})")}} under our modelling assumptions.
+</p>
+
+<h2 id="constant-model-inference">Inference of Latent Variables in the Constant Model</h2>
+
+
+
+<h2 id="ar2">Modelling NIR-2025 with an AR2 Process</h2>
+
+<h2 id="comparing">Comparing Models as Predictors of the Future</h2>
+
+<h2 id="conclusion">Conclusion</h2>
+
+
+Next steps
+
+Policies
+
+Strategies
+
+<p>
+Until next time,
+</p>
+<p>
+- James Bergstra
+</p>
+
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+{% include "post-main.html" %}
