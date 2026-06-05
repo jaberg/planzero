@@ -138,7 +138,7 @@ class RandomWalks(BlogPost):
         super().__init__(
             date=datetime.datetime(2026, 5, 26),
             title='Two Probabilistic Models of NIR-2025',
-            url_filename="2026-05-26-simple-linear-model", # rename?
+            url_filename="2026-05-26-probabilistic-modelling",
             author="James Bergstra",
             tags={BlogTag.BarrierModelling,
                   BlogTag.NIR_Modelling},

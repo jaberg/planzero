@@ -227,7 +227,7 @@ The Bayesian answer to this question is a joint probabilility distribution:
 
 <p>
 This distribution is a called a <i>posterior</i> distribution because it's
-conditioning on our data.
+conditioned on data.
 Generally, the posterior distribution of a graphical model's <i>latent variables</i>
 (variables that aren't directly observed, in this case
 {{latex("\\mu")}} and
@@ -235,22 +235,54 @@ Generally, the posterior distribution of a graphical model's <i>latent variables
 Even though, in general, we cannot write down a neat and tidy form for a posterior distribution,
 it is nevertheless often possible to work with these distributions algorithmically,
 via <i>inference</i> algorithms.
-It is, admittedly, 
-possible to write down a neat and tidy formula for the latent variables in this
-particular graphical model,
-but I want to ignore that in order to demonstrate the more general
-technique of using inference algorithms.
-This first model was chosen for being simple rather than being good,
-and we'll need inference algorithms later when we're looking at another model
-that employs an autoregressive process.
 The next section uses an inference algorithm in the
 <a href="https://num.pyro.ai/en/stable/">NumPyro software library</a> to draw
 samples from {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(2025, regional)}},
 Y=\\mathrm{NIR_{(2025, national)}})")}} under our modelling assumptions.
 </p>
 
-<h2 id="constant-model-inference">Inference of Latent Variables in the Constant Model</h2>
+<h2 id="constant-model-inference">Probabilistic Programming and Inference</h2>
 
+<p>
+Algorithmic inference in graphical models is enabled by
+<a href="/todo">Bayes' theorem</a>.
+In standard probability notation, Bayes' theorem looks like:
+</p>
+<p>
+{{latex("P(A|B) = \\frac{P(A, B)}{P(B)} = \\frac{P(B|A)P(A)}{P(B)}", "block")}}.
+</p>
+
+<p>
+Bayes' theorem shows how to flip the direction of conditional expressions,
+from ones of the form {{latex("P(A|B)")}},
+to ones involving {{latex("P(B|A)")}}.
+With the help of, Bayes theorem,
+it's possible to transform a posterior distribution we're interested in,
+such as
+{{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(2025, regional)}})")}},
+into a formula with the sorts of pieces with which we specified our model:
+</p>
+<p>
+{{latex(
+"\\frac{P(X=\\mathrm{NIR_{(2025, regional)}}|\\mu, \\sigma)P(\\mu)P(\\sigma)}
+{P(X=\\mathrm{NIR_{(2025, regional)}})}", "block")}}.
+</p>
+<p>
+Probabilistic programming systems enable someone such as myself to write down
+nested generative sampling processes like those in the first column in the table above,
+and leverage standard <i>inference algorithms</i>
+(which implement Bayes' theorem internally) to
+generate values for the posterior distribution over latent variable
+({{latex("\\mu")}} and {{latex("\\sigma")}} in this case).
+Even with a Ph.D. in machine learning, I still find
+these algorithms amazing (look up e.g. MCMC algorithms and stochastic
+variational inference if you're interested in how these things work).
+The design of general sampling algorithms continues to be an area
+of research in statistics and machine learning communities, but
+for our purposes we'll take their capabilities as given, and
+apply them to the inference of
+{{latex("\\mu")}} and {{latex("\\sigma")}} given the NIR-2025 data.
+</p>
 
 
 <h2 id="ar2">Modelling NIR-2025 with an AR2 Process</h2>
