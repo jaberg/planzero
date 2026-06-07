@@ -64,6 +64,13 @@ def load_inventory():
     return inv
 
 
+idx_of_sector = {sector: ii for ii, sector in enumerate(IPCC_Sector)}
+idx_of_ghg = {ghg: ii for ii, ghg in enumerate(GHG)}
+idx_of_pt = {pt: ii for ii, pt in enumerate(PT)}
+idx_of_yr = {yr: ii for ii, yr in enumerate(nir2025_year_ints)}
+
+
+@cache
 def ktCO2e_dense_w_nan():
     """Return the NIR-2025 in the form of two numpy arrays:
     * arr_pt (IPCC_Sector idx, GHG idx, PT idx, year since 1990)
@@ -73,10 +80,6 @@ def ktCO2e_dense_w_nan():
     In arr_ca, there is no censored data.
     """
     inv = load_inventory()
-    idx_of_sector = {sector: ii for ii, sector in enumerate(IPCC_Sector)}
-    idx_of_ghg = {ghg: ii for ii, ghg in enumerate(GHG)}
-    idx_of_pt = {pt: ii for ii, pt in enumerate(PT)}
-    idx_of_yr = {yr: ii for ii, yr in enumerate(nir2025_year_ints)}
 
     arr_pt = np.zeros((len(IPCC_Sector),
                        len(GHG),
@@ -135,6 +138,9 @@ def ktCO2e_dense_w_nan():
 
 
 def discrepancies_by_sector_ghg(arr_pt, arr_ca, idx_of_sector, idx_of_ghg):
+    """Return dictionary
+        (sector, ghg) -> [discrepancy for 1990, for 1991, ..., for 2023]
+    """
     rval = {}
     for sector, ii in idx_of_sector.items():
         for ghg, jj in idx_of_ghg.items():

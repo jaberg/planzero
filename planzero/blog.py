@@ -119,7 +119,7 @@ class Uncertainty(BlogPost):
             draft=True,
             )
 
-class RandomWalks(BlogPost):
+class TwoProbabilisticModels(BlogPost):
     """
     This post looks at the the NIR-2025 National Inventory Report,
     for the first time in PlanZero,
@@ -144,6 +144,126 @@ class RandomWalks(BlogPost):
                   BlogTag.NIR_Modelling},
             draft=True,
             )
+
+    def const_sector_ghg(self, ax, sector, ghg):
+        from . import nir_constant_predictor
+        from . import nir2025
+        import numpy as np
+        import jax.numpy as jnp
+        from numpyro.diagnostics import hpdi
+        PT = enums.PT
+
+        # 1. New 14-color palette minimizing blue-green saturation
+        echarts_warm_earth = [
+            '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
+            '#fc8452', '#9a60b4', '#3ba272', '#ea7ccc',
+            '#b58d22', '#44357a', '#9e2a47', '#34495e', '#6e473b'
+        ]
+        col_by_pt = {pt: col for pt, col in zip(PT, echarts_warm_earth)}
+        col_ca = echarts_warm_earth[-1]
+
+        model = nir_constant_predictor.NIR2025_Model(
+            sector=sector, ghg=ghg)
+        print(sector)
+        print(ghg)
+        print(model.jnp_pt)
+        print(model.jnp_ca)
+        print(model.scale)
+        print(model.scaled_pt)
+        print(model.scaled_ca)
+        model.posterior_inference()
+        mean_mu = jnp.mean(model.post_samples['mu'], axis=0)
+        hpdi_mu_pt = hpdi(model.post_samples['mu'], 0.95)
+        hpdi_mu_ca = hpdi(
+            jnp.sum(model.post_samples['mu'], axis=1),
+            0.95)
+
+        ax.scatter(
+            nir2025.nir2025_year_ints,
+            model.jnp_ca,
+            color=col_ca,
+        )
+        ax.axhline(
+            jnp.sum(mean_mu) * model.scale,
+            color=col_ca,
+        )
+        x = nir2025.nir2025_year_ints
+        ax.fill_between(
+            x,
+            np.ones(len(x)) * hpdi_mu_ca[0] * model.scale,
+            np.ones(len(x)) * hpdi_mu_ca[1] * model.scale,
+            alpha=0.3,
+            interpolate=True,
+            color=col_ca,
+            )
+        for ii, pt in enumerate(PT):
+            if pt == PT.XX:
+                continue
+            ax.scatter(
+                nir2025.nir2025_year_ints,
+                model.jnp_pt[ii],
+                color=col_by_pt[pt],
+            )
+            ax.axhline(
+                mean_mu[ii] * model.scale,
+                color=col_by_pt[pt],
+            )
+            ax.fill_between(
+                x,
+                np.ones(len(x)) * hpdi_mu_pt[0, ii] * model.scale,
+                np.ones(len(x)) * hpdi_mu_pt[1, ii] * model.scale,
+                alpha=0.3,
+                interpolate=True,
+                color=col_by_pt[pt],
+                )
+
+    def foo(self,):
+        IPCC_Sector = enums.IPCC_Sector
+        GHG = enums.GHG
+        sector_ghg_list = [
+            (IPCC_Sector.SCS__Public_Electricity_and_Heat,
+             GHG.CO2),
+            (IPCC_Sector.Ammonia_Production,
+             GHG.CO2),
+            (IPCC_Sector.Cement_Production,
+             GHG.CO2),
+            (IPCC_Sector.SCS__Commercial_and_Institutional,
+             GHG.CO2),
+            (IPCC_Sector.Forest_Land,
+             GHG.CO2),
+            (IPCC_Sector.Harvested_Wood_Products,
+             GHG.CO2),
+            (IPCC_Sector.Lime_Production,
+             GHG.CO2),
+            (IPCC_Sector.Nitric_Acid_Production,
+             GHG.N2O),
+            (IPCC_Sector.Non_Energy_Products_from_Fuels_and_Solvent_Use,
+             GHG.CO2),
+            (IPCC_Sector.Non_Energy_Products_from_Fuels_and_Solvent_Use,
+             GHG.N2O),
+            (IPCC_Sector.Petrochemical_and_Carbon_Black_Production,
+             GHG.CO2),
+            (IPCC_Sector.SCS__Petroleum_Refining_Industries,
+             GHG.CO2),
+        ]
+
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+                n_cols = 3
+                fig, axs = plt.subplots(4, n_cols, figsize=(10, 12))
+                for row, axrow in enumerate(axs):
+                    for col, ax in enumerate(axrow):
+                        list_idx = col + row * n_cols
+                        try:
+                            sector, ghg = sector_ghg_list[list_idx]
+                        except IndexError:
+                            break
+                        self.const_sector_ghg( ax, sector, ghg)
+                        if col == 0:
+                            ax.set_ylabel('Emissions (CO2e)')
+                        ax.set_title(sector.value)
+                plt.tight_layout()
+        return RVAL()
 
     def figure_normal(self,):
         import numpy as np
