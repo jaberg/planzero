@@ -119,6 +119,17 @@ class Uncertainty(BlogPost):
             draft=True,
             )
 
+
+# 1. New 14-color palette minimizing blue-green saturation
+echarts_warm_earth = [
+    '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
+    '#fc8452', '#9a60b4', '#3ba272', '#ea7ccc',
+    '#b58d22', '#44357a', '#9e2a47', '#34495e', '#6e473b'
+]
+col_by_pt = {pt: col for pt, col in zip(enums.PT, echarts_warm_earth)}
+col_ca = echarts_warm_earth[-1]
+
+
 class TwoProbabilisticModels(BlogPost):
     """
     This post looks at the the NIR-2025 National Inventory Report,
@@ -146,76 +157,167 @@ class TwoProbabilisticModels(BlogPost):
             )
 
     def const_sector_ghg(self, ax, sector, ghg):
-        from . import nir_constant_predictor
+        from .nir_constant_predictor import NIR2025_Model
         from . import nir2025
         import numpy as np
         import jax.numpy as jnp
         from numpyro.diagnostics import hpdi
         PT = enums.PT
 
-        # 1. New 14-color palette minimizing blue-green saturation
-        echarts_warm_earth = [
-            '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
-            '#fc8452', '#9a60b4', '#3ba272', '#ea7ccc',
-            '#b58d22', '#44357a', '#9e2a47', '#34495e', '#6e473b'
-        ]
-        col_by_pt = {pt: col for pt, col in zip(PT, echarts_warm_earth)}
-        col_ca = echarts_warm_earth[-1]
-
-        model = nir_constant_predictor.NIR2025_Model(
+        model = NIR2025_Model.posterior_inference(
             sector=sector, ghg=ghg)
-        print(sector)
-        print(ghg)
-        print(model.jnp_pt)
-        print(model.jnp_ca)
-        print(model.scale)
-        print(model.scaled_pt)
-        print(model.scaled_ca)
-        model.posterior_inference()
+        predictions = model.predictions()
+        print('predictions', predictions['obs_ca'].shape)
+        print('predictions', predictions['obs_pt'].shape)
+
         mean_mu = jnp.mean(model.post_samples['mu'], axis=0)
         hpdi_mu_pt = hpdi(model.post_samples['mu'], 0.95)
         hpdi_mu_ca = hpdi(
             jnp.sum(model.post_samples['mu'], axis=1),
             0.95)
 
+        # spread
+        x = nir2025.nir2025_year_ints
+        spread_ca = hpdi(predictions['obs_ca'], 0.95)
+        print(spread_ca)
+        ax.fill_between(
+            x,
+            np.ones(len(x)) * spread_ca[0] * model.scale,
+            np.ones(len(x)) * spread_ca[1] * model.scale,
+            alpha=0.1,
+            interpolate=True,
+            color=col_ca,
+            )
+        # mean
+        ax.axhline(
+            jnp.mean(predictions['obs_ca']) * model.scale,
+            color=col_ca,
+        )
+        # data
         ax.scatter(
             nir2025.nir2025_year_ints,
             model.jnp_ca,
             color=col_ca,
         )
-        ax.axhline(
-            jnp.sum(mean_mu) * model.scale,
-            color=col_ca,
-        )
-        x = nir2025.nir2025_year_ints
-        ax.fill_between(
-            x,
-            np.ones(len(x)) * hpdi_mu_ca[0] * model.scale,
-            np.ones(len(x)) * hpdi_mu_ca[1] * model.scale,
-            alpha=0.3,
-            interpolate=True,
-            color=col_ca,
-            )
+
         for ii, pt in enumerate(PT):
             if pt == PT.XX:
                 continue
+            # spread
+            spread_pt = hpdi(predictions['obs_pt'][ii], 0.95)
+            ax.fill_between(
+                x,
+                np.ones(len(x)) * spread_pt[0] * model.scale,
+                np.ones(len(x)) * spread_pt[1] * model.scale,
+                alpha=0.1,
+                interpolate=True,
+                color=col_by_pt[pt],
+                )
+            # mean
+            ax.axhline(
+                jnp.mean(predictions['obs_pt'][ii]) * model.scale,
+                color=col_ca,
+            )
+            # data
             ax.scatter(
                 nir2025.nir2025_year_ints,
                 model.jnp_pt[ii],
                 color=col_by_pt[pt],
             )
-            ax.axhline(
-                mean_mu[ii] * model.scale,
-                color=col_by_pt[pt],
-            )
+
+    def const_sector_ghg_pt(self, ax, sector, ghg, pt, list_idx, model, predictions):
+        from . import nir2025
+        import numpy as np
+        import jax.numpy as jnp
+        from numpyro.diagnostics import hpdi
+
+        scale = model.scale
+
+        x = nir2025.nir2025_year_ints
+        if pt is None:
+            # spread
+            spread_ca = hpdi(predictions['obs_ca'], 0.95)
             ax.fill_between(
                 x,
-                np.ones(len(x)) * hpdi_mu_pt[0, ii] * model.scale,
-                np.ones(len(x)) * hpdi_mu_pt[1, ii] * model.scale,
-                alpha=0.3,
+                np.ones(len(x)) * spread_ca[0] * scale,
+                np.ones(len(x)) * spread_ca[1] * scale,
+                alpha=0.1,
+                interpolate=True,
+                color=col_ca,
+                )
+            # mean
+            ax.axhline(
+                jnp.mean(predictions['obs_ca']) * scale,
+                c=col_ca,
+            )
+            # data
+            ax.scatter(
+                nir2025.nir2025_year_ints,
+                model.jnp_ca * scale / model.scale,
+                color=col_ca,
+            )
+            for ii, pt in enumerate(enums.PT):
+                if pt == enums.PT.XX:
+                    continue
+                ax.scatter(
+                    nir2025.nir2025_year_ints,
+                    model.jnp_pt[ii] * scale / model.scale,
+                    color=col_by_pt[pt],
+                )
+        else:
+            # spread
+            #print('obs_pt shape', predictions['obs_pt'].shape)
+            spread_pt = hpdi(predictions['obs_pt'][:, list_idx], 0.95)
+            #print('mu shape', model.post_samples['mu'].shape)
+            spread_pt_mu = hpdi(model.post_samples['mu'][:, list_idx], 0.95)
+            #print('spread_pt shape', spread_pt.shape)
+            ax.fill_between(
+                x,
+                np.ones(len(x)) * spread_pt[0] * scale,
+                np.ones(len(x)) * spread_pt[1] * scale,
+                alpha=0.1,
                 interpolate=True,
                 color=col_by_pt[pt],
                 )
+            ax.fill_between(
+                x,
+                np.ones(len(x)) * spread_pt_mu[0] * scale,
+                np.ones(len(x)) * spread_pt_mu[1] * scale,
+                alpha=0.2,
+                interpolate=True,
+                color=col_by_pt[pt],
+                )
+            # latent mean
+            ax.axhline(
+                jnp.mean(predictions['obs_pt'][:, list_idx]) * scale,
+                c=col_by_pt[pt],
+                label='estimated mu',
+            )
+            # data
+            ax.scatter(
+                nir2025.nir2025_year_ints,
+                model.jnp_pt[list_idx] * scale / model.scale,
+                color=col_by_pt[pt],
+                label='data',
+            )
+            # data mean
+            ax.axhline(
+                np.nanmean(model.jnp_pt[list_idx] * scale / model.scale),
+                color=col_by_pt[pt],
+                ls='--',
+                label='data mean',
+            )
+            lbound = min(0,
+                           spread_pt[0] * scale,
+                           np.nanmin(model.jnp_pt[list_idx] * scale / model.scale))
+            ubound = max(0,
+                           spread_pt[1] * scale,
+                           np.nanmax(model.jnp_pt[list_idx] * scale / model.scale))
+            ludiff = ubound - lbound
+            ax.set_ylim(
+                lbound - .05 * ludiff,
+                ubound + .05 * ludiff)
+
 
     def foo(self,):
         IPCC_Sector = enums.IPCC_Sector
@@ -265,20 +367,57 @@ class TwoProbabilisticModels(BlogPost):
                 plt.tight_layout()
         return RVAL()
 
+
+    def foo_one_sector_ghg(self,):
+        IPCC_Sector = enums.IPCC_Sector
+        GHG = enums.GHG
+        PT = enums.PT
+        sector = IPCC_Sector.SCS__Commercial_and_Institutional
+        sector = IPCC_Sector.Harvested_Wood_Products
+        ghg = GHG.CO2
+
+        from .nir_constant_predictor import NIR2025_Model
+        model = NIR2025_Model.posterior_inference(
+            sector=sector, ghg=ghg)
+        predictions = model.predictions()
+        print('predictions', predictions['obs_ca'].shape)
+        print('predictions', predictions['obs_pt'].shape)
+
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+                n_cols = 2
+                fig, axs = plt.subplots(7, n_cols, figsize=(9, 17))
+                for row, axrow in enumerate(axs):
+                    for col, ax in enumerate(axrow):
+                        list_idx = col + row * n_cols
+                        if list_idx == 0:
+                            pt = None
+                        else:
+                            pt = list(enums.PT)[list_idx - 1]
+                        self.const_sector_ghg_pt(
+                            ax, sector, ghg, pt, list_idx - 1, model, predictions)
+                        if col == 0:
+                            ax.set_ylabel('Emissions (CO2e)')
+                        ax.set_title(pt.value if pt else "Canada")
+                        if pt:
+                            ax.legend(loc='lower right')
+                plt.tight_layout()
+        return RVAL()
+
     def figure_normal(self,):
         import numpy as np
         import numpyro.distributions as dist
         class RVAL(HTML_Matplotlib_Figure):
             def build_figure(self):
                 fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(8, 4))
-                ax0.set_title("Normal(0, 5)")
-                x = np.linspace(-20, 20, 100)
-                ax0.plot(x, np.exp(dist.Normal(0, 5).log_prob(x)))
+                ax0.set_title("Normal(0, 1)")
+                x = np.linspace(-3, 3, 100)
+                ax0.plot(x, np.exp(dist.Normal(0, 1).log_prob(x)))
                 ax0.set_ylabel('Density')
 
-                ax1.set_title("Exponential(1)")
-                x = np.linspace(0, 10, 100)
-                ax1.plot(x, np.exp(dist.Exponential(1).log_prob(x)))
+                ax1.set_title("LogNormal(-1, .7)")
+                x = np.linspace(0, 1, 100)
+                ax1.plot(x, np.exp(dist.LogNormal(-1, 0.7).log_prob(x)))
                 plt.tight_layout()
         return RVAL()
 

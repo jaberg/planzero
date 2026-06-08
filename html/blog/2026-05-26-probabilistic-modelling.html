@@ -11,6 +11,7 @@
 Table of Contents:
 <ul>
     <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#constant-inference-fig">Fig</a></li>
     <li><a href="#conclusion">Conclusion</a></li>
 </ul>
 </p>
@@ -197,28 +198,39 @@ The following non-time-varying graphical model for NIR data will be our subject 
         is normally distributed about a mean that is the sum of the regional means,
         with a variance {{latex("\\sigma^2_{(s, g)}")}}.</td>
     </tr>
-    <tr><td>{{latex("\\mu_{(s,g,r)} ~\\sim~ \\mathcal{N}(0, 5)")}}</td><td>
+    <tr><td>{{latex("\\mu_{(s,g,r)} ~\\sim~ \\mathcal{N}(0, 1)")}}</td><td>
             Suppose the regional mean emissions are probably around 0, plus or minus 10.
             It is customary to scale data to be in this range before modelling them, so each emissions time series is scaled to have a mean squared value of 1.
             After this scaling, plus-or-minus 10 is a relatively un-opinionated prior as to
             what {{latex("\\mu")}} should be, relative to the NIR data, which will probably say that {{latex("\\mu")}} should be somewhere in the range of plus-or-minus 1.</td></tr>
-    <tr><td>{{latex("\\sigma_{(s,g,r)} ~\\sim~ \\mathcal{Exp}(1)")}} </td><td>Suppose regional variances are probably tiny, but could potentially be somewhat large.</td></tr>
+    <tr><td>{{latex("\\sigma_{(s,g,r)} ~\\sim~ \\mathcal{LogNormal}(-1, 0.7)")}} </td><td>Suppose regional variances about the mean are never super-tiny, nor much larger than 1.</td></tr>
+    <tr><td>{{latex("\\sigma_{(s,g)} ~\\sim~ \mathcal{LogNormal}(-1, 0.7)")}} </td><td>Suppose national variance about the mean are never super-tiny, nor much larger than 1.</td></tr>
 </table>
 The prior densities for the {{latex("\\mu")}} and {{latex("\\sigma")}} terms
 are illustrated below.
 {{blog.figure_normal()|safe}}
 </p>
 
-<p>Having made these suppositions above, and finally making one last pair,
+<p>Having made the suppositions above, and two final ones &mdash;
 namely that {{latex("X = \\mathrm{NIR_{(2025, regional)}}")}}
-and {{latex("Y = \\mathrm{NIR_{(2025, national)}}")}},
-we have ourselves a model of NIR-2025, and we can ask:
-what are {{latex("\\mu")}} and {{latex("\\sigma")}}?
-They are the valuable output of this modelling exercise after all,
-particularly {{latex("\\mu")}}, which is positioned as the
-true underlying emission rate for each sector, region, and gas,
-which adds up neatly to each national total.
-The Bayesian answer to this question is a joint probabilility distribution:
+and {{latex("Y = \\mathrm{NIR_{(2025, national)}}")}} &mdash;
+we have ourselves a model of NIR-2025.
+With it, we can figure out
+what are {{latex("\\mu")}} and {{latex("\\sigma")}}.
+In the model, they are described as
+(a) coming from a normal and log-normal prior distributions respectively,
+but then (b) also being good explanations for the NIR-2025 data.
+Reconciling these two competing objectives is what makes
+probabilistic modelling interesting.
+Below, we'll see how {{latex("\\mu")}},  in particular,
+compares with the empirical mean of each provincial emission
+in a sector where the difference is easiest to see.
+</p>
+
+<p>
+The Bayesian answer to the question of
+what are {{latex("\\mu")}} and {{latex("\\sigma")}}
+is a joint probabilility distribution:
 </p>
 
 <p>
@@ -227,15 +239,13 @@ The Bayesian answer to this question is a joint probabilility distribution:
 
 <p>
 This distribution is a called a <i>posterior</i> distribution because it's
-conditioned on data.
+conditioned on data, and it's over <i>latent variables</i>, the ones
+hypothesized within the model that aren't observed directly.
 Generally, the posterior distribution of a graphical model's <i>latent variables</i>
-(variables that aren't directly observed, in this case
-{{latex("\\mu")}} and
-{{latex("\\sigma")}}) is not a distribution with a neat and tidy formula such as a normal or exponential.
-Even though, in general, we cannot write down a neat and tidy form for a posterior distribution,
-it is nevertheless often possible to work with these distributions algorithmically,
-via <i>inference</i> algorithms.
-The next section uses an inference algorithm in the
+is not a distribution with a neat and tidy formula such as a normal or exponential.
+Often the only practical way to work with these distributions is with
+algorithms, such as <i>inference</i> algorithms.
+The next section uses an inference algorithm called <a href="https://en.wikipedia.org/wiki/Hamiltonian_Monte_Carlo#No_U-Turn_Sampler">NUTS</a> in the
 <a href="https://num.pyro.ai/en/stable/">NumPyro software library</a> to draw
 samples from {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(2025, regional)}},
 Y=\\mathrm{NIR_{(2025, national)}})")}} under our modelling assumptions.
@@ -253,30 +263,33 @@ In standard probability notation, Bayes' theorem looks like:
 </p>
 
 <p>
-Bayes' theorem shows how to flip the direction of conditional expressions,
-from ones of the form {{latex("P(A|B)")}},
-to ones involving {{latex("P(B|A)")}}.
-With the help of, Bayes theorem,
-it's possible to transform a posterior distribution we're interested in,
+Bayes' theorem shows how to relate
+distributions of the form {{latex("P(A|B)")}},
+to ones involving {{latex("P(B|A)")}} instead.
+With the help of Bayes theorem,
+it is possible to transform a posterior distribution we're interested in,
 such as
 {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(2025, regional)}})")}},
 into a formula with the sorts of pieces with which we specified our model:
 </p>
+
 <p>
 {{latex(
 "\\frac{P(X=\\mathrm{NIR_{(2025, regional)}}|\\mu, \\sigma)P(\\mu)P(\\sigma)}
 {P(X=\\mathrm{NIR_{(2025, regional)}})}", "block")}}.
 </p>
+
 <p>
-Probabilistic programming systems enable someone such as myself to write down
-nested generative sampling processes like those in the first column in the table above,
-and leverage standard <i>inference algorithms</i>
-(which implement Bayes' theorem internally) to
-generate values for the posterior distribution over latent variable
-({{latex("\\mu")}} and {{latex("\\sigma")}} in this case).
+An <i>inference algorithm</i> can act on a system of generative probability distributions, combine it with observations of some of the variables, some of the time,
+and <i>infer</i> what the latent variables were, in the form of e.g. a sample
+from the posterior distribution.
+<i>Probabilistic programming systems</i> enable someone such as myself to write down
+nested generative sampling processes like those in the first column in the table above in a programming language,
+and leverage standard inference algorithm implementations.
 Even with a Ph.D. in machine learning, I still find
-these algorithms amazing (look up e.g. MCMC algorithms and stochastic
-variational inference if you're interested in how these things work).
+these algorithms amazing (read up on e.g.
+<a href="https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo">MCMC algorithms</a> or
+<a href="https://pyro.ai/examples/svi_part_i.html">stochastic variational inference</a> if you're interested in how these things work).
 The design of general sampling algorithms continues to be an area
 of research in statistics and machine learning communities, but
 for our purposes we'll take their capabilities as given, and
@@ -284,9 +297,55 @@ apply them to the inference of
 {{latex("\\mu")}} and {{latex("\\sigma")}} given the NIR-2025 data.
 </p>
 
-<h3 id="fig">fig</h3>
+<h3 id="constant-inference-fig">Inference of Latent Variables in the Constant Model</h3>
+<p>
+Running <a href="https://num.pyro.ai/en/stable/mcmc.html">NumPyro's NUTS</a> inference algorithm for the constant model above,
+using the NIR-2025 emissions data regarding {{CO2|safe}} emissions
+from the Harvested Wood Products sector, results in the following values
+for
+{{latex("\\mu")}} (shown as solid horizontal lines)
+and {{latex("\\sigma")}} (shown via lightly-shaded 95% confidence intervals).
+</p>
 
-{{blog.foo()|safe}}
+{{blog.foo_one_sector_ghg()|safe}}
+
+<p>
+Looking at the modelling results ({{latex("\\mu")}} and {{latex("\\sigma")}})
+we see some good and some bad.
+On the good side, the estimated mean
+{{latex("\\mu")}} (solid horizontal line) looks to be fit reasonably,
+in that it typically goes through the data points somewhere near the middle.
+Likewise,
+{{latex("\\sigma")}} has been estimated such that the data mostly fall within
+the shaded regions, with a few points popping out above or below;
+which is approximately we expect from a 95% confidence interval.
+On the bad side, we see large blocks of shaded region without any data,
+which is a symptom of temporal correlation in the data.
+(We'll compare this quality of fit with a different model in the next sections.)
+</p>
+
+<p>
+Note that the horizontal dashed lines (each region's sample mean)
+and the horizontal solid lines (each region's {{latex("\\mu_{s,g,r}")}}) are different.
+The darker shaded region helps put their difference into perspective,
+it is the 95% <i>credibility interval</i> around {{latex("\\mu_{s,g,r}")}}
+(the upper and lower limits of the central 95% of sampled values from the latent variable's posterior distribution).
+For two regions, British Columbia and Quebec, the
+data mean lies slightly outside of their regional {{latex("\\mu_{s,g,r}")}} credibility interval.
+This means that it is hard to believe,
+based on the model, and the data, that {{latex("\\mu_{s,g,r}")}} is exactly the data
+mean for each of those provinces.
+I chose Harvested Wood Products' {{CO2|safe}} emissions
+because there were a number of years where the regional and national totals
+are thousands of kt{{CO2|safe}} apart.
+Perhaps unsurprisingly,
+inference in this model reveals
+that a discrepancy also exists terms of means-since-1990.
+The regional latent {{latex("\\mu_{s,g,r}")}} values in the model are required to add up to the national total,
+whereas regional totals in NIR-2025 are not. The inference algorithm
+has estimated a sample of values for {{latex("\\mu_{s,g,r}")}} that
+balances (a) fitting the regional emissions data, (b) fitting the national total emissions, and (c) respecting the prior distributions in the model.
+</p>
 
 
 <h2 id="ar2">Modelling NIR-2025 with an AR2 Process</h2>
