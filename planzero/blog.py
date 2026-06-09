@@ -167,8 +167,6 @@ class TwoProbabilisticModels(BlogPost):
         model = NIR2025_Model.posterior_inference(
             sector=sector, ghg=ghg)
         predictions = model.predictions()
-        print('predictions', predictions['obs_ca'].shape)
-        print('predictions', predictions['obs_pt'].shape)
 
         mean_mu = jnp.mean(model.post_samples['mu'], axis=0)
         hpdi_mu_pt = hpdi(model.post_samples['mu'], 0.95)
@@ -179,7 +177,6 @@ class TwoProbabilisticModels(BlogPost):
         # spread
         x = nir2025.nir2025_year_ints
         spread_ca = hpdi(predictions['obs_ca'], 0.95)
-        print(spread_ca)
         ax.fill_between(
             x,
             np.ones(len(x)) * spread_ca[0] * model.scale,
@@ -401,6 +398,111 @@ class TwoProbabilisticModels(BlogPost):
                         ax.set_title(pt.value if pt else "Canada")
                         if pt:
                             ax.legend(loc='lower right')
+                plt.tight_layout()
+        return RVAL()
+
+    def ar2_sector_ghg_pt(self, ax, sector, ghg, pt, list_idx, model, rec_samples):
+        from . import nir2025
+        import numpy as np
+        import jax.numpy as jnp
+        from numpyro.diagnostics import hpdi
+
+        rec_pt = rec_samples['past-pt-1']
+        rec_ca = rec_samples['past-ca-1']
+        rec_yrs = np.arange(1993, 2025)
+
+        scale = model.scale
+        scale = 1
+
+        if pt is None:
+            # spread
+            spread_ca = hpdi(rec_ca, 0.95)
+            ax.fill_between(
+                rec_yrs,
+                spread_ca[0] * scale,
+                spread_ca[1] * scale,
+                alpha=0.1,
+                interpolate=True,
+                color=col_ca,
+                )
+            # mean
+            ax.plot(
+                rec_yrs,
+                rec_ca.mean(axis=0) * scale,
+                c=col_ca,
+            )
+            # data
+            ax.scatter(
+                nir2025.nir2025_year_ints,
+                model.jnp_ca * scale / model.scale,
+                color=col_ca,
+            )
+            for ii, pt in enumerate(enums.PT):
+                if pt == enums.PT.XX:
+                    continue
+                ax.scatter(
+                    nir2025.nir2025_year_ints,
+                    model.jnp_pt[ii] * scale / model.scale,
+                    color=col_by_pt[pt],
+                )
+
+        elif 0: # debug mu
+            future_idx = len(model.scaled_ca)
+            obs_valid = jnp.isfinite(model.scaled_pt[:, :future_idx])
+            obs_sigma_sq = 0.1 ** 2
+            approx_obs = jnp.where(
+                obs_valid,
+                model.scaled_pt[:, :future_idx],
+                jnp.nanmean(model.scaled_pt[:, :future_idx], axis=1, keepdims=True))
+            init = (approx_obs[:, 1], approx_obs[:, 0])
+
+            ax.set_title('mu')
+            mu = model.post_samples['mu']
+            print('mu', mu.shape)
+            mu_spread = hpdi(mu, 0.95)
+            mu_years = np.arange(mu.shape[1]) + 1992
+            for ii in range(mu.shape[2]):
+                ax.fill_between(
+                    [1990, 1991] + list(mu_years),
+                    [init[1][ii], init[0][ii]] + list(mu_spread[0, :, ii]),
+                    [init[1][ii], init[0][ii]] + list(mu_spread[1, :, ii]),
+                    alpha=0.3,
+                    interpolate=True,
+                    color=col_ca,
+                    )
+            #reconstructions = model.reconstructed_past()
+            #print('recon', reconstructions[.shape)
+
+    def figure_ar2_hwp(self,):
+        IPCC_Sector = enums.IPCC_Sector
+        GHG = enums.GHG
+        PT = enums.PT
+        sector = IPCC_Sector.Harvested_Wood_Products
+        ghg = GHG.CO2
+
+        from .nir_ar2 import NIR2025_AR2
+        model = NIR2025_AR2.posterior_inference(
+            sector=sector, ghg=ghg)
+        rec_samples = model.reconstructed_past()
+
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+                n_cols = 2
+                fig, axs = plt.subplots(7, n_cols, figsize=(9, 17))
+                for row, axrow in enumerate(axs):
+                    for col, ax in enumerate(axrow):
+                        list_idx = col + row * n_cols
+                        if list_idx == 0:
+                            pt = None
+                        else:
+                            pt = list(enums.PT)[list_idx - 1]
+                        self.ar2_sector_ghg_pt(
+                            ax, sector, ghg, pt, list_idx - 1, model, rec_samples)
+                        #if col == 0:
+                        #    ax.set_ylabel('Emissions (CO2e)')
+                        #ax.set_title(pt.value if pt else "Canada")
+                        #if pt:
+                        #    ax.legend(loc='lower right')
                 plt.tight_layout()
         return RVAL()
 

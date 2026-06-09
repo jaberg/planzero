@@ -29,3 +29,47 @@ def cache(f):
         return functools.cache(_disk_cache.memoize()(f))
     else:
         return functools.cache(f)
+
+_inference_cache = None
+
+def inference_cache(recompute=False):
+    """
+    A decorator that caches function results to disk.
+
+    Args:
+        recompute (bool): If True, bypasses the cache, forces the function
+                          to execute, and updates the cache with the new result.
+                          If False, uses standard caching behavior.
+    """
+    global _inference_cache
+    if _inference_cache is None:
+        _inference_cache = diskcache.Cache('./inference_cache/')
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # Create a deterministic key for the cache based on function and arguments
+            cache_key = (
+                func.__module__,
+                func.__name__,
+                args,
+                frozenset(kwargs.items())
+            )
+
+            # If recompute is True, skip checking the cache and force execution
+            if recompute:
+                result = func(*args, **kwargs)
+                _inference_cache[cache_key] = result
+                return result
+
+            # Default behavior: Return cached value if it exists
+            if cache_key in _inference_cache:
+                return _inference_cache[cache_key]
+
+            # Otherwise, compute the value and store it in the cache
+            result = func(*args, **kwargs)
+            _inference_cache[cache_key] = result
+            return result
+
+        return wrapper
+    return decorator

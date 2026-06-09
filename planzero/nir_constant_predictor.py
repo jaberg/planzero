@@ -9,9 +9,8 @@ import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 from numpyro.infer import Predictive
 
-from .my_functools import cache
+from .my_functools import inference_cache
 from . import nir2025
-from .johnsonsu import JohnsonSU
 
 
 def constant_model(scaled_pt=None, scaled_ca=None):
@@ -59,7 +58,7 @@ class NIR2025_Model(object):
         self.post_samples = None
         self.rng_key = jrandom.key(seed)
 
-    @cache
+    @inference_cache
     @staticmethod
     def posterior_inference(sector, ghg, seed=0,
                             num_warmup=250,
@@ -82,12 +81,12 @@ class NIR2025_Model(object):
         return self
 
     def predictions(self):
-        self.rng_key, rng_key_ = jrandom.split(self.rng_key)
         predictive = Predictive(
             constant_model,
             self.post_samples,
             return_sites=['obs_pt', 'obs_ca'],
             )
+        self.rng_key, rng_key_ = jrandom.split(self.rng_key)
         predictions = predictive(rng_key_)
         return predictions
 
