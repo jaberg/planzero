@@ -156,6 +156,28 @@ class TwoProbabilisticModels(BlogPost):
             draft=True,
             )
 
+    def ar2_model(self, sector, ghg):
+        from .nir_ar2 import NIR2025_AR2
+        version = 3
+        # some alpha1 and alpha2 are too big
+        #
+        # alpha1 and alpha2 are mistakenly printed for Canada
+        # rhat has some poor fits: plot goes up to 3.5, and significant mass above 1.2
+        # quebec is fit really poorly, demonstrates the mu vs. obs inversion,
+        # due to alpha1 and 2 being negative
+        #
+        # yukon, PEI, NWT and Nunuvut need constant models
+        #
+        # mu and recon peaks are one step off on BC
+        #
+        # Version 4
+        # * fix canada printing of alpha
+        # * bound alpha1 and alpha2 with Kumaraswamy distribution
+        model = NIR2025_AR2.posterior_inference(
+            sector=sector, ghg=ghg,
+            version=version)
+        return model
+
     def const_sector_ghg(self, ax, sector, ghg):
         from .nir_constant_predictor import NIR2025_Model
         from . import nir2025
@@ -401,6 +423,25 @@ class TwoProbabilisticModels(BlogPost):
                 plt.tight_layout()
         return RVAL()
 
+    def figure_ar2_rhat(self):
+        IPCC_Sector = enums.IPCC_Sector
+        GHG = enums.GHG
+        sector = IPCC_Sector.Harvested_Wood_Products
+        ghg = GHG.CO2
+        model = self.ar2_model(sector, ghg)
+        grouped_samples = model.mcmc.get_samples(group_by_chain=True)
+        from numpyro.diagnostics import summary
+        diagnostics = summary(grouped_samples, prob=0.90, group_by_chain=True)
+        print(diagnostics['alpha_1']['r_hat'].shape)
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+
+                for param, stats in diagnostics.items():
+                    plt.hist(stats['r_hat'].flatten(), alpha=.2, label=param)
+
+                plt.legend(loc='upper right')
+        return RVAL()
+
     def ar2_sector_ghg_pt(self, ax, sector, ghg, pt, list_idx, model, rec_samples):
         from . import nir2025
         import numpy as np
@@ -446,7 +487,7 @@ class TwoProbabilisticModels(BlogPost):
                     color=col_by_pt[pt],
                 )
 
-        elif 0: # debug mu
+        else:
             future_idx = len(model.scaled_ca)
             obs_valid = jnp.isfinite(model.scaled_pt[:, :future_idx])
             obs_sigma_sq = 0.1 ** 2
@@ -456,22 +497,42 @@ class TwoProbabilisticModels(BlogPost):
                 jnp.nanmean(model.scaled_pt[:, :future_idx], axis=1, keepdims=True))
             init = (approx_obs[:, 1], approx_obs[:, 0])
 
-            ax.set_title('mu')
             mu = model.post_samples['mu']
-            print('mu', mu.shape)
             mu_spread = hpdi(mu, 0.95)
             mu_years = np.arange(mu.shape[1]) + 1992
-            for ii in range(mu.shape[2]):
-                ax.fill_between(
-                    [1990, 1991] + list(mu_years),
-                    [init[1][ii], init[0][ii]] + list(mu_spread[0, :, ii]),
-                    [init[1][ii], init[0][ii]] + list(mu_spread[1, :, ii]),
-                    alpha=0.3,
-                    interpolate=True,
-                    color=col_ca,
-                    )
-            #reconstructions = model.reconstructed_past()
-            #print('recon', reconstructions[.shape)
+            ax.fill_between(
+                [1990, 1991] + list(mu_years),
+                np.asarray([init[1][list_idx], init[0][list_idx]] + list(mu_spread[0, :, list_idx])) * scale,
+                np.asarray([init[1][list_idx], init[0][list_idx]] + list(mu_spread[1, :, list_idx])) * scale,
+                alpha=0.2,
+                interpolate=True,
+                color=col_by_pt[pt],
+                label='mu 95% CI',
+                )
+
+            spread_pt_ii = hpdi(rec_pt[:, :, list_idx], 0.95)
+            ax.fill_between(
+                rec_yrs,
+                spread_pt_ii[0] * scale,
+                spread_pt_ii[1] * scale,
+                alpha=0.1,
+                interpolate=True,
+                color=col_by_pt[pt],
+                label='model-1 95% CI',
+                )
+            ax.plot(
+                rec_yrs,
+                np.mean(spread_pt_ii, axis=0),
+                color=col_by_pt[pt],
+                label='model-1 mean',
+                )
+
+            ax.scatter(
+                nir2025.nir2025_year_ints,
+                model.jnp_pt[list_idx] * scale / model.scale,
+                color=col_by_pt[pt],
+                label='data mean',
+            )
 
     def figure_ar2_hwp(self,):
         IPCC_Sector = enums.IPCC_Sector
@@ -480,9 +541,9 @@ class TwoProbabilisticModels(BlogPost):
         sector = IPCC_Sector.Harvested_Wood_Products
         ghg = GHG.CO2
 
-        from .nir_ar2 import NIR2025_AR2
-        model = NIR2025_AR2.posterior_inference(
-            sector=sector, ghg=ghg)
+        model = self.ar2_model(sector, ghg)
+
+        import numpy as np
         rec_samples = model.reconstructed_past()
 
         class RVAL(HTML_Matplotlib_Figure):
@@ -500,9 +561,11 @@ class TwoProbabilisticModels(BlogPost):
                             ax, sector, ghg, pt, list_idx - 1, model, rec_samples)
                         #if col == 0:
                         #    ax.set_ylabel('Emissions (CO2e)')
-                        #ax.set_title(pt.value if pt else "Canada")
-                        #if pt:
-                        #    ax.legend(loc='lower right')
+                        alpha_1 = np.mean(model.post_samples['alpha_1'][:, list_idx - 1])
+                        alpha_2 = np.mean(model.post_samples['alpha_2'][:, list_idx - 1])
+                        ax.set_title(f'{pt.value if pt else "Canada"}, {alpha_1:.2f} {alpha_2:.2f}')
+                        if pt:
+                            ax.legend(loc='lower right')
                 plt.tight_layout()
         return RVAL()
 

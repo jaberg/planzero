@@ -23,31 +23,37 @@ def ar2_scan_random_walk(scaled_ca,
                          obs_sigma_sq,
                          observe_past=True,
                          n_future_timesteps=10):
+
+    # rms for each region, nanmean over time
+    pt_mean_sq = jnp.maximum(
+        jnp.nanmean(scaled_pt[:, :future_idx] ** 2, axis=1),
+        .1 ** 2)
+
     alpha_1 = numpyro.sample("alpha_1", dist.Normal(1, 1).expand((13,)))
     alpha_2 = numpyro.sample("alpha_2", dist.Normal(0, 1).expand((13,)))
     const = numpyro.sample("const", dist.Normal(0, 1).expand((13,)))
     const = 0
-    sigma_sq = numpyro.sample("sigma_sq", dist.LogNormal(-1, 1))
-    sigma_sq = .1 ** 2
+    #sigma_sq = numpyro.sample("sigma_sq", dist.LogNormal(-1, 1))
+
+    # This gives the dynamic range to mu.
+    # It should be smaller for some regions than others
+    # Here we cheat a bit, and use data stats as a prior
+    mu_sigma_sq = (.25 ** 2) * pt_mean_sq
+
+    #obs_sigma_sq = obs_sigma_sq * numpyro.sample("sigma_sq", dist.LogNormal(-1, 0.4))
 
     n_past_steps = len(scaled_ca[:future_idx])
-
-    # rms for each province, nanmean over time
-    pt_rms = jnp.maximum(
-        jnp.nanmean(scaled_pt[:, :future_idx] ** 2, axis=1),
-        .1 ** 2)
 
     def transition(carry, _):
         y_prev, y_prev_prev = carry
         m_t = const + alpha_1 * y_prev + alpha_2 * y_prev_prev
-        y_t = numpyro.sample("y", dist.Normal(m_t, sigma_sq))
+        y_t = numpyro.sample("y", dist.Normal(m_t, mu_sigma_sq))
         carry = (y_t, y_prev)
         return carry, m_t
 
     timesteps = jnp.arange(n_past_steps - 2 + n_future_timesteps)
 
     obs_valid = jnp.isfinite(scaled_pt[:, :future_idx])
-    #obs_sigma_sq = 0.1 ** 2
     approx_obs = jnp.where(
         obs_valid,
         scaled_pt[:, :future_idx],
@@ -70,15 +76,29 @@ def ar2_scan_random_walk(scaled_ca,
     #pt_sigma = jnp.where(
     #    jnp.isfinite(scaled_pt[:, :]), obs_sigma_sq,
     #    jnp.maximum(pt_scale[:, None], 0.01))
-    pt_sigma = jnp.zeros_like(scaled_pt) + obs_sigma_sq
+
+    #obs_sigma_sq = .05 ** 2 + obs_sigma_sq * mu ** 2 # steps x 13
+
+    #pt_sigma = jnp.zeros_like(scaled_pt) + obs_sigma_sq
+    past_pt_sigma_sq = (
+        obs_sigma_sq * approx_obs[:, 2:future_idx].T ** 2
+        + .05 ** 2
+        #+ (.05 * mu[:n_past_steps - 2]) ** 2  # TODO: JohnsonSU transform
+    )
+    past_ca_sigma_sq = (
+        obs_sigma_sq * scaled_ca[2:future_idx] ** 2
+        + .05 ** 2
+        #+ (.05 * jnp.sum(mu[:n_past_steps - 2], axis=1)) ** 2  # TODO: JohnsonSU transform
+    )
 
     numpyro.sample("past-pt",
                    dist.Normal(mu[:n_past_steps - 2],
-                               pt_sigma[:, 2:future_idx].T).mask(obs_valid[:, 2:future_idx].T),
+                               past_pt_sigma_sq).mask(obs_valid[:, 2:future_idx].T),
+                               #pt_sigma[:, 2:future_idx].T).mask(obs_valid[:, 2:future_idx].T),
                    obs=approx_obs[:, 2:future_idx].T if observe_past else None)
     numpyro.sample("past-ca",
                    dist.Normal(jnp.sum(mu[:n_past_steps - 2], axis=1),
-                               obs_sigma_sq),
+                               past_ca_sigma_sq),
                    obs=scaled_ca[2:future_idx] if observe_past else None)
 
     mu_1step = numpyro.sample(
@@ -86,33 +106,40 @@ def ar2_scan_random_walk(scaled_ca,
         dist.Normal(const
                     + alpha_1 * mu[1:future_idx - 1]
                     + alpha_2 * mu[:future_idx - 2],
-                    sigma_sq))
+                    mu_sigma_sq))
     numpyro.sample("past-pt-1",
-                   dist.Normal(mu_1step, obs_sigma_sq))
+                   dist.Normal(mu_1step,
+                               .05 ** 2
+                               #+ (.05 * mu_1step) ** 2
+                              ))
     numpyro.sample("past-ca-1",
-                   dist.Normal(jnp.sum(mu_1step, axis=1), obs_sigma_sq))
+                   dist.Normal(jnp.sum(mu_1step, axis=1),
+                               .05 ** 2
+                               #+ (.05 *jnp.sum(mu_1step, axis=1)) ** 2
+                              ))
 
-    mu_2step = numpyro.sample(
-        "mu_2step",
-        dist.Normal(const
-                    + alpha_1 * mu_1step
-                    + alpha_2 * mu[1:future_idx - 1],
-                    sigma_sq))
-    numpyro.sample("past-pt-2",
-                   dist.Normal(mu_2step, obs_sigma_sq))
-    numpyro.sample("past-ca-2",
-                   dist.Normal(jnp.sum(mu_2step, axis=1), obs_sigma_sq))
+    if 0:
+        mu_2step = numpyro.sample(
+            "mu_2step",
+            dist.Normal(const
+                        + alpha_1 * mu_1step
+                        + alpha_2 * mu[1:future_idx - 1],
+                        mu_sigma_sq))
+        numpyro.sample("past-pt-2",
+                       dist.Normal(mu_2step, obs_sigma_sq)) # XXX
+        numpyro.sample("past-ca-2",
+                       dist.Normal(jnp.sum(mu_2step, axis=1), obs_sigma_sq)) # XXX
 
     if n_future_timesteps:
         numpyro.sample("future-pt",
                        dist.Normal(mu[n_past_steps - 2:],
-                                   obs_sigma_sq))
+                                   obs_sigma_sq)) # XXX
         numpyro.sample("future-ca",
                        dist.Normal(jnp.sum(mu, axis=1)[n_past_steps - 2:],
-                                   obs_sigma_sq))
+                                   obs_sigma_sq)) # XXX
 
-    #numpyro.sample("forecast", dist.Normal(mu, sigma), sample_shape=(n_forecast,))
-#ar2_scan_random_walk(do_sample=False)
+
+_nir2025_ar2 = None
 
 class NIR2025_AR2(object):
 
@@ -146,9 +173,9 @@ class NIR2025_AR2(object):
         else:
             return 0.1 ** 2
 
-    @inference_cache(recompute=True)
+    @inference_cache()
     @staticmethod
-    def posterior_inference(sector, ghg):
+    def posterior_inference(sector, ghg, version):
         self = NIR2025_AR2(sector, ghg)
 
         # Start from this source of randomness. We will split keys for subsequent operations.
@@ -166,6 +193,7 @@ class NIR2025_AR2(object):
                  obs_sigma_sq=self.obs_sigma_sq,
                 )
         #mcmc.print_summary()
+        self.mcmc = mcmc
         self.post_samples = mcmc.get_samples()
         return self
 
