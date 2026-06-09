@@ -170,9 +170,20 @@ class TwoProbabilisticModels(BlogPost):
         #
         # mu and recon peaks are one step off on BC
         #
-        # Version 4
+        # Actions
         # * fix canada printing of alpha
         # * bound alpha1 and alpha2 with Kumaraswamy distribution
+        #
+        version = 3.1
+        # OBSERVATIONS
+        # * rhat looking good
+        # * fits looking good, although could be improved for const regions
+        #
+        # ACTION
+        # * move obs_sigma into the model so that it carries
+        #   using JohnsonSU
+        #   forward properly
+        version = 3.293
         model = NIR2025_AR2.posterior_inference(
             sector=sector, ghg=ghg,
             version=version)
@@ -563,7 +574,10 @@ class TwoProbabilisticModels(BlogPost):
                         #    ax.set_ylabel('Emissions (CO2e)')
                         alpha_1 = np.mean(model.post_samples['alpha_1'][:, list_idx - 1])
                         alpha_2 = np.mean(model.post_samples['alpha_2'][:, list_idx - 1])
-                        ax.set_title(f'{pt.value if pt else "Canada"}, {alpha_1:.2f} {alpha_2:.2f}')
+                        if pt is None:
+                            ax.set_title("Canada")
+                        else:
+                            ax.set_title(f'{pt.value}, [0, {alpha_1:.2f}, {alpha_2:.2f}]')
                         if pt:
                             ax.legend(loc='lower right')
                 plt.tight_layout()

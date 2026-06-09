@@ -58,7 +58,7 @@ class NIR2025_Model(object):
         self.post_samples = None
         self.rng_key = jrandom.key(seed)
 
-    @inference_cache
+    @inference_cache()
     @staticmethod
     def posterior_inference(sector, ghg, seed=0,
                             num_warmup=250,

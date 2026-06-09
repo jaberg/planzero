@@ -20,34 +20,35 @@ def ar2_scan_random_walk(scaled_ca,
                          scaled_pt,
                          sector_ghg_scale,
                          future_idx,
-                         obs_sigma_sq,
+                         noise_ca,
                          observe_past=True,
                          n_future_timesteps=10):
 
     # rms for each region, nanmean over time
-    pt_mean_sq = jnp.maximum(
-        jnp.nanmean(scaled_pt[:, :future_idx] ** 2, axis=1),
-        .1 ** 2)
+    pt_rms = jnp.sqrt(
+        jnp.maximum(
+            jnp.nanmean(scaled_pt[:, :future_idx] ** 2, axis=1),
+            .05 ** 2))
 
-    alpha_1 = numpyro.sample("alpha_1", dist.Normal(1, 1).expand((13,)))
-    alpha_2 = numpyro.sample("alpha_2", dist.Normal(0, 1).expand((13,)))
-    const = numpyro.sample("const", dist.Normal(0, 1).expand((13,)))
+    alpha_1 = .1 + 1.5 * numpyro.sample(
+        "alpha_1",
+        dist.Kumaraswamy(1.25, 1.25).expand((13,)))
+    alpha_2 = -.5 + 1.0 * numpyro.sample(
+        "alpha_2",
+        dist.Kumaraswamy(1.25, 1.25).expand((13,)))
     const = 0
-    #sigma_sq = numpyro.sample("sigma_sq", dist.LogNormal(-1, 1))
 
     # This gives the dynamic range to mu.
     # It should be smaller for some regions than others
     # Here we cheat a bit, and use data stats as a prior
-    mu_sigma_sq = (.25 ** 2) * pt_mean_sq
-
-    #obs_sigma_sq = obs_sigma_sq * numpyro.sample("sigma_sq", dist.LogNormal(-1, 0.4))
+    mu_sigma = .05 * pt_rms
 
     n_past_steps = len(scaled_ca[:future_idx])
 
     def transition(carry, _):
         y_prev, y_prev_prev = carry
         m_t = const + alpha_1 * y_prev + alpha_2 * y_prev_prev
-        y_t = numpyro.sample("y", dist.Normal(m_t, mu_sigma_sq))
+        y_t = numpyro.sample("y", dist.Normal(m_t, mu_sigma))
         carry = (y_t, y_prev)
         return carry, m_t
 
@@ -73,32 +74,13 @@ def ar2_scan_random_walk(scaled_ca,
 
     numpyro.deterministic("mu", mu)
 
-    #pt_sigma = jnp.where(
-    #    jnp.isfinite(scaled_pt[:, :]), obs_sigma_sq,
-    #    jnp.maximum(pt_scale[:, None], 0.01))
-
-    #obs_sigma_sq = .05 ** 2 + obs_sigma_sq * mu ** 2 # steps x 13
-
-    #pt_sigma = jnp.zeros_like(scaled_pt) + obs_sigma_sq
-    past_pt_sigma_sq = (
-        obs_sigma_sq * approx_obs[:, 2:future_idx].T ** 2
-        + .05 ** 2
-        #+ (.05 * mu[:n_past_steps - 2]) ** 2  # TODO: JohnsonSU transform
-    )
-    past_ca_sigma_sq = (
-        obs_sigma_sq * scaled_ca[2:future_idx] ** 2
-        + .05 ** 2
-        #+ (.05 * jnp.sum(mu[:n_past_steps - 2], axis=1)) ** 2  # TODO: JohnsonSU transform
-    )
-
     numpyro.sample("past-pt",
                    dist.Normal(mu[:n_past_steps - 2],
-                               past_pt_sigma_sq).mask(obs_valid[:, 2:future_idx].T),
-                               #pt_sigma[:, 2:future_idx].T).mask(obs_valid[:, 2:future_idx].T),
+                               noise_ca * pt_rms).mask(obs_valid[:, 2:future_idx].T),
                    obs=approx_obs[:, 2:future_idx].T if observe_past else None)
     numpyro.sample("past-ca",
                    dist.Normal(jnp.sum(mu[:n_past_steps - 2], axis=1),
-                               past_ca_sigma_sq),
+                               noise_ca),
                    obs=scaled_ca[2:future_idx] if observe_past else None)
 
     mu_1step = numpyro.sample(
@@ -106,40 +88,20 @@ def ar2_scan_random_walk(scaled_ca,
         dist.Normal(const
                     + alpha_1 * mu[1:future_idx - 1]
                     + alpha_2 * mu[:future_idx - 2],
-                    mu_sigma_sq))
+                    mu_sigma))
     numpyro.sample("past-pt-1",
-                   dist.Normal(mu_1step,
-                               .05 ** 2
-                               #+ (.05 * mu_1step) ** 2
-                              ))
+                   dist.Normal(mu_1step, noise_ca * pt_rms))
     numpyro.sample("past-ca-1",
-                   dist.Normal(jnp.sum(mu_1step, axis=1),
-                               .05 ** 2
-                               #+ (.05 *jnp.sum(mu_1step, axis=1)) ** 2
-                              ))
-
-    if 0:
-        mu_2step = numpyro.sample(
-            "mu_2step",
-            dist.Normal(const
-                        + alpha_1 * mu_1step
-                        + alpha_2 * mu[1:future_idx - 1],
-                        mu_sigma_sq))
-        numpyro.sample("past-pt-2",
-                       dist.Normal(mu_2step, obs_sigma_sq)) # XXX
-        numpyro.sample("past-ca-2",
-                       dist.Normal(jnp.sum(mu_2step, axis=1), obs_sigma_sq)) # XXX
+                   dist.Normal(jnp.sum(mu_1step, axis=1), noise_ca))
 
     if n_future_timesteps:
         numpyro.sample("future-pt",
                        dist.Normal(mu[n_past_steps - 2:],
-                                   obs_sigma_sq)) # XXX
+                                   noise_ca * pt_rms))
         numpyro.sample("future-ca",
                        dist.Normal(jnp.sum(mu, axis=1)[n_past_steps - 2:],
-                                   obs_sigma_sq)) # XXX
+                                   noise_ca))
 
-
-_nir2025_ar2 = None
 
 class NIR2025_AR2(object):
 
@@ -167,11 +129,11 @@ class NIR2025_AR2(object):
         self.rng_key = jrandom.key(seed)
 
     @property
-    def obs_sigma_sq(self):
+    def noise_ca(self):
         if self.sector == IPCC_Sector.Harvested_Wood_Products:
-            return 0.25 ** 2
+            return 0.05
         else:
-            return 0.1 ** 2
+            return 0.015
 
     @inference_cache()
     @staticmethod
@@ -190,7 +152,7 @@ class NIR2025_AR2(object):
                  scaled_pt=self.scaled_pt,
                  sector_ghg_scale=self.scale,
                  future_idx=len(self.scaled_ca), # XXX
-                 obs_sigma_sq=self.obs_sigma_sq,
+                 noise_ca=self.noise_ca,
                 )
         #mcmc.print_summary()
         self.mcmc = mcmc
@@ -211,7 +173,7 @@ class NIR2025_AR2(object):
             scaled_pt=self.scaled_pt,
             sector_ghg_scale=self.scale,
             future_idx=len(self.scaled_ca),
-            obs_sigma_sq=self.obs_sigma_sq,
+            noise_ca=self.noise_ca,
             observe_past=False,
             )
         return predictions
@@ -229,7 +191,7 @@ class NIR2025_AR2(object):
             scaled_pt=self.scaled_pt,
             sector_ghg_scale=self.scale,
             future_idx=len(self.scaled_ca),
-            obs_sigma_sq=self.obs_sigma_sq,
+            noise_ca=self.noise_ca,
             )
         return predictions
 
