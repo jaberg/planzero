@@ -376,3 +376,13 @@ IPCC_Sector_from_catpath_with_whitespace = {
 
 class SubsidyPrograms(str, enum.Enum):
     Bovaer_Subsidy = 'Bovaer Subsidy'
+
+
+# 1. New 14-color palette minimizing blue-green saturation
+echarts_warm_earth = [
+    '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
+    '#fc8452', '#9a60b4', '#3ba272', '#ea7ccc',
+    '#b58d22', '#44357a', '#9e2a47', '#34495e', '#6e473b'
+]
+col_by_pt = {pt: col for pt, col in zip(PT, echarts_warm_earth)}
+col_ca = echarts_warm_earth[-1]

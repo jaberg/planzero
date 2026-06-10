@@ -431,6 +431,8 @@ So e.g. {{latex("\\mu_{(s,g, r, t)}")|safe}} is written
 </table>
 </p>
 
+<h3 id="ar2-hwp">Modelling Harvested Wood Products with an AR2-based model</h3>
+
 {{blog.figure_ar2_rhat()|safe}}
 
 {{blog.figure_ar2_hwp()|safe}}
@@ -438,14 +440,174 @@ So e.g. {{latex("\\mu_{(s,g, r, t)}")|safe}} is written
 
 <h2 id="comparing">Comparing Models as Predictors of the Future</h2>
 
+<p>
+For every purpose to which a model might be put,
+it is possible to ask how well-suited it is to that purpose,
+and perhaps, which of two particular models is better-suited.
+One way to decide which model is better is to assign each a score
+and then compare the scores.
+In machine learning, <i>evaluation metrics</i> are numerical
+scores for models, as applied to a particular modelling task.
+To the extent that the fitness of a model for some purpose can be estimated
+accurately with an evaluation metric,
+the job of finding a the best models for that purpose becomes an optimization
+problem.
+Framing an optimization problem can be helpful
+because both people and computers are good at solving optimization problems;
+optimization problem statements clarify what is important
+and what can be ignored, at least within the context of that optimization.
+The machine learning community has made great progress over recent
+decades by focusing model development around standard problems.
+I hope that this practice may serve to support emission-reduction efforts
+as well, so long as standard, relevant problems can be identified.
+</p>
+
+<p>
+As a first standard challenge,
+this post introduces a prediction challenge
+which if not necessarily of long-term importance,
+can at least serve to show how the models above can be compared
+numerically.
+The challenge is slightly tricky to describe, so I've provided
+the following diagram to support the explanation below.
+The "Year-Out, Last-Year (YOLY-2025)" prediction challenge
+is to predict,
+on the basis of data that was available one year ahead of its publication, the
+most-recent year's emissions that were covered of the NIR-2025 National Inventory Report, which was year 2023.
+(Technically, I should use the NIR-2024 data for this evaluation,
+but I'm cheating and using years 1990-2022 from NIR-2025 instead because
+it's the data I have at hand.)
+</p>
+
+
+<b>The NIR-2025 Year-Out, Last-Year (YOLY-2025) prediction challenge (of year 2023):</b>
+{{blog.figure_YOLY_2025()|safe}}
+
+<p>
+Both of our models (I'll call them "Const" and "AR2")
+can predict 2023 emissions in NIR-2025 based on previous years' data.
+When I ran inference on these models to make the figures above,
+I generated a sample of 1000 possible assignments of the latent variables,
+which were (ideally) distributed according
+to each model's posterior distribution conditioned on data from years
+1990-2022.
+Every single one of these latent variable assignments can make a prediction for year
+2023.
+The distributions of these predictions for Canada and each province,
+and territory, for {{CO2|safe}} emissions from Harvested Wood Products,
+is shown in the figure below.
+</p>
+
+{{blog.figure_YOLY_2025_violinplots()|safe}}
+
+<p>
+Both models make good predictions, in that the range of values they predict
+includes the actual 2023 emissions data (the solid dot on each violin plot).
+However, the models are different in that the range of values predicted
+by the Const model for each category is relatively large (e.g. 140 Mt{{CO2e|safe}})
+in the case of the national total),
+and by comparison the range of predictions from the AR2 model for each category
+is smaller (e.g. only about 25 Mt{{CO2e|safe}} for the national total.)
+Qualitatively, we can see that the AR2 model is making much bolder predictions,
+and the data for this sector reveal that it also made reasonably correct
+predictions.
+The AR2 model is the better predictor, as
+far as our data is concerned.
+</p>
+
+<p>
+A standard way to to turn this qualitative assessment into a
+model evaluation metric
+is compute the predicted probability of the evaluation
+data, according to the model.
+In the case of this data,
+I think the job is to predict all of the provincial and territorial totals and the national total
+together, with one bad prediction ruining the whole lot. So the YOLO-2025
+evaluation metric {{latex("\\mathcal{L}")}} is the following:
+</p>
+
+<p>
+{{latex("
+\\mathcal{L} =
+\\log\\left(
+P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)})
+\\right)
+", "block")}}
+</p>
+
+<p>
+It is the log-probability of the entire year's emission data,
+as estimated by the model.
+</p>
+
+<p>
+To use this formula on our models
+we must transform it into an expectation
+over latent variables
+({{latex("\\theta")}})
+so that we can evaluate it
+with the sample
+({{latex("\\hat \\theta")}})
+that we computed by inference of the posterior distribution.
+</p>
+
+<p>
+{{latex("
+\\mathcal{L} =
+-\\log\\left(
+\int_\\theta P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\theta) P(\\theta)
+\\right)
+
+\\approx
+-\\log\\left(
+\\frac{1}{n}
+\sum_{\\hat \\theta_i ~\\sim~ P(\\theta)}^n P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\hat \\theta_i)
+\\right)
+
+", "block")}}
+</p>
+
+<p>
+This expression can be computed for each model, at least
+for {{CO2|safe}} from Harvested Wood Products.
+</p>
+<table>
+    <thead>
+        <tr><th>Model</th><th>Evaluation Metric {{latex("\\mathcal{L}")}}</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Const</td><td>{{blog.log_prob_2023_const()}}</td></tr>
+        <tr><td>AR2</td><td>{{blog.log_prob_2023_AR2()}}</td></tr>
+    </tbody>
+</table>
+
+
 <h2 id="conclusion">Conclusion</h2>
 
 
-Next steps
 
-Policies
+<p>
+<a href="https://arviz-devs.github.io/EABM/Chapters/Presenting_results.html">Chapter 14: Presenting Results</a>
+of online book "<a href="https://arviz-devs.github.io/EABM/">Exploratory Analysis of Bayesian Models</a>"
+accompanying the <a href="https://python.arviz.org/en/stable/">Arviz</a> software package.
+</p>
 
-Strategies
+
+<p>
+It's interesting to consider a hypothetical YOLY-2027 challenge,
+because the "prediction time" for that challenge has passed (April 2026)
+but the NIR-2027 has not yet been published.
+Despite not yet being able to score models on YOLY-2027, YOLY-2027
+is perhaps the most interesting of the three because, it is possible
+to make the models, and their predictions might have value precisely
+<i>because</i> the actual NIR-2027 publication is not available yet.
+(Strictly speaking, the YOLY-2025 challenge should use the
+previously-published NIR-2024 to get data up to year 2022 for model development and posterior inference / training.
+I'm using earlier years from NIR-2025 as a short-cut.
+This short-cut isn't possible for NIR-2027 because indeed,
+only NIR-2026 has been published at this time.)
+</p>
+
 
 <p>
 Until next time,

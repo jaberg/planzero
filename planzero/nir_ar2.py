@@ -105,9 +105,10 @@ def ar2_scan_random_walk(scaled_ca,
 
 class NIR2025_AR2(object):
 
-    def __init__(self, sector, ghg, seed=0):
+    def __init__(self, sector, ghg, future_idx, seed=0):
         self.sector = sector
         self.ghg = ghg
+        self.future_idx = future_idx
         arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
         self.jnp_pt = jnp.array(arr_pt[nir2025.idx_of_sector[sector],
                                        nir2025.idx_of_ghg[ghg]],
@@ -137,21 +138,28 @@ class NIR2025_AR2(object):
 
     @inference_cache()
     @staticmethod
-    def posterior_inference(sector, ghg, version):
-        self = NIR2025_AR2(sector, ghg)
+    def posterior_inference(sector, ghg, last_train_year, version):
 
         # Start from this source of randomness. We will split keys for subsequent operations.
+        for ii, year in enumerate(nir2025.nir2025_year_ints):
+            if year == last_train_year:
+                future_idx = ii + 1
+                break
+        else:
+            assert last_train_year >= 2024
+            future_idx = len(nir2025.nir2025_year_ints)
+        self = NIR2025_AR2(sector, ghg, future_idx=future_idx)
         self.rng_key, rng_key_ = jrandom.split(self.rng_key)
 
-        # Run NUTS.
-        mcmc = MCMC(NUTS(ar2_scan_random_walk),
-                    num_warmup=500,
-                    num_samples=1000)
+        mcmc = MCMC(
+            NUTS(ar2_scan_random_walk),
+            num_warmup=500,
+            num_samples=1000)
         mcmc.run(rng_key_,
                  scaled_ca=self.scaled_ca,
                  scaled_pt=self.scaled_pt,
                  sector_ghg_scale=self.scale,
-                 future_idx=len(self.scaled_ca), # XXX
+                 future_idx=future_idx,
                  noise_ca=self.noise_ca,
                 )
         #mcmc.print_summary()
@@ -163,8 +171,7 @@ class NIR2025_AR2(object):
         predictive = Predictive(
             ar2_scan_random_walk,
             self.post_samples,
-            return_sites=['past-pt-1', 'past-ca-1',
-                          'past-pt-2', 'past-ca-2',],
+            return_sites=['past-pt-1', 'past-ca-1'],
             )
         self.rng_key, rng_key_ = jrandom.split(self.rng_key)
         predictions = predictive(
@@ -172,7 +179,7 @@ class NIR2025_AR2(object):
             scaled_ca=self.scaled_ca,
             scaled_pt=self.scaled_pt,
             sector_ghg_scale=self.scale,
-            future_idx=len(self.scaled_ca),
+            future_idx=self.future_idx,
             noise_ca=self.noise_ca,
             observe_past=False,
             )
@@ -190,7 +197,7 @@ class NIR2025_AR2(object):
             scaled_ca=self.scaled_ca,
             scaled_pt=self.scaled_pt,
             sector_ghg_scale=self.scale,
-            future_idx=len(self.scaled_ca),
+            future_idx=self.future_idx,
             noise_ca=self.noise_ca,
             )
         return predictions
