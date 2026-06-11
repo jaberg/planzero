@@ -570,16 +570,36 @@ that we computed by inference of the posterior distribution.
 <p>
 This expression can be computed for each model, at least
 for {{CO2|safe}} from Harvested Wood Products.
+The results are in the table below.
 </p>
 <table>
     <thead>
         <tr><th>Model</th><th>Evaluation Data Log-Probability {{latex("\\mathcal{L}")}} on {{CO2|safe}} from Harvested Wood Products</th></tr>
     </thead>
     <tbody>
-        <tr><td>Const</td><td>{{blog.log_prob_2023_const()}}</td></tr>
-        <tr><td>AR2</td><td>{{"{:.3f}".format(blog.log_prob_2023_AR2())}}</td></tr>
+        <tr><td>Const (non-time-varying)</td><td>{{"{:.3f}".format(blog.log_prob_2023_const())}}</td></tr>
+        <tr><td>AR2-based model</td><td>{{"{:.3f}".format(blog.log_prob_2023_AR2())}}</td></tr>
     </tbody>
 </table>
+
+<p>
+The log-probability of the 2023 data under both models is negative.
+That should not be surprising.
+Each emission data point is modelled as Normal with a scale
+spanning up to tens of Mt{{CO2e|safe}}, so
+most of them are stretched pretty thin (distributions always have to sum or integrate to 1.0).
+The logarithm of a tiny positive number is a large negative number.
+The logarithm of a product of tiny positive numbers (such as the probabilities
+of the data points for each province and territory) is an even more
+negative number.
+The log probability of our evaluation data under the constant model
+is about -107.
+The log probability of our evaluation data under the AR-2 model
+is about -103, which is about 50x more probable than the data
+under the constant model.
+The AR-2 model looks like it makes better predictions,
+and the scores on this evaluation metric support that qualitative judgement.
+</p>
 
 
 <h2 id="conclusion">Conclusion</h2>
