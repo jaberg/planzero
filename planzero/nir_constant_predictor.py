@@ -38,6 +38,9 @@ def constant_model(scaled_pt=None, scaled_ca=None):
 class NIR2025_Model(object):
 
     def __init__(self, sector, ghg, seed=0):
+        self.sector = sector
+        self.ghg = ghg
+        self.seed = seed
         arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
         self.jnp_pt = jnp.array(arr_pt[nir2025.idx_of_sector[sector],
                                        nir2025.idx_of_ghg[ghg]],
@@ -63,6 +66,7 @@ class NIR2025_Model(object):
     def posterior_inference(sector, ghg, seed=0,
                             num_warmup=250,
                             num_samples=1000,
+                            version=0,
                             print_summary=False):
 
         self = NIR2025_Model(sector, ghg, seed=seed)

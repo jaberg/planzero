@@ -21,14 +21,9 @@ def ar2_scan_random_walk(scaled_ca,
                          sector_ghg_scale,
                          future_idx,
                          noise_ca,
+                         pt_rms,
                          observe_past=True,
                          n_future_timesteps=10):
-
-    # rms for each region, nanmean over time
-    pt_rms = jnp.sqrt(
-        jnp.maximum(
-            jnp.nanmean(scaled_pt[:, :future_idx] ** 2, axis=1),
-            .05 ** 2))
 
     alpha_1 = .1 + 1.5 * numpyro.sample(
         "alpha_1",
@@ -126,6 +121,14 @@ class NIR2025_AR2(object):
         assert np.isfinite(self.scale)
         self.scaled_ca = self.jnp_ca / self.scale
         self.scaled_pt = self.jnp_pt / self.scale
+
+        # rms for each region, nanmean over time
+        self.pt_rms = jnp.sqrt(
+            jnp.maximum(
+                jnp.nanmean(self.scaled_pt[:, :self.future_idx] ** 2,
+                            axis=1),
+                0.05 ** 2))
+
         self.post_samples = None
         self.rng_key = jrandom.key(seed)
 
@@ -161,6 +164,7 @@ class NIR2025_AR2(object):
                  sector_ghg_scale=self.scale,
                  future_idx=future_idx,
                  noise_ca=self.noise_ca,
+                 pt_rms=self.pt_rms,
                 )
         #mcmc.print_summary()
         self.mcmc = mcmc
@@ -181,6 +185,7 @@ class NIR2025_AR2(object):
             sector_ghg_scale=self.scale,
             future_idx=self.future_idx,
             noise_ca=self.noise_ca,
+            pt_rms=self.pt_rms,
             observe_past=False,
             )
         return predictions
@@ -199,6 +204,7 @@ class NIR2025_AR2(object):
             sector_ghg_scale=self.scale,
             future_idx=self.future_idx,
             noise_ca=self.noise_ca,
+            pt_rms=self.pt_rms,
             )
         return predictions
 

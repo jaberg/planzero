@@ -763,10 +763,103 @@ class TwoProbabilisticModels(BlogPost):
         return RVAL()
 
     def log_prob_2023_const(self):
-        return float('nan')
+        import numpy as np
+        import planzero
+        IPCC_Sector = planzero.enums.IPCC_Sector
+        GHG = planzero.enums.GHG
+        from .nir_constant_predictor import NIR2025_Model
+        const_model = NIR2025_Model.posterior_inference(
+            sector=IPCC_Sector.Harvested_Wood_Products,
+            ghg=GHG.CO2,
+            version=0,
+        )
+        mu = const_model.post_samples['mu'] # (1000, 13)
+        mu_ca = mu.sum(axis=1) # (1000,)
+
+        from planzero import nir2025
+        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+        arr_idx_of_2023 = arr_ca.shape[2] - 1
+
+        eval_mu = np.zeros((1000, 14))
+        eval_mu[:, :13] = mu
+        eval_mu[:, 13] = mu_ca
+        eval_mu *= const_model.scale
+
+        eval_sigma = np.zeros((1000, 14))
+        eval_sigma[:, :13] = const_model.post_samples['sigma_pt']
+        eval_sigma[:, 13] = const_model.post_samples['sigma_ca']
+        eval_sigma *= const_model.scale
+
+        eval_obs = np.zeros(14)
+        eval_obs[:13] = arr_pt[
+            nir2025.idx_of_sector[const_model.sector],
+            nir2025.idx_of_ghg[const_model.ghg],
+            :,
+            arr_idx_of_2023]
+        eval_obs[13] = arr_ca[
+            nir2025.idx_of_sector[const_model.sector],
+            nir2025.idx_of_ghg[const_model.ghg],
+            arr_idx_of_2023]
+
+        import numpyro.distributions as dist
+        log_probs = dist.Normal(eval_mu, eval_sigma).log_prob(eval_obs)
+        logprob_X = np.sum(log_probs, axis=1)
+        from scipy.special import logsumexp
+        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
+
+        return rval
 
     def log_prob_2023_AR2(self):
-        return float('nan')
+        import numpy as np
+        import planzero
+        from planzero.nir_ar2 import NIR2025_AR2
+        from planzero import nir2025
+
+        IPCC_Sector = planzero.enums.IPCC_Sector
+        GHG = planzero.enums.GHG
+
+        sector = IPCC_Sector.Harvested_Wood_Products
+        ghg = GHG.CO2
+        model = self.ar2_model(sector, ghg)
+
+        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+        mu_ca = np.sum(model.post_samples['mu'], axis=2)
+
+        arr_idx_of_2023 = arr_ca.shape[2] - 1
+        mu_idx_of_2023 = arr_idx_of_2023 - 2 # 2 from it being AR2 model
+
+
+        eval_mu = np.zeros((1000, 14))
+        eval_mu[:, :13] = model.post_samples['mu'][:, mu_idx_of_2023]
+        eval_mu[:, 13] = mu_ca[:, mu_idx_of_2023]
+
+        eval_sigma = np.zeros(14)
+        eval_sigma[:13] = model.noise_ca * model.pt_rms
+        eval_sigma[13] = model.noise_ca
+
+        eval_obs = np.zeros(14)
+        eval_obs[:13] = arr_pt[
+            nir2025.idx_of_sector[model.sector],
+            nir2025.idx_of_ghg[model.ghg],
+            :,
+            arr_idx_of_2023]
+        eval_obs[13] = arr_ca[
+            nir2025.idx_of_sector[model.sector],
+            nir2025.idx_of_ghg[model.ghg],
+            arr_idx_of_2023]
+
+        import numpyro.distributions as dist
+        log_probs = dist.Normal(
+            eval_mu * model.scale,
+            eval_sigma * model.scale
+        ).log_prob(
+            eval_obs
+        )
+        logprob_X = np.sum(log_probs, axis=1)
+        from scipy.special import logsumexp
+        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
+
+        return rval
 
 
 

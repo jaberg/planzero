@@ -554,12 +554,12 @@ that we computed by inference of the posterior distribution.
 <p>
 {{latex("
 \\mathcal{L} =
--\\log\\left(
+\\log\\left(
 \int_\\theta P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\theta) P(\\theta)
 \\right)
 
 \\approx
--\\log\\left(
+\\log\\left(
 \\frac{1}{n}
 \sum_{\\hat \\theta_i ~\\sim~ P(\\theta)}^n P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\hat \\theta_i)
 \\right)
@@ -573,11 +573,11 @@ for {{CO2|safe}} from Harvested Wood Products.
 </p>
 <table>
     <thead>
-        <tr><th>Model</th><th>Evaluation Metric {{latex("\\mathcal{L}")}}</th></tr>
+        <tr><th>Model</th><th>Evaluation Data Log-Probability {{latex("\\mathcal{L}")}} on {{CO2|safe}} from Harvested Wood Products</th></tr>
     </thead>
     <tbody>
         <tr><td>Const</td><td>{{blog.log_prob_2023_const()}}</td></tr>
-        <tr><td>AR2</td><td>{{blog.log_prob_2023_AR2()}}</td></tr>
+        <tr><td>AR2</td><td>{{"{:.3f}".format(blog.log_prob_2023_AR2())}}</td></tr>
     </tbody>
 </table>
 
