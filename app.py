@@ -121,8 +121,7 @@ async def get_ipcc_sectors_category(
             error_text=f"Sorry, we don't have the analysis page for {catpath} yet")
 
 
-@app.get("/scenarios/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
-@app.get("/simulations/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+@app.get("/models/sim/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
 async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier_name: str):
     sim = planzero.sim.simulation_result(sim_name)
     return templates.TemplateResponse(
@@ -136,20 +135,6 @@ async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier
             barrier_name=barrier_name,
             ),
     )
-
-@app_cache
-def get_simulations_html():
-    return templates.get_template('scenarios.html').render(dict(
-        default_context,
-        active_tab='simulations',
-        ))
-
-
-@app.get("/scenarios/", response_class=HTMLResponse)
-@app.get("/simulations/", response_class=HTMLResponse)
-async def get_scenarios(request: Request):
-    html = get_simulations_html()
-    return HTMLResponse(content=html)
 
 
 @app_cache
@@ -176,19 +161,15 @@ def get_simulations_page_html(ident:str):
             ))
 
 
-@app.get("/scenarios/{ident}/", response_class=HTMLResponse)
-@app.get("/simulations/{ident}/", response_class=HTMLResponse)
+@app.get("/models/sim/{ident}/", response_class=HTMLResponse)
 async def get_simulation_page(ident:str, request: Request):
     html = get_simulations_page_html(ident)
     return HTMLResponse(content=html)
 
 
-@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
-@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
-@app.get("/scenarios/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
-@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
-@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
-@app.get("/simulations/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
+@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
+@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
+@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
 async def get_simulation_ipcc_sectors_category(
     request: Request,
     sim_name: str,
@@ -269,8 +250,7 @@ def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
     return templates.get_template('strategy_impact.html').render(context)
 
 
-@app.get("/scenarios/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
-@app.get("/simulations/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
+@app.get("/models/sim/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
 async def get_simulations_strategy_impact(request: Request, sim_name: str, strategy_name: str):
     html = get_simulations_strategy_impact_html(sim_name, strategy_name)
     return HTMLResponse(content=html)
@@ -337,18 +317,37 @@ async def get_blog(request: Request, post_name:str):
     except IOError:
         raise HTTPException(status_code=404, detail="url not recognized")
 
+## MODELS
 
-@app.get("/about/", response_class=HTMLResponse)
-async def get_about(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="about.html",
-        context=dict(
-            default_context,
-            active_tab='about',
-            ),
-    )
+@app_cache
+def get_models_html():
+    return templates.get_template('models.html').render(dict(
+        default_context,
+        active_tab='models',
+        ))
 
+@app.get("/models/", response_class=HTMLResponse)
+async def get_models(request: Request):
+    html = get_models_html()
+    return HTMLResponse(content=html)
+
+
+## PREDICTIONS
+
+@app_cache
+def get_predictions_html():
+    return templates.get_template('predictions.html').render(dict(
+        default_context,
+        active_tab='predictions',
+        ))
+
+@app.get("/predictions/", response_class=HTMLResponse)
+async def get_predictions(request: Request):
+    html = get_predictions_html()
+    return HTMLResponse(content=html)
+
+
+## GLOSSARY
 
 @app_cache
 def get_glossary_html():
@@ -361,6 +360,18 @@ def get_glossary_html():
 async def get_glossary(request: Request):
     html = get_glossary_html()
     return HTMLResponse(content=html)
+
+
+@app.get("/about/", response_class=HTMLResponse)
+async def get_about(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="about.html",
+        context=dict(
+            default_context,
+            active_tab='about',
+            ),
+    )
 
 
 @app.get("/index.html", response_class=HTMLResponse)

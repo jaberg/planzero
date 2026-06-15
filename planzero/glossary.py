@@ -294,7 +294,7 @@ class Strategy(GlossaryTerm):
         return {
             'Ablative_Analysis': 'A strategy is evaluated in the context of a model by comparing scenarios with and without the strategy',
             'Simulation': 'The construction of a scenarios from a model, sometimes including the ablative analysis of strategies',
-            'Simulations_Section': 'the <a href="/simulations">Simulations section</a> of the site features the strategies of each scenario',
+            'Simulations_Section': 'the <a href="/models/#sim">Simulation-based models</a> of the site features the strategies of each scenario',
             'Barrier': 'Barriers are the other kind of dynamic element in a model, which define KPIs, and relate the time series of a model to one another',
             'Model': 'Models are sets of dynamic elements, which may include Strategies',
             'Dynamic_Element': 'at a computational level, a strategy is a type of dynamic element',
@@ -548,7 +548,7 @@ class NIR_Model(GlossaryTerm):
     National Inventory Report.
     </p><p>
     NIR Models are also the fully-featured models featured
-    in the PlanZero <a href="/simulations/">Simulations</a> section.
+    in the PlanZero <a href="/models/#sim/">Simulation-based models</a> section.
     In addition to KPIs relating to emissions, these models
     include KPIs relating to subsidy programs.
     """
@@ -638,7 +638,11 @@ class Deterministic_Model(GlossaryTerm):
 
 class Simulations_Section(GlossaryTerm):
     """The Simulations section of the planzero.ca website:
-    <a href="/simulations/">https://planzero.ca/simulations/</a>"""
+    <a href="/models/#sim">https://planzero.ca/models/</a>"""
+
+    # XXX this is now the "Models Tab"
+
+    # XXX Change term Section -> Tab, because individual pages have "Sections"
 
     @property
     def see_also(self) -> dict[str, str]:
@@ -691,7 +695,7 @@ class Scenario(GlossaryTerm):
             'Rollout': "A scenario is sometimes called a model rollout",
             'Time Series': "A time series is a data structure representing a time-varying quantity, and a Scenario corresponds to a set of them",
             'Simulation': 'The construction of a Scenario from a model',
-            'Simulations_Section': 'the <a href="/simulations">Simulations section</a> of the site analyzes and compares scenarios',
+            #'Simulations_Section': 'the <a href="/models/#sim">Simulation-based models section</a> of the site analyzes and compares scenarios',
         }
 
 
@@ -1525,5 +1529,23 @@ class Greenhouse_Gas(GlossaryTerm):
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.GHG_Emissions(), '#h2_ghg', "see section on Greenhouse gases"),
+        ]
+
+
+class Inference_Algorithm(GlossaryTerm):
+    """An inference algorithm is for discovering plausible values of
+    unobserved (latent) variables in a stochastic [probabilistic] model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Stochastic_Model': 'Inference algorithms only make sense for stochastic models',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
         ]
 

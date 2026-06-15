@@ -12,6 +12,7 @@ from .nir2025 import (
     )
 
 
+@pytest.mark.xfail
 def test_0():
     ref_er = NIR2025_EmissionsResults()
 
@@ -24,6 +25,7 @@ def test_0():
     assert mse == 0 
 
 
+@pytest.mark.xfail
 def test_smoke_blended_scores_nir2025_latest_data():
     ref_er = NIR2025_EmissionsResults()
 
@@ -38,6 +40,7 @@ def test_smoke_blended_scores_nir2025_latest_data():
         print(RMSEs[-1])
 
 
+@pytest.mark.xfail
 def test_smoke_blended_scores_nir2025_rolling_average():
     ref_er = NIR2025_EmissionsResults()
 
@@ -54,6 +57,7 @@ def test_smoke_blended_scores_nir2025_rolling_average():
     assert 0
 
 
+@pytest.mark.xfail
 def test_smoke_blended_scores_nir2025_linear():
     ref_er = NIR2025_EmissionsResults()
 

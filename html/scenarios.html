@@ -33,7 +33,7 @@
           {% for ident, obj in planzero.sim.site_simulations.items() if obj.show_on_simulations_page %}
           <tr>
               <td>
-                  <a href="/scenarios/{{ident}}/">{{ident}}</a>
+                  <a href="/models/sim/{{ident}}/">{{ident}}</a>
               </td>
               <td>{{obj.short_description}}</td>
               <td>{{"{:.1f}".format(

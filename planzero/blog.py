@@ -124,17 +124,17 @@ class Uncertainty(BlogPost):
 
 class TwoProbabilisticModels(BlogPost):
     """
-    This post looks at the the NIR-2025 National Inventory Report,
-    for the first time in PlanZero,
-    through the lens of probabilistic modelling.
-    The emissions in each sector, for each greenhouse gas,
-    are modelled as coming from a two-step autoregressive process (AR2),
-    with the national total being the sum of provincial and territorial emissions.
-    This model provides a baseline for filling in missing data,
-    interpreting mismatches in provincial, territorial, and national totals,
-    and predicting future emissions.
-    It is compared with an even simpler baseline, and shown to usually be a better
-    predictor of the future.
+    This post introduces probabilistic modelling to PlanZero.
+    Probabilistic modelling extends simulation-based modelling with
+    a capacity to fit model parameters to example data in order to
+    make more-precise predictions.
+    A model based on a two-step autoregressive process (AR2),
+    estimates a set of provincial and territorial emissions
+    for harvested wood products that adds to an estimated national total,
+    and approximately matches reported emissions in that sector.
+    An evaluation metric is introduced to quantify the superiority of
+    this model compared to one that estimates emissions based on regional
+    mean and variance.
     """
 
     def __init__(self):
