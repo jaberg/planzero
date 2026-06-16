@@ -153,7 +153,7 @@ def get_simulations_page_html(ident:str):
     return templates.get_template("scenario_template.html").render(
         dict(
             default_context,
-            active_tab='simulations',
+            active_tab='models',
             ident=ident,
             ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
             site_sim=site_sim,
@@ -164,6 +164,23 @@ def get_simulations_page_html(ident:str):
 @app.get("/models/sim/{ident}/", response_class=HTMLResponse)
 async def get_simulation_page(ident:str, request: Request):
     html = get_simulations_page_html(ident)
+    return HTMLResponse(content=html)
+
+
+@app_cache
+def get_models_prob_page_html(ident:str):
+    site_inference = planzero.prob.site_inferences[ident]
+    return templates.get_template("models_prob.html").render(
+        dict(
+            default_context,
+            active_tab='models',
+            ident=ident,
+            site_inference=site_inference,
+            ))
+
+@app.get("/models/prob/{ident}/", response_class=HTMLResponse)
+async def get_models_prob_page(ident:str, request: Request):
+    html = get_models_prob_page_html(ident)
     return HTMLResponse(content=html)
 
 

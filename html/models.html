@@ -69,10 +69,10 @@ the pages in this section visualize the (posterior distribution) results of that
           </tr>
     </thead>
     <tbody>
-        {% for ident, obj in {}.items() if obj.show_on_simulations_page %}
+        {% for ident, obj in planzero.prob.site_inferences.items() if obj.show_on_models_page %}
           <tr>
               <td>
-                  <a href="/models/prob/{{ident}}/">{{ident}}</a>
+                  <a href="/models/prob/{{ident}}/">{{ident.replace('_', ' ')}}</a>
               </td>
               <td>{{obj.short_description}}</td>
               <td>{{"{:.1f} - {:.1f}".format(*obj.predicted_emissions_2050_MtCO2e_bounds_ul)}}

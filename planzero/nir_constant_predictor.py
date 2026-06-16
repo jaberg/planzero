@@ -1,16 +1,24 @@
 """
 Example inference that's fast and represents a lower bound on accuracy.
 """
-import numpy as np
+import os
+
 import jax.numpy as jnp
 import jax.random as jrandom
+import numpy as np
 import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 from numpyro.infer import Predictive
+from pydantic import BaseModel, computed_field
+import yaml
 
 from .my_functools import inference_cache
 from . import nir2025
+from .prob import SiteInference
+
+
+version = 0.1 # float
 
 
 def constant_model(scaled_pt=None, scaled_ca=None):
@@ -67,7 +75,8 @@ class NIR2025_Model(object):
                             num_warmup=250,
                             num_samples=1000,
                             version=0,
-                            print_summary=False):
+                            print_summary=False,
+                            ret_mcmc=False):
 
         self = NIR2025_Model(sector, ghg, seed=seed)
 
@@ -82,7 +91,10 @@ class NIR2025_Model(object):
         if print_summary:
             mcmc.print_summary()
         self.post_samples = mcmc.get_samples()
-        return self
+        if ret_mcmc:
+            return self, mcmc
+        else:
+            return self
 
     def predictions(self):
         predictive = Predictive(
@@ -111,16 +123,196 @@ def plot_regression(x, y_mean, y_hpdi):
     return ax
 
 
-def foo():
-    # Compute empirical posterior distribution over mu
-    posterior_mu = (
-        jnp.expand_dims(samples_1["mu"], - 1)
-    )
+def main():
+    """Populate cache/inference/Static_Normals
+    """
+    arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+    from .enums import IPCC_Sector, GHG
 
-    mean_mu = jnp.mean(posterior_mu, axis=0)
-    hpdi_mu = hpdi(posterior_mu, 0.95)
-    ax = plot_regression(nir2025_year_ints, mean_mu, hpdi_mu)
-    ax.set(
-        xlabel="Time", ylabel="Emissions (kt CO2e)", title="Plausible Values of a Constant-Predictor"
-    );
-    ax.axhline(uncenter(1.96 * np.std(centred_ca) / np.sqrt(len(centred_ca))), ls='--')
+    config_data = {
+        'near_zero_sector_ghgs': [],
+        'predicted_emissions_2050_MtCO2e_bounds_ul': [0, 1000],
+    }
+    nontrivial = []
+    for sector in IPCC_Sector:
+        for ghg in GHG:
+            jnp_pt = jnp.array(
+                arr_pt[nir2025.idx_of_sector[sector],
+                       nir2025.idx_of_ghg[ghg]],
+                dtype='float64')
+            jnp_ca = jnp.array(
+                arr_ca[nir2025.idx_of_sector[sector],
+                       nir2025.idx_of_ghg[ghg]],
+                dtype='float64')
+            if jnp.nansum(abs(jnp_ca)) <= 1: # 1kt, aka very small
+                config_data['near_zero_sector_ghgs'].append(
+                    [str(sector), str(ghg)])
+            else:
+                nontrivial.append((sector, ghg))
+
+    # Write to the YAML file
+    with open('./cache/inference/Static_Normals/config.yaml', 'w') as file:
+        yaml.safe_dump(config_data, file, default_flow_style=False)
+
+    for ii, (sector, ghg) in enumerate(nontrivial):
+        sector_ghg_root = f'./cache/inference/Static_Normals/{str(ghg)}-{str(sector)}/'
+        sector_ghg_config_path = f'{sector_ghg_root}/config.yaml'
+
+        os.makedirs(sector_ghg_root, exist_ok=True)
+        try:
+            with open(sector_ghg_config_path, 'r') as prev_config_file:
+                prev_sector_ghg_config = yaml.safe_load(prev_config_file) or {}
+            prev_version = prev_sector_ghg_config.get('version', 0)
+            if prev_version != version:
+                assert prev_version < version
+                print ('updating old version', prev_version, 'to', version)
+                raise RuntimeError('saved version is old')
+            print(ii, '/', len(nontrivial), sector, ghg, 'done')
+            continue
+        except IOError:
+            pass
+        except RuntimeError:
+            pass
+
+        print(ii, '/', len(nontrivial), sector, ghg)
+        self = NIR2025_Model(sector, ghg, seed=ii)
+
+        mcmc = MCMC(NUTS(constant_model),
+                    num_warmup=250,
+                    num_samples=1000,
+                    thinning=10)
+
+        self.rng_key, rng_key_ = jrandom.split(self.rng_key)
+        mcmc.run(rng_key_,
+                 scaled_pt=self.scaled_pt.T,
+                 scaled_ca=self.scaled_ca)
+        grouped_samples = mcmc.get_samples(group_by_chain=True)
+        for key, val in grouped_samples.items():
+            fp = np.lib.format.open_memmap(
+                f'{sector_ghg_root}/{key}.npy',
+                mode='w+',
+                dtype='float32', # save space
+                shape=val.shape)
+            fp[:] = val
+            fp.flush()
+
+        # Write the per-sector-gas summary
+        sector_ghg_config = {
+            'version': version,
+            'scale': float(self.scale),
+        }
+        with open(sector_ghg_config_path, 'w') as file:
+            yaml.safe_dump(sector_ghg_config, file, default_flow_style=False)
+
+
+
+class Static_Normals(SiteInference):
+    """Emissions per province and territory,
+    and per greenhouse gas, are distributed according
+    to non-time-varying Normal distributions.
+    (This is a baseline model.)
+    """
+
+    @computed_field
+    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
+        # Read the YAML file
+        with open('./cache/inference/Static_Normals/config.yaml', 'r') as file:
+            data = yaml.safe_load(file)
+            return data['predicted_emissions_2050_MtCO2e_bounds_ul']
+
+
+    def uncertain_sparkline_matrix_echart(self, div_id):
+        from .html import (
+            UncertainSparklineMatrixEChart,
+            EChartMatrix,
+            EChartMatrixBody,
+            EChartMatrixBodyDataElem,
+            EChartMatrixCorner,
+            EChartMatrixXY,
+            EChartXAxis,
+            EChartYAxis,
+            EChartToolTip,
+            EChartDataZoomElem,
+            )
+        from .enums import IPCC_Sector
+
+        n_rows = 8
+        n_cols = 9
+
+        def body_data():
+            rval = []
+            rval.append(EChartMatrixBodyDataElem(
+                coord=(0, 0),
+                value='Total without LULUCF',
+                label=dict(color='#999', fontSize=14, position='insideTop'),
+                ))
+            list_of_sectors = [sector for sector in IPCC_Sector]
+            assert len(list_of_sectors) == 71
+            for row in range(n_rows):
+                for col in range(n_cols):
+                    if row == col == 0:
+                        continue
+                    sector = list_of_sectors[row * n_cols + col - 1]
+                    rval.append(
+                        EChartMatrixBodyDataElem(
+                            coord=[col, row],
+                            value=sector.value,
+                            label=dict(color='#999',
+                                       fontSize=14,
+                                       position='insideTop'),
+                            )
+                        )
+            return rval
+
+
+        rval = UncertainSparklineMatrixEChart(
+            div_id=div_id,
+            matrix=EChartMatrix(
+                x=EChartMatrixXY(
+                    length=9,
+                    levelSize=40,
+                    show=False,
+                    ),
+                y=EChartMatrixXY(
+                    length=8,
+                    levelSize=80,
+                    show=False,
+                    ),
+                corner=EChartMatrixCorner( data=[], label={},),
+                body=EChartMatrixBody(
+                    data=body_data()),
+                top=30,
+                bottom=80,
+                width='95%',
+                left='center',
+                ),
+            tooltip=EChartToolTip(trigger='axis'),
+            dataZoom=[
+                EChartDataZoomElem(
+                    type='slider',
+                    xAxisIndex='all',
+                    left='10%',
+                    right='10%',
+                    bottom=30,
+                    height=30,
+                    throttle=120,
+                    ),
+                EChartDataZoomElem(
+                    type='inside',
+                    xAxisIndex='all',
+                    throttle=120,
+                    ),
+                ],
+            grid=[],
+            xAxis=[],
+            yAxis=[],
+            series=[],
+            width='100%',
+            height='1000px',
+            )
+        return rval
+
+
+if __name__ == '__main__':
+    import sys
+    sys.exit(main())

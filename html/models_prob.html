@@ -1,0 +1,268 @@
+{% include "pre-main.html" %}
+<style>
+        #chart-container {
+            width: 100%;
+            height: 1000px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #example {
+            width: 100%;
+            height: 1000px;
+        }
+    </style>
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Model: {{printcname(ident)}}</h1>
+        <p>{{site_inference.short_description}}</p>
+    </header>
+
+{{site_inference.uncertain_sparkline_matrix_echart("banner_chart")|safe}}
+
+<div id="example"></div>
+<script>
+
+var chartDom = document.getElementById('example');
+var myChart = echarts.init(chartDom);
+var option;
+
+const _matrixDimensionData = {
+  x: ['Total', 'CO2 (ktCO2e)', 'CH4 (ktCO2e)', 'N2O (ktCO2e)', 'F-Gases (ktCO2e)'],
+    y: {{json.dumps(grid_y_vals)}},
+    //{ value: 'Public Heat\n and Electr.' },
+    //{ value: 'Oil and Gas' },
+    //{ value: 'Forest Land', size: 55 },
+    //{ value: 'Harvested Wood' },
+    //{ value: '16:00\n~\n18:00' },
+    //{ value: '18:00\n~\n20:00' }
+  //]
+};
+const _yBreakTimeIndex = 2; // '12:00 - 14:00',
+const _seriesFakeDataLength = 365;
+option = {
+  matrix: {
+    x: {
+      //data: _matrixDimensionData.x,
+      length: 9,
+      levelSize: 40,
+      label: {
+        fontSize: 16,
+        color: '#555'
+      },
+      show: false,
+    },
+    y: {
+      //data: _matrixDimensionData.y,
+      length: 8,
+      levelSize: 80, // width of label column?
+      label: {
+        fontSize: 14,
+        color: '#777'
+      },
+      show: false,
+    },
+    corner: {
+      data: [
+        {
+          coord: [-1, -1],
+          value: 'Category'
+        }
+      ],
+      label: {
+        fontSize: 16,
+        color: '#777'
+      }
+    },
+    body: {
+      data: [
+        {
+          coord: [2, _yBreakTimeIndex],
+          //coordClamp: true,
+          //mergeCells: true,
+          value: 'SCS  Public Electricity and Heat',
+          label: {
+            color: '#999',
+            fontSize: 16,
+              position: 'insideTop',
+          }
+        }
+      ]
+    },
+    top: 30,
+    bottom: 80,
+    width: '90%',
+    left: 'center'
+  }, // end matrix
+  tooltip: {
+    trigger: 'axis'
+  },
+  dataZoom: [
+    {
+      type: 'slider',
+      xAxisIndex: 'all',
+      left: '10%',
+      right: '10%',
+      bottom: 30,
+      height: 30,
+      throttle: 120
+    },
+    {
+      type: 'inside',
+      xAxisIndex: 'all',
+      throttle: 120
+    }
+  ],
+  grid: [],
+  xAxis: [],
+  yAxis: [],
+  series: [],
+};
+eachMatrixCell((xval, yval, xidx, yidx) => {
+  const id = makeId(xidx, yidx);
+  option.grid.push({
+    id: id,
+    coordinateSystem: 'matrix',
+    //coord: [xval, yval],
+    coord: [xidx, yidx],
+    top: 10,
+    bottom: 10,
+    left: 'center',
+    width: '90%',
+    containLabel: true
+  });
+  option.xAxis.push({
+    type: 'category',
+    id: id,
+    gridId: id,
+    scale: true,
+    axisTick: { show: false },
+    axisLabel: { show: false },
+    axisLine: { show: false },
+    splitLine: { show: false },
+    //data: Array.from({ length: _seriesFakeDataLength }, (_, i) => `T-${i}`)
+  });
+  option.yAxis.push({
+    id: id,
+    gridId: id,
+    interval: Number.MAX_SAFE_INTEGER,
+    scale: true,
+    axisLabel: {
+      showMaxLabel: true,
+      fontSize: 9
+    },
+    axisLine: { show: false },
+    axisTick: { show: false }
+  });
+  option.series.push({
+    xAxisId: id,
+    yAxisId: id,
+    type: 'line',
+    symbol: 'none',
+    lineStyle: {
+      lineWidth: 1
+    },
+    data: generateFakeSeriesData(_seriesFakeDataLength, xidx, yidx)
+  });
+});
+// ------ Helpers Start ------
+function makeId(xidx, yidx) {
+  return `${xidx}|${yidx}`;
+}
+function eachMatrixCell(cb) {
+  _matrixDimensionData.y.forEach((yvalItem, yidx) => {
+    const yval = yvalItem.value;
+    //if (yidx === _yBreakTimeIndex) {
+    //  return;
+    //}
+    _matrixDimensionData.x.forEach((xval, xidx) => {
+      cb(xval, yval, xidx, yidx);
+    });
+  });
+}
+function generateFakeSeriesData(dayCount, xidx, yidx) {
+  const dayStart = new Date('2025-05-05T00:00:00.000Z'); // Monday
+  dayStart.setDate(xidx + 5);
+  const timeStart = dayStart.getTime();
+  const sevenDay = 7 * 1000 * 3600 * 24;
+  const cellData = [];
+  let lastVal = +(Math.random() * 300).toFixed(0);
+  let turnCount = null;
+  let sign = -1;
+  for (let idx = 0; idx < dayCount; idx++) {
+    if (turnCount == null || idx >= turnCount) {
+      turnCount =
+        idx + Math.round((dayCount / 4) * ((Math.random() - 0.5) * 0.1));
+      sign = -sign;
+    }
+    const deltaMag = 50;
+    const delta = +(
+      Math.random() * deltaMag -
+      deltaMag / 2 +
+      (sign * deltaMag) / 3
+    ).toFixed(0);
+    const val = Math.max(0, (lastVal += delta));
+    const xTime = timeStart + idx * sevenDay;
+    const dataXVal = echarts.time.format(xTime, '{yyyy}-{MM}-{dd}');
+    cellData.push([dataXVal, val]);
+  }
+  return cellData;
+}
+
+option && myChart.setOption(option);
+</script>
+
+<h2>Model Elements</h2>
+
+<h3 id="strategies">Strategies</h3>
+<table>
+    <thead>
+        <tr><th>Name</th><th>Description</th><th>Sector</th></tr>
+    </thead>
+    <tbody>
+        {% for name, dyn_elem in {}.items() if 'strategy' in dyn_elem.tags %}
+        <tr>
+            <td><a href="/models/sim/{{ident}}/strategies/{{name}}/">{{printcname(name)}}</a></td>
+            <td>{{dyn_elem.short_description}}</td>
+            <td>
+                {% for ipcc_sector in dyn_elem.extra_ipcc_sectors %}
+                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+                {% if not loop.last %},{% endif%}
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<h3 id="barriers">Barriers</h3>
+<table>
+    <thead>
+        <tr><th>Name</th><th>Description</th><th>Direct Impact</th></tr>
+    </thead>
+    <tbody>
+        {% for name, dyn_elem in {}.items() if 'barrier' in dyn_elem.tags %}
+        <tr>
+            <td><a href="/models/sim/{{ident}}/barriers/{{name}}/">{{printcname(name)}}</a></td>
+            <td>{{dyn_elem.short_description}}</td>
+            <td>
+                {% for ipcc_sector in ipcc_sectors_from_dynelem(dyn_elem) %}
+                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+                {% if not loop.last %},{% endif%}
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+</p>
+
+</section><!--post-->
+</div><!--main-->
+
+{% include "post-main.html" %}

@@ -289,3 +289,13 @@ html/blog/2026-04-03-bovaer_assets:
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -c "import planzero; planzero.blog.ModellingBovaer.generate_assets()"
+
+cache/inference/Static_Normals/sentinel:
+	# Perform inference for the Static_Normals model
+	# save multiple files in this directory
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero.nir_constant_predictor

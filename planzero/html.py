@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class HTML_element(BaseModel):
 
@@ -187,6 +187,133 @@ class StackedAreaEChart(HTML_element):
         </script>
         <div>
         """
+
+
+class EChartMatrixXY(BaseModel):
+    #data
+    length:int
+    levelSize:int
+    label:dict[str,object]|None = None
+    show:bool
+
+
+class EChartMatrixCorner(BaseModel):
+    data: list[dict[str,object]]
+    label: dict[str,object]
+
+
+class EChartMatrixBodyDataElem(BaseModel):
+    coord: str|list[int]
+    value: str
+    label: dict[str, object]
+
+
+class EChartMatrixBody(BaseModel):
+    data: list[EChartMatrixBodyDataElem]
+    label: dict[str,object]|None = None
+
+
+class EChartMatrix(BaseModel):
+    x:EChartMatrixXY
+    y:EChartMatrixXY
+    corner:EChartMatrixCorner
+    body:EChartMatrixBody
+    top: int|str = 0
+    bottom: int|str = 0
+    width: int|str = '100%'
+    left: int|str = 'center'
+
+
+class EChartToolTip(BaseModel):
+    trigger:str
+
+class EChartDataZoomElem(BaseModel):
+    type:str
+    xAxisIndex:str|int
+    throttle:int
+    top: int|str|None = None
+    bottom: int|str|None = None
+    width: int|str|None = None
+    left: int|str|None = None
+
+
+class EChartGrid(BaseModel):
+    # TODO
+    pass
+
+class EChartSeries(BaseModel):
+    # TODO
+    pass
+
+
+class UncertainSparklineMatrixEChart(HTML_element):
+    # Enforce strict field checks
+    model_config = ConfigDict(extra='forbid')
+
+    div_id:str
+    width:str|int = '100%'
+    height:str|int = '600px'
+
+    matrix: EChartMatrix
+    tooltip: EChartToolTip
+    dataZoom: list[EChartDataZoomElem]
+    grid: list[EChartGrid]
+    xAxis: list[EChartXAxis]
+    yAxis: list[EChartYAxis]
+    series: list[EChartSeries]
+
+    def save_as(self, filepath):
+        # called from Makefile to create snapshots for posts
+        with open(filepath, 'w') as ofile:
+            ofile.write(self.as_html())
+
+    def as_html(self):
+        newline = '\n'
+        return f"""
+        <div id="{self.div_id}" style="width: {self.width}; height: {self.height}; margin: 0 auto;">
+        </div>
+        <script>
+        const False = false;
+        var mychart_{self.div_id} = echarts.init(
+            document.getElementById('{self.div_id}'),
+            null,
+            {{renderer: 'canvas', hoverLayerThreshold: 0}}); // still need?
+        var option_{self.div_id};
+        option_{self.div_id} = {{
+            matrix: {self.matrix.model_dump(exclude_none=True)},
+            tooltip: {self.tooltip.model_dump(exclude_none=True)},
+            dataZoom: {[elem.model_dump(exclude_none=True) for elem in self.dataZoom]},
+            grid: {[elem.model_dump(exclude_none=True) for elem in self.grid]},
+            xAxis: {[elem.model_dump(exclude_none=True) for elem in self.xAxis]},
+            yAxis: {[elem.model_dump(exclude_none=True) for elem in self.yAxis]},
+            series: {[elem.model_dump(exclude_none=True) for elem in self.series]},
+        }}
+        mychart_{self.div_id}.setOption(option_{self.div_id});
+
+        mychart_{self.div_id}.on('click', function(params) {{
+          // Console log to see what data is available
+          console.log(params);
+
+          // params.data contains the array for that point: [x, y, url]
+          // So the URL is at index 2
+          var url = params.data.url;
+
+          if (url) {{
+            // Open in new tab
+            //window.open(url, '_blank');
+
+            // OR open in same tab:
+            window.location.href = url;
+          }}
+        }});
+
+        window.addEventListener('resize', function() {{
+          mychart_{self.div_id}.resize();
+        }});
+        </script>
+        <div>
+        """
+
 
 
 import inspect
