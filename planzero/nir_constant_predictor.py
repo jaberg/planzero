@@ -282,31 +282,48 @@ class SparklineEChartHelper(object):
 
     def helper_sector_mean(self, sector):
         sector_mean = 0
-        for ghg in GHG:
+
+        rng = np.random.default_rng(seed=123)
+        n_samples = 100
+        estimates = rng.standard_normal((125, n_samples, len(GHG)))
+
+        for ii, ghg in enumerate(GHG):
             if [str(sector), str(ghg)] in self.config['near_zero_sector_ghgs']:
+                estimates[:, :, ii] *= 0
                 continue
             config_sg, samples = load_config_samples(sector, ghg)
-            n_chains, n_samples, n_regions = samples['mu'].shape
+            n_chains, n_samples_, n_regions = samples['mu'].shape
+            assert n_samples_ == n_samples
             sector_mean_ghg = float(
                 samples['mu']
                 .reshape((n_chains * n_samples, n_regions))
                 .mean(axis=0) # across samples and chains
                 .sum(axis=0)) # over regions
             sector_mean += sector_mean_ghg * config_sg['scale']
-        if sector_mean > 0:
-            lbound = .8 * sector_mean
-            ubound = 1.2 * sector_mean
 
-        if sector_mean <= 0:
-            lbound = 1.2 * sector_mean
-            ubound = 0.8 * sector_mean
+            estimates[:, :, ii] *= samples['sigma_ca']
+            estimates[:, :, ii] += samples['mu'].sum(axis=2)
+            estimates[:, :, ii] *= config_sg['scale']
 
-        mean_data = [[yr, sector_mean] for yr in self.years]
-        lbound_data = [[yr, lbound] for yr in self.years]
-        bound_data = [[yr, ubound - lbound] for yr in self.years]
-        return mean_data, lbound_data, bound_data
+        lbound, ubound = np.quantile(
+            np.sum(estimates, axis=2).flatten(),
+            [.025, .975])
 
-
+        rval = dict(
+            mean=sector_mean,
+            ubound=ubound,
+            lbound=lbound,
+            CI=ubound - lbound,
+            means=[sector_mean for yr in self.years],
+            ubounds=[ubound for yr in self.years],
+            lbounds=[lbound for yr in self.years],
+            CIs=[ubound - lbound for yr in self.years],
+            neg_shift=[min(ubound, 0) for yr in self.years],
+            neg_shade=[min(lbound, 0) - min(ubound, 0) for yr in self.years],
+            pos_shift=[max(lbound, 0) for yr in self.years],
+            pos_shade=[max(ubound, 0) - max(lbound, 0) for yr in self.years],
+            )
+        return rval
 
     def __init__(self, div_id):
         self.div_id = div_id
@@ -315,9 +332,11 @@ class SparklineEChartHelper(object):
         self.yAxis_list = []
         self.series_list = []
 
-        # just a few points since the prediction is constant, but
-        # the data zoom should still work reasonably
-        self.years = np.arange(1990, 2050+1, 10)
+        # has to be every year or else scaling doesn't work properly
+        # when combined with historic actuals
+        self.years = np.arange(1990, 2050+1)
+
+        self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
     def load_data(self):
         self.config = load_config(allow_version_mismatch=False)
@@ -330,7 +349,7 @@ class SparklineEChartHelper(object):
 
         # order sectors by decreasing last-year uncertainty
         non_lulucf_scores = [
-            (-hdata[2][-1][1], sector)
+            (-hdata['CI'], sector)
             for sector, hdata in self.data_by_sector.items()
             if sector not in LULUCF_Sectors]
         non_lulucf_scores.sort()
@@ -409,25 +428,23 @@ class SparklineEChartHelper(object):
         return rval
 
     def row_minmax(self, sectors):
-        # compute ymax
         row_ymax = -float('inf')
         row_ymin = float('inf')
         for sector in sectors:
-            mean_data, lbound_data, ubound_data = self.data_by_sector[sector]
-            ubounds = [
-                ubound_data[ii][1] + lval
-                for ii, (yr, lval) in enumerate(lbound_data)]
-            row_ymax = max(row_ymax, max(ubounds))
-            lbounds = [
-                lval
-                for ii, (yr, lval) in enumerate(lbound_data)]
-            row_ymin = min(row_ymin, min(lbounds))
+            data = self.data_by_sector[sector]
+            row_ymax = max(row_ymax, max(data['ubounds']))
+            row_ymin = min(row_ymin, min(data['lbounds']))
+
+            actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
+            row_ymax = max(row_ymax, np.nanmax(actuals))
+            row_ymin = min(row_ymin, np.nanmin(actuals))
+
         # round up to nearest 2-significant-digit number
         row_ymax = max(0, float(f'{row_ymax * 1.06:.2g}'))
         row_ymin = min(0, float(f'{row_ymin * 1.06:.2g}'))
         return row_ymin, row_ymax
 
-    def append_cell(self, row, col, sector, ymin, ymax):
+    def append_cell(self, row, col, sector, ymin, ymax, yAxis_customValues=None):
         color = self.palette[(row * self.n_cols + col - 1) % len(self.palette)]
 
         self.grid_list.append(
@@ -451,6 +468,7 @@ class SparklineEChartHelper(object):
                 axisLabel=dict(show=False),
                 axisLine=dict(show=False),
                 splitLine=dict(show=False),
+                boundaryGap=False,
                 ))
         self.yAxis_list.append(
             EChartMatrixYAxis(
@@ -462,14 +480,32 @@ class SparklineEChartHelper(object):
                 min=ymin,
                 axisLabel=dict(showMaxLabel=True,
                                fontSize=9,
-                               customValues=[ymin, 0, ymax]),
+                               customValues=yAxis_customValues,
+                              ),
                 axisLine=dict(show=False),
                 axisTick=dict(show=False),
                 ))
 
-        mean_data, lbound_data, ubound_data = self.data_by_sector[sector]
+        # historical actuals
         self.series_list.append(
             EChartSeriesBase(
+                name=f'{sector} NIR2025',
+                xAxisId=f'xAxis_{col}|{row}',
+                yAxisId=f'yAxis_{col}|{row}',
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=2,
+                    color='#000'),
+                data=list(zip(
+                    nir2025.nir2025_year_ints,
+                    np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0))),
+                ))
+
+        data = self.data_by_sector[sector]
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{sector} mean',
                 xAxisId=f'xAxis_{col}|{row}',
                 yAxisId=f'yAxis_{col}|{row}',
                 type='line',
@@ -477,30 +513,58 @@ class SparklineEChartHelper(object):
                 lineStyle=EChartLineStyle(
                     width=2,
                     color=color),
-                data=mean_data,
+                data=list(zip(self.years, data['means'])),
                 ))
-        self.series_list.append(
-            EChartSeriesBase(
-                xAxisId=f'xAxis_{col}|{row}',
-                yAxisId=f'yAxis_{col}|{row}',
-                type='line',
-                symbol='none',
-                lineStyle=EChartLineStyle(opacity=0, color=color),
-                data=lbound_data,
-                stack=f'stack_{str(sector)}'
-                ))
-        self.series_list.append(
-            EChartSeriesBase(
-                xAxisId=f'xAxis_{col}|{row}',
-                yAxisId=f'yAxis_{col}|{row}',
-                type='line',
-                symbol='none',
-                lineStyle=EChartLineStyle(opacity=0),
-                areaStyle=dict(opacity=.25),
-                itemStyle=EChartItemStyle(color=color),
-                data=ubound_data,
-                stack=f'stack_{str(sector)}'
-                ))
+        if data['lbound'] < 0:
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} CI lower bound',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0, color=color),
+                    data=list(zip(self.years, data['neg_shift'])),
+                    stack=f'stack_{str(sector)}'
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} CI upper bound',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0),
+                    areaStyle=dict(opacity=.25),
+                    itemStyle=EChartItemStyle(color=color),
+                    data=list(zip(self.years, data['neg_shade'])),
+                    stack=f'stack_{str(sector)}'
+                    ))
+        if data['ubound'] >= 0:
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} CI lower bound',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0, color=color),
+                    data=list(zip(self.years, data['pos_shift'])),
+                    stack=f'stack_{str(sector)}'
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} CI upper bound',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0),
+                    areaStyle=dict(opacity=.25),
+                    itemStyle=EChartItemStyle(color=color),
+                    data=list(zip(self.years, data['pos_shade'])),
+                    stack=f'stack_{str(sector)}'
+                    ))
 
     def add_non_lulucf_cells(self):
         for row in range(self.n_non_lulucf_rows):
@@ -515,7 +579,7 @@ class SparklineEChartHelper(object):
                     sector = self.sorted_non_lulucf[row * self.n_cols + col - 1]
                 except IndexError:
                     break
-                self.append_cell(row, col, sector, row_ymin, row_ymax)
+                self.append_cell(row, col, sector, row_ymin * 0, row_ymax)
 
     def add_lulucf_cells(self):
         assert self.n_cols >= len(LULUCF_Sectors) + 1

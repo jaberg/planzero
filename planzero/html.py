@@ -281,6 +281,7 @@ class EChartMatrixXAxis(StrictBaseModel):
     splitLine:dict[str, object]
     min:float|str|None = None
     max:float|str|None = None
+    boundaryGap:bool|None = None # from confidence-band example, not sure what it does
 
 
 class EChartMatrixYAxis(StrictBaseModel):
