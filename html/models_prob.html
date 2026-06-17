@@ -31,14 +31,14 @@ var option;
 
 const _matrixDimensionData = {
   x: ['Total', 'CO2 (ktCO2e)', 'CH4 (ktCO2e)', 'N2O (ktCO2e)', 'F-Gases (ktCO2e)'],
-    y: {{json.dumps(grid_y_vals)}},
-    //{ value: 'Public Heat\n and Electr.' },
-    //{ value: 'Oil and Gas' },
-    //{ value: 'Forest Land', size: 55 },
-    //{ value: 'Harvested Wood' },
-    //{ value: '16:00\n~\n18:00' },
-    //{ value: '18:00\n~\n20:00' }
-  //]
+    y: [
+    { value: 'Public Heat\n and Electr.' },
+    { value: 'Oil and Gas' },
+    { value: 'Forest Land', size: 55 },
+    { value: 'Harvested Wood' },
+    { value: '16:00\n~\n18:00' },
+    { value: '18:00\n~\n20:00' }
+        ]
 };
 const _yBreakTimeIndex = 2; // '12:00 - 14:00',
 const _seriesFakeDataLength = 365;

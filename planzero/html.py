@@ -68,9 +68,10 @@ class EChartYAxis(BaseModel):
 
 
 class EChartLineStyle(BaseModel):
-    width: int = 2
+    width: int|None = 2
     type: str | None = None
     color: str | None = None
+    lineWidth:int|None = None
 
 
 class EChartItemStyle(BaseModel):
@@ -83,12 +84,16 @@ class EChartSeriesDataElem(BaseModel):
 
 
 class EChartSeriesBase(BaseModel):
-    name: str
+    name: str|None = None
     type: str = 'line'
     yAxisIndex: int = 0
     lineStyle: EChartLineStyle | None = EChartLineStyle(width=2)
     itemStyle: EChartItemStyle | None = None
-    data: list[float | EChartSeriesDataElem]
+    data: list[EChartSeriesDataElem]|list[float]|list[list[float]]
+
+    xAxisId:str|None = None
+    yAxisId:str|None = None
+    symbol:str|None = None
 
 
 def EChartSeriesData(sts, times, v_unit, url):
@@ -238,12 +243,35 @@ class EChartDataZoomElem(BaseModel):
 
 
 class EChartGrid(BaseModel):
-    # TODO
-    pass
+    id:str
+    coordinateSystem:str
+    coord:list[int, int]
+    top:int|str|None = None
+    bottom:int|str|None = None
+    left:int|str|None = None
+    width:int|str|None = None
+    containLabel:bool
 
-class EChartSeries(BaseModel):
-    # TODO
-    pass
+class EChartMatrixXAxis(BaseModel):
+    type:str
+    id:str
+    gridId:str
+    scale:bool
+    axisTick:dict[str, object]
+    axisLabel:dict[str, object]
+    axisLine:dict[str, object]
+    splitLine:dict[str, object]
+
+
+class EChartMatrixYAxis(BaseModel):
+    id:str
+    gridId:str
+    scale:bool
+    interval:int
+    axisTick:dict[str, object]
+    axisLabel:dict[str, object]
+    axisLine:dict[str, object]
+
 
 
 class UncertainSparklineMatrixEChart(HTML_element):
@@ -258,9 +286,9 @@ class UncertainSparklineMatrixEChart(HTML_element):
     tooltip: EChartToolTip
     dataZoom: list[EChartDataZoomElem]
     grid: list[EChartGrid]
-    xAxis: list[EChartXAxis]
-    yAxis: list[EChartYAxis]
-    series: list[EChartSeries]
+    xAxis: list[EChartMatrixXAxis]
+    yAxis: list[EChartMatrixYAxis]
+    series: list[EChartSeriesBase]
 
     def save_as(self, filepath):
         # called from Makefile to create snapshots for posts

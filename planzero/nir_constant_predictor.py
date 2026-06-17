@@ -229,10 +229,13 @@ class Static_Normals(SiteInference):
             EChartMatrixBodyDataElem,
             EChartMatrixCorner,
             EChartMatrixXY,
-            EChartXAxis,
-            EChartYAxis,
+            EChartMatrixXAxis,
+            EChartMatrixYAxis,
             EChartToolTip,
             EChartDataZoomElem,
+            EChartGrid,
+            EChartSeriesBase,
+            EChartLineStyle,
             )
         from .enums import IPCC_Sector
 
@@ -240,11 +243,12 @@ class Static_Normals(SiteInference):
         n_cols = 9
 
         def body_data():
+            fontSize = 9
             rval = []
             rval.append(EChartMatrixBodyDataElem(
                 coord=(0, 0),
                 value='Total without LULUCF',
-                label=dict(color='#999', fontSize=14, position='insideTop'),
+                label=dict(color='#999', fontSize=fontSize, position='insideTop'),
                 ))
             list_of_sectors = [sector for sector in IPCC_Sector]
             assert len(list_of_sectors) == 71
@@ -256,13 +260,68 @@ class Static_Normals(SiteInference):
                     rval.append(
                         EChartMatrixBodyDataElem(
                             coord=[col, row],
-                            value=sector.value,
+                            value=(sector.value
+                                   .replace('anufacturing', 'fg.')
+                                   .replace('roduction', 'rod.')
+                                   .replace('onsumption', 'ons.')
+                                   .replace('and Solvent Use', ', Solvents')
+                                   .replace('Carbon-Containing', '')
+                                  ),
                             label=dict(color='#999',
-                                       fontSize=14,
+                                       fontSize=fontSize,
                                        position='insideTop'),
                             )
                         )
             return rval
+
+        grid_list = []
+        xAxis_list = []
+        yAxis_list = []
+        series_list = []
+
+        grid_list.append(
+            EChartGrid(
+                id='foo',
+                coordinateSystem='matrix',
+                #coord=(1, 0),
+                #coord=(4, 3),
+                coord=(6, 5),
+                top=25,
+                bottom=10,
+                left='center',
+                width='90%',
+                containLabel=True,
+                ))
+        xAxis_list.append(
+            EChartMatrixXAxis(
+                type='category',
+                id='foo',
+                gridId='foo',
+                scale=True,
+                axisTick=dict(show=False),
+                axisLabel=dict(show=False),
+                axisLine=dict(show=False),
+                splitLine=dict(show=False),
+                ))
+        yAxis_list.append(
+            EChartMatrixYAxis(
+                id='foo',
+                gridId='foo',
+                interval=1_000_000_000_000, # was: Number.MAX_SAFE_INTEGER
+                scale=True,
+                axisLabel=dict(showMaxLabel=True,fontSize=9),
+                axisLine=dict(show=False),
+                axisTick=dict(show=False),
+                ))
+        series_list.append(
+            EChartSeriesBase(
+                xAxisId='foo',
+                yAxisId='foo',
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(lineWidth=1),
+                data=[float(x) for x in np.random.randn(20)],
+                ))
 
 
         rval = UncertainSparklineMatrixEChart(
@@ -303,12 +362,12 @@ class Static_Normals(SiteInference):
                     throttle=120,
                     ),
                 ],
-            grid=[],
-            xAxis=[],
-            yAxis=[],
-            series=[],
+            grid=grid_list,
+            xAxis=xAxis_list,
+            yAxis=yAxis_list,
+            series=series_list,
             width='100%',
-            height='1000px',
+            height='900px',
             )
         return rval
 
