@@ -266,6 +266,12 @@ from .html import (
     EChartItemStyle,
     )
 from .enums import IPCC_Sector, LULUCF_Sectors
+import enum
+
+class PseudoSectors(str, enum.Enum):
+    Total_with_LULUCF = 'Total with LULUCF'
+    Total_without_LULUCF = 'Total without LULUCF'
+
 
 class SparklineEChartHelper(object):
 
@@ -280,51 +286,6 @@ class SparklineEChartHelper(object):
     n_total_rows = n_non_lulucf_rows + 2
     n_cols = 7
 
-    def helper_sector_mean(self, sector):
-        sector_mean = 0
-
-        rng = np.random.default_rng(seed=123)
-        n_samples = 100
-        estimates = rng.standard_normal((125, n_samples, len(GHG)))
-
-        for ii, ghg in enumerate(GHG):
-            if [str(sector), str(ghg)] in self.config['near_zero_sector_ghgs']:
-                estimates[:, :, ii] *= 0
-                continue
-            config_sg, samples = load_config_samples(sector, ghg)
-            n_chains, n_samples_, n_regions = samples['mu'].shape
-            assert n_samples_ == n_samples
-            sector_mean_ghg = float(
-                samples['mu']
-                .reshape((n_chains * n_samples, n_regions))
-                .mean(axis=0) # across samples and chains
-                .sum(axis=0)) # over regions
-            sector_mean += sector_mean_ghg * config_sg['scale']
-
-            estimates[:, :, ii] *= samples['sigma_ca']
-            estimates[:, :, ii] += samples['mu'].sum(axis=2)
-            estimates[:, :, ii] *= config_sg['scale']
-
-        lbound, ubound = np.quantile(
-            np.sum(estimates, axis=2).flatten(),
-            [.025, .975])
-
-        rval = dict(
-            mean=sector_mean,
-            ubound=ubound,
-            lbound=lbound,
-            CI=ubound - lbound,
-            means=[sector_mean for yr in self.years],
-            ubounds=[ubound for yr in self.years],
-            lbounds=[lbound for yr in self.years],
-            CIs=[ubound - lbound for yr in self.years],
-            neg_shift=[min(ubound, 0) for yr in self.years],
-            neg_shade=[min(lbound, 0) - min(ubound, 0) for yr in self.years],
-            pos_shift=[max(lbound, 0) for yr in self.years],
-            pos_shade=[max(ubound, 0) - max(lbound, 0) for yr in self.years],
-            )
-        return rval
-
     def __init__(self, div_id):
         self.div_id = div_id
         self.grid_list = []
@@ -338,19 +299,103 @@ class SparklineEChartHelper(object):
 
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
+        self.data_by_sector = {} # real sector and pseudo-sector
+
+    def add_data_for_sector(self, sector, sector_mean, lbound, ubound):
+        assert sector not in self.data_by_sector
+        assert ubound >= lbound
+        self.data_by_sector[sector] = dict(
+            mean=sector_mean,
+            ubound=ubound,
+            lbound=lbound,
+            CI=ubound - lbound,
+            means=[sector_mean for yr in self.years],
+            ubounds=[ubound for yr in self.years],
+            lbounds=[lbound for yr in self.years],
+            CIs=[ubound - lbound for yr in self.years],
+            neg_shift=[min(ubound, 0) for yr in self.years],
+            neg_shade=[min(lbound, 0) - min(ubound, 0) for yr in self.years],
+            pos_shift=[max(lbound, 0) for yr in self.years],
+            pos_shade=[max(ubound, 0) - max(lbound, 0) for yr in self.years],
+            )
+
     def load_data(self):
         self.config = load_config(allow_version_mismatch=False)
 
-        self.data_by_sector = {
-            sector: self.helper_sector_mean(sector)
-            for sector in IPCC_Sector}
+        n_samples = 100 # match saved data
+        n_new_draws = 125
+
+        mean_with_lulucf = 0
+        estimates_with_lulucf = np.zeros((n_new_draws, n_samples))
+
+        mean_without_lulucf = 0
+        estimates_without_lulucf = np.zeros((n_new_draws, n_samples))
+
+        credibility_interval_95 = [.025, .975]
+
+        for sector in IPCC_Sector:
+            sector_mean = 0
+
+            rng = np.random.default_rng(seed=123)
+            estimates = rng.standard_normal((n_new_draws, n_samples, len(GHG)))
+
+            for ii, ghg in enumerate(GHG):
+                if [str(sector), str(ghg)] in self.config['near_zero_sector_ghgs']:
+                    estimates[:, :, ii] = 0
+                else:
+                    config_sg, samples = load_config_samples(sector, ghg)
+                    n_chains, n_samples_, n_regions = samples['mu'].shape
+                    assert n_samples_ == n_samples
+                    sector_mean_ghg = float(
+                        samples['mu']
+                        .reshape((n_chains * n_samples, n_regions))
+                        .mean(axis=0) # across samples and chains
+                        .sum(axis=0)) # over regions
+                    sector_mean += sector_mean_ghg * config_sg['scale']
+
+                    estimates[:, :, ii] *= samples['sigma_ca']
+                    estimates[:, :, ii] += samples['mu'].sum(axis=2)
+                    estimates[:, :, ii] *= config_sg['scale']
+
+            sector_estimates = np.sum(estimates, axis=2)
+
+            lbound, ubound = np.quantile(
+                sector_estimates.flatten(),
+                credibility_interval_95)
+
+            self.add_data_for_sector(sector, sector_mean, lbound, ubound)
+
+            if sector not in LULUCF_Sectors:
+                estimates_without_lulucf += sector_estimates
+                mean_without_lulucf += sector_mean
+            estimates_with_lulucf += sector_estimates
+            mean_with_lulucf += sector_mean
+
+        lbound_with_lulucf, ubound_with_lulucf = np.quantile(
+            estimates_with_lulucf.flatten(),
+            credibility_interval_95)
+        self.add_data_for_sector(
+            PseudoSectors.Total_with_LULUCF,
+            mean_with_lulucf,
+            lbound_with_lulucf,
+            ubound_with_lulucf)
+
+        lbound_without_lulucf, ubound_without_lulucf = np.quantile(
+            estimates_without_lulucf.flatten(),
+            credibility_interval_95)
+        self.add_data_for_sector(
+            PseudoSectors.Total_without_LULUCF,
+            mean_without_lulucf,
+            lbound_without_lulucf,
+            ubound_without_lulucf)
+
 
     def order_sectors(self):
 
         # order sectors by decreasing last-year uncertainty
         non_lulucf_scores = [
-            (-hdata['CI'], sector)
-            for sector, hdata in self.data_by_sector.items()
+            (-self.data_by_sector[sector]['ubound'], sector)
+            for sector in IPCC_Sector
             if sector not in LULUCF_Sectors]
         non_lulucf_scores.sort()
         self.sorted_non_lulucf = [sector for _, sector in non_lulucf_scores]
@@ -435,9 +480,12 @@ class SparklineEChartHelper(object):
             row_ymax = max(row_ymax, max(data['ubounds']))
             row_ymin = min(row_ymin, min(data['lbounds']))
 
-            actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
-            row_ymax = max(row_ymax, np.nanmax(actuals))
-            row_ymin = min(row_ymin, np.nanmin(actuals))
+            if 'Total' in sector:
+                actuals = np.sum(self.arr_ca, axis=(0, 1))
+            else:
+                actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
+                row_ymax = max(row_ymax, np.nanmax(actuals))
+                row_ymin = min(row_ymin, np.nanmin(actuals))
 
         # round up to nearest 2-significant-digit number
         row_ymax = max(0, float(f'{row_ymax * 1.06:.2g}'))
@@ -487,6 +535,14 @@ class SparklineEChartHelper(object):
                 ))
 
         # historical actuals
+        if sector == PseudoSectors.Total_without_LULUCF:
+            mask = [(sec not in LULUCF_Sectors) for sec in IPCC_Sector]
+            actuals = np.sum(self.arr_ca[mask], axis=(0, 1))
+        elif sector == PseudoSectors.Total_with_LULUCF:
+            actuals = np.sum(self.arr_ca, axis=(0, 1))
+        else:
+            actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
+
         self.series_list.append(
             EChartSeriesBase(
                 name=f'{sector} NIR2025',
@@ -497,9 +553,7 @@ class SparklineEChartHelper(object):
                 lineStyle=EChartLineStyle(
                     width=2,
                     color='#000'),
-                data=list(zip(
-                    nir2025.nir2025_year_ints,
-                    np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0))),
+                data=list(zip(nir2025.nir2025_year_ints, actuals)),
                 ))
 
         data = self.data_by_sector[sector]
@@ -529,7 +583,7 @@ class SparklineEChartHelper(object):
                     ))
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{sector} CI upper bound',
+                    name=f'{sector} CI',
                     xAxisId=f'xAxis_{col}|{row}',
                     yAxisId=f'yAxis_{col}|{row}',
                     type='line',
@@ -554,7 +608,7 @@ class SparklineEChartHelper(object):
                     ))
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{sector} CI upper bound',
+                    name=f'{sector} CI',
                     xAxisId=f'xAxis_{col}|{row}',
                     yAxisId=f'yAxis_{col}|{row}',
                     type='line',
@@ -589,6 +643,16 @@ class SparklineEChartHelper(object):
                              col_minus_1 + 1,
                              sector, ymin=row_ymin,
                              ymax=row_ymax)
+
+    def add_total_cells(self):
+        self.append_cell(0, 0,
+                         sector=PseudoSectors.Total_without_LULUCF,
+                         ymin=0,
+                         ymax=None)
+        self.append_cell(self.n_total_rows - 1, 0,
+                         sector=PseudoSectors.Total_with_LULUCF,
+                         ymin=0,
+                         ymax=None)
 
     def make_echart(self):
         rval = UncertainSparklineMatrixEChart(
@@ -642,9 +706,11 @@ class SparklineEChartHelper(object):
 
 class Static_Normals(SiteInference):
     """Emissions per province and territory,
-    and per greenhouse gas, are distributed according
-    to non-time-varying Normal distributions.
-    (This is a baseline model.)
+    and per greenhouse gas, are modelled as
+    non-time-varying Normal distributions.
+    National totals are modelled as the sums of provincial
+    and territorial totals.
+    This is a baseline model, not intended to be accurate.
     """
 
     @computed_field
@@ -660,6 +726,7 @@ class Static_Normals(SiteInference):
         helper.order_sectors()
         helper.add_non_lulucf_cells()
         helper.add_lulucf_cells()
+        helper.add_total_cells()
         return helper.make_echart()
 
 
