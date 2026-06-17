@@ -1,6 +1,11 @@
 from pydantic import BaseModel, ConfigDict
 
-class HTML_element(BaseModel):
+class StrictBaseModel(BaseModel):
+
+    model_config = ConfigDict(extra='forbid')
+
+
+class HTML_element(StrictBaseModel):
 
     def __str__(self):
         return self.as_html()
@@ -48,45 +53,45 @@ class HTML_Math_Latex(HTML_element):
         return mathml
 
 
-class EChartTitle(BaseModel):
+class EChartTitle(StrictBaseModel):
     text:str
     subtext:str
     left:str = 'center'
 
 
-class EChartXAxis(BaseModel):
+class EChartXAxis(StrictBaseModel):
     name: str = 'Year'
     nameLocation: str = 'middle'
     nameGap: int = 30
     data: list[int]
 
 
-class EChartYAxis(BaseModel):
+class EChartYAxis(StrictBaseModel):
     name: str
     nameLocation: str = 'middle'
     nameGap: int = 40
 
 
-class EChartLineStyle(BaseModel):
+class EChartLineStyle(StrictBaseModel):
     width: int|None = 2
     type: str | None = None
     color: str | None = None
     lineWidth:int|None = None
 
 
-class EChartItemStyle(BaseModel):
+class EChartItemStyle(StrictBaseModel):
     color: str | None = None
 
 
-class EChartSeriesDataElem(BaseModel):
+class EChartSeriesDataElem(StrictBaseModel):
     value: float
     url: str | None
 
 
-class EChartSeriesBase(BaseModel):
+class EChartSeriesBase(StrictBaseModel):
     name: str|None = None
     type: str = 'line'
-    yAxisIndex: int = 0
+    yAxisIndex: int|None = None
     lineStyle: EChartLineStyle | None = EChartLineStyle(width=2)
     itemStyle: EChartItemStyle | None = None
     data: list[EChartSeriesDataElem]|list[float]|list[list[float]]
@@ -194,7 +199,7 @@ class StackedAreaEChart(HTML_element):
         """
 
 
-class EChartMatrixXY(BaseModel):
+class EChartMatrixXY(StrictBaseModel):
     #data
     length:int
     levelSize:int
@@ -202,23 +207,23 @@ class EChartMatrixXY(BaseModel):
     show:bool
 
 
-class EChartMatrixCorner(BaseModel):
+class EChartMatrixCorner(StrictBaseModel):
     data: list[dict[str,object]]
     label: dict[str,object]
 
 
-class EChartMatrixBodyDataElem(BaseModel):
+class EChartMatrixBodyDataElem(StrictBaseModel):
     coord: str|list[int]
     value: str
     label: dict[str, object]
 
 
-class EChartMatrixBody(BaseModel):
+class EChartMatrixBody(StrictBaseModel):
     data: list[EChartMatrixBodyDataElem]
     label: dict[str,object]|None = None
 
 
-class EChartMatrix(BaseModel):
+class EChartMatrix(StrictBaseModel):
     x:EChartMatrixXY
     y:EChartMatrixXY
     corner:EChartMatrixCorner
@@ -229,10 +234,10 @@ class EChartMatrix(BaseModel):
     left: int|str = 'center'
 
 
-class EChartToolTip(BaseModel):
+class EChartToolTip(StrictBaseModel):
     trigger:str
 
-class EChartDataZoomElem(BaseModel):
+class EChartDataZoomElem(StrictBaseModel):
     type:str
     xAxisIndex:str|int
     throttle:int
@@ -240,9 +245,11 @@ class EChartDataZoomElem(BaseModel):
     bottom: int|str|None = None
     width: int|str|None = None
     left: int|str|None = None
+    right: int|str|None = None
+    height: int|str|None = None
 
 
-class EChartGrid(BaseModel):
+class EChartGrid(StrictBaseModel):
     id:str
     coordinateSystem:str
     coord:list[int, int]
@@ -252,7 +259,7 @@ class EChartGrid(BaseModel):
     width:int|str|None = None
     containLabel:bool
 
-class EChartMatrixXAxis(BaseModel):
+class EChartMatrixXAxis(StrictBaseModel):
     type:str
     id:str
     gridId:str
@@ -263,7 +270,7 @@ class EChartMatrixXAxis(BaseModel):
     splitLine:dict[str, object]
 
 
-class EChartMatrixYAxis(BaseModel):
+class EChartMatrixYAxis(StrictBaseModel):
     id:str
     gridId:str
     scale:bool
@@ -295,26 +302,30 @@ class UncertainSparklineMatrixEChart(HTML_element):
         with open(filepath, 'w') as ofile:
             ofile.write(self.as_html())
 
+    def list_helper(self, lst):
+        tmp = ',\n'.join(lst_ii.model_dump_json(exclude_none=True)
+                       for lst_ii in lst)
+        return f'[{tmp}]'
+
     def as_html(self):
         newline = '\n'
         return f"""
         <div id="{self.div_id}" style="width: {self.width}; height: {self.height}; margin: 0 auto;">
         </div>
         <script>
-        const False = false;
         var mychart_{self.div_id} = echarts.init(
             document.getElementById('{self.div_id}'),
             null,
             {{renderer: 'canvas', hoverLayerThreshold: 0}}); // still need?
         var option_{self.div_id};
         option_{self.div_id} = {{
-            matrix: {self.matrix.model_dump(exclude_none=True)},
-            tooltip: {self.tooltip.model_dump(exclude_none=True)},
-            dataZoom: {[elem.model_dump(exclude_none=True) for elem in self.dataZoom]},
-            grid: {[elem.model_dump(exclude_none=True) for elem in self.grid]},
-            xAxis: {[elem.model_dump(exclude_none=True) for elem in self.xAxis]},
-            yAxis: {[elem.model_dump(exclude_none=True) for elem in self.yAxis]},
-            series: {[elem.model_dump(exclude_none=True) for elem in self.series]},
+            matrix: {self.matrix.model_dump_json(indent=2, exclude_none=True)},
+            tooltip: {self.tooltip.model_dump_json(indent=2, exclude_none=True)},
+            dataZoom: {self.list_helper(self.dataZoom)},
+            grid: {self.list_helper(self.grid)},
+            xAxis: {self.list_helper(self.xAxis)},
+            yAxis: {self.list_helper(self.yAxis)},
+            series: {self.list_helper(self.series)},
         }}
         mychart_{self.div_id}.setOption(option_{self.div_id});
 

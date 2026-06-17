@@ -10,12 +10,14 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 from numpyro.infer import Predictive
+from pathlib import Path
 from pydantic import BaseModel, computed_field
 import yaml
 
 from .my_functools import inference_cache
 from . import nir2025
 from .prob import SiteInference
+from .enums import IPCC_Sector, GHG
 
 
 version = 0.1 # float
@@ -40,7 +42,6 @@ def constant_model(scaled_pt=None, scaled_ca=None):
     numpyro.sample("obs_ca",
                    dist.Normal(jnp.sum(mu), sigma_ca),
                    obs=scaled_ca)
-    #numpyro.sample("forecast", dist.Normal(mu, sigma), sample_shape=(n_forecast,))
 
 
 class NIR2025_Model(object):
@@ -107,20 +108,62 @@ class NIR2025_Model(object):
         return predictions
 
 
-def plot_regression(x, y_mean, y_hpdi):
-    # Sort values for plotting by x axis
-    #idx = jnp.argsort(x)
-    #marriage = x[idx]
-    #mean = y_mean[idx]
-    #hpdi = y_hpdi[:, idx]
-    #divorce = dset.DivorceScaled.values[idx]
+def model_root():
+    return f'./cache/inference/Static_Normals'
 
-    # Plot
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
-    ax.plot(x, uncenter(np.ones(len(x)) * y_mean))
-    ax.plot(x, uncenter(centred_ca), "o")
-    ax.fill_between(x, uncenter(np.ones(len(x)) * y_hpdi[0]), uncenter(np.ones(len(x)) * y_hpdi[1]), alpha=0.3, interpolate=True)
-    return ax
+
+def sector_ghg_root(sector, ghg):
+    return f'./cache/inference/Static_Normals/{str(ghg)}-{str(sector)}'
+
+
+def sector_ghg_config_path(sector, ghg):
+    return f'{sector_ghg_root(sector, ghg)}/config.yaml'
+
+
+class VersionMismatch(RuntimeError):
+    pass
+
+
+def load_config(allow_version_mismatch):
+    with open(f'{model_root()}/config.yaml', 'r') as config_file:
+        config = yaml.safe_load(config_file) or {}
+    versions_match = config.get('version', 0.1) == version
+    if allow_version_mismatch or versions_match:
+        return config
+    raise VersionMismatch()
+
+
+def sector_ghg_load_config(sector, ghg, allow_version_mismatch):
+    with open(sector_ghg_config_path(sector, ghg), 'r') as config_file:
+        config = yaml.safe_load(config_file) or {}
+    versions_match = config.get('version', 0.1) == version
+    if allow_version_mismatch or versions_match:
+        return config
+    raise VersionMismatch()
+
+
+def load_config_samples(sector, ghg):
+    config = sector_ghg_load_config(sector, ghg, allow_version_mismatch=False)
+    rootdir = Path(sector_ghg_root(sector, ghg))
+
+    # Dictionary to store the memory-mapped arrays
+    mmap_dict = {}
+
+    # Ensure the directory exists before iterating
+    if rootdir.is_dir():
+        # Loop over all files ending with .npy in the directory
+        for file_path in rootdir.glob("*.npy"):
+            # Extract the 'key' (the filename without the extension)
+            key = file_path.stem
+            try:
+                # Load the file as a read-only memory-mapped array
+                mmap_dict[key] = np.load(file_path, mmap_mode='r')
+            except Exception as e:
+                raise Exception(f"Error loading {file_path.name}: {e}") from e
+    else:
+        raise Exception(f"Directory not found: {rootdir}")
+
+    return config, mmap_dict
 
 
 def main():
@@ -132,6 +175,7 @@ def main():
     config_data = {
         'near_zero_sector_ghgs': [],
         'predicted_emissions_2050_MtCO2e_bounds_ul': [0, 1000],
+        'version': version,
     }
     nontrivial = []
     for sector in IPCC_Sector:
@@ -155,14 +199,14 @@ def main():
         yaml.safe_dump(config_data, file, default_flow_style=False)
 
     for ii, (sector, ghg) in enumerate(nontrivial):
-        sector_ghg_root = f'./cache/inference/Static_Normals/{str(ghg)}-{str(sector)}/'
-        sector_ghg_config_path = f'{sector_ghg_root}/config.yaml'
+        root = sector_ghg_root(sector, ghg)
+        config_path = sector_ghg_config_path(sector, ghg)
 
-        os.makedirs(sector_ghg_root, exist_ok=True)
+        os.makedirs(root, exist_ok=True)
         try:
-            with open(sector_ghg_config_path, 'r') as prev_config_file:
-                prev_sector_ghg_config = yaml.safe_load(prev_config_file) or {}
-            prev_version = prev_sector_ghg_config.get('version', 0)
+            with open(config_path, 'r') as prev_config_file:
+                prev_config = yaml.safe_load(prev_config_file) or {}
+            prev_version = prev_config.get('version', 0)
             if prev_version != version:
                 assert prev_version < version
                 print ('updating old version', prev_version, 'to', version)
@@ -189,7 +233,7 @@ def main():
         grouped_samples = mcmc.get_samples(group_by_chain=True)
         for key, val in grouped_samples.items():
             fp = np.lib.format.open_memmap(
-                f'{sector_ghg_root}/{key}.npy',
+                f'{root}/{key}.npy',
                 mode='w+',
                 dtype='float32', # save space
                 shape=val.shape)
@@ -197,12 +241,12 @@ def main():
             fp.flush()
 
         # Write the per-sector-gas summary
-        sector_ghg_config = {
+        config = {
             'version': version,
             'scale': float(self.scale),
         }
-        with open(sector_ghg_config_path, 'w') as file:
-            yaml.safe_dump(sector_ghg_config, file, default_flow_style=False)
+        with open(config_path, 'w') as file:
+            yaml.safe_dump(config, file, default_flow_style=False)
 
 
 
@@ -219,6 +263,21 @@ class Static_Normals(SiteInference):
         with open('./cache/inference/Static_Normals/config.yaml', 'r') as file:
             data = yaml.safe_load(file)
             return data['predicted_emissions_2050_MtCO2e_bounds_ul']
+
+    def helper_sector_mean(self, config, sector, years):
+        sector_mean = 0
+        for ghg in GHG:
+            if [str(sector), str(ghg)] in config['near_zero_sector_ghgs']:
+                continue
+            config_sg, samples = load_config_samples(sector, ghg)
+            n_chains, n_samples, n_regions = samples['mu'].shape
+            sector_mean_ghg = float(
+                samples['mu']
+                .reshape((n_chains * n_samples, n_regions))
+                .mean(axis=0) # across samples and chains
+                .sum(axis=0)) # over regions
+            sector_mean += sector_mean_ghg * config_sg['scale']
+            return [[yr, sector_mean] for yr in years]
 
 
     def uncertain_sparkline_matrix_echart(self, div_id):
@@ -241,16 +300,16 @@ class Static_Normals(SiteInference):
 
         n_rows = 8
         n_cols = 9
+        list_of_sectors = [sector for sector in IPCC_Sector]
 
         def body_data():
             fontSize = 9
             rval = []
             rval.append(EChartMatrixBodyDataElem(
-                coord=(0, 0),
+                coord=[0, 0],
                 value='Total without LULUCF',
                 label=dict(color='#999', fontSize=fontSize, position='insideTop'),
                 ))
-            list_of_sectors = [sector for sector in IPCC_Sector]
             assert len(list_of_sectors) == 71
             for row in range(n_rows):
                 for col in range(n_cols):
@@ -274,55 +333,62 @@ class Static_Normals(SiteInference):
                         )
             return rval
 
+        # just a few points since the prediction is constant, but
+        # the data zoom should still work reasonably
+        years = np.arange(1990, 2050+1, 10)
+        config = load_config(allow_version_mismatch=False)
+
         grid_list = []
         xAxis_list = []
         yAxis_list = []
         series_list = []
+        for row in range(n_rows):
+            for col in range(n_cols):
+                if row == col == 0:
+                    continue
+                sector = list_of_sectors[row * n_cols + col - 1]
 
-        grid_list.append(
-            EChartGrid(
-                id='foo',
-                coordinateSystem='matrix',
-                #coord=(1, 0),
-                #coord=(4, 3),
-                coord=(6, 5),
-                top=25,
-                bottom=10,
-                left='center',
-                width='90%',
-                containLabel=True,
-                ))
-        xAxis_list.append(
-            EChartMatrixXAxis(
-                type='category',
-                id='foo',
-                gridId='foo',
-                scale=True,
-                axisTick=dict(show=False),
-                axisLabel=dict(show=False),
-                axisLine=dict(show=False),
-                splitLine=dict(show=False),
-                ))
-        yAxis_list.append(
-            EChartMatrixYAxis(
-                id='foo',
-                gridId='foo',
-                interval=1_000_000_000_000, # was: Number.MAX_SAFE_INTEGER
-                scale=True,
-                axisLabel=dict(showMaxLabel=True,fontSize=9),
-                axisLine=dict(show=False),
-                axisTick=dict(show=False),
-                ))
-        series_list.append(
-            EChartSeriesBase(
-                xAxisId='foo',
-                yAxisId='foo',
-                type='line',
-                symbol='none',
-                lineStyle=EChartLineStyle(lineWidth=1),
-                data=[float(x) for x in np.random.randn(20)],
-                ))
-
+                grid_list.append(
+                    EChartGrid(
+                        id=f'grid_{col}|{row}',
+                        coordinateSystem='matrix',
+                        coord=[col, row],
+                        top=25,
+                        bottom=10,
+                        left='center',
+                        width='90%',
+                        containLabel=True,
+                        ))
+                xAxis_list.append(
+                    EChartMatrixXAxis(
+                        type='category',
+                        id=f'xAxis_{col}|{row}',
+                        gridId=f'grid_{col}|{row}',
+                        scale=True,
+                        axisTick=dict(show=False),
+                        axisLabel=dict(show=False),
+                        axisLine=dict(show=False),
+                        splitLine=dict(show=False),
+                        ))
+                yAxis_list.append(
+                    EChartMatrixYAxis(
+                        id=f'yAxis_{col}|{row}',
+                        gridId=f'grid_{col}|{row}',
+                        interval=1_000_000_000_000, # was: Number.MAX_SAFE_INTEGER
+                        scale=True,
+                        axisLabel=dict(showMaxLabel=True,fontSize=9),
+                        axisLine=dict(show=False),
+                        axisTick=dict(show=False),
+                        ))
+                series_list.append(
+                    EChartSeriesBase(
+                        xAxisId=f'xAxis_{col}|{row}',
+                        yAxisId=f'yAxis_{col}|{row}',
+                        type='line',
+                        symbol='none',
+                        lineStyle=EChartLineStyle(width=2,lineWidth=1),
+                        data=self.helper_sector_mean(config, sector, years),
+                        ))
 
         rval = UncertainSparklineMatrixEChart(
             div_id=div_id,

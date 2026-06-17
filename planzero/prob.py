@@ -39,10 +39,11 @@ class SiteInference(BaseModel):
         return (float('nan'), float('nan'))
 
 
-class AR2(SiteInference):
-    """Emissions per province and territory,
-    and per greenhouse gas, evolve according
-    to a 2-step autoregressive process.
-    """
+if 0:
+    class AR2(SiteInference):
+        """Emissions per province and territory,
+        and per greenhouse gas, evolve according
+        to a 2-step autoregressive process.
+        """
 
 from . import nir_constant_predictor
