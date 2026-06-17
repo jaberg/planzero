@@ -222,6 +222,15 @@ class IPCC_Sector(str, enum.Enum):
             return IPCC_Sector_from_catpath_with_whitespace[catpath]
 
 
+LULUCF_Sectors = {
+    IPCC_Sector.Forest_Land,
+    IPCC_Sector.Cropland,
+    IPCC_Sector.Grassland,
+    IPCC_Sector.Wetlands,
+    IPCC_Sector.Settlements,
+    IPCC_Sector.Harvested_Wood_Products,
+}
+
 
 IPCC_Sector.SCS__Public_Electricity_and_Heat.catpath_no_whitespace = 'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production'
 IPCC_Sector.SCS__Public_Electricity_and_Heat.catpath_with_whitespace = 'Stationary Combustion Sources/Public Electricity and Heat Production'

@@ -249,25 +249,41 @@ def main():
             yaml.safe_dump(config, file, default_flow_style=False)
 
 
+from .html import (
+    UncertainSparklineMatrixEChart,
+    EChartMatrix,
+    EChartMatrixBody,
+    EChartMatrixBodyDataElem,
+    EChartMatrixCorner,
+    EChartMatrixXY,
+    EChartMatrixXAxis,
+    EChartMatrixYAxis,
+    EChartToolTip,
+    EChartDataZoomElem,
+    EChartGrid,
+    EChartSeriesBase,
+    EChartLineStyle,
+    EChartItemStyle,
+    )
+from .enums import IPCC_Sector, LULUCF_Sectors
 
-class Static_Normals(SiteInference):
-    """Emissions per province and territory,
-    and per greenhouse gas, are distributed according
-    to non-time-varying Normal distributions.
-    (This is a baseline model.)
-    """
+class SparklineEChartHelper(object):
 
-    @computed_field
-    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        # Read the YAML file
-        with open('./cache/inference/Static_Normals/config.yaml', 'r') as file:
-            data = yaml.safe_load(file)
-            return data['predicted_emissions_2050_MtCO2e_bounds_ul']
+    palette = [
+        '#5470c6', '#91cc75', '#fac858', '#ee6666',
+        '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
+        '#ea7ccc', '#4A90E2', '#50E3C2', '#F5A623',
+        '#D0021B', '#8B572A', '#417505', '#BD10E0'
+    ]
 
-    def helper_sector_mean(self, config, sector, years):
+    n_non_lulucf_rows = 10
+    n_total_rows = n_non_lulucf_rows + 2
+    n_cols = 7
+
+    def helper_sector_mean(self, sector):
         sector_mean = 0
         for ghg in GHG:
-            if [str(sector), str(ghg)] in config['near_zero_sector_ghgs']:
+            if [str(sector), str(ghg)] in self.config['near_zero_sector_ghgs']:
                 continue
             config_sg, samples = load_config_samples(sector, ghg)
             n_chains, n_samples, n_regions = samples['mu'].shape
@@ -277,135 +293,256 @@ class Static_Normals(SiteInference):
                 .mean(axis=0) # across samples and chains
                 .sum(axis=0)) # over regions
             sector_mean += sector_mean_ghg * config_sg['scale']
-            return [[yr, sector_mean] for yr in years]
+        if sector_mean > 0:
+            lbound = .8 * sector_mean
+            ubound = 1.2 * sector_mean
+
+        if sector_mean <= 0:
+            lbound = 1.2 * sector_mean
+            ubound = 0.8 * sector_mean
+
+        mean_data = [[yr, sector_mean] for yr in self.years]
+        lbound_data = [[yr, lbound] for yr in self.years]
+        bound_data = [[yr, ubound - lbound] for yr in self.years]
+        return mean_data, lbound_data, bound_data
 
 
-    def uncertain_sparkline_matrix_echart(self, div_id):
-        from .html import (
-            UncertainSparklineMatrixEChart,
-            EChartMatrix,
-            EChartMatrixBody,
-            EChartMatrixBodyDataElem,
-            EChartMatrixCorner,
-            EChartMatrixXY,
-            EChartMatrixXAxis,
-            EChartMatrixYAxis,
-            EChartToolTip,
-            EChartDataZoomElem,
-            EChartGrid,
-            EChartSeriesBase,
-            EChartLineStyle,
-            )
-        from .enums import IPCC_Sector
 
-        n_rows = 8
-        n_cols = 9
-        list_of_sectors = [sector for sector in IPCC_Sector]
-
-        def body_data():
-            fontSize = 9
-            rval = []
-            rval.append(EChartMatrixBodyDataElem(
-                coord=[0, 0],
-                value='Total without LULUCF',
-                label=dict(color='#999', fontSize=fontSize, position='insideTop'),
-                ))
-            assert len(list_of_sectors) == 71
-            for row in range(n_rows):
-                for col in range(n_cols):
-                    if row == col == 0:
-                        continue
-                    sector = list_of_sectors[row * n_cols + col - 1]
-                    rval.append(
-                        EChartMatrixBodyDataElem(
-                            coord=[col, row],
-                            value=(sector.value
-                                   .replace('anufacturing', 'fg.')
-                                   .replace('roduction', 'rod.')
-                                   .replace('onsumption', 'ons.')
-                                   .replace('and Solvent Use', ', Solvents')
-                                   .replace('Carbon-Containing', '')
-                                  ),
-                            label=dict(color='#999',
-                                       fontSize=fontSize,
-                                       position='insideTop'),
-                            )
-                        )
-            return rval
+    def __init__(self, div_id):
+        self.div_id = div_id
+        self.grid_list = []
+        self.xAxis_list = []
+        self.yAxis_list = []
+        self.series_list = []
 
         # just a few points since the prediction is constant, but
         # the data zoom should still work reasonably
-        years = np.arange(1990, 2050+1, 10)
-        config = load_config(allow_version_mismatch=False)
+        self.years = np.arange(1990, 2050+1, 10)
 
-        grid_list = []
-        xAxis_list = []
-        yAxis_list = []
-        series_list = []
-        for row in range(n_rows):
-            for col in range(n_cols):
+    def load_data(self):
+        self.config = load_config(allow_version_mismatch=False)
+
+        self.data_by_sector = {
+            sector: self.helper_sector_mean(sector)
+            for sector in IPCC_Sector}
+
+    def order_sectors(self):
+
+        # order sectors by decreasing last-year uncertainty
+        non_lulucf_scores = [
+            (-hdata[2][-1][1], sector)
+            for sector, hdata in self.data_by_sector.items()
+            if sector not in LULUCF_Sectors]
+        non_lulucf_scores.sort()
+        self.sorted_non_lulucf = [sector for _, sector in non_lulucf_scores]
+        self.sorted_lulucf = [
+            IPCC_Sector.Forest_Land,
+            IPCC_Sector.Harvested_Wood_Products,
+            IPCC_Sector.Settlements,
+            IPCC_Sector.Cropland,
+            IPCC_Sector.Wetlands,
+            IPCC_Sector.Grassland,
+        ]
+        assert len(self.sorted_lulucf) == len(LULUCF_Sectors)
+
+    def body_data(self):
+        fontSize = 9
+        rval = []
+        rval.append(EChartMatrixBodyDataElem(
+            coord=[0, 0],
+            value='Total without LULUCF',
+            label=dict(color='#999', fontSize=fontSize, position='insideTop'),
+            ))
+        for row in range(self.n_non_lulucf_rows):
+            for col in range(self.n_cols):
                 if row == col == 0:
                     continue
-                sector = list_of_sectors[row * n_cols + col - 1]
-
-                grid_list.append(
-                    EChartGrid(
-                        id=f'grid_{col}|{row}',
-                        coordinateSystem='matrix',
+                try:
+                    sector = self.sorted_non_lulucf[row * self.n_cols + col - 1]
+                except IndexError:
+                    break
+                rval.append(
+                    EChartMatrixBodyDataElem(
                         coord=[col, row],
-                        top=25,
-                        bottom=10,
-                        left='center',
-                        width='90%',
-                        containLabel=True,
-                        ))
-                xAxis_list.append(
-                    EChartMatrixXAxis(
-                        type='category',
-                        id=f'xAxis_{col}|{row}',
-                        gridId=f'grid_{col}|{row}',
-                        scale=True,
-                        axisTick=dict(show=False),
-                        axisLabel=dict(show=False),
-                        axisLine=dict(show=False),
-                        splitLine=dict(show=False),
-                        ))
-                yAxis_list.append(
-                    EChartMatrixYAxis(
-                        id=f'yAxis_{col}|{row}',
-                        gridId=f'grid_{col}|{row}',
-                        interval=1_000_000_000_000, # was: Number.MAX_SAFE_INTEGER
-                        scale=True,
-                        axisLabel=dict(showMaxLabel=True,fontSize=9),
-                        axisLine=dict(show=False),
-                        axisTick=dict(show=False),
-                        ))
-                series_list.append(
-                    EChartSeriesBase(
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(width=2,lineWidth=1),
-                        data=self.helper_sector_mean(config, sector, years),
-                        ))
+                        value=(sector.value
+                               .replace('anufacturing', 'fg.')
+                               .replace('roduction', 'rod.')
+                               .replace('onsumption', 'ons.')
+                               .replace('and Solvent Use', ', Solvents')
+                               .replace('Carbon-Containing', '')
+                              ),
+                        label=dict(color='#999',
+                                   fontSize=fontSize,
+                                   position='insideTop'),
+                        )
+                    )
 
+        # merge the second-last row
+        rval.append(
+            EChartMatrixBodyDataElem(
+                coord=[None, self.n_total_rows - 2],
+                value='Land-Use, Land-Use Change, and Forestry (LULUCF)',
+                coordClamp=True,
+                mergeCells=True,
+                label=dict(color='#999',
+                           fontSize=14),
+                )
+            )
+
+        rval.append(EChartMatrixBodyDataElem(
+            coord=[0, self.n_total_rows - 1],
+            value='Total with LULUCF',
+            label=dict(color='#999', fontSize=fontSize, position='insideTop'),
+            ))
+
+        assert self.n_cols >= len(LULUCF_Sectors) + 1
+        for col_minus_1, sector in enumerate(self.sorted_lulucf):
+            rval.append(
+                EChartMatrixBodyDataElem(
+                    coord=[col_minus_1 + 1, self.n_total_rows - 1],
+                    value=sector.value,
+                    label=dict(color='#999',
+                               fontSize=fontSize,
+                               position='insideTop'),
+                    )
+                )
+        return rval
+
+    def row_minmax(self, sectors):
+        # compute ymax
+        row_ymax = -float('inf')
+        row_ymin = float('inf')
+        for sector in sectors:
+            mean_data, lbound_data, ubound_data = self.data_by_sector[sector]
+            ubounds = [
+                ubound_data[ii][1] + lval
+                for ii, (yr, lval) in enumerate(lbound_data)]
+            row_ymax = max(row_ymax, max(ubounds))
+            lbounds = [
+                lval
+                for ii, (yr, lval) in enumerate(lbound_data)]
+            row_ymin = min(row_ymin, min(lbounds))
+        # round up to nearest 2-significant-digit number
+        row_ymax = max(0, float(f'{row_ymax * 1.06:.2g}'))
+        row_ymin = min(0, float(f'{row_ymin * 1.06:.2g}'))
+        return row_ymin, row_ymax
+
+    def append_cell(self, row, col, sector, ymin, ymax):
+        color = self.palette[(row * self.n_cols + col - 1) % len(self.palette)]
+
+        self.grid_list.append(
+            EChartGrid(
+                id=f'grid_{col}|{row}',
+                coordinateSystem='matrix',
+                coord=[col, row],
+                top=25,
+                bottom=10,
+                left='center',
+                width='90%',
+                containLabel=True,
+                ))
+        self.xAxis_list.append(
+            EChartMatrixXAxis(
+                type='category',
+                id=f'xAxis_{col}|{row}',
+                gridId=f'grid_{col}|{row}',
+                scale=True,
+                axisTick=dict(show=False),
+                axisLabel=dict(show=False),
+                axisLine=dict(show=False),
+                splitLine=dict(show=False),
+                ))
+        self.yAxis_list.append(
+            EChartMatrixYAxis(
+                id=f'yAxis_{col}|{row}',
+                gridId=f'grid_{col}|{row}',
+                interval=1_000_000_000_000, # ensure just two ticks per axis
+                scale=True,
+                max=ymax,
+                min=ymin,
+                axisLabel=dict(showMaxLabel=True,
+                               fontSize=9,
+                               customValues=[ymin, 0, ymax]),
+                axisLine=dict(show=False),
+                axisTick=dict(show=False),
+                ))
+
+        mean_data, lbound_data, ubound_data = self.data_by_sector[sector]
+        self.series_list.append(
+            EChartSeriesBase(
+                xAxisId=f'xAxis_{col}|{row}',
+                yAxisId=f'yAxis_{col}|{row}',
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=2,
+                    color=color),
+                data=mean_data,
+                ))
+        self.series_list.append(
+            EChartSeriesBase(
+                xAxisId=f'xAxis_{col}|{row}',
+                yAxisId=f'yAxis_{col}|{row}',
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(opacity=0, color=color),
+                data=lbound_data,
+                stack=f'stack_{str(sector)}'
+                ))
+        self.series_list.append(
+            EChartSeriesBase(
+                xAxisId=f'xAxis_{col}|{row}',
+                yAxisId=f'yAxis_{col}|{row}',
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(opacity=0),
+                areaStyle=dict(opacity=.25),
+                itemStyle=EChartItemStyle(color=color),
+                data=ubound_data,
+                stack=f'stack_{str(sector)}'
+                ))
+
+    def add_non_lulucf_cells(self):
+        for row in range(self.n_non_lulucf_rows):
+            sectors = self.sorted_non_lulucf[
+                max(0, row * self.n_cols - 1):
+                (row + 1) * self.n_cols - 1]
+            row_ymin, row_ymax = self.row_minmax(sectors)
+            for col in range(self.n_cols):
+                if row == col == 0:
+                    continue
+                try:
+                    sector = self.sorted_non_lulucf[row * self.n_cols + col - 1]
+                except IndexError:
+                    break
+                self.append_cell(row, col, sector, row_ymin, row_ymax)
+
+    def add_lulucf_cells(self):
+        assert self.n_cols >= len(LULUCF_Sectors) + 1
+        row_ymin, row_ymax = self.row_minmax(self.sorted_lulucf)
+        for col_minus_1, sector in enumerate(self.sorted_lulucf):
+            self.append_cell(self.n_total_rows - 1,
+                             col_minus_1 + 1,
+                             sector, ymin=row_ymin,
+                             ymax=row_ymax)
+
+    def make_echart(self):
         rval = UncertainSparklineMatrixEChart(
-            div_id=div_id,
+            div_id=self.div_id,
             matrix=EChartMatrix(
                 x=EChartMatrixXY(
-                    length=9,
+                    length=self.n_cols,
                     levelSize=40,
                     show=False,
                     ),
                 y=EChartMatrixXY(
-                    length=8,
+                    length=self.n_total_rows,
                     levelSize=80,
                     show=False,
                     ),
-                corner=EChartMatrixCorner( data=[], label={},),
+                corner=EChartMatrixCorner(data=[], label={}),
                 body=EChartMatrixBody(
-                    data=body_data()),
+                    data=self.body_data()),
                 top=30,
                 bottom=80,
                 width='95%',
@@ -428,14 +565,38 @@ class Static_Normals(SiteInference):
                     throttle=120,
                     ),
                 ],
-            grid=grid_list,
-            xAxis=xAxis_list,
-            yAxis=yAxis_list,
-            series=series_list,
+            grid=self.grid_list,
+            xAxis=self.xAxis_list,
+            yAxis=self.yAxis_list,
+            series=self.series_list,
             width='100%',
-            height='900px',
+            height='1000px',
             )
         return rval
+
+
+
+class Static_Normals(SiteInference):
+    """Emissions per province and territory,
+    and per greenhouse gas, are distributed according
+    to non-time-varying Normal distributions.
+    (This is a baseline model.)
+    """
+
+    @computed_field
+    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
+        # Read the YAML file
+        with open('./cache/inference/Static_Normals/config.yaml', 'r') as file:
+            data = yaml.safe_load(file)
+            return data['predicted_emissions_2050_MtCO2e_bounds_ul']
+
+    def uncertain_sparkline_matrix_echart(self, div_id):
+        helper = SparklineEChartHelper(div_id)
+        helper.load_data()
+        helper.order_sectors()
+        helper.add_non_lulucf_cells()
+        helper.add_lulucf_cells()
+        return helper.make_echart()
 
 
 if __name__ == '__main__':

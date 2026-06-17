@@ -64,12 +64,16 @@ class EChartXAxis(StrictBaseModel):
     nameLocation: str = 'middle'
     nameGap: int = 30
     data: list[int]
+    min:float|str|None = None
+    max:float|str|None = None
 
 
 class EChartYAxis(StrictBaseModel):
     name: str
     nameLocation: str = 'middle'
     nameGap: int = 40
+    min:float|str|None = None
+    max:float|str|None = None
 
 
 class EChartLineStyle(StrictBaseModel):
@@ -77,6 +81,7 @@ class EChartLineStyle(StrictBaseModel):
     type: str | None = None
     color: str | None = None
     lineWidth:int|None = None
+    opacity:int|None = None
 
 
 class EChartItemStyle(StrictBaseModel):
@@ -94,11 +99,15 @@ class EChartSeriesBase(StrictBaseModel):
     yAxisIndex: int|None = None
     lineStyle: EChartLineStyle | None = EChartLineStyle(width=2)
     itemStyle: EChartItemStyle | None = None
+    areaStyle: dict|None = None
+
     data: list[EChartSeriesDataElem]|list[float]|list[list[float]]
 
     xAxisId:str|None = None
     yAxisId:str|None = None
     symbol:str|None = None
+
+    stack: str|None = None
 
 
 def EChartSeriesData(sts, times, v_unit, url):
@@ -213,9 +222,11 @@ class EChartMatrixCorner(StrictBaseModel):
 
 
 class EChartMatrixBodyDataElem(StrictBaseModel):
-    coord: str|list[int]
+    coord: str|list[int|None]
     value: str
     label: dict[str, object]
+    coordClamp: bool|None = None
+    mergeCells: bool|None = None
 
 
 class EChartMatrixBody(StrictBaseModel):
@@ -268,6 +279,8 @@ class EChartMatrixXAxis(StrictBaseModel):
     axisLabel:dict[str, object]
     axisLine:dict[str, object]
     splitLine:dict[str, object]
+    min:float|str|None = None
+    max:float|str|None = None
 
 
 class EChartMatrixYAxis(StrictBaseModel):
@@ -278,6 +291,8 @@ class EChartMatrixYAxis(StrictBaseModel):
     axisTick:dict[str, object]
     axisLabel:dict[str, object]
     axisLine:dict[str, object]
+    min:float|str|None = None
+    max:float|str|None = None
 
 
 
