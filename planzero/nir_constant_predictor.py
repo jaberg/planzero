@@ -286,7 +286,7 @@ class SparklineEChartHelper(object):
     n_total_rows = n_non_lulucf_rows + 2
     n_cols = 7
 
-    def __init__(self, div_id):
+    def __init__(self, div_id, v_unit):
         self.div_id = div_id
         self.grid_list = []
         self.xAxis_list = []
@@ -300,6 +300,12 @@ class SparklineEChartHelper(object):
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
         self.data_by_sector = {} # real sector and pseudo-sector
+        if v_unit == 'Mt_CO2e':
+            self.v_unit_scale = 0.001
+        elif v_unit == 'kt_CO2e':
+            self.v_unit_scale = 1
+        else:
+            raise NotImplementedError(v_unit)
 
     def add_data_for_sector(self, sector, sector_mean, lbound, ubound):
         assert sector not in self.data_by_sector
@@ -351,11 +357,11 @@ class SparklineEChartHelper(object):
                         .reshape((n_chains * n_samples, n_regions))
                         .mean(axis=0) # across samples and chains
                         .sum(axis=0)) # over regions
-                    sector_mean += sector_mean_ghg * config_sg['scale']
+                    sector_mean += sector_mean_ghg * config_sg['scale'] * self.v_unit_scale
 
                     estimates[:, :, ii] *= samples['sigma_ca']
                     estimates[:, :, ii] += samples['mu'].sum(axis=2)
-                    estimates[:, :, ii] *= config_sg['scale']
+                    estimates[:, :, ii] *= config_sg['scale'] * self.v_unit_scale
 
             sector_estimates = np.sum(estimates, axis=2)
 
@@ -481,11 +487,11 @@ class SparklineEChartHelper(object):
             row_ymin = min(row_ymin, min(data['lbounds']))
 
             if 'Total' in sector:
-                actuals = np.sum(self.arr_ca, axis=(0, 1))
+                actuals = np.sum(self.arr_ca, axis=(0, 1)) * self.v_unit_scale
             else:
-                actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
-                row_ymax = max(row_ymax, np.nanmax(actuals))
-                row_ymin = min(row_ymin, np.nanmin(actuals))
+                actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0) * self.v_unit_scale
+            row_ymax = max(row_ymax, np.nanmax(actuals))
+            row_ymin = min(row_ymin, np.nanmin(actuals))
 
         # round up to nearest 2-significant-digit number
         row_ymax = max(0, float(f'{row_ymax * 1.06:.2g}'))
@@ -542,6 +548,8 @@ class SparklineEChartHelper(object):
             actuals = np.sum(self.arr_ca, axis=(0, 1))
         else:
             actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
+
+        actuals = actuals * self.v_unit_scale
 
         self.series_list.append(
             EChartSeriesBase(
@@ -715,18 +723,21 @@ class Static_Normals(SiteInference):
 
     @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        # Read the YAML file
-        with open('./cache/inference/Static_Normals/config.yaml', 'r') as file:
-            data = yaml.safe_load(file)
-            return data['predicted_emissions_2050_MtCO2e_bounds_ul']
+        helper = SparklineEChartHelper(div_id=None, v_unit='Mt_CO2e')
+        helper.load_data()
+        sector = PseudoSectors.Total_with_LULUCF
+        rval = (helper.data_by_sector[sector]['lbound'],
+                helper.data_by_sector[sector]['ubound'])
+        return rval
 
-    def uncertain_sparkline_matrix_echart(self, div_id):
-        helper = SparklineEChartHelper(div_id)
+
+    def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
+        helper = SparklineEChartHelper(div_id, v_unit)
         helper.load_data()
         helper.order_sectors()
+        helper.add_total_cells()
         helper.add_non_lulucf_cells()
         helper.add_lulucf_cells()
-        helper.add_total_cells()
         return helper.make_echart()
 
 

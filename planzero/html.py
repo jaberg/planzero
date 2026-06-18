@@ -209,8 +209,8 @@ class StackedAreaEChart(HTML_element):
 
 
 class EChartMatrixXY(StrictBaseModel):
-    #data
-    length:int
+    data:list[object]|None = None
+    length:int|None = None
     levelSize:int
     label:dict[str,object]|None = None
     show:bool
