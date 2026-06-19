@@ -78,11 +78,11 @@ def ar2_scan_random_walk(scaled_ca,
     mu_0 = numpyro.sample(
         "mu_0",
         dist.Normal(0, 1).expand((13,)),
-        obs=approx_obs[:, 0])
+        )
     mu_1 = numpyro.sample(
         "mu_1",
         dist.Normal(0, 1).expand((13,)),
-        obs=approx_obs[:, 1])
+        )
 
     init = (mu_1, mu_0)
     _, mu = scan(transition, init, timesteps)
