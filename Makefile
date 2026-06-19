@@ -299,3 +299,14 @@ cache/inference/Static_Normals/sentinel:
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -m planzero.nir_constant_predictor
+
+
+cache/inference/AR2/sentinel:
+	# Perform inference for the AR2 model
+	# save multiple files in this directory
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero.nir_ar2

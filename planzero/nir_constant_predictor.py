@@ -174,7 +174,6 @@ def main():
 
     config_data = {
         'near_zero_sector_ghgs': [],
-        'predicted_emissions_2050_MtCO2e_bounds_ul': [0, 1000],
         'version': version,
     }
     nontrivial = []
