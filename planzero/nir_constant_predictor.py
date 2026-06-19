@@ -123,6 +123,7 @@ def sector_ghg_config_path(sector, ghg):
 class VersionMismatch(RuntimeError):
     pass
 
+# TODO: refactor with nir_ar2
 
 def load_config(allow_version_mismatch):
     with open(f'{model_root()}/config.yaml', 'r') as config_file:
@@ -285,6 +286,8 @@ class SparklineEChartHelper(object):
     n_total_rows = n_non_lulucf_rows + 2
     n_cols = 7
 
+    credibility_interval_95 = (.025, .975)
+
     def __init__(self, div_id, v_unit):
         self.div_id = div_id
         self.grid_list = []
@@ -336,8 +339,6 @@ class SparklineEChartHelper(object):
         mean_without_lulucf = 0
         estimates_without_lulucf = np.zeros((n_new_draws, n_samples))
 
-        credibility_interval_95 = [.025, .975]
-
         for sector in IPCC_Sector:
             sector_mean = 0
 
@@ -366,7 +367,7 @@ class SparklineEChartHelper(object):
 
             lbound, ubound = np.quantile(
                 sector_estimates.flatten(),
-                credibility_interval_95)
+                self.credibility_interval_95)
 
             self.add_data_for_sector(sector, sector_mean, lbound, ubound)
 
@@ -378,7 +379,7 @@ class SparklineEChartHelper(object):
 
         lbound_with_lulucf, ubound_with_lulucf = np.quantile(
             estimates_with_lulucf.flatten(),
-            credibility_interval_95)
+            self.credibility_interval_95)
         self.add_data_for_sector(
             PseudoSectors.Total_with_LULUCF,
             mean_with_lulucf,
@@ -387,7 +388,7 @@ class SparklineEChartHelper(object):
 
         lbound_without_lulucf, ubound_without_lulucf = np.quantile(
             estimates_without_lulucf.flatten(),
-            credibility_interval_95)
+            self.credibility_interval_95)
         self.add_data_for_sector(
             PseudoSectors.Total_without_LULUCF,
             mean_without_lulucf,

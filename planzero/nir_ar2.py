@@ -127,18 +127,31 @@ def ar2_scan_random_walk(scaled_ca,
         numpyro.sample("past-ca-1",
                        dist.Normal(jnp.sum(mu_1step, axis=1), noise_ca))
 
-def sample_past_given_mu(samples, key):
+def sample_past_given_mu(samples, key, pad_mu0_m1=False):
     rval = dict(samples)
     key_a, key_b = jrandom.split(key, 2)
-    mu = samples['mu']
+    if pad_mu0_m1:
+        mu = np.empty(
+            (samples['mu'].shape[0],
+             samples['mu'].shape[1] + 2,
+             samples['mu'].shape[2]),)
+        mu[:, 0] = samples['mu'][: , 0]
+        mu[:, 1] = samples['mu'][: , 0]
+        mu[:, 2:] = samples['mu']
+    else:
+        mu = samples['mu']
     past_pt_dist = SymmetricBlendedLogNormal.rolloff_relerr(
                        mu,
                        rolloff=rolloff,
                        relerr=relerr)
     rval['past-pt'] = past_pt_dist.sample(key=key_a)
-    target_ca_mean = jnp.sum(mu, axis=1)
+
+    # relative to code in ar2_scan_random_walk
+    # a samples dimension has been added up front, so the axis is 2 here
+    # (TODO: figure out how to use numpyro effect handlers)
+    mean_ca = jnp.sum(mu, axis=2)
     past_ca_dist = SymmetricBlendedLogNormal.rolloff_relerr(
-                       target_ca_mean,
+                       mean_ca,
                        rolloff=rolloff,
                        relerr=relerr)
     rval['past-ca'] = past_ca_dist.sample(key=key_b)
