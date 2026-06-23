@@ -304,9 +304,11 @@ cache/inference/Static_Normals/sentinel:
 cache/inference/AR2/sentinel:
 	# Perform inference for the AR2 model
 	# save multiple files in this directory
+	#
+	# Slow to run though! Takes maybe 2 hours?
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-e PLANZERO_USE_DISK_CACHE=0 \
 		-w /mnt/ \
 		-it --rm $(target) \
-		python -m planzero.nir_ar2
+		python -m planzero nir_ar2_inference

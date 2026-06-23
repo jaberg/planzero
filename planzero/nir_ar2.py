@@ -98,6 +98,22 @@ def ar2_scan_random_walk(scaled_ca,
                                    noise_ca),
                        obs=scaled_ca[2:future_idx] if observe_past else None)
     else:
+        past_pt_dist0 = SymmetricBlendedLogNormal.rolloff_relerr(
+                           mu_0,
+                           rolloff=rolloff,
+                           relerr=relerr)
+        numpyro.sample("past-pt0",
+                       past_pt_dist0.mask(obs_valid[:, 0]),
+                       obs=approx_obs[:, 0] if observe_past else None)
+
+        past_pt_dist1 = SymmetricBlendedLogNormal.rolloff_relerr(
+                           mu_1,
+                           rolloff=rolloff,
+                           relerr=relerr)
+        numpyro.sample("past-pt1",
+                       past_pt_dist1.mask(obs_valid[:, 1]),
+                       obs=approx_obs[:, 1] if observe_past else None)
+
         past_pt_dist = SymmetricBlendedLogNormal.rolloff_relerr(
                            mu[:n_past_steps - 2],
                            rolloff=rolloff,
@@ -261,6 +277,8 @@ class NIR2025_AR2(object):
     @classmethod
     def posterior_inference(cls, sector, ghg, last_train_year, version=version,
                             thinning=1,
+                            num_warmup=1000,
+                            num_samples=2000,
                             n_future_timesteps=0):
         future_idx = cls.idx_of_last_train_year(last_train_year)
         self = cls(sector, ghg, future_idx=future_idx)
@@ -272,11 +290,13 @@ class NIR2025_AR2(object):
                  init_strategy=init_to_value(
                      values={"alpha_1": jnp.zeros(13) + .5,
                              "alpha_2": jnp.zeros(13) + .5,
-                             "mu": self.approx_obs[:, 2:].T
+                             "mu": self.approx_obs[:, 2:].T,
+                             "mu_0": self.approx_obs[:, 0],
+                             "mu_1": self.approx_obs[:, 1],
                             }
                      )),
-            num_warmup=1000,
-            num_samples=2000,
+            num_warmup=num_warmup,
+            num_samples=num_samples,
             thinning=thinning)
         with numpyro.validation_enabled():
             mcmc.run(rng_key_,
@@ -407,6 +427,8 @@ def main():
         'version': version,
         'last_train_year': 2022,
         'thinning': 10,
+        'num_warmup': 500,
+        'num_samples': 2000,
         'save_params': ['alpha_1', 'alpha_2', 'mu_0', 'mu_1', 'mu'],
         'n_future_timesteps': 0,
     }
@@ -456,6 +478,8 @@ def main():
             last_train_year=config_data['last_train_year'],
             version=None,
             thinning=config_data['thinning'],
+            num_warmup=config_data['num_warmup'],
+            num_samples=config_data['num_samples'],
             n_future_timesteps=config_data['n_future_timesteps'],
             )
         for key, arr in self.post_samples.items():

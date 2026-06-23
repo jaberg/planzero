@@ -30,7 +30,7 @@ class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
         self.years = np.arange(1990, 2050+1)
         self.config = load_config(allow_version_mismatch=False)
 
-        n_samples = 200 # match saved data
+        n_samples = self.config['num_samples'] // self.config['thinning']
         n_mu_timesteps_to_2022 = 31 # for NIR-2025
         n_mu_timesteps_to_2050 = n_mu_timesteps_to_2022 + 27
         n_regions = 13
@@ -161,7 +161,7 @@ class RegionalSparklineEChartHelper(nir_constant_predictor.RegionalSparklineECha
         self.years = np.arange(1990, 2050+1)
         self.config = load_config(allow_version_mismatch=False)
 
-        n_samples = 200 # match saved data
+        n_samples = self.config['num_samples'] // self.config['thinning']
         n_mu_timesteps_to_2022 = 31 # for NIR-2025
         n_mu_timesteps_to_2050 = n_mu_timesteps_to_2022 + 27
         n_regions = 13
