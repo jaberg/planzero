@@ -75,14 +75,8 @@ def ar2_scan_random_walk(scaled_ca,
         scaled_pt[:, :future_idx],
         jnp.nanmean(scaled_pt[:, :future_idx], axis=1, keepdims=True))
 
-    mu_0 = numpyro.sample(
-        "mu_0",
-        dist.Normal(0, 1).expand((13,)),
-        )
-    mu_1 = numpyro.sample(
-        "mu_1",
-        dist.Normal(0, 1).expand((13,)),
-        )
+    mu_0 = numpyro.sample("mu_0", dist.Normal(0, mu_sigma))
+    mu_1 = numpyro.sample("mu_1", dist.Normal(0, mu_sigma))
 
     init = (mu_1, mu_0)
     _, mu = scan(transition, init, timesteps)

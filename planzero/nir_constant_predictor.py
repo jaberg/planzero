@@ -1181,7 +1181,7 @@ class Static_Normals(SiteInference):
         helper = RegionalSparklineEChartHelper(
             sector=sector,
             ghg=ghg,
-            div_id=f'regional_sparkline_echart_{ghg.value if ghg else "all"}',
+            div_id=f'{self.__class__.__name__}_regional_sparkline_echart_{ghg.value if ghg else "all"}',
             v_unit=v_unit)
         helper.load_data()
         helper.order_regions()

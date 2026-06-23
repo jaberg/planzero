@@ -174,6 +174,26 @@ class TwoProbabilisticModels(BlogPost):
             draft=True,
             )
 
+    @staticmethod
+    def generate_assets():
+        from . import prob
+        from .enums import IPCC_Sector, GHG
+
+        for model_name, site_inference in prob.site_inferences.items():
+            base = 'html/blog/2026-04-26-probabilistic-modelling'
+            if model_name in ('Static_Normals', 'AR2'):
+                site_inference.uncertain_sparkline_matrix_echart(
+                    div_id=f"{model_name}_all_sectors",
+                    v_unit="Mt_CO2e").save_as(
+                        f'{base}-{model_name}-all_sectors.html')
+                site_inference.sector_echart(
+                    sector=IPCC_Sector.Harvested_Wood_Products,
+                    ghg=GHG.CO2,
+                    v_unit="Mt_CO2e").save_as(
+                        f'{base}-{model_name}-HWP.html')
+            else:
+                continue
+
     def ar2_model(self, sector, ghg):
         from .nir_ar2 import NIR2025_AR2, load_config_samples
         config, grouped_samples = load_config_samples(sector, ghg)

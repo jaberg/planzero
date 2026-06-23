@@ -5,6 +5,7 @@ from . import (
     strategies,
     barriers,
     sim,
+    prob,
     )
 
 
@@ -28,6 +29,12 @@ def endpoints():
 
         for catpath in ipcc_canada.catpaths:
             rval.append(f"/models/sim/{sim_name}/ipcc-sectors/{catpath}/")
+
+    for model_name, site_inf in sorted(prob.site_inferences.items()):
+        rval.append(f"/models/prob/{model_name}/")
+
+        for catpath in ipcc_canada.catpaths:
+            rval.append(f"/models/sim/{sim_name}/sectors/{catpath}/")
 
     rval.extend([
         "/",
