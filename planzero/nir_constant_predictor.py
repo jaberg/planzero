@@ -17,7 +17,7 @@ import yaml
 from .my_functools import inference_cache
 from . import nir2025
 from .prob import SiteInference
-from .enums import IPCC_Sector, GHG, PT
+from .enums import IPCC_Sector, GHG, PT, LULUCF_Sectors
 
 
 version = 0.1 # float
@@ -502,7 +502,43 @@ class SparklineEChartHelper(object):
         return row_ymin, row_ymax
 
     def append_cell(self, row, col, sector, ymin, ymax, yAxis_customValues=None):
-        color = self.palette[(row * self.n_cols + col - 1) % len(self.palette)]
+        #color = self.palette[(row * self.n_cols + col - 1) % len(self.palette)]
+        if sector in LULUCF_Sectors:
+            color = self.palette[9]
+        elif sector == PseudoSectors.Total_without_LULUCF:
+            color = self.palette[10]
+        elif sector == PseudoSectors.Total_with_LULUCF:
+            color = self.palette[11]
+        else:
+            color = {
+                # energy - stationary
+                'Stationary_Combustion_Sources': self.palette[0],
+                # energy - transport
+                'Transport': self.palette[1],
+                'CO2_Transport_and_Storage': self.palette[1],
+                # extraction - fugitive
+                'Fugitive_Sources': self.palette[7],
+                # industrial
+                'Mineral_Products': self.palette[3],
+                'Chemical_Industry': self.palette[4],
+                'Metal_Production': self.palette[5],
+                'Production_and_Consumption_of_Halocarbons,_SF6_and_NF3': self.palette[6],
+                'Non-Energy_Products_from_Fuels_and_Solvent_Use': self.palette[6],
+                'Other_Product_Manufacture_and_Use': self.palette[6],
+                # agriculture
+                'Enteric_Fermentation': self.palette[2],
+                'Manure_Management': self.palette[2],
+                'Agricultural_Soils': self.palette[2],
+                'Field_Burning_of_Agricultural_Residues': self.palette[2],
+                'Liming,_Urea_Application_and_Other_Carbon-Containing_Fertilizers': self.palette[2],
+                # waste
+                'Municipal_Solid_Waste_Landfills': self.palette[8],
+                'Industrial_Wood_Waste_Lanfills': self.palette[8], # known typo
+                'Biological_Treatment_of_Solid_Waste': self.palette[8],
+                'Incineration_and_Open_Burning_of_Waste': self.palette[8],
+                'Municipal_Wastewater_Treatment_and_Discharge': self.palette[8],
+                'Industrial_Wastewater_and_Discharge': self.palette[8],
+            }[sector.catpath_no_whitespace.split('/')[0]]
 
         self.grid_list.append(
             EChartGrid(
@@ -515,11 +551,12 @@ class SparklineEChartHelper(object):
                 width='90%',
                 containLabel=True,
                 ))
-        self.grid_links.append(
-            GridLinkElem(
-                gridId=f'grid_{col}|{row}',
-                url=f'/models/prob/{self.model_name}/sectors/{sector.value}',
-                ))
+        if sector in IPCC_Sector:
+            self.grid_links.append(
+                GridLinkElem(
+                    gridId=f'grid_{col}|{row}',
+                    url=f'/models/prob/{self.model_name}/sectors/{sector.value}',
+                    ))
         self.xAxis_list.append(
             EChartMatrixXAxis(
                 type='category',
@@ -582,6 +619,7 @@ class SparklineEChartHelper(object):
                 symbol='none',
                 lineStyle=EChartLineStyle(
                     width=2,
+                    type='dotted',
                     color=color),
                 data=list(zip(self.years, data['means'])),
                 ))
@@ -984,6 +1022,7 @@ class RegionalSparklineEChartHelper(object):
                 symbol='none',
                 lineStyle=EChartLineStyle(
                     width=2,
+                    type='dotted',
                     color=color),
                 data=list(zip(self.years, data['means'])),
                 ))

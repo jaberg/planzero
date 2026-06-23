@@ -17,9 +17,14 @@
 <p>
 Emissions are summarized by year, and in terms of total Mt{{CO2e|safe}}
 per non-aggregate {{siteref("NIR")|safe}} sector.
-They are ordered by decreasing maximum upper bound on a yearly 95% credibility interval.
-The black line is the reported historical emissions.
+The black line is the reported historical emissions,
+the dotted line is the model-estimated mean,
+the shaded region is the model-estimated 95% {{siteref("Credible Interval", "credible interval")|safe}}.
+They are ordered by decreasing maximum upper bound on the credible interval.
 Adjust the slider below each grid of figures to see the active date range and focus on specific periods.
+For information about the model itself, refer to
+<a href="#posts">posts developing this page</a>
+at the bottom of this page.
 </p>
 
 
@@ -81,6 +86,13 @@ Adjust the slider below each grid of figures to see the active date range and fo
 
 </p>
 -->
+
+<h2 id="posts">Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag(ident) %}
+<li><a href="/post/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
 
 <ul class="actions special">
     <li><a href="/models/prob/{{ident}}/" class="button">Back to {{ident.replace('_', ' ')}} Overview</a></li>

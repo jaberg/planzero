@@ -78,7 +78,7 @@ class EChartYAxis(StrictBaseModel):
 
 class EChartLineStyle(StrictBaseModel):
     width: int|None = 2
-    type: str | None = None
+    type: str | None = None # solid, dashed, dotted
     color: str | None = None
     lineWidth:int|None = None
     opacity:int|None = None

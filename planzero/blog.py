@@ -167,8 +167,10 @@ class TwoProbabilisticModels(BlogPost):
             title='Two Probabilistic Models of NIR-2025',
             url_filename="2026-05-26-probabilistic-modelling",
             author="James Bergstra",
-            tags={BlogTag.BarrierModelling,
-                  BlogTag.NIR_Modelling},
+            tags={BlogTag.NIR_Modelling,
+                  'AR2',
+                  'Static_Normals',
+                 },
             draft=True,
             )
 

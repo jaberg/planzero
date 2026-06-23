@@ -352,6 +352,7 @@ IPCC_Sector.Liming_Urea_Other.catpath_no_whitespace = 'Liming,_Urea_Application_
 IPCC_Sector.Liming_Urea_Other.catpath_with_whitespace = 'Liming, Urea Application and Other Carbon-Containing Fertilizers'
 IPCC_Sector.Municipal_Solid_Waste_Landfills.catpath_no_whitespace = 'Municipal_Solid_Waste_Landfills'
 IPCC_Sector.Municipal_Solid_Waste_Landfills.catpath_with_whitespace = 'Municipal Solid Waste Landfills'
+# known typo "Lanfills", possibly comes from NIR2025 csv
 IPCC_Sector.Industrial_Wood_Waste_Landfills.catpath_no_whitespace = 'Industrial_Wood_Waste_Lanfills'
 IPCC_Sector.Industrial_Wood_Waste_Landfills.catpath_with_whitespace = 'Industrial Wood Waste Lanfills'
 IPCC_Sector.Biological_Treatment_of_Solid_Waste.catpath_no_whitespace = 'Biological_Treatment_of_Solid_Waste'

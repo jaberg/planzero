@@ -1592,3 +1592,23 @@ class Probability_Distribution(GlossaryTerm):
             (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
         ]
 
+class Credible_Interval(GlossaryTerm):
+    """A <a href="https://en.wikipedia.org/wiki/Credible_interval">credible interval</a> is the set of values that a
+    random variable in a probabilistic model might most-credibly take.
+    For example, a 95% credible interval is the smallest interval containing
+    the 95% most-probable values for the random variable.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Random_Variable': 'the model element associated with a credible interval',
+            'Probabilistic_Model': 'credible intervals arise only in probabilistic modelling',
+            'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
