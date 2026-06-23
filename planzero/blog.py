@@ -122,7 +122,7 @@ class Uncertainty(BlogPost):
             )
 
 
-class TwoProbabilisticModels(BlogPost):
+class YearOutLastYearPrediction(BlogPost):
     """
     This post introduces probabilistic modelling to PlanZero.
     Probabilistic modelling extends simulation-based modelling with
@@ -139,6 +139,30 @@ class TwoProbabilisticModels(BlogPost):
 
     def __init__(self):
         super().__init__(
+            date=datetime.datetime(2026, 6, 19),
+            title='Year-Out Last-Year Prediction of 2023 Emissions from NIR-2025',
+            url_filename="2026-06-19-yoly-2025",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,},
+            draft=True,
+            concept_only=True,
+            )
+
+class TwoProbabilisticModels(BlogPost):
+    """
+    This post introduces probabilistic modelling to PlanZero.
+    Probabilistic modelling extends simulation-based modelling with
+    a capacity to fit model parameters to data.
+    Two models are introduced: a simple baseline that assumes
+    emissions don't change over time, and a more sophisticated
+    model based on a two-step autoregressive process (AR-2).
+    Both models estimate provincial and territorial emissions
+    for every sector and greenhouse gas, in which provincial and
+    territorial emissions sum up to national totals.
+    """
+
+    def __init__(self):
+        super().__init__(
             date=datetime.datetime(2026, 5, 26),
             title='Two Probabilistic Models of NIR-2025',
             url_filename="2026-05-26-probabilistic-modelling",
@@ -149,37 +173,16 @@ class TwoProbabilisticModels(BlogPost):
             )
 
     def ar2_model(self, sector, ghg):
-        from .nir_ar2 import NIR2025_AR2
-        version = 3
-        # some alpha1 and alpha2 are too big
-        #
-        # alpha1 and alpha2 are mistakenly printed for Canada
-        # rhat has some poor fits: plot goes up to 3.5, and significant mass above 1.2
-        # quebec is fit really poorly, demonstrates the mu vs. obs inversion,
-        # due to alpha1 and 2 being negative
-        #
-        # yukon, PEI, NWT and Nunuvut need constant models
-        #
-        # mu and recon peaks are one step off on BC
-        #
-        # Actions
-        # * fix canada printing of alpha
-        # * bound alpha1 and alpha2 with Kumaraswamy distribution
-        #
-        version = 3.1
-        # OBSERVATIONS
-        # * rhat looking good
-        # * fits looking good, although could be improved for const regions
-        #
-        # ACTION
-        # * move obs_sigma into the model so that it carries
-        #   using JohnsonSU
-        #   forward properly
-        version = 3.293
-        model = NIR2025_AR2.posterior_inference(
-            sector=sector, ghg=ghg,
-            last_train_year=2022,
-            version=version)
+        from .nir_ar2 import NIR2025_AR2, load_config_samples
+        config, grouped_samples = load_config_samples(sector, ghg)
+        model = NIR2025_AR2(
+            sector=sector,
+            ghg=ghg,
+            future_idx=NIR2025_AR2.idx_of_last_train_year(2022))
+        model.grouped_samples = grouped_samples
+        model.post_samples = {
+            key: val.reshape(-1, *val.shape[2:])
+            for key, val in grouped_samples.items()}
         return model
 
     def const_sector_ghg(self, ax, sector, ghg):
@@ -433,7 +436,7 @@ class TwoProbabilisticModels(BlogPost):
         sector = IPCC_Sector.Harvested_Wood_Products
         ghg = GHG.CO2
         model = self.ar2_model(sector, ghg)
-        grouped_samples = model.mcmc.get_samples(group_by_chain=True)
+        grouped_samples = model.grouped_samples
         from numpyro.diagnostics import summary
         diagnostics = summary(grouped_samples, prob=0.90, group_by_chain=True)
         print(diagnostics['alpha_1']['r_hat'].shape)

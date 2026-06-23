@@ -24,7 +24,6 @@ from .symmetric_blended_lognormal import SymmetricBlendedLogNormal
 version = 0.1
 
 rolloff = 0.1
-relerr = 0.05
 
 
 def ar2_scan_random_walk(scaled_ca,
@@ -33,6 +32,7 @@ def ar2_scan_random_walk(scaled_ca,
                          future_idx,
                          noise_ca,
                          pt_rms,
+                         relerr,
                          observe_past=True,
                          n_future_timesteps=10):
 
@@ -127,16 +127,23 @@ def ar2_scan_random_walk(scaled_ca,
         numpyro.sample("past-ca-1",
                        dist.Normal(jnp.sum(mu_1step, axis=1), noise_ca))
 
-def sample_past_given_mu(samples, key, pad_mu0_m1=False):
+
+def sample_past_given_mu(samples, key, relerr, pad_mu0_m1=False):
     rval = dict(samples)
     key_a, key_b = jrandom.split(key, 2)
     if pad_mu0_m1:
         mu = np.empty(
             (samples['mu'].shape[0],
              samples['mu'].shape[1] + 2,
-             samples['mu'].shape[2]),)
-        mu[:, 0] = samples['mu'][: , 0]
-        mu[:, 1] = samples['mu'][: , 0]
+             samples['mu'].shape[2]),
+            dtype=str(samples['mu'].dtype)
+            )
+        if 'mu_0' in samples:
+            mu[:, 0] = samples['mu_0']
+            mu[:, 1] = samples['mu_1']
+        else:
+            mu[:, 0] = samples['mu'][: , 0]
+            mu[:, 1] = samples['mu'][: , 0]
         mu[:, 2:] = samples['mu']
     else:
         mu = samples['mu']
@@ -225,10 +232,19 @@ class NIR2025_AR2(object):
 
     @property
     def noise_ca(self):
+        # delete?
         if self.sector == IPCC_Sector.Harvested_Wood_Products:
             return 0.05
         else:
             return 0.015
+
+    @property
+    def relerr(self):
+        # delete?
+        if self.sector == IPCC_Sector.Cropland:
+            return 0.5
+        else:
+            return 0.05
 
     @staticmethod
     def idx_of_last_train_year(last_train_year):
@@ -270,6 +286,7 @@ class NIR2025_AR2(object):
                      future_idx=future_idx,
                      noise_ca=self.noise_ca,
                      pt_rms=self.pt_rms,
+                     relerr=self.relerr,
                      n_future_timesteps=n_future_timesteps,
                     )
         #mcmc.print_summary()
@@ -291,6 +308,7 @@ class NIR2025_AR2(object):
             sector_ghg_scale=self.scale,
             future_idx=self.future_idx,
             noise_ca=self.noise_ca,
+            relerr=self.relerr,
             pt_rms=self.pt_rms,
             observe_past=False,
             )
@@ -309,6 +327,7 @@ class NIR2025_AR2(object):
             scaled_pt=self.scaled_pt,
             sector_ghg_scale=self.scale,
             future_idx=self.future_idx,
+            relerr=self.relerr,
             noise_ca=self.noise_ca,
             pt_rms=self.pt_rms,
             )

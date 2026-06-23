@@ -27,205 +27,58 @@ Table of Contents:
 <h2 id="introduction">Introduction</h2>
 
 <p>
-PlanZero has used many kinds of data to date,
-starting with the 2025 {{siteref("NIR")}},
-it has visualized that data, and it has simulated
-a strategy on the basis of that data and some additional assumptions,
-but it has not employed probabilistic modelling.
-Probabilistic modelling is the construction of probabilistic models
-(relationships between random variables) and inference of how those
-variables might correspond to actual data (observations).
-Probabilistic modelling is good for prediction with quantified uncertainty:
-prediction of the future, prediction of past statistics
-that were not directly observed, or even prediction of past statistics
-that were directly observed but with insufficient precision.
+If I were to predict that the Canadian national emissions
+total for 2025 would be exactly 690.395 Mt{{CO2e|safe}},
+it would be silly because (a)
+how could the total be that exact, specific number, and
+(b) who would care about that degree of precision when
+there are a few percentage points worth of error on those
+totals anyway?
 </p>
 
 <p>
-This post accompanies the introduction of probabilistic modelling to
-the PlanZero site.
-The glossary has been updated with several terms related to content in this post.
-What used to be the "simulations" tab has been renamed "models",
-and the previous content is now in a section of that page called
-"Simulation-based models", beside a new section of "Probabilistic Models".
-There is now also a "Predictions" tab offering a new perspective
-on PlanZero modelling that is possible with probabilistic models.
-The Predictions tab lists prediction challenges and the scores of
-prediction models (for the two models introduced in this post,
-on the prediction challenge that is also introduced in this post).
+If I were to claim instead that they <i>might</i>
+be exactly that amount, then again
+it would be a silly statement because
+of course it's possible; why not?
 </p>
 
 <p>
+The way people have learned to make predictions about such things
+is to use the language of probability.
+A {{siteref("Probability Distribution", "probability distribution")|safe}} is a table (or function) of 
+the relative probabilities of all the possible values of an
+unknown quantity (a <i>{{siteref("Random Variable", "random variable")|safe}}</i>), such the 2025 emissions total in the future 2027
+National Inventory Report.
+The emissions total has to be <i>some value</i> so the probabilities
+of all of it's <i>possible values</i> add up to 1.
+A non-silly prediction about the 2025 emissions in the 2027 report
+might be that "there's a 15% chance the total will be between
+690 and 700 Mt{{CO2e|safe}}."
+That prediction would be the result of adding up
+the probabilities of values from 690 to 700
+according to a probability distribution.
+</p>
+
+<p>
+PlanZero has not, until this post,
+produced probability distributions
+for e.g. future emission quantities.
 The post introduces probabilistic modelling via two models:
-a straw-man "Constant" model,
-and a demonstrably and qualitatively superior 2-step autoregressive "AR2" model.
-The Constant model is simpler, and serves to explain how probabilistic modelling works
-because its random variables are easier to visualize.
-The AR2 model is more complex, but more realistic (it reflects that the 
-rates of emission in a sector can change over time, which the Constant model ignores).
-With two models at hand, the post explains how models can be compared
-quantitatively for a particular task of future-emissions-prediction.
-</p>
-
-<p>
-Before we get into the models and model comparisons though,
-the first section introduces the technique of probabilistic modelling
-by motivating <i>why</i> PlanZero would employ it, when after all,
-probabilistic modelling is more mathematically and computationally demanding than the the
-simulation-based modelling employed so far.
-</p>
-
-<!--
-<p>
-A probabilistic model (also statistical model, stochastic model, or graphical model),
-can do any or all of the following things:
-<ul>
-    <li>assess the probability of data (typically higher is better)</li>
-    <li>generate plausible data, by sampling</li>
-    <li>support infererence of meaningful <i>latent variables</i>, such as the
-        parameters of appropriately-chosen probability distributions over
-        oberved data</li>
-</ul>
-This post focuses on basic concepts of probabilistic modelling,
-applying all three capabilities above to the NIR-2025 data,
-and numerically assessing whether one model is a better predictor of the future than another model.
-It does this by first developing a very simple model.
-Even though this first model is essentially just mean and variance (<a href="#constant">Modelling NIR-2025 with Constants</a>),
-it still goes through the motions of Bayesian modelling because
-those motions can be repeated to understand more elaborate models, such
-as the two-step autogressive model that's developed in the following section (<a href="#ar2">Modelling NIR-2025 with an AR2 Process</a>).
-</p>
--->
-
-
-<h2 id="motivation">Prediction with Quantified Confidence: the Motivation for Probabilic Modelling</h2>
-
-<p>
-PlanZero's <a href="/about/#overview">mission</a> calls for
-both short-, medium-, and long-term prediction capabilities suitable for the evaluation
-of strategies. The credibility and usefulness of model predictions rests on three pillars:
-<ol>
-    <li>The structure and elements of the model are reasonable.</li>
-    <li>The predictions refine people's prior beliefs, rather than contradicting them.</li>
-    <li>The predictions agree with data, where data is available, while also being precise.</li>
-</ol>
-</p>
-
-<p>
-Simulation based-modelling is not generally great across all three areas.
-What I mean by simulation-based modelling is what might be described
-as spreadsheet-style modelling; from a computational perspective, the modelling
-proceeds from data and initial numerical assumptions, through arithmetic and
-statistical summaries, forward in time, and with one pass through the modelled
-time period of the model, it arrives at a result.
-This is the kind of modelling that PlanZero has employed to date.
-Simulation-based modelling is good with regards to criterion (1) in that predictions can be
-reasonably explained directly in terms of the computation of the model.
-It is not great with regards to criterion (2) because simulation-based
-modelling does not naturally express <i>how [un]likely</i> a person's current beliefs are,
-the simulation just emits its own prediction.
-Critically,
-simulation-based modelling offers very little support for matching data.
-Data matching is entirely at the discretion of the modeller,
-and the result of simulation does not inherently characterize
-whether data was either used or fit well.
-</p>
-
-<p>
-Probabilistic modelling is a generalization of simulation-based modelling that
-can produce more-credible models.
-Probabilistic modelling (particularly so-called directed graphical modelling)
-starts with random variables instead of numbers.
-So for example, instead of starting with
-e.g. the NIR data, a probabilistic model
-starts with the idea that there are emission amounts
-in such-and-such sectors of such-and-such gases (random variables), 
-and that there are emissions for all years
-we care to include in our model.
-While we're at it, we make up broad
-<i>a-priori</i> guesses at how much emissions there were in all these areas and for each year in question.
-These initial beliefs have a name in probabilistic modelling, they are our <i>priors</i>.
-For example, we might express a prior that {{CO2}} emissions from national electricity generation
-are relatively big, but still smaller than e.g. global emissions.
-As a contrasting example, we might express that the {{NF3}} emissions from a sector that
-isn't known for producing that gas, in a province that isn't known for activity in that sector,
-is probably zero, at least for most years.
-</p>
-
-<p>
-The relationship between this probabilistic modelling and simulation-based modelling
-is that if we combine the random variables with arithmetic and statistical expressions
-(like we would do in a simulation-based model),
-then drawing a sample from all the random variables in our prior looks a lot like running
-a simulation-based model.
-This computation has a name in probabilistic modelling:
-<i>sampling from the prior</i>.
-It's kind of fun, to see your prior beliefs transformed into
-sets of numbers that look like hypothetical NIRs because they are our own predictions of the future!
-Looking back at our list of criteria
-for making credible predictions,
-a probabilistic model is similar to a simulation-based one in terms of model structure (criterion 1),
-and it's better than a single scenario from a simulation-based model
-at refining rather than contradicting beliefs (criterion 2)
-because it's natural to draw lots of scenarios from a probabilistic model,
-and the spread of scenarios will include people's beliefs and communicate some degree of [dis]agreement.
-Where probabilistic models really excel though,
-is in their ability to make precise and accurate predictions (criterion 3),
-which I'll explain in the next section.
-</p>
-
-<h3>Inference (also known as tuning, fitting, and training)</h3>
-
-<p>
-Where probabilistic modelling really go above and beyond simulation-based modelling,
-is when it's possible to use some <i>data</i> to refine a model's
-priors before making predictions.
-Using data in this way can make a night vs. day difference to the quality of prediction.
-To illustrate by way of the running example of 
-{{CO2|safe}} from national electricity generation,
-I mean something almost too obvious to state:
-if we want our model to make predictions for e.g. year 2023 that agree with the data
-(while also being precise)
-it is helpful to incorporate reported historical emissions from
-e.g. years 1990 to 2022 (not to mention other data sources that might be even more informative),
-rather than to ignore that data and guess directly from our prior beliefs.
-<i>Inference algorithms</i> can operate on a probabilistic model to incorporate data like this automatically,
-in ways that respect rules of probability theory.
-The result of inference is a <i>posterior</i> distribution over the random variables in a model,
-which typically refines them from broad vague distributions, to more precise ones.
-In the case that we had modelled emissions as coming from a
-non-time-varying normal distribution with
-a large a-priori variance, inference would refine that prior to be something like
-the empirical mean and variance across years 1990 to 2022.
-</p>
-
-<p>
-Probabilistic modelling, particularly paired with appropriate data sources
-and the use of inference algorithms, is admittedly a broad family of approaches,
-but it encompasses the the state of the art in accurate prediction.
-The techniques for assessing and optimizing the fit of probalisitic models to
-data are well established.
-When it comes to making predictions that agree with data,
-probabilistic modelling with inference is the way to go; simulation-based modelling is not.
-</p>
-
-<p>
-The rest of this post is organized around the development and comparison of two probabilistic
-models for a particular sector and greenhouse gas: Harvested Wood Products' {{CO2}} emissions.
-The next section develops a baseline based on static normal distributions.
-The following section develops a refinement based on the assumption of an underlying autogressive process.
-The final section shows how an empirical model comparison can conclude that the autogressive-process-based
-model is more precise and accurate.
+a trivial baseline model that ignores any temporal trends in the data whatsoever
+(the <i>static model</i>),
+and non-trivial baseline model based on a two-step autoregressive process that can match trends (the <i>AR-2 model</i>).
+The static model is simpler, and serves to explain how probabilistic modelling works.
+Its random variables are easier to visualize.
+The AR2 model is more complex, but provides a better fit to the data.
 </p>
 
 
-<h2 id="static">Probabilistic Modelling of Harvested Wood Products {{CO2|safe}} with Static Distributions</h2>
+<h2 id="static">Probabilistic Modelling of National Emissions with Static Normals</h2>
 
 
 <p>
-A probabilistic model is a hypothesis about how some aspect of the world
-works.
-My mental model of the NIR, for example (hypothesis 1), is that for each
+My mental model of the 2025 National Inventory Report (NIR-2025, or just NIR in this post), is that for each
 <ul>
     <li>year, from 1990 to 2023,</li>
     <li>province and territory (I'll call these "regions"),</li>
@@ -234,17 +87,17 @@ My mental model of the NIR, for example (hypothesis 1), is that for each
 </ul>
 there is a quantity, in units of e.g. kt{{CO2e}} that has been estimated in support of
 Canada's reporting obligations under the Paris Agreement.
-Furtheremore, I believe (hypothesis 2) that the national totals in the NIR are sums
-of regional emissions.
+Let's call this "hypothesis 1".
+Furtheremore, I believe ("hypothesis 2") that the national totals in the NIR are sums
+of subtotals from provinces and territories (regions).
 </p>
 
 <p>Alas, neither of these hypotheses is strictly true.
 They are true for the majority of years, territories, sectors, and gases, but there are
 counter-examples to both.
 Counter to hypothesis 1, there are missing records in the data, such as 81 relating to stationary combustion in the construction industry.
-Counter to hypothesis 2, regional totals do not always represent subtotals of the national one, such as harvested wood products' where sometimes only about 70% of the total (negative) emissions estimated
-by provinces, a difference exceeding 50 Mt{{CO2e}} (almost 10% of the national total) in some years.
-If we define discrepancy as the maximum difference over years and provinces,
+Counter to hypothesis 2, regional totals do not always sum up to the national one.
+If we define the sum of regions vs. national total discrepancy as the maximum difference over years and provinces,
 there are 11 with a discrepancy over 1Mt{{CO2e|safe}}, which are listed in the table below (out of 486 sector and GHG combinations).
 At the level of 100kt{{CO2e}} discrepancy, there are about twice as many records, and 
 at the level of 10kt{{CO2e}} discrepancy, twice as many again.
@@ -275,25 +128,52 @@ there are significant discrepancies.
 </p>
 
 <p>
-Inference in probabilistic models is about finding values for unobserved random variables
+{{siteref("Inference Algorithm", "Inference")|safe}} in probabilistic models is about finding values for unobserved random variables
 that balance two competing objectives:
 to find values that are probable according to the prior beliefs
 which are also consisent with observation.
 The data in the NIR-2025 is not meant to be interpreted too literally.
 In fact, NIR-2025 includes per-sector estimates of uncertainty on national totals for the base year (1990) and the most-recent year (2023).
-These uncertainties should be considered a <i>lower bound</i>on our uncertainty about the true sectoral emissions.
-It can also happen, from time to time, that the protocols for estimating emissions are updated;
-this happened a few years ago in the area of vented {{CH4}}, which causes a re-assessment of the past estimates,
+These uncertainties should be considered a <i>lower bound</i> on our uncertainty about the true sectoral emissions,
+because for example it can also happen, from time to time, that the protocols for estimating emissions are updated.
+This happened a few years ago in the estimation of vented {{CH4}}, which caused a re-assessment of the past estimates,
 and a change that went beyond the previously-estimated uncertainty.
-Maybe there really was a set of territorial estimates that added up the published national totals,
-it was just that one or more provinces and territories estimated the wrong values.
-Or maybe the provinces used more appropriate data and the national estimate was off.
-Or maybe they were both off.
-A probabilistic model together with a Bayesian inference algorithm can produce
-<i>posterior</i> estimates of what most-plausibly actually happened
-given the data, its uncertainty, and a conviction that territorial
-totals should add up to national ones.
 </p>
+
+<p>
+So if we're missing data,
+and the data we have in the NIR doesn't add up,
+and anyway the data is published with lower-bounded
+uncertainty,
+then what can we say about what really happened?
+To answer this question,
+we have to <i>predict</i> what probably happened,
+and we do this by building a probabilistic model.
+Such a model consists of
+<ul>
+    <li>random variables for what we observe (e.g. data in the NIR),</li>
+    <li>random variables for what we think should be
+        there (e.g. neat, coherent emissions totals that all add up etc.),</li>
+    <li>mathematical relationships between them
+        (e.g. NIR values might be Normally-distributed
+        around the neat, coherent values).</li>
+</ul>
+Within the context of a given model,
+we can <i>infer</i> the likely
+values of the neat, coherent variables
+given what we observe in the NIR data,
+automatically, using rules of probability theory.
+(Whether the model is actually good,
+or which of two models is better,
+is an important question that I'll come
+back to in a future post, but leave
+un-addressed for now.)
+The next section
+defines what I'm calling the static model,
+beginning with a brief
+refresher of probability notation.
+</p>
+
 
 <h3 id="static-gaussian">Modelling Harvested Wood Products with Static Normals</h3>
 
@@ -313,7 +193,8 @@ Some background on probability notation is required, in order to express probabi
 <ul>
     <li> {{latex("P(X=0)")}} means there's a number we don't know, we're calling it {{latex("X")}}, and this is the probability it is actually 0.
         {{latex("X")}} is called a <i>random variable</i>.</li>
-    <li> {{latex("P(X)")}} is the table (possibly infinitely large in theory) of all the values {{latex("X")}} might take, and their probabilities</li>
+    <li> {{latex("P(X)")}} is the table
+        (possibly infinitely large, in which case it might be called a function) of all the values {{latex("X")}} might take, and their probabilities (or densities, if the set of values {{latex("X")}} might take is continuous)</li>
     <li> {{latex("P(0)")}} is sloppy shorthand for {{latex("P(X=0)")}} when it's clear from surrounding context we're talking about {{latex("X")}}</li>
     <li> {{latex("\\mathcal{N}(\\mu, \\sigma^2)")}} is a Normal distribution, which is non-negative function that sums (integrates) to 1. It is parameterized by two numbers:
         {{latex("\\mu")}} the mean, and {{latex("\\sigma^2")}} the variance. (Sometimes these are called <i>Gaussians</i> but I'm going to call them Normals to be consistent with the probabilistic programming libraries I'm aware of.)</li>
@@ -349,9 +230,9 @@ the following table expresses the static (non-time-varying) probabilistic model 
 that will be our subject for the rest of this section:
 <table>
     <tr><td>{{latex("\\mu_{(s,g,r)} ~\\sim~ \\mathcal{N}(0, 1)")}}</td><td>
-            Suppose the regional mean emissions are probably around 0, plus or minus 10.
+            Suppose the regional mean emissions are probably around 0, plus or minus 1.
             It is customary to scale data to be in this range before modelling them, so each emissions time series is scaled to have a mean squared value of 1.
-            After this scaling, plus-or-minus 10 is a relatively un-opinionated prior as to
+            After this scaling, plus-or-minus 1 is a relatively un-opinionated prior as to
             what {{latex("\\mu")}} should be, relative to the NIR data, which will probably say that {{latex("\\mu")}} should be somewhere in the range of plus-or-minus 1.</td></tr>
     <tr><td>{{latex("\\sigma_{(s,g,r)} ~\\sim~ \\mathcal{LogNormal}(-1, 0.7)")}} </td><td>Suppose regional variances about the mean are never super-tiny, nor much larger than 1.</td></tr>
     <tr><td>{{latex("\\sigma_{(s,g)} ~\\sim~ \\mathcal{LogNormal}(-1, 0.7)")}} </td><td>Suppose national variance about the mean are never super-tiny, nor much larger than 1.</td></tr>
@@ -376,12 +257,15 @@ that will be our subject for the rest of this section:
 The prior densities for the {{latex("\\mu")}} and {{latex("\\sigma")}} terms
 are illustrated below.
 {{blog.figure_normal()|safe}}
-That's it, that's a model of an NIR!
-The next section is about how we can use inference to improve the model.
 </p>
 
 <p>
-[TODO: show a sample from the prior.]
+That's it, that's a model of an NIR!
+The next section is about how we can use
+an inference algorithm
+and NIR-2025 data to predict likely neat
+and coherent latent values ({{latex("\\mu")}}),
+albeit in the context of this static model.
 </p>
 
 <h3 id="inference-algorithms">Inference Algorithms and Probabilistic Programming</h3>

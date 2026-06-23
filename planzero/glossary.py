@@ -621,6 +621,11 @@ class Stochastic_Model(GlossaryTerm):
             'Simulation': 'The procedure for converting a stochastic model to one or more scenarios'
         }
 
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Probabilistic Model']
+
+
 class Deterministic_Model(GlossaryTerm):
     """A deterministic model is a model that corresponds to a specific
     scenario, and has no randomness.
@@ -1541,6 +1546,44 @@ class Inference_Algorithm(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Stochastic_Model': 'Inference algorithms only make sense for stochastic models',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+
+class Random_Variable(GlossaryTerm):
+    """A random variable is an unknown scalar- or vector-valued
+    term in a probabilistic model. A random variable is associated
+    with a probability distribution.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Stochastic_Model': 'Random variables are the random parts of stochastic models',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+
+class Probability_Distribution(GlossaryTerm):
+    """A probability distribution is a table or function of
+    all the values a random variable might take, which
+    defines how probable is each possible value.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Random_Variable': 'are associated with probability distributions',
         }
 
     @computed_field

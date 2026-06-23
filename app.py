@@ -184,6 +184,27 @@ async def get_models_prob_page(ident:str, request: Request):
     return HTMLResponse(content=html)
 
 
+# models/prob/{ident}/sector/{sector_value}
+
+@app_cache
+def get_models_prob_sector_page_html(ident:str, sector_value:str):
+    site_inference = planzero.prob.site_inferences[ident]
+    return templates.get_template("models_prob_sector.html").render(
+        dict(
+            default_context,
+            active_tab='models',
+            ident=ident,
+            site_inference=site_inference,
+            sector=planzero.enums.IPCC_Sector(sector_value),
+            ))
+
+
+@app.get("/models/prob/{ident}/sectors/{sector_value}", response_class=HTMLResponse)
+async def get_models_prob_page(ident:str, sector_value:str, request: Request):
+    html = get_models_prob_sector_page_html(ident, sector_value=sector_value)
+    return HTMLResponse(content=html)
+
+
 @app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
 @app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
 @app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)

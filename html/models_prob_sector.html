@@ -1,16 +1,4 @@
 {% include "pre-main.html" %}
-<style>
-        #chart-container {
-            width: 100%;
-            height: 1000px;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        #example {
-            width: 100%;
-            height: 1000px;
-        }
-    </style>
 
 <div id="main">
 
@@ -20,15 +8,28 @@
         <p>{{site_inference.short_description}}</p>
     </header>
 
-<h2>Model Estimates of Past and Future Emissions</h2>
+    <h2>Sector: {{sector.value}}</h2>
+
+    <h3>Total Across All Greenhouse Gases (Mt{{CO2e|safe}})</h3>
+<!-- TODO: brief description of activities driving sector emissions -->
+{{site_inference.sector_echart(sector, None, v_unit="Mt_CO2e")|safe}}
+
 <p>
 Emissions are summarized by year, and in terms of total Mt{{CO2e|safe}}
 per non-aggregate {{siteref("NIR")|safe}} sector.
-Adjust the slider below to see the active date range and focus on specific periods.
+They are ordered by decreasing maximum upper bound on a yearly 95% credibility interval.
+The black line is the reported historical emissions.
+Adjust the slider below each grid of figures to see the active date range and focus on specific periods.
 </p>
 
-{{site_inference.uncertain_sparkline_matrix_echart("banner_chart", v_unit="Mt_CO2e")|safe}}
 
+{% for ghg in site_inference.GHGs_for_sector(sector) %}
+
+<h3>Emissions of {{ghg.value}} (Mt{{CO2e|safe}})</h3>
+
+{{site_inference.sector_echart(sector, ghg, v_unit="Mt_CO2e")|safe}}
+
+{% endfor %}
 
 
 <!--
@@ -82,9 +83,8 @@ Adjust the slider below to see the active date range and focus on specific perio
 -->
 
 <ul class="actions special">
-    <li><a href="/models/" class="button">Back to Models Overview</a></li>
+    <li><a href="/models/prob/{{ident}}/" class="button">Back to {{ident.replace('_', ' ')}} Overview</a></li>
 </ul>
-
 
 </section><!--post-->
 </div><!--main-->

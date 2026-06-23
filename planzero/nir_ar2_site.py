@@ -4,8 +4,8 @@ from pydantic import computed_field
 
 from .prob  import SiteInference
 from . import nir_constant_predictor
-from .enums import LULUCF_Sectors
-from .nir_constant_predictor import PseudoSectors
+from .enums import LULUCF_Sectors, PT
+from .nir_constant_predictor import PseudoSectors, PseudoRegion
 
 
 class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
@@ -87,6 +87,7 @@ class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
                     rng_key, rng_key_ = jrandom.split(rng_key)
                     samples = sample_past_given_mu(
                         samples,
+                        relerr=model.relerr,
                         pad_mu0_m1=True,
                         key=rng_key_)
 
@@ -138,6 +139,116 @@ class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
             ubounds=ubounds_without_lulucf)
 
 
+class RegionalSparklineEChartHelper(nir_constant_predictor.RegionalSparklineEChartHelper):
+
+    def add_data_for_region(self, region, means, lbounds, ubounds):
+        assert region not in self.data_by_region
+        assert np.all(ubounds >= lbounds)
+        self.data_by_region[region] = dict(
+            ubound=np.max(ubounds),
+            lbound=np.min(lbounds),
+            means=means,
+            ubounds=ubounds,
+            lbounds=lbounds,
+            CIs=ubounds - lbounds,
+            neg_shift=np.minimum(ubounds, 0),
+            neg_shade=np.minimum(lbounds, 0) - np.minimum(ubounds, 0),
+            pos_shift=np.maximum(lbounds, 0),
+            pos_shade=np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
+            )
+
+    def load_data(self):
+        self.years = np.arange(1990, 2050+1)
+        self.config = load_config(allow_version_mismatch=False)
+
+        n_samples = 200 # match saved data
+        n_mu_timesteps_to_2022 = 31 # for NIR-2025
+        n_mu_timesteps_to_2050 = n_mu_timesteps_to_2022 + 27
+        n_regions = 13
+
+        estimates_ghg_pt = np.zeros(
+            (n_samples, len(GHG), 2 + n_mu_timesteps_to_2050, n_regions))
+
+        estimates_ghg_ca = np.zeros(
+            (n_samples, len(GHG), 2 + n_mu_timesteps_to_2050))
+
+        rng_key = jrandom.key(1234)
+        np_rng = np.random.default_rng(12345)
+
+        for ii, ghg in enumerate(GHG):
+            if [str(self.sector), str(ghg)] in self.config['near_zero_sector_ghgs']:
+                estimates_ghg_pt[:, ii] = 0
+                estimates_ghg_ca[:, ii] = 0
+            elif self.ghg is not None and self.ghg != ghg:
+                estimates_ghg_pt[:, ii] = 0
+                estimates_ghg_ca[:, ii] = 0
+            else:
+                config_sg, grouped_samples = load_config_samples(self.sector, ghg)
+                n_chains, n_samples_, n_mu_timesteps_to_2022_, n_regions_ \
+                        = grouped_samples['mu'].shape
+                try:
+                    assert n_samples_ == n_samples
+                    assert n_regions_ == n_regions
+                    assert n_mu_timesteps_to_2022_ == n_mu_timesteps_to_2022
+                except AssertionError:
+                    print(grouped_samples['mu'].shape)
+                    raise
+
+                samples__ = {
+                    key: val.reshape(-1, *val.shape[2:])
+                    for key, val in grouped_samples.items()}
+
+                model = NIR2025_AR2(
+                    self.sector,
+                    ghg,
+                    future_idx=NIR2025_AR2.idx_of_last_train_year(2022),
+                )
+
+                samples_ = samples_with_extended_mu(
+                    samples__,
+                    n_steps=n_mu_timesteps_to_2050 - n_mu_timesteps_to_2022,
+                    pt_rms=model.pt_rms,
+                    np_rng=np_rng)
+
+                rng_key, rng_key_ = jrandom.split(rng_key)
+                samples = sample_past_given_mu(
+                    samples_,
+                    relerr=model.relerr,
+                    pad_mu0_m1=True,
+                    key=rng_key_)
+
+                estimates_ghg_pt[:, ii] = (
+                    samples['past-pt']
+                    * config_sg['scale']
+                    * self.v_unit_scale)
+
+                estimates_ghg_ca[:, ii] = (
+                    samples['past-ca']
+                    * config_sg['scale']
+                    * self.v_unit_scale)
+
+        estimates_pt = estimates_ghg_pt.sum(axis=1)
+        estimates_ca = estimates_ghg_ca.sum(axis=1)
+
+        for ii, pt in enumerate(PT):
+            if pt == PT.XX:
+                continue
+            pt_mean = np.mean(estimates_pt[:, :, ii], axis=0)
+            pt_lbound, pt_ubound = np.quantile(
+                estimates_pt[:, :, ii],
+                self.credibility_interval_95,
+                axis=0)
+            self.add_data_for_region(pt, pt_mean, pt_lbound, pt_ubound)
+
+        ca_mean = np.mean(estimates_ca, axis=0)
+        ca_lbound, ca_ubound = np.quantile(
+            estimates_ca,
+            self.credibility_interval_95,
+            axis=0)
+        self.add_data_for_region(PseudoRegion.NationalTotal,
+                                 ca_mean, ca_lbound, ca_ubound)
+
+
 class AR2(SiteInference):
     """Model emissions per province and territory,
     and per greenhouse gas, as evolving according
@@ -147,7 +258,9 @@ class AR2(SiteInference):
 
     @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        helper = SparklineEChartHelper(div_id=None, v_unit='Mt_CO2e')
+        helper = SparklineEChartHelper(div_id=None,
+                                       model_name='AR2',
+                                       v_unit='Mt_CO2e')
         helper.load_data()
         sector = PseudoSectors.Total_with_LULUCF
         rval = (helper.data_by_sector[sector]['lbounds'][-1],
@@ -156,10 +269,30 @@ class AR2(SiteInference):
 
 
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
-        helper = SparklineEChartHelper(div_id, v_unit)
+        helper = SparklineEChartHelper(div_id, v_unit, model_name='AR2')
         helper.load_data()
         helper.order_sectors()
         helper.add_total_cells()
         helper.add_non_lulucf_cells()
         helper.add_lulucf_cells()
+        return helper.make_echart()
+
+    def GHGs_for_sector(self, sector):
+        config = load_config(allow_version_mismatch=False)
+        rval = []
+        for ghg in GHG:
+            if [str(sector), str(ghg)] in config['near_zero_sector_ghgs']:
+                continue
+            rval.append(ghg)
+        return rval
+
+    def sector_echart(self, sector, ghg, v_unit):
+        helper = RegionalSparklineEChartHelper(
+            sector=sector,
+            ghg=ghg,
+            div_id=f'regional_sparkline_echart_{ghg.value if ghg else "all"}',
+            v_unit=v_unit)
+        helper.load_data()
+        helper.order_regions()
+        helper.add_regional_cells()
         return helper.make_echart()

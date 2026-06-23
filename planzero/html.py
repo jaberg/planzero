@@ -296,6 +296,9 @@ class EChartMatrixYAxis(StrictBaseModel):
     max:float|str|None = None
 
 
+class GridLinkElem(StrictBaseModel):
+    gridId:str
+    url:str
 
 class UncertainSparklineMatrixEChart(HTML_element):
     # Enforce strict field checks
@@ -312,6 +315,7 @@ class UncertainSparklineMatrixEChart(HTML_element):
     xAxis: list[EChartMatrixXAxis]
     yAxis: list[EChartMatrixYAxis]
     series: list[EChartSeriesBase]
+    grid_links: list[GridLinkElem] = []
 
     def save_as(self, filepath):
         # called from Makefile to create snapshots for posts
@@ -345,25 +349,43 @@ class UncertainSparklineMatrixEChart(HTML_element):
         }}
         mychart_{self.div_id}.setOption(option_{self.div_id});
 
-        mychart_{self.div_id}.on('click', function(params) {{
-          // Console log to see what data is available
-          console.log(params);
+        // 2. Attach a click listener to the underlying ZRender instance
+        mychart_{self.div_id}.getZr().on('click', function (params) {{
+            // 1. Define your array of grid to URL mappings
+            const gridLinks = {self.list_helper(self.grid_links)};
 
-          // params.data contains the array for that point: [x, y, url]
-          // So the URL is at index 2
-          var url = params.data.url;
+            // Extract the raw [x, y] pixel coordinates of the mouse click
+            const pixelLoc = [params.offsetX, params.offsetY];
 
-          if (url) {{
-            // Open in new tab
-            //window.open(url, '_blank');
+            // 3. Loop over your array to see which grid contains this pixel
+            for (let ii = 0; ii < gridLinks.length; ii++) {{
+                const mapping = gridLinks[ii];
 
-            // OR open in same tab:
-            window.location.href = url;
-          }}
+                // containPixel takes an object specifying the component type/id, and the pixel array
+                if (mychart_{self.div_id}.containPixel({{ gridId: mapping.gridId }}, pixelLoc)) {{
+
+                    // Optional: Log it for debugging
+                    console.log(`Clicked inside ${{mapping.gridId}}. Routing to ${{mapping.url}}`);
+
+                    // 4. Redirect the user
+                    window.location.href = mapping.url;
+
+                    // Stop looping once we found the match
+                    break;
+                }}
+            }}
         }});
 
+
+        // Listen to all clicks on the canvas
+        mychart_{self.div_id}.getZr().on('click', function (params) {{
+          console.log("clickZr");
+        }});
+
+      console.log("loading");
         window.addEventListener('resize', function() {{
           mychart_{self.div_id}.resize();
+          console.log("resizing");
         }});
         </script>
         <div>
