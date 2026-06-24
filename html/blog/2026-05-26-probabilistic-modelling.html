@@ -19,7 +19,12 @@ Table of Contents:
             <li><a href="#constant-inference-fig">Inference of Latent Variables in the Static Model</a></li>
         </ul>
     </li>
-    <li><a href="#ar2">Modelling of Harvested Wood Products {{CO2|safe}} with an Autoregressive Process</a></li>
+    <li><a href="#ar2">Modelling of Harvested Wood Products {{CO2|safe}} with an Autoregressive Process</a>
+        <ul>
+            <li><a href="#ar2-hwp">Inference of Harvested Wood Products {{CO2|safe}} emissions with an AR2-based model</a></li>
+            <li><a href="#ar2-all">Inference of All Emissions with an AR2-based model</a></li>
+        </ul>
+    </li>
     <li><a href="#conclusion">Conclusion</a></li>
 </ul>
 </p>
@@ -307,7 +312,7 @@ In standard probability notation, Bayes' theorem looks like:
 </p>
 
 <p>
-{{latex("P(A|B) = \\frac{P(A, B)}{P(B)} = \\frac{P(B|A)P(A)}{P(B)}", "block")}}.
+{{latex("P(A|B) = \\frac{P(A, B)}{P(B)} = \\frac{P(B|A)P(A)}{P(B)}", "block")}}
 </p>
 
 
@@ -316,23 +321,21 @@ Bayes' theorem shows how to relate
 distributions of the form {{latex("P(A|B)")}},
 to ones involving {{latex("P(B|A)")}} instead.
 With the help of Bayes theorem,
-it is possible to transform a posterior distribution we're interested in,
-such as
+it is possible to transform the posterior distribution we're interested in,
 {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR^{(2025, regional)}},~Y = \\mathrm{NIR^{(2025, national)}})")}},
-into a formula with the sorts of pieces with which we specified our model (just looking at the numerator, the terms here
-don't look exactly like the ones in the table above, but can you spot the correspondence?):
+into a formula with the sorts of pieces with which we specified our model:
 </p>
 
 <p>
 {{latex(
 "\\frac{P(X=\\mathrm{NIR_{(2025, regional)}},~Y = \\mathrm{NIR_{(2025, national)}}|\\mu, \\sigma)P(\\mu)P(\\sigma)}
-{P(X=\\mathrm{NIR_{(2025, regional)}},~Y = \\mathrm{NIR_{(2025, national)}})}", "block")}}.
+{P(X=\\mathrm{NIR_{(2025, regional)}},~Y = \\mathrm{NIR_{(2025, national)}})}", "block")}}
 </p>
 
 <p>
 <i>Probabilistic programming systems</i> enable someone such as myself to write down
-a generative sampling processes (such as the one in the left column of the table above) in a programming language,
-and leverage standard algorithm implementations to inference.
+a generative sampling processes (such as the one in the left column of the table above that defined the model) in a programming language,
+and leverage standard algorithm implementations to infer samples from the posterior distribution.
 Even with a Ph.D. in machine learning, I still find
 these algorithms amazing (read up on e.g.
 <a href="https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo">MCMC algorithms</a> or
@@ -344,57 +347,67 @@ For our purposes we'll take their capabilities as given
 <a href="https://docs.jax.dev/en/latest/">Jax</a> and
 <a href="https://num.pyro.ai/en/stable/">NumPyro</a>,
 and the <a href="https://num.pyro.ai/en/stable/mcmc.html">NUTS</a> MCMC algorithm), and
-apply them, in the next section, to draw <i>samples</i> from the posterior distribution
+apply them, in the next section, to draw samples from the posterior distribution
 {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR^{(2025, regional)}},
 Y=\\mathrm{NIR^{(2025, national)}})")}} assuming the static model described above.
 </p>
 
 <h3 id="constant-inference-fig">Inference of Latent Variables in the Static Model</h3>
 <p>
-Running <a href="https://num.pyro.ai/en/stable/mcmc.html">NumPyro's NUTS</a> inference algorithm for the constant model above,
+Running <a href="https://num.pyro.ai/en/stable/mcmc.html">NumPyro's NUTS</a> inference algorithm for the static model above,
 using the NIR-2025 emissions data regarding {{CO2|safe}} emissions
-from the Harvested Wood Products sector, results in the following values
+from the Harvested Wood Products sector (HWP), results in the following ranges of values
 for
-{{latex("\\mu")}} (shown as solid horizontal lines)
-and {{latex("\\sigma")}} (shown via lightly-shaded 95% confidence intervals).
+{{latex("\\mu_{\\mathrm{(HWP, CO_2)}}")}} (shown as darker shaded region)
+and {{latex("\\sigma_{\\mathrm{(HWP, CO_2)}}")}} (shown via lightly-shaded 95% credible intervals on
+the regional and per-year random variables within
+{{latex("X_{\\mathrm{(HWP, CO_2)}}")}} and
+{{latex("Y_{\\mathrm{(HWP, CO_2)}}")}}).
 </p>
 
-{{blog.foo_one_sector_ghg()|safe}}
+{{blog.static_normals_HWP_CO2()|safe}}
 
 <p>
 Looking at the modelling results ({{latex("\\mu")}} and {{latex("\\sigma")}})
 we see some good and some bad.
-On the good side, the estimated mean
-{{latex("\\mu")}} (solid horizontal line) looks to be fit reasonably,
-in that it typically goes through the data points somewhere near the middle.
+It is good, that {{latex("\\mu")}} (mean is dotted horizontal line,
+95% credible interval is darker shaded region) 
+typically goes through the data points somewhere near the middle.
 Likewise,
 {{latex("\\sigma")}} has been estimated such that the data mostly fall within
-the shaded regions, with a few points popping out above or below;
-which is approximately we expect from a 95% confidence interval.
-On the bad side, we see large blocks of shaded region without any data,
+the lightly-shaded regions, with a few points popping out above or below;
+which is approximately we expect from a 95% {{siteref("Credible Interval", "credible interval")|safe}} after fitting to the data.
+That said, it is bad that we see large blocks of shaded region without any data,
 which is a symptom of temporal correlation in the data.
 (We'll compare this quality of fit with a different model in the next sections.)
 </p>
 
 <p>
-Note that the horizontal dashed lines (each region's sample mean)
-and the horizontal solid lines (each region's {{latex("\\mu_{s,g,r}")}}) are different.
-The darker shaded region helps put their difference into perspective,
-it is the 95% <i>credibility interval</i> around {{latex("\\mu_{s,g,r}")}}
+Note also that there are differences between the
+horizontal solid lines (each region's sample mean)
+and the horizontal dotted lines (each region {{latex("r")}}'s
+mean {{latex("\\mu_{\\mathrm{(HWP,CO_2,r)}}")}}).
+The darker shaded region helps put their difference into perspective.
+The darker shaded region is the 95% credible interval for
+{{latex("\\mu_{\\mathrm{(HWP,CO_2,r)})}")}}
 (the upper and lower limits of the central 95% of sampled values from the latent variable's posterior distribution).
 For two regions, British Columbia and Quebec, the
-data mean lies slightly outside of their regional {{latex("\\mu_{s,g,r}")}} credibility interval.
-This means that it is hard to believe,
-based on the model, and the data, that {{latex("\\mu_{s,g,r}")}} is exactly the data
+data mean lies slightly outside of their regional {{latex("\\mu_{\\mathrm{(HWP,CO_2,r)}}")}} credibility interval.
+This means that it is improbable,
+based on the model, and the data, that
+either {{latex("\\mu_{\\mathrm{(HWP,CO_2,BC)}}")}} or
+{{latex("\\mu_{\\mathrm{(HWP,CO_2,QC)}}")}} is really the data
 mean for each of those provinces.
 I chose Harvested Wood Products' {{CO2|safe}} emissions
 because there were a number of years where the regional and national totals
 are thousands of kt{{CO2|safe}} apart.
-Perhaps unsurprisingly,
+Unsurprisingly,
 inference in this model reveals
-that a discrepancy also exists terms of means-since-1990.
-The regional latent {{latex("\\mu_{s,g,r}")}} values in the model are required to add up to the national total,
-whereas regional totals in NIR-2025 are not. The inference algorithm
+that a discrepancy also exists terms of sample means-since-1990.
+Remember,
+the regional latent random variables {{latex("\\mu_{s,g,r}")}}
+in the model were required to add up to a national total,
+whereas actual regional and national totals in NIR-2025 do not always add up this way. The inference algorithm
 has estimated a sample of values for {{latex("\\mu_{s,g,r}")}} that
 balances (a) fitting the regional emissions data, (b) fitting the national total emissions, and (c) respecting the prior distributions in the model.
 </p>
@@ -402,11 +415,70 @@ balances (a) fitting the regional emissions data, (b) fitting the national total
 <p>
 That concludes PlanZero's first probabilistic model of a sector and gas
 (Harvested Wood Products {{CO2|safe}}).
-To say whether it is a good model requires an alternative and a basis for comparison.
-The next two sections introduce a second probabilistic model
-and an evaluation metric for comparing them.
+A standard view of probabilistic models of sectors now features this
+<a href="/models/prob/Static_Normals/sectors/Harvested%20Wood%20Products">
+Static Normals model for Harvested Wood Products</a> on a page that shows
+the following figure:
 </p>
 
+{% include "blog/2026-04-26-probabilistic-modelling-Static_Normals-HWP.html" %}
+
+<p>
+This figure doesn't show {{latex("\\mu")|safe}} specifically because it's a
+standard style of figure for any of probabilistic model of that sector.
+But it does show the posterior samples of
+{{latex("\\mu")|safe}}
+{{latex("\\sigma")|safe}}
+relate to the set of plausible emissions values.
+</p>
+
+<p>
+In fact,
+PlanZero now includes this sort of modelling for all of Canada's emissions
+sectors. The <a href="/models/prob/Static_Normals/">Static
+    Normals model overview</a> includes the following figure,
+showing some quality of fit across the board.
+The colours correspond to high-level emissions categories:
+<ul>
+    <li>dark blue for energy used in stationary combustion (e.g. for public electricity, oil and gas extraction, etc.)</li>
+    <li>light green for energy used in vehicles (e.g. light-duty, heavy-duty, off-road, marine, etc.)</li>
+    <li>purple for fugitive sources(e.g. venting, flaring)</li>
+    <li>wheat for agriculture-related emissions (e.g. soil, manure)</li>
+    <li>pink for waste-related emissions (e.g. landfills)</li>
+    <li>other colours for various industrial activities (mineral products, chemicals, metals)</li>
+</ul>
+The emissions sectors are ordered according to decreasing upper bound on their
+credible intervals. The largest sectors (e.g. public heat, oil and gas extraction) are across the top after the national total without Land-Use, Land-Use Changes, and Forestry (LULUCF), on a common scale from 0 to 150 Mt{{CO2e|safe}}.
+The next row down has emissions on a scale from 0 to 52 Mt{{CO2e|safe}} with things like residential heating and enteric fermentation,
+and subsequent rows go down from there to the bottom row where the scale is relatively small.
+</p>
+
+<p>
+Mouse-over the slider below to see the active date range and adjust it to focus on specific periods.
+Click on each panel for a deeper-dive into modelled emissions in that sector.
+</p>
+
+{% include "blog/2026-04-26-probabilistic-modelling-Static_Normals-all_sectors.html" %}
+
+<p>
+That concludes the introduction of PlanZero's "Static Normals" model.
+It is a probabilistic model, but the modelling assumption that each NIR emission
+sector total is actually unchanging throughout history and into the future is
+a very untrue assumption for many sectors.
+There has been consistent significant reduction in emissions from e.g. public
+electricity production over the past two decades as coal generators have
+been phased out.
+On the other hand, the emissions from oil and gas extraction have risen
+enormously over that same period due to changes in the scale and methods of
+oil extraction operations.
+The Static Normals model is designed for simplicity, and it cannot model such effects.
+The next section introduces a different model based on auto-regressive
+random processes, which has the property that inference
+can be described as learning trends in data
+(this is why machine <i>learning</i> in the field of computer
+science has that name). The predictions of the AR2 model are more aligned with at least
+my own, if not most people's intuitions, for how emissions rates change over time.
+</p>
 
 <h2 id="ar2">An Alternative Model based on an Autoregressive Process</h2>
 
@@ -431,10 +503,10 @@ The next section compares the two models as predictors of future emissions.
 -->
 
 <p>
-It is natural to view the emissions data in the NIR as time series.
+It is natural to view the emissions data in the NIR as time series with trends.
 A model should leverage the fact that emissions tend to change
 slowly; the emissions from the year before are usually a good guess for the
-current year, and probably a better guess than the overall mean since 1990.
+current year, and probably a better guess than the overall mean since 1990 (which is what the Static Normals model does).
 There are many approaches and applications of
 <a href="https://en.wikipedia.org/wiki/Time_series">time-series analysis</a>
 but this section develops an emissions model based on
@@ -444,8 +516,8 @@ Bayesian autoregressive analysis results from fitting a model with a
 latent time series (e.g. {{latex("Z")|safe}}, below)
 that progresses according to a random walk.
 -->
-An auto-regressive process of order {{latex("p")|safe}},
-called an AR-{{latex("p")|safe}} process, is a random walk that can be written like this:
+An auto-regressive process of order {{latex("p")|safe}}
+is a set of random variables that can be written like this:
 </p>
 
 <p>
@@ -461,13 +533,17 @@ Z_t & \\sim  & \\mathcal{N}(c_0 + c_1 Z_{t-1} + c_2 Z_{t-2} + ... + c_p Z_{t-p},
 </p>
 
 <p>
-Such a random variable {{latex("Z")|safe}}
-is said to be generated by an AR-{{latex("p")|safe}} process.
-An autoregressive process proceeds by adding some combination of its previous
-elements together with a constant offset, and then adding some randomness
-according to {{latex("\\sigma^2")|safe}}.
-The initial {{latex("p")|safe}} steps of the process need a different definition;
-above they are defined to be independent variables.
+There's an order to them.
+The first few random variables are just independent normals
+(the first {{latex("p")|safe}} of them: {{latex("Z_{1..p} ~ \\sim ~ \\mathcal{N}(0, \\sigma^2)")|safe}})
+but after that each one is a weighted combination of the previous ones
+plus a bit of noise.
+Sometimes this sort of set of random variables is called a random walk,
+because each one takes a random step along a trend that's established
+by the weights {{latex("c")|safe}}. Whether the random walk is dominated
+by the trend or the noise depends on the magnitude of
+the weights {{latex("c")|safe}} and the magnitude of the noise
+{{latex("\\sigma")|safe}}.
 </p>
 
 <!-- TODO: show AR2 with different sigma, different c-->
@@ -475,243 +551,181 @@ above they are defined to be independent variables.
 <p>
 The following time-varying graphical model for NIR data will be our subject
 for the rest of this section.
-(Indexes by {{latex("s,g")|safe}} are dropped here for brevity,
+It is based on {{latex("\\mu_{(s,g, r, t)}")|safe}} being
+a two-step auto-regressive process.
+Two-step auto-regressive processes can model damped systems with momentum
+(I chose two steps because one step seemed too simple &mdash; just damping.)
+Indexes by {{latex("s,g")|safe}} are dropped in the table below for brevity,
 and because anyway all sectors and gases are considered to be independent.
-So for example {{latex("\\mu_{(s,g, r, t)}")|safe}} is written
-{{latex("\\mu_{(r, t)}")|safe}}.)
+So for example what is actually {{latex("\\mu_{(s,g, r, t)}")|safe}} in the context
+of the national model is written just {{latex("\\mu_{(r, t)}")|safe}}.
+
 <table>
-    <tr><td>{{latex("\\forall_{r}\\forall_{t\\in\\{1,2\\}} ~ \\alpha_{r,t} ~\\sim~ \\mathcal{Kumaraswamy}(1.25, 1.25)")}} </td>
-        <td>Draw some numbers between 0 and 1, not too close to those limits, two for each region.</td>
+
+    <tr><td>{{latex("c_{(r,1)} ~=~ 3~\\mathcal{Kumaraswamy}(1.25, 1.25) - 0.5")}} </td>
+        <td>Let the coefficient on the previous timestep range between -0.5
+            and 2.5. The Kumaraswamy
+                distribution with parameters (1.25, 1.25) provides a distribution that's a bit more
+            uniform-looking than the (2,2) distribution illustrated on the
+            <a
+                href="https://en.wikipedia.org/wiki/Kumaraswamy_distribution">wikipedia page</a>. Parameters (2,2) may have worked here too, I didn't try them.</td>
     </tr>
-    <tr><td>{{latex("c_{r,1} ~=~ .1 + 1.5\\alpha_{r,1}")}} </td>
-        <td>Let the coefficient on the previous timestep range between .1 and 1.6.</td>
+
+    <tr><td>{{latex("c_{(r,2)} ~=~ 3~\\mathcal{Kumaraswamy}(1.25, 1.25) -1.5")}} </td>
+        <td>Let the coefficient on the 2nd-previous timestep range between -1.5 and 1.5.</td>
     </tr>
-    <tr><td>{{latex("c_{r,2} ~=~ -.5 + \\alpha_{r,2}")}} </td>
-        <td>Let the coefficient on the 2nd-previous timestep range between -0.5 and 0.5.</td>
-    </tr>
-    <tr><td>{{latex("\\forall_{r}\\forall_{t\\in\\{1,2\\}} ~ \\mu_{r,t} ~\\sim~ \\mathcal{N}(0, 1)")}} </td>
-        <td>Let the first two steps of the autoregressive process for each region be independent normals.</td>
-    </tr>
+
     <tr><td>{{latex("\\sigma_{r}=\\max(\\sqrt{\\frac{1}{T}\\sum_t^T e_{r,t}^2}, 1)")}} </td>
-        <td>Even after scaling the whole emissions data set so that the national totals
-            had a dynamic range of about 1, peek at the provincial and territorial emissions data to define a scale for each of these regions ("e" is for the regional emissions after scaling by the national factor.)</td>
+        <td>Even after scaling the sector emissions data set so that the national totals
+            had a dynamic range of about 1, still peek at the provincial and
+            territorial emissions data to define a scale for each of these
+            regions, because some provinces are way more active in some sectors
+            than others. (The "e" is for the regional emissions after scaling by
+            the national factor.)</td>
     </tr>
-    <tr><td>{{latex("\\mu_{r,t} ~\\sim~ \\mathcal{N}(c_{r,1} \\mu_{r,t-1} + c_{r,2} \\mu_{r,t-2},
+
+    <tr><td>{{latex("\\forall_{r}\\forall_{t\\in\\{1,2\\}} ~ \\mu_{(r,t)} ~\\sim~ \\mathcal{N}(0, \\sigma_{r}^2)")}} </td>
+        <td>Let the first two steps of the autoregressive process for each region be independent normals, scaled appropriately for the region.</td>
+    </tr>
+    <tr><td>{{latex("\\mu_{(r,t)} ~\\sim~ \\mathcal{N}(c_{(r,1)} \\mu_{(r,t-1)} + c_{(r,2)} \\mu_{(r,t-2)},
             0.05^2 \\sigma_{r}^2)")}}</td><td>
-            Suppose a latent {{latex("\\mu_{(r,t)}")|safe}} variable
-            varies with time according to an AR-2 process.
+            Suppose there's a sequence of random variables indexed by time {{latex("\\mu_{(r,t)}")|safe}} 
+            that unfold through time according to the AR-2 process introduced above.
             The {{latex(".05^2 \\sigma_r^2")|safe}} term here controls how quickly
             the AR-2 process can change course from where its previous values and
             weights {{latex("c")|safe}} would otherwise take it.
-            Inference is quite sensitive to this parameter.
+            Inference is quite sensitive to this term.
             </td>
     </tr>
-    <tr><td>{{latex("X_{r,t} ~\\sim~ \\mathcal{N}(\\mu_{(r, t)}, (0.05\\sigma_{r, t})^2)")}}</td>
-        <td>Similar to the static model, except that {{latex("\\mu_{(r, t)}")|safe}}
-            is indexed by year {{latex("t")|safe}}, so that our model
-            is time-varying. Variance in this model was fixed, based roughly on
-            the uncertainty estimate in the NIR-2025, which was 19% for 1990 and 4% in 2023.
+    <tr><td>{{latex("X_{(r,t)} ~\\sim~ \\mathcal{SBLN}(\\mu_{(r, t)}, 0.05^2 \\sigma_{(r, t)}^2)")}}</td>
+        <td>Suppose there are random variables
+            indexed by region and year {{latex("t")|safe}} that have their own variance,
+            but whose means are identical to {{latex("\\mu_{(r, t)}")|safe}}.
+            These are the variables that are meant to represent the per-region
+            (and per-gas, per-sector)
+            emissions totals in the NIR, whenever the NIR includes such totals.
+            The variance in these model was fixed, and based roughly on
+            the uncertainty estimate in the NIR-2025.
+            The SBLN distribution, described below, is like a Normal distribution
+            when {{latex("\\mu")|safe}} is around 0, more like a Log-Normal distribution
+            when {{latex("\\mu")|safe}} is large and positive, and more like a
+            negative Log-Normal when 
+            {{latex("\\mu")|safe}} is large and negative.
         </td>
     </tr>
-    <tr><td>{{latex("Y_{t} ~\\sim~ \\mathcal{N}(\\sum_{r \\in \\mathrm{regions}}\\mu_{r,t}, 0.05^2)")}}</td>
-        <td>Similar to the static model, except that we use a time-indexed
-            {{latex("\\mu_{r, t}")|safe}} here too.  Variance in this model
-            was fixed, based roughly on
-            the uncertainty estimate for NIR-2025, which was 19% for 1990 and 4% in 2023.
+    <tr><td>{{latex("Y_{t} ~\\sim~ \\mathcal{SBLN}(\\sum_{r \\in \\mathrm{regions}}\\mu_{(r,t)}, 0.05^2)")}}</td>
+        <td>Finally, suppose that there are time-indexed
+            random variables with their own variance,
+            whose means are the sum of regional variables
+            {{latex("\\mu_{(r, t)}")|safe}}, which represent the (per-gas, per-sector) national totals.
+            Similarly to {{latex("X")|safe}},
+            variance here was fixed, based roughly on
+            the uncertainty estimate for NIR-2025.
         </td>
     </tr>
 </table>
 </p>
 
-<h3 id="ar2-hwp">Modelling Harvested Wood Products with an AR2-based model</h3>
+<p>
+The {{latex("SBLN(\\mu, \\sigma^2)")|safe}} distribution is introduced here
+as a hybrid between a Normal and a Log-Normal distribution.
+Uncertainty in the NIR is typically proportional to the size of the emissions
+amounts in question (which vary widely in magnitude), and is reported in terms of percentage points,
+which suggests a Log-Normal distribution for e.g. {{latex("X|\\mu")|safe}} might be more appropriate than a Normal. Except that sometimes,
+especially in Harvested Wood Products, the emissions are sometimes
+negative and sometimes positive, and a Log-Normal distribution can only do negative <i>or</i> positive. To get around this, I introduced a special distribution
+that I call a Symmetric Blended Log-Normal that gradually transitions from
+being a negative Log-Normal, to a regular Normal, to a positive Log-Normal as
+its {{latex("\\mu")|safe}} parameter sweeps from being large and negative,
+through zero, and to being large and positive.
+An implementation and illustration of the distribution
+in a <a href="https://github.com/jaberg/planzero/blob/5156681aa97189b0eda677d9a0bb578b02bb8ca1/SymmetricBlendedLogNormal.ipynb">Jupyter notebook</a> is rendered nicely on GitHub, for anyone looking for
+more detail about this.
+</P>
 
-{{blog.figure_ar2_rhat()|safe}}
+<h3 id="ar2-hwp">Inference of Harvested Wood Products {{CO2|safe}} emissions with an AR2-based model</h3>
+
+<p>
+Running <a href="https://num.pyro.ai/en/stable/mcmc.html">NumPyro's NUTS</a> inference algorithm for the AR2 model above,
+using the NIR-2025 emissions data regarding {{CO2|safe}} emissions
+from the Harvested Wood Products sector (HWP),
+results in the following values for
+{{latex("\\mu_{\\mathrm{(HWP, CO_2)}}")}} (shown via dotted mean
+and shaded region credible intervals, scaled to match the data magnitude).
+</p>
 
 {{blog.figure_ar2_hwp()|safe}}
 
-
-<h2 id="comparing">Comparing Models as Predictors of the Future</h2>
-
 <p>
-For every purpose to which a model might be put,
-it is possible to ask how well-suited it is to that purpose,
-and perhaps, which of two particular models is better-suited.
-One way to decide which model is better is to assign each a score
-and then compare the scores.
-In machine learning, <i>evaluation metrics</i> are numerical
-scores for models, as applied to a particular modelling task.
-To the extent that the fitness of a model for some purpose can be estimated
-accurately with an evaluation metric,
-the job of finding a the best models for that purpose becomes an optimization
-problem.
-Framing an optimization problem can be helpful
-because both people and computers are good at solving optimization problems;
-optimization problem statements clarify what is important
-and what can be ignored, at least within the context of that optimization.
-The machine learning community has made great progress over recent
-decades by focusing model development around standard problems.
-I hope that this practice may serve to support emission-reduction efforts
-as well, so long as standard, relevant problems can be identified.
+In contrast to the Static Normals model, the AR2 model predicts different emissions
+at different times. Around the data points, the credibility intervals usually lie near the data, and are pretty narrow, but don't always include the data.
+It's perhaps an unfortunate choice of example, but it is an interesting one.
+The assumptions of the AR2 model are in conflict with the reality of HWP emissions.
+HWP emissions jump around a lot rather than being smooth, and the national total is
+almost 30 Mt {{CO2e|safe}} off the sum of regional subtotals in the 1990s.
+Still, inference is about finding plausible values for the latent random variables, especially {{latex("\\mu")|safe}}, and as far as I can tell the NUTS algorithm is working.
+Interestingly, the result of inference is an unlikely conclusion that
+the Northwest Territories and Nunavut were secretly emitting vast quantities
+of HWP {{CO2|safe}} in the early 90s during the period where no emissions
+are listed for them in NIR-2025.
+It certainly helps explain the reporting gap!
+(Nunavut has a good excuse for not listing emissions: it didn't exist until 1999.)
 </p>
 
 <p>
-As a first standard challenge,
-this post introduces a prediction challenge
-which if not necessarily of long-term importance,
-can at least serve to show how the models above can be compared
-numerically.
-The challenge is slightly tricky to describe, so I've provided
-the following diagram to support the explanation below.
-The "Year-Out, Last-Year (YOLY-2025)" prediction challenge
-is to predict,
-on the basis of data that was available one year ahead of its publication, the
-most-recent year's emissions that were covered of the NIR-2025 National Inventory Report, which was year 2023.
-(Technically, I should use the NIR-2024 data for this evaluation,
-but I'm cheating and using years 1990-2022 from NIR-2025 instead because
-it's the data I have at hand.)
-</p>
-
-
-<b>The NIR-2025 Year-Out, Last-Year (YOLY-2025) prediction challenge (of year 2023):</b>
-{{blog.figure_YOLY_2025()|safe}}
-
-<p>
-Both of our models (I'll call them "Const" and "AR2")
-can predict 2023 emissions in NIR-2025 based on previous years' data.
-When I ran inference on these models to make the figures above,
-I generated a sample of 1000 possible assignments of the latent variables,
-which were (ideally) distributed according
-to each model's posterior distribution conditioned on data from years
-1990-2022.
-Every single one of these latent variable assignments can make a prediction for year
-2023.
-The distributions of these predictions for Canada and each province,
-and territory, for {{CO2|safe}} emissions from Harvested Wood Products,
-is shown in the figure below.
-</p>
-
-{{blog.figure_YOLY_2025_violinplots()|safe}}
-
-<p>
-Both models make good predictions, in that the range of values they predict
-includes the actual 2023 emissions data (the solid dot on each violin plot).
-However, the models are different in that the range of values predicted
-by the Const model for each category is relatively large (e.g. 140 Mt{{CO2e|safe}})
-in the case of the national total),
-and by comparison the range of predictions from the AR2 model for each category
-is smaller (e.g. only about 25 Mt{{CO2e|safe}} for the national total.)
-Qualitatively, we can see that the AR2 model is making much bolder predictions,
-and the data for this sector reveal that it also made reasonably correct
-predictions.
-The AR2 model is the better predictor, as
-far as our data is concerned.
+I am happy with the AR2 modelling of HWP emissions in the sense that inference appears to be
+doing its job, and the predictions for the future look more plausible to me
+than the overly-conservative predictions of the Static Normals model.
+That said, the AR2-based model of HWP emissions could certainly be
+improved by e.g. incorporating the mechanisms of HWP calculations
+(which work in terms of filters on quantities of types of harvested wood,
+ see <a href="/blog/2026-02-22-forest-hwp">Emissions Calculations for Harvested Wood Products and Forest Land (Feb 22, 2026)</a> for an earlier review)
+, combined modelling of both Forest Land and HWP emissions,
+and the inclusion of more data sources.
 </p>
 
 <p>
-A standard way to to turn this qualitative assessment into a
-model evaluation metric
-is compute the predicted probability of the evaluation
-data, according to the model.
-In the case of this data,
-I think the job is to predict all of the provincial and territorial totals and the national total
-together, with one bad prediction ruining the whole lot. The YOLY-2025
-evaluation metric {{latex("\\mathcal{L}")}} is the 
-entire year's emission data,
-as estimated by the model.
+A standard view of probabilistic models of sectors now features this
+<a href="/models/prob/AR2/sectors/Harvested%20Wood%20Products">
+AR2 model for Harvested Wood Products</a> on a page that shows
+the following figure:
 </p>
+{% include "blog/2026-04-26-probabilistic-modelling-AR2-HWP.html" %}
+<p>
+It's fun to play with the slider to see what's going on in the 90s,
+and the panel view highlights that future uncertainty in the AR2 model is dominated
+by BC, ON, QC, and AB.
+</p>
+
+<h3 id="ar2-all">Inference of All Emissions with an AR2-based model</h3>
 
 <p>
-{{latex("
-\\mathcal{L} =
-\\log\\left(
-P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)})
-\\right)
-", "block")}}
+The same style of figure used above to visualize predictions of Canada's future emissions according to the Static Normals model can also be used to characterize predictions according to the AR2 model.
+Again the sectors are ordered according to decreasing upper bound on their credible intervals, but since the models are different, the ordering is slightly different as well.
+Sadly, the figure is less colourful as well, because the colours come from
+uncertainty, and the AR2 model predicts tighter, smaller, 95% credible intervals.
+Feel free to click any of the panels for a closer look at regional and per-gas
+emissions inferences and predictions.
 </p>
+
+{% include "blog/2026-04-26-probabilistic-modelling-AR2-all_sectors.html" %}
 
 <p>
-To use this formula on our models
-we must transform it into an expectation
-over latent variables
-({{latex("\\theta")}})
-so that we can evaluate it
-with the sample
-({{latex("\\hat \\theta")}})
-that we computed by inference of the posterior distribution.
+Overall, I think the AR2 predictions are reasonable.
+In most cases, they look like visual extensions of apparent trends,
+which is the sort of thing an AR2 model can be expected to do.
+There are some examples of poor fit,
+such as Ammonia Production, Nitric Acid Production, and Petrochemical and
+Carbon Black Production where the inferred total is far from the national
+data, but these cases are a bit like the case of Harvested Wood Products,
+in which the provincial and territorial sums didn't match the national total.
+In fact, in some of these cases,
+the provincial emissions are listed as all being zero.
+Inference in the AR2 model understandably struggles to
+explain how all of the regional emissions related to Ammonia Production can be zero while the national total is about 2.5 Mt{{CO2e|safe}}.
+Model fit in these sectors can presumably be improved by a better understanding
+on my part of what's going on, but I haven't studied these sectors yet.
 </p>
-
-<p>
-{{latex("
-\\mathcal{L} =
-\\log\\left(
-\\int_\\theta P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\theta) P(\\theta)
-\\right)
-
-\\approx
-\\log\\left(
-\\frac{1}{n}
-\\sum_{\\hat \\theta_i ~\\sim~ P(\\theta)}^n P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\hat \\theta_i)
-\\right)
-
-", "block")}}
-</p>
-
-<p>
-This expression can be computed for each model, at least
-for {{CO2|safe}} from Harvested Wood Products.
-The results are in the table below.
-</p>
-<table>
-    <thead>
-        <tr><th>Model</th><th>Evaluation Data Log-Probability {{latex("\\mathcal{L}")}} on {{CO2|safe}} from Harvested Wood Products</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>Const (non-time-varying)</td><td>{{"{:.3f}".format(blog.log_prob_2023_const())}}</td></tr>
-        <tr><td>AR2-based model</td><td>{{"{:.3f}".format(blog.log_prob_2023_AR2())}}</td></tr>
-    </tbody>
-</table>
-
-<p>
-The log-probability of the 2023 data under both models is negative.
-Each emission data point is modelled as Normal with a scale
-spanning up to tens of Mt{{CO2e|safe}}, so
-most of them are stretched pretty thinly (distributions always have to sum or integrate to 1.0).
-The logarithm of a tiny positive number is a large negative number.
-The logarithm of a product of tiny positive numbers (such as the probabilities
-of the data points for each province and territory) is
-the sum of the logarithm of each one, and with each logarithm being negative,
-the sum is an even larger negative number.
-The log probability of our evaluation data under the constant model
-is about -107.
-The log probability of our evaluation data under the AR-2 model
-is about -103.
-It may seem that -107 is close to -103 because they're separated by 4%,
-but technically the results are that the actual 2023 emissions data are about {{latex("e^{-103.2-(-107)}\\approx50")}}
-times more probable under the AR2 model than the Constant one.
-The AR2 model predicted the 2023 emissions more precisely, and it turned
-out to be right.
-</p>
-
-<p>
-Log-probability isn't a perfect evaluation metric, but it's pretty good.
-As one example of a shortcoming, it can be gamed
-on Harvested Wood Products
-by a model that makes
-infinite confidence prediction that Nunavut's HWP emissions will be exactly 0.
-That particular silliness can be avoided in a couple of ways (e.g.
-make sure all models handle easy predictions similarly, or add noise to data
-as part of the evaluation metric),
-but in general,
-it's important to use all the tools, cleverness, and data available to us
-to recognize and prevent such silliness for ruining an evaluation
-metric that's otherwise quite useful.
-Log probability isn't a perfect evaluation metric, but
-I believe with a little vigilence, it's a good one;
-by iteratively incorporating models with superior
-evaluation log-likelihood  on YOLY-202X prediction challenges, PlanZero models
-can get quite good at year-out last-year NIR prediction.
-</p>
-
 
 <h2 id="conclusion">Conclusion</h2>
 

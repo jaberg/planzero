@@ -148,6 +148,275 @@ class YearOutLastYearPrediction(BlogPost):
             concept_only=True,
             )
 
+    def figure_YOLY_2025(self):
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+                import matplotlib.pyplot as plt
+                import numpy as np
+                from datetime import datetime
+
+                sources = {
+                    "NIR-2024": {
+                        "pub_date": "2024-05-03",
+                        "train_start": "1990-01-01",
+                        "train_end": "2022-12-31",
+                    },
+                    "NIR-2025": {
+                        "pub_date": "2025-04-16",
+                        "train_start": "1990-01-01",
+                        "train_end": "2022-12-31",
+                        "test_start": "2023-01-01",
+                        "test_end": "2023-12-31",
+                    },
+                    "Hypothetically admissible extra data)": {
+                        "pub_date": "2023-03-31",
+                        "train_start": "2000-01-01",
+                        "train_end": "2022-12-31",
+                    },
+                    "Data set not available at prediction time": {
+                        "pub_date": "2024-09-30",
+                        "train_start": "2000-01-01",
+                        "train_end": "2022-12-31",
+                    }
+                }
+
+                fig, ax = plt.subplots(figsize=(8, 3.5))
+
+                for ii, (dset_name, dset_info) in enumerate(sources.items()):
+                    for key, val in list(dset_info.items()):
+                        dset_info[key] = datetime.strptime(val, "%Y-%m-%d")
+                    y = -ii
+
+                    # Solid bar: fully available data
+                    ax.barh(y, dset_info["train_end"] - dset_info["train_start"], left=dset_info["train_start"],
+                            height=0.5, color='steelblue', alpha=0.85,
+                            label='Training data' if ii == 0 else None,
+                           )
+                    last_date = dset_info["train_end"]
+                    if 'test_start' in dset_info:
+                        ax.barh(y, dset_info["test_end"] - dset_info["test_start"], left=dset_info["test_start"],
+                                height=0.5, color='lightblue', alpha=0.85,
+                                label="Evaluation data" if ii == 0 else None)
+                        last_date = dset_info["test_end"]
+
+                    # Lag bar: not yet published
+                    ax.barh(y, dset_info["pub_date"] - last_date, left=last_date,
+                            height=0.5, color='tomato', alpha=0.35,
+                            hatch='..', edgecolor='tomato',
+                            label="Publication delay" if ii == 0 else None)
+
+                prediction_time = datetime.strptime("2024-05-16", "%Y-%m-%d")
+                ax.axvline(prediction_time, color='crimson', linestyle='--', lw=1.5, label='Prediction time')
+                ax.axvline(datetime.now(), color='black', linestyle='--', lw=1.5, label='Today')
+
+                ax.set_yticks([-ii for ii in range(len(sources))])
+                ax.set_yticklabels([src for src in sources])
+                ax.set_xlabel("Date")
+                #ax.xaxis.set_major_formatter(lambda x, _: f"–{int(TODAY-x)}d" if x < TODAY else "Today")
+                #ax.set_title("The NIR-2025 Year-Out, Last-Year (YOLY-2025) prediction challenge (of year 2023)")
+                plt.legend(loc='lower left')
+                plt.tight_layout()
+        return RVAL()
+
+    def figure_YOLY_2025_violinplots(self):
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+                return
+                import planzero
+                from planzero.nir_ar2 import NIR2025_AR2
+                IPCC_Sector = planzero.enums.IPCC_Sector
+                GHG = planzero.enums.GHG
+
+                sector = IPCC_Sector.Harvested_Wood_Products
+                ghg = GHG.CO2
+                model = self.ar2_model(sector, ghg)
+
+                from planzero.enums import col_by_pt, col_ca, PT
+                rcon = model.reconstructed_past()
+                from .nir_constant_predictor import NIR2025_Model
+                const_model = NIR2025_Model.posterior_inference(
+                    sector=IPCC_Sector.Harvested_Wood_Products,
+                    ghg=GHG.CO2,
+                )
+                const_predictions = const_model.predictions()
+
+                from . import nir2025
+                arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+                ca_2023 = rcon['past-ca-1'][:, -1]
+                #print(rcon['past-pt-1'].shape)
+                import matplotlib.pyplot as plt
+                def monochrome_violinplot(x, ydata, c, label=None):
+                    violin_parts = ax.violinplot([ydata], positions=[x], orientation='horizontal')
+                    violin_parts['bodies'][0].set_color(c)
+                    for part_name in ['cmaxes', 'cmins', 'cbars']:
+                        line_collection = violin_parts[part_name]
+                        line_collection.set_color(c)
+                fig, ax = plt.subplots(figsize=[8, 6])
+                monochrome_violinplot(0, ca_2023 * model.scale, col_ca)
+                monochrome_violinplot(-1, const_predictions['obs_ca'] * model.scale, col_ca)
+                for ii, pt in enumerate(planzero.enums.PT):
+                    if pt == planzero.enums.PT.XX:
+                        continue
+                    monochrome_violinplot(
+                        -2 * (ii + 1),
+                        rcon['past-pt-1'][:, -1, ii] * model.scale,
+                        col_by_pt[pt],
+                    )
+                    monochrome_violinplot(
+                        -2 * (ii + 1) - 1,
+                        const_predictions['obs_pt'][:, ii] * model.scale,
+                        col_by_pt[pt])
+                    plt.text(22_000, -2 * (ii + 1) - 0.8, pt.two_letter_code(), fontsize=12)
+                    plt.text(12_000, -2 * (ii + 1) - 0.2, "AR2")
+                    plt.text(12_000, -2 * (ii + 1) - 1.2, "Const")
+                plt.text(12_000, -2 * (-1 + 1) - 0.2, "AR2")
+                plt.text(12_000, -2 * (-1 + 1) - 1.2, "Const")
+                plt.text(22_000, - 0.8, 'CA', fontsize=12)
+
+                plt.scatter(#[1],
+                            [arr_ca[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
+                                    nir2025.idx_of_ghg[GHG.CO2],
+                                    -1]] * 2,
+                            [0, -1],
+                            c=col_ca,
+                            marker='o',
+                            label="Solid dots: NIR-2025's 2023 emissions",
+                )
+                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
+                                    nir2025.idx_of_ghg[GHG.CO2],
+                                    :, # PT but not XX
+                                    -1],
+                            [-y * 2 for y in range(1, 14)],
+                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
+                            marker='o')
+                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
+                                    nir2025.idx_of_ghg[GHG.CO2],
+                                    :, # PT but not XX
+                                    -1],
+                            [-y * 2 - 1 for y in range(1, 14)],
+                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
+                            marker='o')
+
+                if 0:
+                    plt.yticks(
+                        [-ii * 2 - .5 for ii in range(14)],
+                        ['Canada'] + [pt.value for pt in PT if pt != PT.XX])
+                elif 0:
+                    plt.yticks(
+                        [-ii for ii in range(14 * 2)],
+                        ['Const' if ii % 2 else 'AR2' for ii in range(14 * 2)])
+                else:
+                    plt.yticks([])
+                plt.xlabel('Predicted emissions (kt CO2e)')
+                plt.title('Predictions of CO2 from Harvested Wood Products')
+                ax.yaxis.tick_right()
+                #plt.xlim(-130_000, 20_000)
+                plt.legend(loc='lower left')
+                plt.tight_layout()
+
+        return RVAL()
+
+    def log_prob_2023_const(self):
+        return float('nan')
+        import numpy as np
+        import planzero
+        IPCC_Sector = planzero.enums.IPCC_Sector
+        GHG = planzero.enums.GHG
+        from .nir_constant_predictor import NIR2025_Model
+        const_model = NIR2025_Model.posterior_inference(
+            sector=IPCC_Sector.Harvested_Wood_Products,
+            ghg=GHG.CO2,
+            version=0,
+        )
+        mu = const_model.post_samples['mu'] # (1000, 13)
+        mu_ca = mu.sum(axis=1) # (1000,)
+
+        from planzero import nir2025
+        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+        arr_idx_of_2023 = arr_ca.shape[2] - 1
+
+        eval_mu = np.zeros((1000, 14))
+        eval_mu[:, :13] = mu
+        eval_mu[:, 13] = mu_ca
+        eval_mu *= const_model.scale
+
+        eval_sigma = np.zeros((1000, 14))
+        eval_sigma[:, :13] = const_model.post_samples['sigma_pt']
+        eval_sigma[:, 13] = const_model.post_samples['sigma_ca']
+        eval_sigma *= const_model.scale
+
+        eval_obs = np.zeros(14)
+        eval_obs[:13] = arr_pt[
+            nir2025.idx_of_sector[const_model.sector],
+            nir2025.idx_of_ghg[const_model.ghg],
+            :,
+            arr_idx_of_2023]
+        eval_obs[13] = arr_ca[
+            nir2025.idx_of_sector[const_model.sector],
+            nir2025.idx_of_ghg[const_model.ghg],
+            arr_idx_of_2023]
+
+        import numpyro.distributions as dist
+        log_probs = dist.Normal(eval_mu, eval_sigma).log_prob(eval_obs)
+        logprob_X = np.sum(log_probs, axis=1)
+        from scipy.special import logsumexp
+        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
+
+        return rval
+
+    def log_prob_2023_AR2(self):
+        return float('nan')
+        import numpy as np
+        import planzero
+        from planzero.nir_ar2 import NIR2025_AR2
+        from planzero import nir2025
+
+        IPCC_Sector = planzero.enums.IPCC_Sector
+        GHG = planzero.enums.GHG
+
+        sector = IPCC_Sector.Harvested_Wood_Products
+        ghg = GHG.CO2
+        model = self.ar2_model(sector, ghg)
+
+        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+        mu_ca = np.sum(model.post_samples['mu'], axis=2)
+
+        arr_idx_of_2023 = arr_ca.shape[2] - 1
+        mu_idx_of_2023 = arr_idx_of_2023 - 2 # 2 from it being AR2 model
+
+
+        eval_mu = np.zeros((1000, 14))
+        eval_mu[:, :13] = model.post_samples['mu'][:, mu_idx_of_2023]
+        eval_mu[:, 13] = mu_ca[:, mu_idx_of_2023]
+
+        eval_sigma = np.zeros(14)
+        eval_sigma[:13] = model.noise_ca * model.pt_rms
+        eval_sigma[13] = model.noise_ca
+
+        eval_obs = np.zeros(14)
+        eval_obs[:13] = arr_pt[
+            nir2025.idx_of_sector[model.sector],
+            nir2025.idx_of_ghg[model.ghg],
+            :,
+            arr_idx_of_2023]
+        eval_obs[13] = arr_ca[
+            nir2025.idx_of_sector[model.sector],
+            nir2025.idx_of_ghg[model.ghg],
+            arr_idx_of_2023]
+
+        import numpyro.distributions as dist
+        log_probs = dist.Normal(
+            eval_mu * model.scale,
+            eval_sigma * model.scale
+        ).log_prob(
+            eval_obs
+        )
+        logprob_X = np.sum(log_probs, axis=1)
+        from scipy.special import logsumexp
+        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
+
+        return rval
+
 class TwoProbabilisticModels(BlogPost):
     """
     This post introduces probabilistic modelling to PlanZero.
@@ -339,6 +608,7 @@ class TwoProbabilisticModels(BlogPost):
             ax.axhline(
                 jnp.mean(predictions['obs_pt'][:, list_idx]) * scale,
                 c=col_by_pt[pt],
+                ls=':',
                 label='estimated mu',
             )
             # data
@@ -352,7 +622,7 @@ class TwoProbabilisticModels(BlogPost):
             ax.axhline(
                 np.nanmean(model.jnp_pt[list_idx] * scale / model.scale),
                 color=col_by_pt[pt],
-                ls='--',
+                ls='-',
                 label='data mean',
             )
             lbound = min(0,
@@ -368,6 +638,7 @@ class TwoProbabilisticModels(BlogPost):
 
 
     def foo(self,):
+        assert 0
         IPCC_Sector = enums.IPCC_Sector
         GHG = enums.GHG
         sector_ghg_list = [
@@ -416,7 +687,7 @@ class TwoProbabilisticModels(BlogPost):
         return RVAL()
 
 
-    def foo_one_sector_ghg(self,):
+    def static_normals_HWP_CO2(self,):
         IPCC_Sector = enums.IPCC_Sector
         GHG = enums.GHG
         PT = enums.PT
@@ -428,8 +699,6 @@ class TwoProbabilisticModels(BlogPost):
         model = NIR2025_Model.posterior_inference(
             sector=sector, ghg=ghg)
         predictions = model.predictions()
-        print('predictions', predictions['obs_ca'].shape)
-        print('predictions', predictions['obs_pt'].shape)
 
         class RVAL(HTML_Matplotlib_Figure):
             def build_figure(_):
@@ -461,7 +730,6 @@ class TwoProbabilisticModels(BlogPost):
         grouped_samples = model.grouped_samples
         from numpyro.diagnostics import summary
         diagnostics = summary(grouped_samples, prob=0.90, group_by_chain=True)
-        print(diagnostics['alpha_1']['r_hat'].shape)
         class RVAL(HTML_Matplotlib_Figure):
             def build_figure(_):
 
@@ -471,18 +739,37 @@ class TwoProbabilisticModels(BlogPost):
                 plt.legend(loc='upper right')
         return RVAL()
 
-    def ar2_sector_ghg_pt(self, ax, sector, ghg, pt, list_idx, model, rec_samples):
+    def ar2_sector_ghg_pt(self, ax, sector, ghg, pt, list_idx, model):
         from . import nir2025
         import numpy as np
         import jax.numpy as jnp
+        import jax.random as jrandom
         from numpyro.diagnostics import hpdi
+        from . import nir_ar2
 
-        rec_pt = rec_samples['past-pt-1']
-        rec_ca = rec_samples['past-ca-1']
-        rec_yrs = np.arange(1993, 1990 + model.future_idx + 1)
+        rng_key = jrandom.key(1234)
+        np_rng = np.random.default_rng(12345)
+        rng_key, rng_key_ = jrandom.split(rng_key)
 
-        scale = model.scale
-        scale = 1
+        n_mu_timesteps_to_2022 = 31 # for NIR-2025
+        n_mu_timesteps_to_2050 = n_mu_timesteps_to_2022 + 27
+
+        samples = nir_ar2.samples_with_extended_mu(
+            model.post_samples,
+            n_steps=n_mu_timesteps_to_2050 - n_mu_timesteps_to_2022,
+            pt_rms=model.pt_rms,
+            np_rng=np_rng)
+        samples = nir_ar2.sample_past_given_mu(
+            samples,
+            relerr=model.relerr,
+            pad_mu0_m1=True,
+            key=rng_key_)
+
+        rec_pt = samples['past-pt']
+        rec_ca = samples['past-ca']
+        rec_yrs = np.arange(1990, 2050)
+
+        scale = model.scale / 1000 # convert to Mt
 
         if pt is None:
             # spread
@@ -494,18 +781,23 @@ class TwoProbabilisticModels(BlogPost):
                 alpha=0.1,
                 interpolate=True,
                 color=col_ca,
+                label='$X$ 95% CI',
                 )
             # mean
             ax.plot(
                 rec_yrs,
                 rec_ca.mean(axis=0) * scale,
                 c=col_ca,
+                label='$X$ mean',
+                ls=":",
             )
             # data
             ax.scatter(
                 nir2025.nir2025_year_ints,
                 model.jnp_ca * scale / model.scale,
                 color=col_ca,
+                s=20,
+                label='NIR-2025 data',
             )
             for ii, pt in enumerate(enums.PT):
                 if pt == enums.PT.XX:
@@ -514,29 +806,29 @@ class TwoProbabilisticModels(BlogPost):
                     nir2025.nir2025_year_ints,
                     model.jnp_pt[ii] * scale / model.scale,
                     color=col_by_pt[pt],
+                    alpha=.3,
+                    s=20,
                 )
 
         else:
             future_idx = len(model.scaled_ca)
             obs_valid = jnp.isfinite(model.scaled_pt[:, :future_idx])
-            obs_sigma_sq = 0.1 ** 2
             approx_obs = jnp.where(
                 obs_valid,
                 model.scaled_pt[:, :future_idx],
                 jnp.nanmean(model.scaled_pt[:, :future_idx], axis=1, keepdims=True))
-            init = (approx_obs[:, 1], approx_obs[:, 0])
 
-            mu = model.post_samples['mu']
+            mu = nir_ar2.complete_mu(samples)
             mu_spread = hpdi(mu, 0.95)
-            mu_years = np.arange(mu.shape[1]) + 1992
+            mu_years = np.arange(mu.shape[1]) + 1990
             ax.fill_between(
-                [1990, 1991] + list(mu_years),
-                np.asarray([init[1][list_idx], init[0][list_idx]] + list(mu_spread[0, :, list_idx])) * scale,
-                np.asarray([init[1][list_idx], init[0][list_idx]] + list(mu_spread[1, :, list_idx])) * scale,
+                list(mu_years),
+                mu_spread[0, :, list_idx] * scale,
+                mu_spread[1, :, list_idx] * scale,
                 alpha=0.2,
                 interpolate=True,
                 color=col_by_pt[pt],
-                label='mu 95% CI',
+                label='$\mu$ 95% CI',
                 )
 
             spread_pt_ii = hpdi(rec_pt[:, :, list_idx], 0.95)
@@ -547,20 +839,22 @@ class TwoProbabilisticModels(BlogPost):
                 alpha=0.1,
                 interpolate=True,
                 color=col_by_pt[pt],
-                label='model-1 95% CI',
+                label='$X$ 95% CI',
                 )
             ax.plot(
                 rec_yrs,
-                np.mean(spread_pt_ii, axis=0),
+                np.mean(spread_pt_ii, axis=0) * scale,
                 color=col_by_pt[pt],
-                label='model-1 mean',
+                label='$X$ mean = $\mu$ mean',
+                ls=':',
                 )
 
             ax.scatter(
                 nir2025.nir2025_year_ints,
                 model.jnp_pt[list_idx] * scale / model.scale,
                 color=col_by_pt[pt],
-                label='data mean',
+                label='NIR-2025 data',
+                s=20,
             )
 
     def figure_ar2_hwp(self,):
@@ -573,7 +867,6 @@ class TwoProbabilisticModels(BlogPost):
         model = self.ar2_model(sector, ghg)
 
         import numpy as np
-        rec_samples = model.reconstructed_past()
 
         class RVAL(HTML_Matplotlib_Figure):
             def build_figure(_):
@@ -587,17 +880,15 @@ class TwoProbabilisticModels(BlogPost):
                         else:
                             pt = list(enums.PT)[list_idx - 1]
                         self.ar2_sector_ghg_pt(
-                            ax, sector, ghg, pt, list_idx - 1, model, rec_samples)
-                        #if col == 0:
-                        #    ax.set_ylabel('Emissions (CO2e)')
+                            ax, sector, ghg, pt, list_idx - 1,
+                            model)
                         alpha_1 = np.mean(model.post_samples['alpha_1'][:, list_idx - 1])
                         alpha_2 = np.mean(model.post_samples['alpha_2'][:, list_idx - 1])
                         if pt is None:
-                            ax.set_title("Canada")
+                            ax.set_title("Canada (with regional subtotals)")
                         else:
-                            ax.set_title(f'{pt.value}, [0, {alpha_1:.2f}, {alpha_2:.2f}]')
-                        if pt:
-                            ax.legend(loc='lower right')
+                            ax.set_title(f'{pt.value} [$\\bar c_1={3 * alpha_1 - .5:.2f}$, $\\bar c_2={3 * alpha_2 - 1.5:.2f}$]')
+                        ax.legend(loc='lower right')
                 plt.tight_layout()
         return RVAL()
 
@@ -617,275 +908,6 @@ class TwoProbabilisticModels(BlogPost):
                 ax1.plot(x, np.exp(dist.LogNormal(-1, 0.7).log_prob(x)))
                 plt.tight_layout()
         return RVAL()
-
-    def figure_YOLY_2025(self):
-        class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
-                import matplotlib.pyplot as plt
-                import numpy as np
-                from datetime import datetime
-
-                sources = {
-                    "NIR-2024": {
-                        "pub_date": "2024-05-03",
-                        "train_start": "1990-01-01",
-                        "train_end": "2022-12-31",
-                    },
-                    "NIR-2025": {
-                        "pub_date": "2025-04-16",
-                        "train_start": "1990-01-01",
-                        "train_end": "2022-12-31",
-                        "test_start": "2023-01-01",
-                        "test_end": "2023-12-31",
-                    },
-                    "Hypothetically admissible extra data)": {
-                        "pub_date": "2023-03-31",
-                        "train_start": "2000-01-01",
-                        "train_end": "2022-12-31",
-                    },
-                    "Data set not available at prediction time": {
-                        "pub_date": "2024-09-30",
-                        "train_start": "2000-01-01",
-                        "train_end": "2022-12-31",
-                    }
-                }
-
-                fig, ax = plt.subplots(figsize=(8, 3.5))
-
-                for ii, (dset_name, dset_info) in enumerate(sources.items()):
-                    for key, val in list(dset_info.items()):
-                        dset_info[key] = datetime.strptime(val, "%Y-%m-%d")
-                    y = -ii
-
-                    # Solid bar: fully available data
-                    ax.barh(y, dset_info["train_end"] - dset_info["train_start"], left=dset_info["train_start"],
-                            height=0.5, color='steelblue', alpha=0.85,
-                            label='Training data' if ii == 0 else None,
-                           )
-                    last_date = dset_info["train_end"]
-                    if 'test_start' in dset_info:
-                        ax.barh(y, dset_info["test_end"] - dset_info["test_start"], left=dset_info["test_start"],
-                                height=0.5, color='lightblue', alpha=0.85,
-                                label="Evaluation data" if ii == 0 else None)
-                        last_date = dset_info["test_end"]
-
-                    # Lag bar: not yet published
-                    ax.barh(y, dset_info["pub_date"] - last_date, left=last_date,
-                            height=0.5, color='tomato', alpha=0.35,
-                            hatch='..', edgecolor='tomato',
-                            label="Publication delay" if ii == 0 else None)
-
-                prediction_time = datetime.strptime("2024-05-16", "%Y-%m-%d")
-                ax.axvline(prediction_time, color='crimson', linestyle='--', lw=1.5, label='Prediction time')
-                ax.axvline(datetime.now(), color='black', linestyle='--', lw=1.5, label='Today')
-
-                ax.set_yticks([-ii for ii in range(len(sources))])
-                ax.set_yticklabels([src for src in sources])
-                ax.set_xlabel("Date")
-                #ax.xaxis.set_major_formatter(lambda x, _: f"–{int(TODAY-x)}d" if x < TODAY else "Today")
-                #ax.set_title("The NIR-2025 Year-Out, Last-Year (YOLY-2025) prediction challenge (of year 2023)")
-                plt.legend(loc='lower left')
-                plt.tight_layout()
-        return RVAL()
-
-    def figure_YOLY_2025_violinplots(self):
-        class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
-                import planzero
-                from planzero.nir_ar2 import NIR2025_AR2
-                IPCC_Sector = planzero.enums.IPCC_Sector
-                GHG = planzero.enums.GHG
-
-                sector = IPCC_Sector.Harvested_Wood_Products
-                ghg = GHG.CO2
-                model = self.ar2_model(sector, ghg)
-
-                from planzero.enums import col_by_pt, col_ca, PT
-                rcon = model.reconstructed_past()
-                from .nir_constant_predictor import NIR2025_Model
-                const_model = NIR2025_Model.posterior_inference(
-                    sector=IPCC_Sector.Harvested_Wood_Products,
-                    ghg=GHG.CO2,
-                    #last_train_year=2022,
-                    #version=3.293,
-                )
-                const_predictions = const_model.predictions()
-
-                from . import nir2025
-                arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
-                ca_2023 = rcon['past-ca-1'][:, -1]
-                #print(rcon['past-pt-1'].shape)
-                import matplotlib.pyplot as plt
-                def monochrome_violinplot(x, ydata, c, label=None):
-                    violin_parts = ax.violinplot([ydata], positions=[x], orientation='horizontal')
-                    violin_parts['bodies'][0].set_color(c)
-                    for part_name in ['cmaxes', 'cmins', 'cbars']:
-                        line_collection = violin_parts[part_name]
-                        line_collection.set_color(c)
-                fig, ax = plt.subplots(figsize=[8, 6])
-                monochrome_violinplot(0, ca_2023 * model.scale, col_ca)
-                monochrome_violinplot(-1, const_predictions['obs_ca'] * model.scale, col_ca)
-                for ii, pt in enumerate(planzero.enums.PT):
-                    if pt == planzero.enums.PT.XX:
-                        continue
-                    monochrome_violinplot(
-                        -2 * (ii + 1),
-                        rcon['past-pt-1'][:, -1, ii] * model.scale,
-                        col_by_pt[pt],
-                    )
-                    monochrome_violinplot(
-                        -2 * (ii + 1) - 1,
-                        const_predictions['obs_pt'][:, ii] * model.scale,
-                        col_by_pt[pt])
-                    plt.text(22_000, -2 * (ii + 1) - 0.8, pt.two_letter_code(), fontsize=12)
-                    plt.text(12_000, -2 * (ii + 1) - 0.2, "AR2")
-                    plt.text(12_000, -2 * (ii + 1) - 1.2, "Const")
-                plt.text(12_000, -2 * (-1 + 1) - 0.2, "AR2")
-                plt.text(12_000, -2 * (-1 + 1) - 1.2, "Const")
-                plt.text(22_000, - 0.8, 'CA', fontsize=12)
-
-                plt.scatter(#[1],
-                            [arr_ca[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
-                                    nir2025.idx_of_ghg[GHG.CO2],
-                                    -1]] * 2,
-                            [0, -1],
-                            c=col_ca,
-                            marker='o',
-                            label="Solid dots: NIR-2025's 2023 emissions",
-                )
-                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
-                                    nir2025.idx_of_ghg[GHG.CO2],
-                                    :, # PT but not XX
-                                    -1],
-                            [-y * 2 for y in range(1, 14)],
-                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
-                            marker='o')
-                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
-                                    nir2025.idx_of_ghg[GHG.CO2],
-                                    :, # PT but not XX
-                                    -1],
-                            [-y * 2 - 1 for y in range(1, 14)],
-                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
-                            marker='o')
-
-                if 0:
-                    plt.yticks(
-                        [-ii * 2 - .5 for ii in range(14)],
-                        ['Canada'] + [pt.value for pt in PT if pt != PT.XX])
-                elif 0:
-                    plt.yticks(
-                        [-ii for ii in range(14 * 2)],
-                        ['Const' if ii % 2 else 'AR2' for ii in range(14 * 2)])
-                else:
-                    plt.yticks([])
-                plt.xlabel('Predicted emissions (kt CO2e)')
-                plt.title('Predictions of CO2 from Harvested Wood Products')
-                ax.yaxis.tick_right()
-                #plt.xlim(-130_000, 20_000)
-                plt.legend(loc='lower left')
-                plt.tight_layout()
-
-        return RVAL()
-
-    def log_prob_2023_const(self):
-        import numpy as np
-        import planzero
-        IPCC_Sector = planzero.enums.IPCC_Sector
-        GHG = planzero.enums.GHG
-        from .nir_constant_predictor import NIR2025_Model
-        const_model = NIR2025_Model.posterior_inference(
-            sector=IPCC_Sector.Harvested_Wood_Products,
-            ghg=GHG.CO2,
-            version=0,
-        )
-        mu = const_model.post_samples['mu'] # (1000, 13)
-        mu_ca = mu.sum(axis=1) # (1000,)
-
-        from planzero import nir2025
-        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
-        arr_idx_of_2023 = arr_ca.shape[2] - 1
-
-        eval_mu = np.zeros((1000, 14))
-        eval_mu[:, :13] = mu
-        eval_mu[:, 13] = mu_ca
-        eval_mu *= const_model.scale
-
-        eval_sigma = np.zeros((1000, 14))
-        eval_sigma[:, :13] = const_model.post_samples['sigma_pt']
-        eval_sigma[:, 13] = const_model.post_samples['sigma_ca']
-        eval_sigma *= const_model.scale
-
-        eval_obs = np.zeros(14)
-        eval_obs[:13] = arr_pt[
-            nir2025.idx_of_sector[const_model.sector],
-            nir2025.idx_of_ghg[const_model.ghg],
-            :,
-            arr_idx_of_2023]
-        eval_obs[13] = arr_ca[
-            nir2025.idx_of_sector[const_model.sector],
-            nir2025.idx_of_ghg[const_model.ghg],
-            arr_idx_of_2023]
-
-        import numpyro.distributions as dist
-        log_probs = dist.Normal(eval_mu, eval_sigma).log_prob(eval_obs)
-        logprob_X = np.sum(log_probs, axis=1)
-        from scipy.special import logsumexp
-        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
-
-        return rval
-
-    def log_prob_2023_AR2(self):
-        import numpy as np
-        import planzero
-        from planzero.nir_ar2 import NIR2025_AR2
-        from planzero import nir2025
-
-        IPCC_Sector = planzero.enums.IPCC_Sector
-        GHG = planzero.enums.GHG
-
-        sector = IPCC_Sector.Harvested_Wood_Products
-        ghg = GHG.CO2
-        model = self.ar2_model(sector, ghg)
-
-        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
-        mu_ca = np.sum(model.post_samples['mu'], axis=2)
-
-        arr_idx_of_2023 = arr_ca.shape[2] - 1
-        mu_idx_of_2023 = arr_idx_of_2023 - 2 # 2 from it being AR2 model
-
-
-        eval_mu = np.zeros((1000, 14))
-        eval_mu[:, :13] = model.post_samples['mu'][:, mu_idx_of_2023]
-        eval_mu[:, 13] = mu_ca[:, mu_idx_of_2023]
-
-        eval_sigma = np.zeros(14)
-        eval_sigma[:13] = model.noise_ca * model.pt_rms
-        eval_sigma[13] = model.noise_ca
-
-        eval_obs = np.zeros(14)
-        eval_obs[:13] = arr_pt[
-            nir2025.idx_of_sector[model.sector],
-            nir2025.idx_of_ghg[model.ghg],
-            :,
-            arr_idx_of_2023]
-        eval_obs[13] = arr_ca[
-            nir2025.idx_of_sector[model.sector],
-            nir2025.idx_of_ghg[model.ghg],
-            arr_idx_of_2023]
-
-        import numpyro.distributions as dist
-        log_probs = dist.Normal(
-            eval_mu * model.scale,
-            eval_sigma * model.scale
-        ).log_prob(
-            eval_obs
-        )
-        logprob_X = np.sum(log_probs, axis=1)
-        from scipy.special import logsumexp
-        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
-
-        return rval
-
 
 
 class Glossary(BlogPost):

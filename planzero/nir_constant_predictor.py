@@ -687,7 +687,7 @@ class SparklineEChartHelper(object):
                     sector = self.sorted_non_lulucf[row * self.n_cols + col - 1]
                 except IndexError:
                     break
-                self.append_cell(row, col, sector, row_ymin * 0, row_ymax)
+                self.append_cell(row, col, sector, row_ymin, row_ymax)
 
     def add_lulucf_cells(self):
         assert self.n_cols >= len(LULUCF_Sectors) + 1
@@ -1088,7 +1088,7 @@ class RegionalSparklineEChartHelper(object):
                     region = row_regions[col]
                 except IndexError:
                     break
-                self.append_cell(row, col, region, row_ymin * 0, row_ymax)
+                self.append_cell(row, col, region, row_ymin, row_ymax)
 
     def make_echart(self):
         rval = UncertainSparklineMatrixEChart(

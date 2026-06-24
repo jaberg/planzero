@@ -138,23 +138,28 @@ def ar2_scan_random_walk(scaled_ca,
                        dist.Normal(jnp.sum(mu_1step, axis=1), noise_ca))
 
 
+def complete_mu(samples):
+    mu = np.empty(
+        (samples['mu'].shape[0],
+         samples['mu'].shape[1] + 2,
+         samples['mu'].shape[2]),
+        dtype=str(samples['mu'].dtype)
+        )
+    if 'mu_0' in samples:
+        mu[:, 0] = samples['mu_0']
+        mu[:, 1] = samples['mu_1']
+    else:
+        mu[:, 0] = samples['mu'][: , 0]
+        mu[:, 1] = samples['mu'][: , 0]
+    mu[:, 2:] = samples['mu']
+    return mu
+
+
 def sample_past_given_mu(samples, key, relerr, pad_mu0_m1=False):
     rval = dict(samples)
     key_a, key_b = jrandom.split(key, 2)
     if pad_mu0_m1:
-        mu = np.empty(
-            (samples['mu'].shape[0],
-             samples['mu'].shape[1] + 2,
-             samples['mu'].shape[2]),
-            dtype=str(samples['mu'].dtype)
-            )
-        if 'mu_0' in samples:
-            mu[:, 0] = samples['mu_0']
-            mu[:, 1] = samples['mu_1']
-        else:
-            mu[:, 0] = samples['mu'][: , 0]
-            mu[:, 1] = samples['mu'][: , 0]
-        mu[:, 2:] = samples['mu']
+        mu = complete_mu(samples)
     else:
         mu = samples['mu']
     past_pt_dist = SymmetricBlendedLogNormal.rolloff_relerr(
