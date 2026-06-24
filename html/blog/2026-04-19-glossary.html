@@ -332,7 +332,7 @@ but the implementation is not simple. There's a note about it in
 <p>
 A PlanZero scenario is the set of time series that result from simulation, which
 are fully specified by times and values until the end time of the simulation.
-When visualizing a simulation within the <a href="/simulations">Simulations</a> pages
+When visualizing a simulation within the <a href="/models/#sim">Simulation-based models</a> pages
 on this site, it is the scenario data that are used to draw the various
 figures and to compute various statistics.
 </p>
@@ -513,7 +513,7 @@ and there can be sensible causal modelling of the interaction between time serie
 </p>
 <p>
 These KPIs are now used to illustrate the effect of strategies, on the
-one currently-implemented strategy page here (<a href="/simulations/Scaling/strategies/Scale_Bovaer/">Scale Bovaer</a>).
+one currently-implemented strategy page here (<a href="/models/sim/Scaling/strategies/Scale_Bovaer/">Scale Bovaer</a>).
 </p>
 
 <h3 id="strategy">Strategies: broad activities that could be pursued, or not</h3>
@@ -599,7 +599,7 @@ rather than simplified caricatures.
     DE_cattle_enteric_emissions["Cattle Enteric Emission Rates (Barrier)"] --> TS_cattle_emfacs
     TS_cattle_emfacs(["Emission factor: annual methane per cattle type (Time Series)"])
     DE_limit["Limit Bovaer Adoption (Barrier)"] --> TS_farmers_open_to_bovaer
-    TS_farmers_open_to_bovaer(["Driver: Farmers open to Bovaer (Time Series)"]) -.->|Scale Bovaer does not use current value| DE_scale
+    TS_farmers_open_to_bovaer(["Driver: Farmers open to Bovaer (Time Series)"]) -.->|Back-link uses delayed value| DE_scale
     TS_frac_on_bovaer --> DE_limit
     TS_frac_on_bovaer --> DE_purchase_cost
     DE_purchase_cost["Bovaer Purchasing (Barrier)"] --> TS_bovaer_cost
@@ -612,11 +612,11 @@ I sometimes use the terms interchangeably, even though they refer
 to distinct conceptual levels.
 As of writing, the "Simulations" tab of the site lists two items,
 which correspond to two models.
-The first one, <a href="/scenarios/NIR2025/">NIR2025</a>,
+The first one, <a href="/models/sim/NIR2025/">NIR2025</a>,
 comprises a single barrier that initializes time series corresponding to the data from the 2025
 National Inventory Report. That dynamic element has no recurrent logic,
 so the time series do not change after year 2023.
-The second one, <a href="/scenarios/Scaling/">Scaling</a>,
+The second one, <a href="/models/sim/Scaling/">Scaling</a>,
 incorporates the NIR2025 data for all but two sectors (Enteric Fermentation, and Industrial Processes / Other Product Manufacture and Use), which are defined instead according to the model
 presented in <a href="/blog/2026-04-03-bovaer">modelling Bovaer adoption</a>.
 <table id="gemini-sort-data-table">
@@ -637,7 +637,7 @@ presented in <a href="/blog/2026-04-03-bovaer">modelling Bovaer adoption</a>.
 
           <tr>
               <td>
-                  <a href="/scenarios/NIR2025/">NIR2025</a>
+                  <a href="/models/sim/NIR2025/">NIR2025</a>
               </td>
               <td>Visualize the data from National Greenhouse Gas Inventory Report
     NIR-2025.</td>
@@ -647,7 +647,7 @@ presented in <a href="/blog/2026-04-03-bovaer">modelling Bovaer adoption</a>.
 
           <tr>
               <td>
-                  <a href="/scenarios/Scaling/">Scaling</a>
+                  <a href="/models/sim/Scaling/">Scaling</a>
               </td>
               <td>Model maximal deployment of existing products</td>
               <td>671.5
@@ -716,7 +716,7 @@ that have common influences and effects.
 <p>
 As of the authoring of this post, the modelling terms defined here now guide and inform
 the charts and page layouts in the model visualization section of the site,
-which is now, as per the new terminology, called "<a href="/simulations/">Simulations</a>".
+which is now, as per the new terminology, called "<a href="/models/">Models</a>".
 In the analysis of strategies, the charts now visualize the breakdown of emissions changes by sector,
 and the breakdown of subsidy costs by program and payee.
 In the analysis of simulations by IPCC sectors, it is possible to see a breakdown
@@ -725,8 +725,8 @@ This style of visualization aims for alignment with the style of thinking
 at work in the preparation of e.g. the
 {{siteref("ECCC")|safe}}-maintained {{siteref("National Greenhouse Gas Inventory", "National Inventory")|safe}}, and the
 {{siteref("NRCan")|safe}}-maintained {{siteref("NEUD")|safe}}.
-In the "<a href="/simulations/Scaling">Scaling</a>" simulation, only the
-"<a href="/simulations/Scaling/ipcc-sectors/Enteric_Fermentation/">Enteric Fermentation</a>"
+In the "<a href="/models/sim/Scaling">Scaling</a>" simulation, only the
+"<a href="/models/sim/Scaling/ipcc-sectors/Enteric_Fermentation/">Enteric Fermentation</a>"
 {{siteref("IPCC Sector", "sector")|safe}} is structured in this way as of writing,
 but in future posts I will incorporate the per-sector models built for previous posts into this unified system.
 </p>

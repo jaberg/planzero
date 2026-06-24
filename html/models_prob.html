@@ -1,0 +1,113 @@
+{% include "pre-main.html" %}
+<style>
+        #chart-container {
+            width: 100%;
+            height: 1000px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #example {
+            width: 100%;
+            height: 1000px;
+        }
+    </style>
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Model: {{printcname(ident)}}</h1>
+        <p>{{site_inference.short_description}}</p>
+    </header>
+
+<h2>Model Estimates of Past and Future Emissions</h2>
+<p>
+Emissions are summarized by year, and in terms of total Mt{{CO2e|safe}}
+per non-aggregate {{siteref("NIR")|safe}} sector.
+Each dotted line is the model-estimated mean.
+Each coloured region is the model-estimated 95% {{siteref("Credible Interval", "credible interval")|safe}} for national emissions per sector.
+Colours correspond to high-level emissions categories:
+<ul>
+    <li>dark blue for energy used in stationary combustion (e.g. for public electricity, oil and gas extraction, etc.)</li>
+    <li>light green for energy used in vehicles (e.g. light-duty, heavy-duty, off-road, marine, etc.)</li>
+    <li>purple for fugitive sources(e.g. venting, flaring)</li>
+    <li>wheat for agriculture-related emissions (e.g. soil, manure)</li>
+    <li>pink for waste-related emissions (e.g. landfills)</li>
+    <li>other colours for various industrial activities (mineral products, chemicals, metals)</li>
+</ul>
+Mouse-over the slider below to see the active date range and adjust it to focus on specific periods.
+Click on each panel for a deeper-dive into modelled emissions in that sector.
+For information about the model itself, refer to
+<a href="#posts">posts developing this page</a>
+at the bottom of this page.
+</p>
+
+{{site_inference.uncertain_sparkline_matrix_echart("banner_chart", v_unit="Mt_CO2e")|safe}}
+
+
+
+<!--
+<h2>Model Elements</h2>
+
+<h3 id="strategies">Strategies</h3>
+<table>
+    <thead>
+        <tr><th>Name</th><th>Description</th><th>Sector</th></tr>
+    </thead>
+    <tbody>
+        {% for name, dyn_elem in {}.items() if 'strategy' in dyn_elem.tags %}
+        <tr>
+            <td><a href="/models/sim/{{ident}}/strategies/{{name}}/">{{printcname(name)}}</a></td>
+            <td>{{dyn_elem.short_description}}</td>
+            <td>
+                {% for ipcc_sector in dyn_elem.extra_ipcc_sectors %}
+                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+                {% if not loop.last %},{% endif%}
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<h3 id="barriers">Barriers</h3>
+<table>
+    <thead>
+        <tr><th>Name</th><th>Description</th><th>Direct Impact</th></tr>
+    </thead>
+    <tbody>
+        {% for name, dyn_elem in {}.items() if 'barrier' in dyn_elem.tags %}
+        <tr>
+            <td><a href="/models/sim/{{ident}}/barriers/{{name}}/">{{printcname(name)}}</a></td>
+            <td>{{dyn_elem.short_description}}</td>
+            <td>
+                {% for ipcc_sector in ipcc_sectors_from_dynelem(dyn_elem) %}
+                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+                {% if not loop.last %},{% endif%}
+                {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+</p>
+-->
+<h2 id="posts">Posts developing this page</h2>
+<ul>
+{% for blog in blogs_by_tag(ident) %}
+<li><a href="/post/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
+<ul class="actions special">
+    <li><a href="/models/" class="button">Back to Models Overview</a></li>
+</ul>
+
+
+</section><!--post-->
+</div><!--main-->
+
+{% include "post-main.html" %}

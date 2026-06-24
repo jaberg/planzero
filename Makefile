@@ -289,3 +289,37 @@ html/blog/2026-04-03-bovaer_assets:
 		-w /mnt/ \
 		-it --rm $(target) \
 		python -c "import planzero; planzero.blog.ModellingBovaer.generate_assets()"
+
+cache/inference/Static_Normals/sentinel:
+	# Perform inference for the Static_Normals model
+	# save multiple files in this directory
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero.nir_constant_predictor
+
+
+cache/inference/AR2/sentinel:
+	# Perform inference for the AR2 model
+	# save multiple files in this directory
+	#
+	# Slow to run though! Takes maybe 2 hours?
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -m planzero nir_ar2_inference
+
+html/blog/2026-05-26-probabilistic-modelling-assets:
+	# these asset files are meant to be stored in git
+	# the script is used during development to re-generate them
+	# after the post is beyond amendment, this build script could be removed
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-e PLANZERO_USE_DISK_CACHE=0 \
+		-w /mnt/ \
+		-it --rm $(target) \
+		python -c "import planzero; planzero.blog.TwoProbabilisticModels.generate_assets()"

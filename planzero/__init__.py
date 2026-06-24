@@ -17,6 +17,7 @@ from .ipcc_transport_road_heavydutydiesel import (
 from . import barriers
 from . import strategies
 from . import sim
+from . import prob
 from .my_functools import cache as _cache
 
 from . import planet_model

@@ -294,7 +294,7 @@ class Strategy(GlossaryTerm):
         return {
             'Ablative_Analysis': 'A strategy is evaluated in the context of a model by comparing scenarios with and without the strategy',
             'Simulation': 'The construction of a scenarios from a model, sometimes including the ablative analysis of strategies',
-            'Simulations_Section': 'the <a href="/simulations">Simulations section</a> of the site features the strategies of each scenario',
+            'Simulations_Section': 'the <a href="/models/#sim">Simulation-based models</a> of the site features the strategies of each scenario',
             'Barrier': 'Barriers are the other kind of dynamic element in a model, which define KPIs, and relate the time series of a model to one another',
             'Model': 'Models are sets of dynamic elements, which may include Strategies',
             'Dynamic_Element': 'at a computational level, a strategy is a type of dynamic element',
@@ -548,7 +548,7 @@ class NIR_Model(GlossaryTerm):
     National Inventory Report.
     </p><p>
     NIR Models are also the fully-featured models featured
-    in the PlanZero <a href="/simulations/">Simulations</a> section.
+    in the PlanZero <a href="/models/#sim/">Simulation-based models</a> section.
     In addition to KPIs relating to emissions, these models
     include KPIs relating to subsidy programs.
     """
@@ -621,6 +621,11 @@ class Stochastic_Model(GlossaryTerm):
             'Simulation': 'The procedure for converting a stochastic model to one or more scenarios'
         }
 
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Probabilistic Model']
+
+
 class Deterministic_Model(GlossaryTerm):
     """A deterministic model is a model that corresponds to a specific
     scenario, and has no randomness.
@@ -638,7 +643,11 @@ class Deterministic_Model(GlossaryTerm):
 
 class Simulations_Section(GlossaryTerm):
     """The Simulations section of the planzero.ca website:
-    <a href="/simulations/">https://planzero.ca/simulations/</a>"""
+    <a href="/models/#sim">https://planzero.ca/models/</a>"""
+
+    # XXX this is now the "Models Tab"
+
+    # XXX Change term Section -> Tab, because individual pages have "Sections"
 
     @property
     def see_also(self) -> dict[str, str]:
@@ -691,7 +700,7 @@ class Scenario(GlossaryTerm):
             'Rollout': "A scenario is sometimes called a model rollout",
             'Time Series': "A time series is a data structure representing a time-varying quantity, and a Scenario corresponds to a set of them",
             'Simulation': 'The construction of a Scenario from a model',
-            'Simulations_Section': 'the <a href="/simulations">Simulations section</a> of the site analyzes and compares scenarios',
+            #'Simulations_Section': 'the <a href="/models/#sim">Simulation-based models section</a> of the site analyzes and compares scenarios',
         }
 
 
@@ -1527,3 +1536,104 @@ class Greenhouse_Gas(GlossaryTerm):
             (blog.GHG_Emissions(), '#h2_ghg', "see section on Greenhouse gases"),
         ]
 
+
+class Inference_Algorithm(GlossaryTerm):
+    """An inference algorithm is for discovering plausible values of
+    unobserved (latent) variables in a stochastic [probabilistic] model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Stochastic_Model': 'Inference algorithms only make sense for stochastic models',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+
+class Random_Variable(GlossaryTerm):
+    """A random variable is an unknown scalar- or vector-valued
+    term in a probabilistic model. A random variable is associated
+    with a probability distribution.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Stochastic_Model': 'Random variables are the random parts of stochastic models',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+
+class Probability_Distribution(GlossaryTerm):
+    """A probability distribution is a table or function of
+    all the values a random variable might take, which
+    defines how probable is each possible value.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Random_Variable': 'are associated with probability distributions',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+class Credible_Interval(GlossaryTerm):
+    """A <a href="https://en.wikipedia.org/wiki/Credible_interval">credible interval</a> is the set of values that a
+    random variable in a probabilistic model might most-credibly take.
+    For example, a 95% credible interval is the smallest interval containing
+    the 95% most-probable values for the random variable.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Random_Variable': 'the model element associated with a credible interval',
+            'Probabilistic Model': 'credible intervals arise only in probabilistic modelling',
+            'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+class Bayesian_Inference(GlossaryTerm):
+    """Bayesian inference is the use of
+    <a href="https://en.wikipedia.org/wiki/Bayes%27_theorem">Bayes' Theorem</a>
+    to define a posterior distribution over latent variables in a probabilistic
+    model, by conditioning on the observation of data.
+    Bayesian inference is one of the most compelling
+    features of probabilistic models.
+    Generally the result of inference is a sample of latent-variable values
+    drawn from the posterior distribution by an algorithm, although in
+    certain models Bayesian inference can be done analytically.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Probabilistic Model': 'Only probabilistic models support Bayesian inference',
+            'Inference_Algorithm': 'In probabilistic models that are defined within probabilistic programming systems, Bayesian inference can often be implemented automatically',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]

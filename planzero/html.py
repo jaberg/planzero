@@ -1,6 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-class HTML_element(BaseModel):
+class StrictBaseModel(BaseModel):
+
+    model_config = ConfigDict(extra='forbid')
+
+
+class HTML_element(StrictBaseModel):
 
     def __str__(self):
         return self.as_html()
@@ -48,47 +53,61 @@ class HTML_Math_Latex(HTML_element):
         return mathml
 
 
-class EChartTitle(BaseModel):
+class EChartTitle(StrictBaseModel):
     text:str
     subtext:str
     left:str = 'center'
 
 
-class EChartXAxis(BaseModel):
+class EChartXAxis(StrictBaseModel):
     name: str = 'Year'
     nameLocation: str = 'middle'
     nameGap: int = 30
     data: list[int]
+    min:float|str|None = None
+    max:float|str|None = None
 
 
-class EChartYAxis(BaseModel):
+class EChartYAxis(StrictBaseModel):
     name: str
     nameLocation: str = 'middle'
     nameGap: int = 40
+    min:float|str|None = None
+    max:float|str|None = None
 
 
-class EChartLineStyle(BaseModel):
-    width: int = 2
-    type: str | None = None
+class EChartLineStyle(StrictBaseModel):
+    width: int|None = 2
+    type: str | None = None # solid, dashed, dotted
+    color: str | None = None
+    lineWidth:int|None = None
+    opacity:int|None = None
+
+
+class EChartItemStyle(StrictBaseModel):
     color: str | None = None
 
 
-class EChartItemStyle(BaseModel):
-    color: str | None = None
-
-
-class EChartSeriesDataElem(BaseModel):
+class EChartSeriesDataElem(StrictBaseModel):
     value: float
     url: str | None
 
 
-class EChartSeriesBase(BaseModel):
-    name: str
+class EChartSeriesBase(StrictBaseModel):
+    name: str|None = None
     type: str = 'line'
-    yAxisIndex: int = 0
+    yAxisIndex: int|None = None
     lineStyle: EChartLineStyle | None = EChartLineStyle(width=2)
     itemStyle: EChartItemStyle | None = None
-    data: list[float | EChartSeriesDataElem]
+    areaStyle: dict|None = None
+
+    data: list[EChartSeriesDataElem]|list[float]|list[list[float]]
+
+    xAxisId:str|None = None
+    yAxisId:str|None = None
+    symbol:str|None = None
+
+    stack: str|None = None
 
 
 def EChartSeriesData(sts, times, v_unit, url):
@@ -187,6 +206,191 @@ class StackedAreaEChart(HTML_element):
         </script>
         <div>
         """
+
+
+class EChartMatrixXY(StrictBaseModel):
+    data:list[object]|None = None
+    length:int|None = None
+    levelSize:int
+    label:dict[str,object]|None = None
+    show:bool
+
+
+class EChartMatrixCorner(StrictBaseModel):
+    data: list[dict[str,object]]
+    label: dict[str,object]
+
+
+class EChartMatrixBodyDataElem(StrictBaseModel):
+    coord: str|list[int|None]
+    value: str
+    label: dict[str, object]
+    coordClamp: bool|None = None
+    mergeCells: bool|None = None
+
+
+class EChartMatrixBody(StrictBaseModel):
+    data: list[EChartMatrixBodyDataElem]
+    label: dict[str,object]|None = None
+
+
+class EChartMatrix(StrictBaseModel):
+    x:EChartMatrixXY
+    y:EChartMatrixXY
+    corner:EChartMatrixCorner
+    body:EChartMatrixBody
+    top: int|str = 0
+    bottom: int|str = 0
+    width: int|str = '100%'
+    left: int|str = 'center'
+
+
+class EChartToolTip(StrictBaseModel):
+    trigger:str
+
+class EChartDataZoomElem(StrictBaseModel):
+    type:str
+    xAxisIndex:str|int
+    throttle:int
+    top: int|str|None = None
+    bottom: int|str|None = None
+    width: int|str|None = None
+    left: int|str|None = None
+    right: int|str|None = None
+    height: int|str|None = None
+
+
+class EChartGrid(StrictBaseModel):
+    id:str
+    coordinateSystem:str
+    coord:list[int, int]
+    top:int|str|None = None
+    bottom:int|str|None = None
+    left:int|str|None = None
+    width:int|str|None = None
+    containLabel:bool
+
+class EChartMatrixXAxis(StrictBaseModel):
+    type:str
+    id:str
+    gridId:str
+    scale:bool
+    axisTick:dict[str, object]
+    axisLabel:dict[str, object]
+    axisLine:dict[str, object]
+    splitLine:dict[str, object]
+    min:float|str|None = None
+    max:float|str|None = None
+    boundaryGap:bool|None = None # from confidence-band example, not sure what it does
+
+
+class EChartMatrixYAxis(StrictBaseModel):
+    id:str
+    gridId:str
+    scale:bool
+    interval:int
+    axisTick:dict[str, object]
+    axisLabel:dict[str, object]
+    axisLine:dict[str, object]
+    min:float|str|None = None
+    max:float|str|None = None
+
+
+class GridLinkElem(StrictBaseModel):
+    gridId:str
+    url:str
+
+class UncertainSparklineMatrixEChart(HTML_element):
+    # Enforce strict field checks
+    model_config = ConfigDict(extra='forbid')
+
+    div_id:str
+    width:str|int = '100%'
+    height:str|int = '600px'
+
+    matrix: EChartMatrix
+    tooltip: EChartToolTip
+    dataZoom: list[EChartDataZoomElem]
+    grid: list[EChartGrid]
+    xAxis: list[EChartMatrixXAxis]
+    yAxis: list[EChartMatrixYAxis]
+    series: list[EChartSeriesBase]
+    grid_links: list[GridLinkElem] = []
+
+    def save_as(self, filepath):
+        # called from Makefile to create snapshots for posts
+        with open(filepath, 'w') as ofile:
+            ofile.write(self.as_html())
+
+    def list_helper(self, lst):
+        tmp = ',\n'.join(lst_ii.model_dump_json(exclude_none=True)
+                       for lst_ii in lst)
+        return f'[{tmp}]'
+
+    def as_html(self):
+        newline = '\n'
+        return f"""
+        <div id="{self.div_id}" style="width: {self.width}; height: {self.height}; margin: 0 auto;">
+        </div>
+        <script>
+        var mychart_{self.div_id} = echarts.init(
+            document.getElementById('{self.div_id}'),
+            null,
+            {{renderer: 'canvas', hoverLayerThreshold: 0}}); // still need?
+        var option_{self.div_id};
+        option_{self.div_id} = {{
+            matrix: {self.matrix.model_dump_json(indent=2, exclude_none=True)},
+            tooltip: {self.tooltip.model_dump_json(indent=2, exclude_none=True)},
+            dataZoom: {self.list_helper(self.dataZoom)},
+            grid: {self.list_helper(self.grid)},
+            xAxis: {self.list_helper(self.xAxis)},
+            yAxis: {self.list_helper(self.yAxis)},
+            series: {self.list_helper(self.series)},
+        }}
+        mychart_{self.div_id}.setOption(option_{self.div_id});
+
+        // 2. Attach a click listener to the underlying ZRender instance
+        mychart_{self.div_id}.getZr().on('click', function (params) {{
+            // 1. Define your array of grid to URL mappings
+            const gridLinks = {self.list_helper(self.grid_links)};
+
+            // Extract the raw [x, y] pixel coordinates of the mouse click
+            const pixelLoc = [params.offsetX, params.offsetY];
+
+            // 3. Loop over your array to see which grid contains this pixel
+            for (let ii = 0; ii < gridLinks.length; ii++) {{
+                const mapping = gridLinks[ii];
+
+                // containPixel takes an object specifying the component type/id, and the pixel array
+                if (mychart_{self.div_id}.containPixel({{ gridId: mapping.gridId }}, pixelLoc)) {{
+
+                    // Optional: Log it for debugging
+                    console.log(`Clicked inside ${{mapping.gridId}}. Routing to ${{mapping.url}}`);
+
+                    // 4. Redirect the user
+                    window.location.href = mapping.url;
+
+                    // Stop looping once we found the match
+                    break;
+                }}
+            }}
+        }});
+
+
+        // Listen to all clicks on the canvas
+        mychart_{self.div_id}.getZr().on('click', function (params) {{
+          console.log("clickZr");
+        }});
+
+      console.log("loading");
+        window.addEventListener('resize', function() {{
+          mychart_{self.div_id}.resize();
+          console.log("resizing");
+        }});
+        </script>
+        <div>
+        """
+
 
 
 import inspect
