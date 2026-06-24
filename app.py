@@ -187,7 +187,7 @@ async def get_models_prob_page(ident:str, request: Request):
 # models/prob/{ident}/sector/{sector_value}
 
 @app_cache
-def get_models_prob_sector_page_html(ident:str, sector_value:str):
+def get_models_prob_sector_page_html(ident:str, sector_path:str):
     site_inference = planzero.prob.site_inferences[ident]
     return templates.get_template("models_prob_sector.html").render(
         dict(
@@ -195,13 +195,16 @@ def get_models_prob_sector_page_html(ident:str, sector_value:str):
             active_tab='models',
             ident=ident,
             site_inference=site_inference,
-            sector=planzero.enums.IPCC_Sector(sector_value),
+            sector=planzero.enums.IPCC_Sector_from_catpath_no_whitespace[
+                sector_path],
             ))
 
 
-@app.get("/models/prob/{ident}/sectors/{sector_value}", response_class=HTMLResponse)
-async def get_models_prob_page(ident:str, sector_value:str, request: Request):
-    html = get_models_prob_sector_page_html(ident, sector_value=sector_value)
+@app.get("/models/prob/{ident}/sectors/{sector_path:path}", response_class=HTMLResponse)
+async def get_models_prob_page(ident:str, sector_path:str, request: Request):
+    while sector_path.endswith('/'):
+        sector_path = sector_path[:-1]
+    html = get_models_prob_sector_page_html(ident, sector_path=sector_path)
     return HTMLResponse(content=html)
 
 

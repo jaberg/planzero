@@ -25,7 +25,7 @@ Table of Contents:
             <li><a href="#ar2-all">Inference of All Emissions with an AR2-based model</a></li>
         </ul>
     </li>
-    <li><a href="#conclusion">Conclusion</a></li>
+    <li><a href="#conclusion">Next Steps and Conclusion</a></li>
 </ul>
 </p>
 
@@ -416,7 +416,7 @@ balances (a) fitting the regional emissions data, (b) fitting the national total
 That concludes PlanZero's first probabilistic model of a sector and gas
 (Harvested Wood Products {{CO2|safe}}).
 A standard view of probabilistic models of sectors now features this
-<a href="/models/prob/Static_Normals/sectors/Harvested%20Wood%20Products">
+<a href="/models/prob/Static_Normals/sectors/Harvested_Wood_Products">
 Static Normals model for Harvested Wood Products</a> on a page that shows
 the following figure:
 </p>
@@ -659,36 +659,47 @@ and shaded region credible intervals, scaled to match the data magnitude).
 <p>
 In contrast to the Static Normals model, the AR2 model predicts different emissions
 at different times. Around the data points, the credibility intervals usually lie near the data, and are pretty narrow, but don't always include the data.
-It's perhaps an unfortunate choice of example, but it is an interesting one.
+HWP is not an easy running example, but it is an interesting one.
 The assumptions of the AR2 model are in conflict with the reality of HWP emissions.
 HWP emissions jump around a lot rather than being smooth, and the national total is
 almost 30 Mt {{CO2e|safe}} off the sum of regional subtotals in the 1990s.
-Still, inference is about finding plausible values for the latent random variables, especially {{latex("\\mu")|safe}}, and as far as I can tell the NUTS algorithm is working.
-Interestingly, the result of inference is an unlikely conclusion that
+Still, the goal of inference is to find the most-plausible values for the latent random
+variables, especially {{latex("\\mu")|safe}}, and as far as I can tell the
+NUTS algorithm is working.
+</p>
+
+<p>
+The AR2 model is a better starting point for future work than the Static Normals
+model, but more work is in order.
+For example, here in the real world beyond the model, it is unlikely that
 the Northwest Territories and Nunavut were secretly emitting vast quantities
-of HWP {{CO2|safe}} in the early 90s during the period where no emissions
-are listed for them in NIR-2025.
-It certainly helps explain the reporting gap!
+of HWP {{CO2|safe}} in the early 90s, in the years where no emissions
+data are listed for them in NIR-2025.
+Inference has produced an interesting theory that helps explain the regional sum vs. national total
+discrepancy, but it is not true.
 (Nunavut has a good excuse for not listing emissions: it didn't exist until 1999.)
-</p>
-
-<p>
-I am happy with the AR2 modelling of HWP emissions in the sense that inference appears to be
-doing its job, and the predictions for the future look more plausible to me
-than the overly-conservative predictions of the Static Normals model.
-That said, the AR2-based model of HWP emissions could certainly be
-improved by e.g. incorporating the mechanisms of HWP calculations
+For this reason and others, the
+AR2-based model of HWP emissions could be improved by e.g. 
+<ul>
+    <li>stronger priors regarding historical emissions when NIR data is missing</li>
+    <li>incorporation of the mechanisms of HWP calculations
 (which work in terms of filters on quantities of types of harvested wood,
- see <a href="/blog/2026-02-22-forest-hwp">Emissions Calculations for Harvested Wood Products and Forest Land (Feb 22, 2026)</a> for an earlier review)
-, combined modelling of both Forest Land and HWP emissions,
-and the inclusion of more data sources.
+see <a href="/blog/2026-02-22-forest-hwp">Emissions Calculations for Harvested Wood Products and Forest Land (Feb 22, 2026)</a> for an earlier review)</li>
+    <li>combined modelling of both Forest Land and HWP emissions</li>
+    <li>the inclusion of more data sources regarding what was harvested, when, and for what purposes</li>
+    <li>other changes reflective of why the provincial and national estimates
+        are so different</li>
+</ul>
+I expect to get to some of these points as I work back over
+IPCC sectors studied earlier this spring, and incorporate
+data sources and learnings from each one into future iterations of the AR2 probabilistic model.
 </p>
 
 <p>
-A standard view of probabilistic models of sectors now features this
-<a href="/models/prob/AR2/sectors/Harvested%20Wood%20Products">
-AR2 model for Harvested Wood Products</a> on a page that shows
-the following figure:
+For now, PlanZero's
+standard view of probabilistic models by sector includes this
+<a href="/models/prob/AR2/sectors/Harvested_Wood_Products/">
+AR2 model for Harvested Wood Products</a> figure:
 </p>
 {% include "blog/2026-04-26-probabilistic-modelling-AR2-HWP.html" %}
 <p>
@@ -700,12 +711,13 @@ by BC, ON, QC, and AB.
 <h3 id="ar2-all">Inference of All Emissions with an AR2-based model</h3>
 
 <p>
-The same style of figure used above to visualize predictions of Canada's future emissions according to the Static Normals model can also be used to characterize predictions according to the AR2 model.
-Again the sectors are ordered according to decreasing upper bound on their credible intervals, but since the models are different, the ordering is slightly different as well.
-Sadly, the figure is less colourful as well, because the colours come from
+The type of figure used above to visualize predictions of Canada's future emissions according to the Static Normals model can also be used for the AR2 model.
+Again the sectors are ordered according to decreasing upper bound on their credible intervals, but because the models make different predictions, the ordering of sectors is slightly different.
+The figure is less colourful as well, because the colours highlight
 uncertainty, and the AR2 model predicts tighter, smaller, 95% credible intervals.
 Feel free to click any of the panels for a closer look at regional and per-gas
 emissions inferences and predictions.
+This figure is featured on the <a href="/models/prob/AR2/">PlanZero AR2 overview page</a>.
 </p>
 
 {% include "blog/2026-04-26-probabilistic-modelling-AR2-all_sectors.html" %}
@@ -723,103 +735,176 @@ In fact, in some of these cases,
 the provincial emissions are listed as all being zero.
 Inference in the AR2 model understandably struggles to
 explain how all of the regional emissions related to Ammonia Production can be zero while the national total is about 2.5 Mt{{CO2e|safe}}.
-Model fit in these sectors can presumably be improved by a better understanding
-on my part of what's going on, but I haven't studied these sectors yet.
+I hope modelling in these sectors can be improved by a better understanding
+on my part of what's going on, I haven't studied these sectors at all yet.
 </p>
 
-<h2 id="conclusion">Conclusion</h2>
+<h2 id="conclusion">Next Steps and Conclusion</h2>
 
 <p>
-<ul>
-    <li>Introduced hierarchical Bayesian modelling</li>
-    <li>Introduced two models of a challenging sector, which features
-        significant disagreement between provincial and national estimates.</li>
-    <li>Illustrated them qualitiatively</li>
-    <li>Introduced an evaluation metric reflective of 1-year-out prediction
-        of forthcoming NIR publication, for year 2023 specifically.</li>
-    <li>Compared the two models quantitatively as predictors of 2023
-        emissions; the AR2 model was quantitatively superior, reflecting what
-        I think was relatively obvious qualitative judgement.</li>
-</ul>
-</p>
+This introduction of probabilistic modelling to PlanZero was motivated by three things:
+<ol>
+    <li>Potential PlanZero users have expressed interest in short-term
+        forecasting.</li>
+    <li>Writing the <a href="/blog/2026-04-19-glossary">glossary post</a> about the computational and
+        semantic aspects of modelling without mention of probabilistic
+        modelling felt wrong.</li>
+    <li>I felt that predictions of the kind attempted in the <a
+            href="/blog/2026-04-03-bovaer">Bovaer post</a> would not be
+        compelling without acknowledging and quantifying uncertainty,
+        especially for strategies that are more active.</li>
+</ol>
+This post makes meaningful progress on all three fronts.
+The AR2 model is a full predictive model of the entire NIR.
+PlanZero's mission called for such a thing, and it didn't have one before.
+This full predictive model can be used for short-term, medium-term, and
+long-term forecasting. The AR2 model presented here leaves room for improvement
+in forecasting accuracy, but it provides a non-trivial baseline
+upon which to improve.
 
-<p>
-The work in this post suggests re-working the modelling section of the site.
-<ul>
-    <li>New top-level tab "prediction" with prediction tasks.
-        YOLY-205 to start, but others to follow.</li>
-    <li>IPCC-Sector pages include forecasts from the best model</li>
-    <li>Simulations renamed "Models"</li>
-    <li>Glossary overhaul of computational level</li>
-    <li>Glossary addition of probabilistic modelling terms</li>
-    <li>Impl: Alternate SimulationResult class?</li>
-    <li>Redefine strategy and barrier for probabilistic models</li>
-    <li>Rename Driver to Activity to match NIR terminology (e.g. uncertainty report)</li>
-</ul>
-<ul>
-</ul>
-</p>
+The glossary post (still in Draft) can now be completed with a full
+overview of probabilistic and non-probabilistic modelling.
 
-<p>
-Probabilistic modelling is compatible with the scenario analysis used to
-evaluate <i>strategies</i> (like e.g. Bovaer adoption), and for strategies
-that are already active, inference algorithms
-can even assess whether strategies are working as intended (at least relative to data and a model);
-but illustrating how this can be done will wait for a future post.
+Finally, future strategy analysis can build on the AR2 probabilistic model.
+This is especially valuable for active strategies, for which there
+is a little data and therefore an opportunity for posterior inference.
+Questions such as
+"How efficient is it to subsidize EV purchases?" for example, is a
+question that is better-suited to probabilistic modelling
+with Bayesian inference than
+to the non-probabilistic kind used to analyze the efficiency of Bovaer,
+because our prior beliefs about decision-making across the market
+can be refined by month-by-month data on uptake.
 </p>
 
 <p>
-<a href="https://arviz-devs.github.io/EABM/Chapters/Presenting_results.html">Chapter 14: Presenting Results</a>
-of online book "<a href="https://arviz-devs.github.io/EABM/">Exploratory Analysis of Bayesian Models</a>"
-accompanying the <a href="https://python.arviz.org/en/stable/">Arviz</a> software package.
-</p>
-
-
-<p>
-It's interesting to consider a hypothetical YOLY-2027 challenge,
-because the "prediction time" for that challenge has passed (April 2026)
-but the NIR-2027 has not yet been published.
-Despite not yet being able to score models on YOLY-2027, YOLY-2027
-is perhaps the most interesting of the three because, it is possible
-to make the models, and their predictions might have value precisely
-<i>because</i> the actual NIR-2027 publication is not available yet.
-(Strictly speaking, the YOLY-2025 challenge should use the
-previously-published NIR-2024 to get data up to year 2022 for model development and posterior inference / training.
-I'm using earlier years from NIR-2025 as a short-cut.
-This short-cut isn't possible for NIR-2027 because indeed,
-only NIR-2026 has been published at this time.)
+The PlanZero site has grown, with this post, to include
+a "<a href="/models/">Models</a>" tab, which replaces the old "Simulations" tab,
+and moves the simulations themselves into a new section on
+that page for "Simulation-based models".
+That page also has a section for "Probabilistic Models"
+with brief descriptions
+and links to the <a href="/models/prob/Static_Normals/">Static Normals</a>
+and <a href="/models/prob/AR2/">AR2</a> models introduced in this post.
+The models predict emissions out to 2050 on the basis of 95% credibility intervals,
+with the Static Normals model predicting 379.2 - 1106.7 Mt {{CO2e|safe}}
+in 2050
+and the AR2 model predicting 737.7 - 862.9 Mt {{CO2e|safe}}.
 </p>
 
 <p>
-On the topic of modelling harvested wood products specifically (among NIR-sectors)
-this post represents a step back for the sake of two future steps forward.
-The previous PlanZero post on Harvested Wood products summarized research
-on how HWP emissions are calculated in terms of historical volumes of
-logs and bolts, wood for pulp and paper and so on. This post ignores all of
-that and models HWP emissions as a random walk.
-The reconciliation of these two types of model is left to future work.
-The broad outline of that future work is clear: model instead the volumes of e.g.
-harvested logs and bolts as the random walk, and use the appropriate simulation-style
-mathematical expressions to convert hypothesized volumes of bolts to HWP emissions
-in subsequent years. The likely challenge lurking
-within the broad outline of work is that inference in such a model may not
-be effective in the first paramaterization I try.
-Furthermore, I suspect this will not be a one-off challenge.
+This post has also brought several new terms to the <a
+    href="/glossary/">Glossary</a>
+from foundational terms such as
+{{siteref("Probability Distribution")|safe}}
+and {{siteref("Random Variable")|safe}}
+to more advanced ones such as
+{{siteref("Probabilistic Model")|safe}}, 
+{{siteref("Bayesian Inference")|safe}}, 
+and {{siteref("Credible Interval")|safe}}.
+</p>
+
+<h3>Next Steps</h3>
+
+<p>
+The introduction of probabilistic modelling to PlanZero opens up
+several possible directions for next steps:
+inference diagnostics,
+prediction challenges and model comparison,
+model improvements.
+</p>
+
+<h4>Inference Diagnostics</h4>
+
+<p>
+The uncertainty estimates on latent variables in probabilistic models
+are not guaranteed to be good estimates. The algorithms that make
+these estimates can fail, and there are
+<a href="https://arviz-devs.github.io/EABM/Chapters/Presenting_results.html">techniques for monitoring and communicating how well they've worked</a>.
+I've made a <a href="https://github.com/jaberg/planzero/issues/85">GitHub issue</a>
+to show such metrics alongside
+standard probabilistic modelling results after a few upgrades to AR2.
+It may be natural to extend the notion of {{siteref("Barrier")|safe}} to
+probabilistic models, and use per-barrier visualizations as the framing
+for inference diagnostics.
+Correct inference is more important when predictions have to be good,
+so this next step can wait until after PlanZero has established some
+prediction challenges, as described in the next section.
+</p>
+
+
+<h4>Prediction Challenges and Model Comparison</h4>
+
+<p>
+Probabilistic models can be used for a multitude of purposes.
+Typically many models are candidates for any given purpose.
+The question of which model to use for which purpose is not
+always easy to answer.
+The field of machine learning has made good progress developing
+better and better models for decades, by aligning around a set of standard prediction
+challenges (each with specific model-scoring systems) and iteratively
+improving performance on the standard challenges.
+One direction for future work on PlanZero is to add standard prediction
+challenges. In fact, I think this is the most important next step,
+because it is a necessary foundation for the evaluation of the
+various model improvements suggested in the next section.
+</p>
+
+<h4>Model Improvements</h4>
+
+<p>
+Even without model-evaluation metrics at hand,
+I'm going to go ahead and say that the AR2 model presented here
+leaves room for improvement (even if it's
+already better than the Static Normals).
+For each of the sectors I looked at this spring,
+its AR2 model can be extended to predict not just the NIR emissions,
+but also the data I found to explain the NIR emissions;
+the more types of data that {{latex("\\mu")|safe}} can explain via
+a probabilistic model, the tighter an estimate we can make for what
+{{latex("\\mu")|safe}} really was at various times up to the present, and how
+it should evolve forward in time.
+There are structural dynamics in the relationship between Harvested Wood Products
+emissions and Forest Land data that haven't yet been used to inform the AR2 model's predictions.
+There are natural dynamics in the life cycles of cattle that can relate
+StatsCan's cattle survey data to future methane emissions.
+There are natural dynamics in vehicle ownership cycles that can relate
+StatsCan's vehicle purchase data to future {{CO2|safe}} emissions.
+Climate change and population change forecasts can help explain trends
+in several sectors in a way that can be extrapolated with greater confidence
+into the future.
 </p>
 
 <p>
-I believe that probabilistic modelling represents a new standard for what it
-means to add an NIR sector model to PlanZero.
-I expect the work for many future posts will be to find reasonable and useful priors
-and model structures that reflect contributing factors to the various NIR sectors.
-I will focus first on incorporating NIR sectors that I've written about in PlanZero already.
+Probabilistic modelling provides a framework within which all of these
+factors and mechanisms can be incorporated and analyzed together or individually as appropriate.
+There are many possible next steps that may be
+motivated as improvements to PlanZero's probabilistic models.
+My next step will be to implement prediction challenges that can
+serve as scaffolding for the iterative development of useful models.
 </p>
 
-
-
+<h3>Conclusion</h3>
 
 <p>
-Until next time,
+Probabilistic modelling sets a new standard for what it
+means to add NIR sectors to PlanZero, as posts have done throughout much of
+Spring 2026.
+Probabilistic models
+together with Bayesian inference
+can be more credible and engaging than simulations because they
+can start with people's existing beliefs, data they can recognize as valid,
+and then proceed automatically to conclusions that they may not have
+considered.
+The probabilistic models added to PlanZero leave much room for improvement,
+but are already interesting to explore.
+The next post will introduce a prediction challenge that will serve to rank
+the two models here (Static Normals vs. AR2) as predictors of upcoming NIR
+results, and set a bar for future probabilistic model improvement.
+</p>
+
+<p>
+Until then,
 </p>
 <p>
 - James Bergstra

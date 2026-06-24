@@ -16,7 +16,6 @@ def endpoints():
         f"/blog/{url_filename}/"
         for url_filename in blog._blogs_by_url_filename])
 
-
     for sim_name, site_sim in sorted(sim.site_simulations.items()):
         rval.append(f"/models/sim/{sim_name}/")
         
@@ -34,7 +33,7 @@ def endpoints():
         rval.append(f"/models/prob/{model_name}/")
 
         for catpath in ipcc_canada.catpaths:
-            rval.append(f"/models/sim/{sim_name}/sectors/{catpath}/")
+            rval.append(f"/models/prob/{model_name}/sectors/{catpath}/")
 
     rval.extend([
         "/",

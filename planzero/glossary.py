@@ -1603,8 +1603,33 @@ class Credible_Interval(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Random_Variable': 'the model element associated with a credible interval',
-            'Probabilistic_Model': 'credible intervals arise only in probabilistic modelling',
+            'Probabilistic Model': 'credible intervals arise only in probabilistic modelling',
             'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+class Bayesian_Inference(GlossaryTerm):
+    """Bayesian inference is the use of
+    <a href="https://en.wikipedia.org/wiki/Bayes%27_theorem">Bayes' Theorem</a>
+    to define a posterior distribution over latent variables in a probabilistic
+    model, by conditioning on the observation of data.
+    Bayesian inference is one of the most compelling
+    features of probabilistic models.
+    Generally the result of inference is a sample of latent-variable values
+    drawn from the posterior distribution by an algorithm, although in
+    certain models Bayesian inference can be done analytically.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Probabilistic Model': 'Only probabilistic models support Bayesian inference',
+            'Inference_Algorithm': 'In probabilistic models that are defined within probabilistic programming systems, Bayesian inference can often be implemented automatically',
         }
 
     @computed_field

@@ -3,6 +3,7 @@ Example inference that's fast and represents a lower bound on accuracy.
 """
 import os
 
+
 import jax.numpy as jnp
 import jax.random as jrandom
 import numpy as np
@@ -555,7 +556,7 @@ class SparklineEChartHelper(object):
             self.grid_links.append(
                 GridLinkElem(
                     gridId=f'grid_{col}|{row}',
-                    url=f'/models/prob/{self.model_name}/sectors/{sector.value}',
+                    url=f'/models/prob/{self.model_name}/sectors/{sector.catpath_no_whitespace}',
                     ))
         self.xAxis_list.append(
             EChartMatrixXAxis(
