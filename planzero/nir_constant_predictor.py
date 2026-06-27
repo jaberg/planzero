@@ -1149,6 +1149,9 @@ class Static_Normals(SiteInference):
     This is a baseline model, not intended to be accurate.
     """
 
+    def one_line_description(self):
+        return "Very simple baseline model - non-time-varying estimates"
+
     @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         helper = SparklineEChartHelper(div_id=None,

@@ -37,7 +37,7 @@ Term list:
 
 {% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
 <h3 id="{{clsname}}">
-    {% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}<a href="#{{clsname}}" class="anchor-link" title="Link to this section"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Chain_link_icon_slanted.png/250px-Chain_link_icon_slanted.png"
+    {% for name in obj.all_pretty_names() %} {{name}}{%if not loop.last%}, {%endif%}{%endfor%}<a href="#{{clsname}}" class="anchor-link" title="Link to this section"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Chain_link_icon_slanted.png/250px-Chain_link_icon_slanted.png"
         width="12.5px"/></a>
 </h3>
 

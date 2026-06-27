@@ -38,6 +38,11 @@ class SiteInference(BaseModel):
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         return (float('nan'), float('nan'))
 
+    def challenge_scores(self, challenge_name):
+        return dict(
+            total=float('nan'),
+            )
+
 
 from . import nir_constant_predictor
 from . import nir_ar2_site

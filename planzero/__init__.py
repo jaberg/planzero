@@ -18,6 +18,7 @@ from . import barriers
 from . import strategies
 from . import sim
 from . import prob
+from . import challenge
 from .my_functools import cache as _cache
 
 from . import planet_model

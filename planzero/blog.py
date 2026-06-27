@@ -122,19 +122,9 @@ class Uncertainty(BlogPost):
             )
 
 
-class YearOutLastYearPrediction(BlogPost):
+class PreNIR(BlogPost):
     """
-    This post introduces probabilistic modelling to PlanZero.
-    Probabilistic modelling extends simulation-based modelling with
-    a capacity to fit model parameters to example data in order to
-    make more-precise predictions.
-    A model based on a two-step autoregressive process (AR2),
-    estimates a set of provincial and territorial emissions
-    for harvested wood products that adds to an estimated national total,
-    and approximately matches reported emissions in that sector.
-    An evaluation metric is introduced to quantify the superiority of
-    this model compared to one that estimates emissions based on regional
-    mean and variance.
+    TODO
     """
 
     def __init__(self):

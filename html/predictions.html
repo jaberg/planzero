@@ -9,136 +9,24 @@
         Canada's future emissions.<p>
     </header>
 
-<h2>NIR Year-Out, Last-Year (YOLY)</h2>
+<h2>Pre-NIR</h2>
 
-<p>NIR Year-Out, Last-Year (YOLY) challenges
-are about predicting, by mid-april of a given year,
-the previous year's emissions.
-The challenges are named according to the year of
-the NIR-publication, which will be the following year, in April.
-So for example: YOLY-2025 corresponds to NIR-2025, published in 2025;
-it is about predicting 2023 emissions on the basis of data published
-before April 2024.
-Evaluation scores are theoretically available for YOLY-X challenges after
-NIR-X reports are published. There will be some delay in updating PlanZero
-to reflect the most-recently-published data.
+<p>
+Pre-NIR-YYYY-MM challenges are about predicting National Inventory Report numbers
+(for the NIR published in year YYYY) before they are pubished (MM months prior to publication).
 </p>
 
 
-<h3>NIR-2025 Year-Out, Last-Year (YOLY-2025)</h3>
+{% for challenge_name, challenge_obj in planzero.challenge.registry.items()
+   if challenge_obj.show_on_predictions_page %}
 
-<table id="gemini-sort-data-table">
-    <thead>
-          <tr>
-              <th>
-                  Name
-              </th>
-              <th>
-                  Short Description
-              </th>
-              <th>
-                  Evaluation Score (higher is better)
-              </th>
-          </tr>
-    </thead>
-    <tbody>
-        {% for ident, obj in {}.items() if obj.show_on_simulations_page %}
-          <tr>
-              <td>
-                  <a href="/models/{{ident}}/">{{ident}}</a>
-              </td>
-              <td>{{obj.short_description}}</td>
-              <td>{{"{:.1f}".format(
-                  planzero.sim.simulation_result(ident).state.compute_annual_emissions().total().query(
-                      2050 * u.year).to(u.Mt_CO2e).magnitude)}}
-                  Mt{{CO2e|safe}}</td>
-          </tr>
-          {% endfor %}
-    </tbody>
-</table>
+<h3>{{challenge_obj.pretty_name}}</h3>
 
-<h3>NIR-2026 Year-Out, Last-Year (YOLY-2026)</h3>
-
-<table id="gemini-sort-data-table">
-    <thead>
-          <tr>
-              <th>
-                  Name
-              </th>
-              <th>
-                  Short Description
-              </th>
-              <th>
-                  Evaluation Score (higher is better)
-              </th>
-          </tr>
-    </thead>
-    <tbody>
-        {% for ident, obj in {}.items() if obj.show_on_simulations_page %}
-          <tr>
-              <td>
-                  <a href="/models/{{ident}}/">{{ident}}</a>
-              </td>
-              <td>{{obj.short_description}}</td>
-              <td>{{"{:.1f}".format(
-                  planzero.sim.simulation_result(ident).state.compute_annual_emissions().total().query(
-                      2050 * u.year).to(u.Mt_CO2e).magnitude)}}
-                  Mt{{CO2e|safe}}</td>
-          </tr>
-          {% endfor %}
-    </tbody>
-</table>
-
-<h3>NIR-2027 Year-Out, Last-Year (YOLY-2027)</h3>
-
-<p>(Evaluation data has not yet been published for YOLY-2027, but the prediction time
-has passed.)</p>
-
-<table id="gemini-sort-data-table">
-    <thead>
-          <tr>
-              <th>
-                  Name
-              </th>
-              <th>
-                  Short Description
-              </th>
-              <th>
-                  Evaluation Score (higher is better)
-              </th>
-          </tr>
-    </thead>
-    <tbody>
-        {% for ident, obj in {}.items() if obj.show_on_simulations_page %}
-          <tr>
-              <td>
-                  <a href="/models/{{ident}}/">{{ident}}</a>
-              </td>
-              <td>{{obj.short_description}}</td>
-              <td>{{"{:.1f}".format(
-                  planzero.sim.simulation_result(ident).state.compute_annual_emissions().total().query(
-                      2050 * u.year).to(u.Mt_CO2e).magnitude)}}
-                  Mt{{CO2e|safe}}</td>
-          </tr>
-          {% endfor %}
-    </tbody>
-</table>
-
-<h2>Pathway to Net-Zero (PNZ)</h2>
-
-<p>Pathway to Net-Zero (PNZ) challenges
-are about hypothesizing pathways to net-zero as extensions
-to historical trends.
-The challenges are named according to the first year of achieving
-net-zero.
-For example: PNZ-2050 is about pathways to net-zero by year 2050,
-PNZ-2075 is about pathways to net-zero by year 2075.
-These predictions are supposed to be implemented by adding a speculative
-observation that national emissions will be zero at a future date, and using
-{{siteref("Inference Algorithm", "inference algorithms")|safe}} to generate
-explanations for how it could be possible.
+<p>
+{{ challenge_obj.short_description }}
 </p>
 
+<!-- NEEDS TO BE SORTABLE CLASS NOT ID -->
 <table id="gemini-sort-data-table">
     <thead>
           <tr>
@@ -149,26 +37,28 @@ explanations for how it could be possible.
                   Short Description
               </th>
               <th>
-                  Total likelihood (higher is better)
+                  Total Log-Probability
               </th>
           </tr>
     </thead>
     <tbody>
-        {% for ident, obj in {}.items() if obj.show_on_simulations_page %}
+        {% for ident, obj in planzero.prob.site_inferences.items() if obj.show_on_models_page %}
           <tr>
               <td>
-                  <a href="/models/{{ident}}/">{{ident}}</a>
+                  <a href="/models/{{ident}}/">{{ident.replace('_', ' ')}}</a>
               </td>
-              <td>{{obj.short_description}}</td>
-              <td>{{"{:.1f}".format(
-                  planzero.sim.simulation_result(ident).state.compute_annual_emissions().total().query(
-                      2050 * u.year).to(u.Mt_CO2e).magnitude)}}
-                  Mt{{CO2e|safe}}</td>
+              <td>{{obj.one_line_description() }}</td>
+              <td>
+                  {% if challenge_obj.results_available %}
+                  {{"{:.1f}".format(obj.challenge_scores(challenge_name)["total"])}}
+                  {% else %}
+                  {{siteref("Pending Prediction Challenge Results", "Pending")|safe}}
+                  {% endif %}
+                  </td>
           </tr>
           {% endfor %}
     </tbody>
 </table>
-</section>
-</div>
+{% endfor %}
 
 {% include "post-main.html" %}

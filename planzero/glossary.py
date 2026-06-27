@@ -58,6 +58,13 @@ class GlossaryTerm(BaseModel):
     def aka(self) -> list[str]:
         return []
 
+    def all_pretty_names(self):
+        rval = list(self.all_names)
+        if '_' in rval[0]:
+            return rval[1:]
+        else:
+            return rval
+
     @computed_field
     def all_names(self) -> list[str]:
         rval = [self.__class__.__name__]
@@ -1636,4 +1643,23 @@ class Bayesian_Inference(GlossaryTerm):
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+
+class Pending_Prediction_Challenge_Results(GlossaryTerm):
+    """
+    Prediction challenge results may be described as "Pending". That is
+    because it is not possible to compute them yet.
+    The prediction time has passed for the challenge, but the publication
+    of the predicted data (the challenge's evaluation time) has either
+    (a) not yet ocurred, or at least (b)
+    not yet been incorporated into the PlanZero site.
+    """
+    # TODO: Prediction Time
+    # TODO: Prediction Challenge
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.PreNIR(), '#', "prediction time vs. evaluation time"),
         ]
