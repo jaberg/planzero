@@ -176,6 +176,7 @@ html/blog/2026-04-03-bovaer_assets: .build.test
 		-it --rm $(target):test \
 		python -c "import planzero; planzero.blog.ModellingBovaer.generate_assets()"
 
+
 cache/inference/Static_Normals/sentinel: .build.test
 	# Perform inference for the Static_Normals model
 	# save multiple files in this directory

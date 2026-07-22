@@ -1,26 +1,13 @@
 """
 Prediction Challenges
 """
+
 from typing import ClassVar
 from pydantic import BaseModel, computed_field
 
-class Registry(object):
+from .singleton_registry import SingletonRegistry
 
-    classes = {}
-    instances = {}
-
-    def __getitem__(self, key):
-        try:
-            return self.instances[key]
-        except KeyError:
-            self.instances[key] = self.classes[key]()
-            return self.instances[key]
-
-    def items(self):
-        for key in self.classes:
-            yield (key, self[key])
-
-registry = Registry()
+registry = SingletonRegistry()
 
 
 class Challenge(BaseModel):
@@ -32,7 +19,7 @@ class Challenge(BaseModel):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         if getattr(cls, 'include_in_registry', False):
-            Registry.classes[cls.__name__] = cls
+            registry.add_class(cls)
 
     @computed_field
     def show_on_predictions_page(self) -> bool:

@@ -1192,6 +1192,42 @@ class Static_Normals(SiteInference):
         helper.add_regional_cells()
         return helper.make_echart()
 
+    def _challenge_score_PreNIR_2025_06(self):
+        return dict(total=float('nan'))
+        from . import nir_static_normals
+        from scipy.special import logsumexp
+        model_id = model_db.model(
+            family='StaticNormal',
+            version='latest',
+            data_cutoff='2024-12-31',
+            )['model_id']
+        loglik_ds = []
+        for rd in model_db.components_by_model(model_id): # rd -> results/record dictionary
+            if rd['component_type'] == 'Normal':
+                loglik_d = nir_static_normals.loglik_NIR_Normal()
+            elif rd['component_type'] == 'BayesianNormal':
+                loglik_d = nir_static_normals.loglik_NIR_BayesianNormal(
+                    rd['component_id'],
+                    NIR_year=2025,
+                    emission_year=2023)
+            else:
+                raise NotImplementedError(rd)
+            loglik_ds.append(loglik_d)
+
+        logliks = []
+        for lld in loglik_ds:
+            logliks.extend(lld['by_pt'].values())
+            logliks.append(lld['Canada'])
+
+        # log-sum over provinces, territories, and country
+        rval = logsumexp(logliks, b=1.0 / len(logliks))
+        return rval
+
+    def challenge_scores(self, challenge_name):
+        if challenge_name == 'PreNIR_2025_06':
+            return self._challenge_score_PreNIR_2025_06()
+        return dict(total=float('nan'))
+
 
 if __name__ == '__main__':
     import sys
