@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir numpy
 RUN pip install --no-cache-dir matplotlib
 RUN pip install --no-cache-dir pint
 RUN pip install --no-cache-dir networkx
-RUN pip install --no-cache-dir fastapi[standard]
+RUN pip install --no-cache-dir fastapi[standard] httpx2
 RUN pip install --no-cache-dir pandas
 RUN pip install --no-cache-dir pytest
 RUN pip install --no-cache-dir jupyter
