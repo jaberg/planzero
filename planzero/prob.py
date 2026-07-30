@@ -46,3 +46,4 @@ class SiteInference(BaseModel):
 
 from . import nir_constant_predictor
 from . import nir_ar2_site
+from . import nir2025_site

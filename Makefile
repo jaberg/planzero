@@ -199,6 +199,7 @@ cache/inference/AR2/sentinel: .build.test
 		-it --rm $(target):test \
 		python -m planzero nir_ar2_inference
 
+
 html/blog/2026-05-26-probabilistic-modelling-assets: .build.test
 	# these asset files are meant to be stored in git
 	# the script is used during development to re-generate them
@@ -208,3 +209,21 @@ html/blog/2026-05-26-probabilistic-modelling-assets: .build.test
 		-w /mnt/ \
 		-it --rm $(target):test \
 		python -c "import planzero; planzero.blog.TwoProbabilisticModels.generate_assets()"
+
+
+html/blog/2026-05-20-prob-nir-assets: .build.test
+	# these asset files are meant to be stored in git
+	# the script is used during development to re-generate them
+	# after the post is beyond amendment, this build script could be removed
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target):test \
+		python -c "import planzero; planzero.blog.ProbabilisticNIR2025.generate_assets()"
+
+my_database: .build.test planzero/model_db.py
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target):test \
+		python -m planzero.model_db init_db

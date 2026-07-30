@@ -1580,17 +1580,30 @@ class Random_Variable(GlossaryTerm):
             (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
         ]
 
-
-class Probability_Distribution(GlossaryTerm):
-    """A probability distribution is a table or function of
-    all the values a random variable might take, which
-    defines how probable is each possible value.
+class Probability_Density_Function(GlossaryTerm):
+    """A mathematical function that is never negative,
+    whose area under the curve is 1, and which is used to
+    describe the probability distrubtion for a random variable.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Random_Variable': 'are associated with probability distributions',
+            'Random_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
+        }
+
+
+class Probability_Distribution(GlossaryTerm):
+    """A probability distribution is the act or result of
+    distributing probability across the possibly true values of a
+    random variable.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Random_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
+            'Probability_Density_Function': 'a description of how to distribute probability over a continuous set of possible values, such as a range of real numbers',
         }
 
     @computed_field

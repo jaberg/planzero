@@ -9,6 +9,8 @@ from .nir_constant_predictor import PseudoSectors, PseudoRegion
 
 
 class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
+    # TODO: consider renaming this to reflect its ability to handle
+    # time-varying bounds and means?
 
     def add_data_for_sector(self, sector, sector_means, lbounds, ubounds):
         assert sector not in self.data_by_sector
@@ -25,6 +27,49 @@ class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
             pos_shift=np.maximum(lbounds, 0),
             pos_shade=np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
             )
+
+    def compute_stats_and_add_data_for_sector(self, sector, sample):
+        lbounds, ubounds = np.quantile(
+            sample,
+            q=self.credibility_interval_95,
+            axis=0)
+
+        mean_sector_total = np.mean(sample, axis=0)
+        self.add_data_for_sector(
+            sector,
+            mean_sector_total,
+            lbounds=lbounds,
+            ubounds=ubounds)
+        return mean_sector_total
+
+    def add_data_for_LULUCF_totals(
+        self,
+        estimates_with_lulucf,
+        mean_with_lulucf,
+        estimates_without_lulucf,
+        mean_without_lulucf,
+        ):
+        lbounds_with_lulucf, ubounds_with_lulucf = np.quantile(
+            estimates_with_lulucf,
+            q=self.credibility_interval_95,
+            axis=0)
+
+        self.add_data_for_sector(
+            PseudoSectors.Total_with_LULUCF,
+            mean_with_lulucf,
+            lbounds=lbounds_with_lulucf,
+            ubounds=ubounds_with_lulucf)
+
+        lbounds_without_lulucf, ubounds_without_lulucf = np.quantile(
+            estimates_without_lulucf,
+            q=self.credibility_interval_95,
+            axis=0)
+
+        self.add_data_for_sector(
+            PseudoSectors.Total_without_LULUCF,
+            mean_without_lulucf,
+            lbounds=lbounds_without_lulucf,
+            ubounds=ubounds_without_lulucf)
 
     def load_data(self):
         self.years = np.arange(1990, 2050+1)
@@ -98,17 +143,9 @@ class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
 
                     estimated_sector_total_ca += estimated_past_ca_ghg
 
-            lbounds, ubounds = np.quantile(
-                estimated_sector_total_ca,
-                q=self.credibility_interval_95,
-                axis=0)
-
-            mean_sector_total = np.mean(estimated_sector_total_ca, axis=0)
-            self.add_data_for_sector(
+            mean_sector_total = self.compute_stats_and_add_data_for_sector(
                 sector,
-                mean_sector_total,
-                lbounds=lbounds,
-                ubounds=ubounds)
+                estimated_sector_total_ca)
 
             if sector not in LULUCF_Sectors:
                 estimates_without_lulucf += estimated_sector_total_ca
@@ -116,27 +153,11 @@ class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
             estimates_with_lulucf += estimated_sector_total_ca
             mean_with_lulucf += mean_sector_total
 
-        lbounds_with_lulucf, ubounds_with_lulucf = np.quantile(
+        self.add_data_for_LULUCF_totals(
             estimates_with_lulucf,
-            q=self.credibility_interval_95,
-            axis=0)
-
-        self.add_data_for_sector(
-            PseudoSectors.Total_with_LULUCF,
             mean_with_lulucf,
-            lbounds=lbounds_with_lulucf,
-            ubounds=ubounds_with_lulucf)
-
-        lbounds_without_lulucf, ubounds_without_lulucf = np.quantile(
             estimates_without_lulucf,
-            q=self.credibility_interval_95,
-            axis=0)
-
-        self.add_data_for_sector(
-            PseudoSectors.Total_without_LULUCF,
-            mean_without_lulucf,
-            lbounds=lbounds_without_lulucf,
-            ubounds=ubounds_without_lulucf)
+            mean_without_lulucf)
 
 
 class RegionalSparklineEChartHelper(nir_constant_predictor.RegionalSparklineEChartHelper):
@@ -156,6 +177,25 @@ class RegionalSparklineEChartHelper(nir_constant_predictor.RegionalSparklineECha
             pos_shift=np.maximum(lbounds, 0),
             pos_shade=np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
             )
+
+    def add_data_from_estimates(self, estimates_pt, estimates_ca):
+        for ii, pt in enumerate(PT):
+            if pt == PT.XX:
+                continue
+            pt_mean = np.mean(estimates_pt[:, :, ii], axis=0)
+            pt_lbound, pt_ubound = np.quantile(
+                estimates_pt[:, :, ii],
+                self.credibility_interval_95,
+                axis=0)
+            self.add_data_for_region(pt, pt_mean, pt_lbound, pt_ubound)
+
+        ca_mean = np.mean(estimates_ca, axis=0)
+        ca_lbound, ca_ubound = np.quantile(
+            estimates_ca,
+            self.credibility_interval_95,
+            axis=0)
+        self.add_data_for_region(PseudoRegion.NationalTotal,
+                                 ca_mean, ca_lbound, ca_ubound)
 
     def load_data(self):
         self.years = np.arange(1990, 2050+1)
@@ -230,23 +270,9 @@ class RegionalSparklineEChartHelper(nir_constant_predictor.RegionalSparklineECha
         estimates_pt = estimates_ghg_pt.sum(axis=1)
         estimates_ca = estimates_ghg_ca.sum(axis=1)
 
-        for ii, pt in enumerate(PT):
-            if pt == PT.XX:
-                continue
-            pt_mean = np.mean(estimates_pt[:, :, ii], axis=0)
-            pt_lbound, pt_ubound = np.quantile(
-                estimates_pt[:, :, ii],
-                self.credibility_interval_95,
-                axis=0)
-            self.add_data_for_region(pt, pt_mean, pt_lbound, pt_ubound)
-
-        ca_mean = np.mean(estimates_ca, axis=0)
-        ca_lbound, ca_ubound = np.quantile(
-            estimates_ca,
-            self.credibility_interval_95,
-            axis=0)
-        self.add_data_for_region(PseudoRegion.NationalTotal,
-                                 ca_mean, ca_lbound, ca_ubound)
+        self.add_data_from_estimates(
+            estimates_pt=estimates_pt,
+            estimates_ca=estimates_ca)
 
 
 class AR2(SiteInference):

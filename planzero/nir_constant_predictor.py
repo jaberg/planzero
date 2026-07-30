@@ -1193,35 +1193,33 @@ class Static_Normals(SiteInference):
         return helper.make_echart()
 
     def _challenge_score_PreNIR_2025_06(self):
-        return dict(total=float('nan'))
         from . import nir_static_normals
+        from . import model_db
         from scipy.special import logsumexp
-        model_id = model_db.model(
+        model_id = model_db.model_latest_version(
             family='StaticNormal',
-            version='latest',
             data_cutoff='2024-12-31',
             )['model_id']
-        loglik_ds = []
+
+        # product (log-domain sum) over components' predictions
+        loglik_samples = 0
         for rd in model_db.components_by_model(model_id): # rd -> results/record dictionary
             if rd['component_type'] == 'Normal':
-                loglik_d = nir_static_normals.loglik_NIR_Normal()
+                loglik_samples += nir_static_normals.loglik_NIR_Normal(
+                    rd['component_id'],
+                    NIR_year=2025,
+                    emission_year=2023)
             elif rd['component_type'] == 'BayesianNormal':
-                loglik_d = nir_static_normals.loglik_NIR_BayesianNormal(
+                loglik_samples += nir_static_normals.loglik_NIR_BayesianNormal(
                     rd['component_id'],
                     NIR_year=2025,
                     emission_year=2023)
             else:
                 raise NotImplementedError(rd)
-            loglik_ds.append(loglik_d)
 
-        logliks = []
-        for lld in loglik_ds:
-            logliks.extend(lld['by_pt'].values())
-            logliks.append(lld['Canada'])
-
-        # log-sum over provinces, territories, and country
-        rval = logsumexp(logliks, b=1.0 / len(logliks))
-        return rval
+        # log-domain mean over samples
+        rval = logsumexp(loglik_samples, b=1.0 / len(loglik_samples))
+        return dict(total=float(rval))
 
     def challenge_scores(self, challenge_name):
         if challenge_name == 'PreNIR_2025_06':

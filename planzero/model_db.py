@@ -1,16 +1,32 @@
 import argparse
+import datetime
+import hashlib
 import json
 import os
 import uuid
-
 
 import numpy as np
 import sqlite3
 
 from .enums import GHG, IPCC_Sector
 
+def adapt_date_iso(val):
+    """Adapt datetime.date to ISO 8601 date."""
+    return val.isoformat()
+
+
+def convert_date(val):
+    """Convert ISO 8601 date to datetime.date object."""
+    return datetime.date.fromisoformat(val.decode())
+
+
+sqlite3.register_adapter(datetime.date, adapt_date_iso)
+sqlite3.register_converter("date", convert_date)
+
+
 db_filename = "my_database.db"
 root_ndarray = 'cache/Ndarray'
+
 
 def connect(timeout=5.0):
     conn = sqlite3.connect(db_filename, timeout=timeout)
@@ -63,26 +79,31 @@ def init_db():
         family TEXT,
         version REAL,
         version_description TEXT,
-        data_cutoff TEXT
+        data_cutoff DATE
     );
     """)
 
     # which model components support which parts of the model
+    # The primary key on this table would be something like "a model's NIR element",
+    # but that isn't an ID used elsewhere yet.
+    # TODO: use integers for these TEXT fields, with some ENUMs, to shrink file a lot
     conn.execute("""
     CREATE TABLE IF NOT EXISTS ComponentMapping (
-        model_id TEXT,
-        ghg TEXT,
-        NIR_sector TEXT,
-        region TEXT,
-        component_id TEXT,
+        model_id TEXT, --TODO: INT
+        ghg TEXT, -- TODO: INT
+        NIR_sector TEXT, -- TODO: INT
+        region TEXT, -- TODO: INT
+        component_id TEXT, --TODO: INT
         UNIQUE (model_id, GHG, NIR_sector, region)
     );
     """)
 
+    # Things that all components have
     conn.execute("""
     CREATE TABLE IF NOT EXISTS ComponentType (
         component_id TEXT PRIMARY KEY,
-        component_type TEXT -- "Normal", "BayesianNormal"
+        component_type TEXT, -- "Normal", "BayesianNormal"
+        model_id TEXT
     );
     """)
 
@@ -177,14 +198,43 @@ def load_ndarray_group(component_id, group_id):
     rval = {}
     with connect() as conn:
         cursor = conn.execute(
-            """SELECT key, file_name
+            """
+            SELECT key, file_name
             FROM Ndarray
-            WHERE component_id = ? AND group_id = ?;"""
+            WHERE component_id = ? AND group_id = ?
+            ;""",
             (component_id, group_id,))
         for key, file_name in cursor:
             path = f'{root_ndarray}/{file_name}.npy'
             rval[key] = np.load(path, mmap_mode='r')
     return rval
+
+
+def params_Normal(component_id):
+    with connect() as conn:
+        cursor = conn.execute(
+            """
+            SELECT location, scale, v_unit, data_cutoff, ghg, NIR_sector
+            FROM Component_Normal
+            JOIN ComponentMapping ON Component_Normal.component_id = ComponentMapping.component_id
+            JOIN Model on ComponentMapping.model_id = Model.model_id
+            WHERE Component_Normal.component_id = ?
+            GROUP BY location, scale, v_unit, data_cutoff, ghg, NIR_sector
+            ;""",
+        (component_id,))
+        n_yielded = 0
+        for row in cursor:
+            n_yielded += 1
+            yield dict(
+                location=row[0],
+                scale=row[1],
+                v_unit=row[2],
+                data_cutoff=row[3],
+                ghg=GHG(row[4]),
+                sector=IPCC_Sector(row[5]),
+                )
+        if n_yielded == 0:
+            raise NoRecord(component_id)
 
 
 def params_BayesianNormal(component_id):
@@ -246,15 +296,16 @@ def insert_component_mapping(
 def insert_component_type(
     cursor,
     component_id,
-    component_type
+    component_type,
+    model_id,
     ):
     assert component_type in ('Normal', 'BayesianNormal')
     query = f"""INSERT INTO
-    ComponentType (component_id, component_type)
-    VALUES (?, ?);"""
+    ComponentType (component_id, component_type, model_id)
+    VALUES (?, ?, ?);"""
     cursor.execute(
         query,
-        (component_id, component_type))
+        (component_id, component_type, model_id))
 
 
 def insert_component_normal(
@@ -298,6 +349,41 @@ def insert_task(cursor, payload: dict, parent_id=0):
         "INSERT INTO Task (parent_id, payload) VALUES (?, ?)", 
         (parent_id, payload_text,)
     )
+
+
+def model_latest_version(family, data_cutoff):
+    with connect() as conn:
+        cursor = conn.execute(
+            """SELECT version, model_id
+            FROM Model
+            WHERE family = ? AND data_cutoff <= ?
+            ORDER BY version DESC
+            LIMIT 1;
+            """,
+            (family, data_cutoff))
+        row = cursor.fetchone()
+        if row is None:
+            raise NoRecord()
+        model_version, model_id = row
+        return dict(
+            family=family,
+            data_cutoff=data_cutoff,
+            version=model_version,
+            model_id=model_id)
+
+
+def components_by_model(model_id):
+    with connect() as conn:
+        cursor = conn.execute(
+            """SELECT component_id, component_type
+            FROM ComponentType
+            WHERE model_id = ?
+            ;""",
+            (model_id,))
+        for row in cursor:
+            yield dict(
+                component_id=row[0],
+                component_type=row[1])
 
 
 def delete_model(model_id):
@@ -501,6 +587,15 @@ def by_id(table, conn=None, **kwargs):
             return row
         else:
             raise NoRecord()
+
+
+def stable_hash(data: str, n_chars=8) -> str:
+    """Returns a stable, cross-session SHA-256 hex string."""
+    # 1. Encode the string to bytes
+    encoded_data = data.encode('utf-8')
+
+    # 2. Generate and return the hexadecimal digest
+    return hashlib.shake_128(encoded_data).hexdigest(n_chars)
 
 
 # create the top-level parser

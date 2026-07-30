@@ -360,6 +360,7 @@ class PreNIR(BlogPost):
 
         return rval
 
+
 class TwoProbabilisticModels(BlogPost):
     """
     This post introduces probabilistic modelling to PlanZero.
@@ -375,7 +376,7 @@ class TwoProbabilisticModels(BlogPost):
 
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 5, 26),
+            date=datetime.datetime(2026, 6, 28),
             title='Two Probabilistic Models of NIR-2025',
             url_filename="2026-05-26-probabilistic-modelling",
             author="James Bergstra",
@@ -863,7 +864,7 @@ class Glossary(BlogPost):
     modelling. """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 5, 5),
+            date=datetime.datetime(2026, 6, 4),
             title='New: the PlanZero glossary',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
@@ -873,6 +874,209 @@ class Glossary(BlogPost):
                   BlogTag.NIR_Modelling},
             draft=True,
             )
+
+class ProbabilisticNIR2025(BlogPost):
+    """This post introduces a PlanZero's first probabilistic model:
+    an interpretation of the NIR-2025 data including the uncertainty
+    estimates from Annex 2. The PlanZero site now includes a "Models" tab.
+    """
+
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 5, 20),
+            title='A Probabilistic NIR',
+            url_filename="2026-05-20-prob-nir",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling},
+            draft=True,
+            )
+
+    @staticmethod
+    def generate_assets():
+        from . import prob
+        from .enums import IPCC_Sector, GHG
+
+        base = 'html/blog/2026-05-20-prob-nir'
+        model_name = 'NIR2025'
+        site_inference = prob.site_inferences['NIR2025']
+        site_inference.uncertain_sparkline_matrix_echart(
+            div_id=f"{model_name}_all_sectors",
+            v_unit="Mt_CO2e").save_as(
+                f'{base}-{model_name}-all_sectors.html')
+        site_inference.sector_echart(
+            sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
+            ghg=GHG.CO2,
+            v_unit="Mt_CO2e").save_as(
+                f'{base}-{model_name}-OGE.html')
+
+    def figure_uncertainty_hist(self,):
+        import numpy as np
+        from .nir2025 import load_uncertainty
+        unc_df = load_uncertainty()
+        def log_squash(x):
+            return np.sign(x) * np.log1p(abs(x))
+
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(self):
+                fig, ax0, = plt.subplots(1, 1, figsize=(6, 4))
+                ax0.set_title("Sector-Gas Emissions Uncertainty for year 2023 in NIR-2025")
+                ax0.scatter(
+                    log_squash(unc_df['Emissions (ktCO2eq) - 2023']),
+                    unc_df['Emission Factor Uncertainty (%) - 2023'],
+                    s=10,
+                    alpha=.3,
+                    )
+                ax0.set_xlabel('Log-scaled emissions $m$ (ktCO2eq)')
+                ax0.set_ylabel('Assessed uncertainty $u$ ($100u$%)')
+                xticks = np.asarray([-100_000,
+                                     -10_000,
+                                     -1000,
+                                     -100,
+                                     -10,
+                                     0,
+                                     10,
+                                     100,
+                                     1000,
+                                     10_000,
+                                     100_000])
+                ax0.set_xticks(
+                    log_squash(xticks),
+                    [xt if abs(xt) <= 1000 else f'{xt//1000}k' for xt in xticks])
+                plt.tight_layout()
+        return RVAL()
+
+    @staticmethod
+    def figure_pdf():
+        import numpy as np
+        import numpyro.distributions as dist
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(self):
+                (fig, ax) = plt.subplots(1, 1, figsize=(8, 4))
+
+                ax.set_title('Probability Assessment Using a "Log-Normal" Probability Density Function')
+                x = np.linspace(0, 1.4, 100)
+                ax.plot(x, np.exp(dist.LogNormal(-1, 0.7).log_prob(x)))
+
+                A = .5
+                B = 1.1
+                from scipy.stats import lognorm
+                cdf_A, cdf_B = lognorm.cdf([A, B], s=.7, scale=np.exp(-1))
+
+                ax.set_xticks(
+                    [0, .2, .4,  A , .6, .8, 1.0,  B , 1.2, 1.4],
+                    [0, .2, .4, 'A', .6, .8, 1.0, 'B', 1.2, 1.4],
+                    )
+                x2 = np.linspace(A, B, 50)
+                ax.fill_between(
+                    x2,
+                    #np.exp(dist.LogNormal(-1, 0.7).log_prob(x2)),
+                    lognorm.pdf(x2, s=.7, scale=np.exp(-1)),
+                    color='skyblue',
+                    alpha=0.4)
+                ax.set_xlabel("Possible values of the unknown variable, X")
+                ax.set_ylabel("Probability density")
+                ax.text(A + .05, .15,
+                        f"$\\mathrm{{P}}(A < X < B) \\approx {cdf_B - cdf_A:.2f}$")
+
+                plt.tight_layout()
+        return RVAL()
+
+    @staticmethod
+    def figure_SBLN():
+        import numpy as np
+        from .enums import IPCC_Sector, GHG, PT
+        from .nir2025 import (
+            ktCO2e_numpyro_dist_pt_ca,
+            idx_of_pt)
+
+        def axtexts(ax, texts, left_offset=0.05):
+            for ii, text_str in enumerate(texts):
+                ax.text(left_offset, .95 - ii * .07, text_str,
+                        transform=ax.transAxes,
+                        verticalalignment='top',
+                        horizontalalignment='left')
+
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(self):
+                fig, ((ax0, ax1), (ax2, ax3)) \
+                        = plt.subplots(2, 2, figsize=(10, 7))
+
+                ca_dist, pt_dists = ktCO2e_numpyro_dist_pt_ca(
+                    sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
+                    ghg=GHG.CO2,
+                    year=1995)
+                x = np.linspace(0, 150, 500)
+                ax0.plot(
+                    x,
+                    np.exp(ca_dist.log_prob(x * 1000)))
+                ax0.set_title("National Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
+                ax0.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax0.set_ylabel("Probability Density")
+                axtexts(
+                    ax0,
+                    [f"$\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
+                     f"$\\rho={ca_dist.rolloff / 1000:.2f}~MtCO_2e$",
+                     f"$\sigma={ca_dist.relerr * 100:.2f}$%",
+                    ])
+
+                x = np.linspace(0, 150, 500)
+                pt_dist = pt_dists[idx_of_pt[PT.NU]]
+                ax1.plot(
+                    x,
+                    np.exp(pt_dist.log_prob(x)))
+                ax1.set_title("Nunavut Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
+                ax1.set_xlabel("Emissions ($\mathrm{ktCO_2e}$)")
+                ax1.set_ylabel("Probability Density")
+                axtexts(
+                    ax1,
+                    [f"$\mu={pt_dist.mu:.2f}~ktCO_2e$",
+                     f"$\\rho={pt_dist.rolloff:.2f}~ktCO_2e$",
+                     f"$\sigma={pt_dist.relerr * 100:.2f}$%",
+                    ],
+                    left_offset=.6,
+                    )
+
+                ca_dist, pt_dists = ktCO2e_numpyro_dist_pt_ca(
+                    sector=IPCC_Sector.Forest_Land,
+                    ghg=GHG.CO2,
+                    year=2009)
+                x = np.linspace(-50, 350, 500)
+                ax = ax2
+                ax.plot(
+                    x,
+                    np.exp(ca_dist.log_prob(x * 1000)))
+                ax.set_title("National Forest Land $\mathrm{CO_2}$ Emissions in 2009")
+                ax.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax.set_ylabel("Probability Density")
+                axtexts(
+                    ax,
+                    [f"$\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
+                     f"$\\rho={ca_dist.rolloff / 1000:.2f}~MtCO_2e$",
+                     f"$\sigma={ca_dist.relerr * 100:.2f}$%",
+                    ],
+                    left_offset=.6,
+                    )
+
+                x = np.linspace(-50, 350, 500)
+                pt_dist = pt_dists[idx_of_pt[PT.ON]]
+                ax = ax3
+                ax.plot(
+                    x,
+                    np.exp(pt_dist.log_prob(x * 1000)))
+                ax.set_title("Ontario Forest Land $\mathrm{CO_2}$ Emissions in 2009")
+                ax.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax.set_ylabel("Probability Density")
+                axtexts(
+                    ax,
+                    [f"$\mu={pt_dist.mu / 1000:.2f}~MtCO_2e$",
+                     f"$\\rho={pt_dist.rolloff / 1000:.2f}~MtCO_2e$",
+                     f"$\sigma={pt_dist.relerr * 100:.2f}$%",
+                    ],
+                    left_offset=.6,
+                    )
+
+                plt.tight_layout()
+        return RVAL()
 
 class About(BlogPost):
     """Going meta: Refining the vision and mission,

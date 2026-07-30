@@ -22,9 +22,19 @@ class SymmetricBlendedLogNormal(Distribution):
     
     support = constraints.real
     reparametrized_params = ["mu"]
-
+    
     @classmethod
     def rolloff_relerr(cls, mu, rolloff, relerr, **kwargs):
+        """
+        mu: the mean of the distribution it's "closeness" to 0 is measured relative to `rolloff`.
+        rolloff: if small relative to abs(mu), the distribution is strongly one-sided. Considering mu as a parameter, it controls how sharply the distribution might change as mu approaches 0.
+        relerr: if small relative to 1, the distribution is concentrated.
+        """
+        # relerr <= 0 will trigger constraints violation, catch earlier here
+        assert relerr > 0
+
+        assert rolloff > 0 # actually 0 maybe should work? not tested
+
         return cls(
             mu=mu,
             scale_neg=relerr / 3,
@@ -34,6 +44,14 @@ class SymmetricBlendedLogNormal(Distribution):
             norm_dominance=10.0,
             deadzone=rolloff / 10,
             **kwargs)
+
+    @property
+    def rolloff(self):
+        return self.deadzone * 10
+
+    @property
+    def relerr(self):
+        return self.scale_neg * 3
         
     def __init__(self, mu=0, scale_neg=.1, scale_norm=1.0, scale_pos=.1, 
                  transition_rate=1.0, norm_dominance=10.0, deadzone=1,

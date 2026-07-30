@@ -1,6 +1,9 @@
 import enum
 
 
+# TODO: consider renaming this to "Regions" as in, names of places with borders
+# then the provinces and territories are a set of them, not the whole enum
+# the enum can then comfortably include e.g. Canada, World, NWT & Nunavut, Maritime Provinces, etc.
 class ProvinceTerritory(str, enum.Enum):
     BC = 'British Columbia'
     AB = 'Alberta'
@@ -118,6 +121,7 @@ class RPP_User(str, enum.Enum):
 
 
 # Leaf nodes of Canada's IPCC taxonomy
+# TODO: call this NIR_Sector, NIR_IPCC_Source, or NIR_IPCC_Category
 class IPCC_Sector(str, enum.Enum):
     # Energy
     SCS__Public_Electricity_and_Heat = 'Public Electricity and Heat Production'
