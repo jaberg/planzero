@@ -224,7 +224,7 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                       IPCC_Sector.Settlements, # some provinces sometimes have negative settlement emissions
                      ]:
             # Case 2: sectors that can be negative or positive
-            rolloff = 20_000 # kt
+            rolloff = 100 # kt CO2e
             eps = 1
             ca_dist = SymmetricBlendedLogNormal.rolloff_relerr(
                 mu=ktco2e_ca,
@@ -246,7 +246,7 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                 else:
                     pt_dist = SymmetricBlendedLogNormal.rolloff_relerr(
                         mu=ktco2e_pt[idx_of_pt[pt]],
-                        rolloff=rolloff * abs(ktco2e_pt[idx_of_pt[pt]]) / abs(ktco2e_ca) + eps,
+                        rolloff=rolloff,# * abs(ktco2e_pt[idx_of_pt[pt]]) / abs(ktco2e_ca) + eps,
                         relerr=unc,
                         )
                 pt_dists.append(pt_dist)

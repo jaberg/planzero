@@ -168,6 +168,8 @@ def load_config_samples(sector, ghg):
     return config, mmap_dict
 
 
+
+
 def main():
     """Populate cache/inference/Static_Normals
     """

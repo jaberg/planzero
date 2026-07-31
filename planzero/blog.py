@@ -878,7 +878,10 @@ class Glossary(BlogPost):
 class ProbabilisticNIR2025(BlogPost):
     """This post introduces a PlanZero's first probabilistic model:
     an interpretation of the NIR-2025 data including the uncertainty
-    estimates from Annex 2. The PlanZero site now includes a "Models" tab.
+    estimates from Annex 2. The PlanZero site now includes a Models tab,
+    with a section for probabilistic models (which represent and visualize
+    emissions uncertainty). This treatment of uncertainty is a fundamental
+    aspect of PlanZero's future modelling work.
     """
 
     def __init__(self):
@@ -905,9 +908,14 @@ class ProbabilisticNIR2025(BlogPost):
                 f'{base}-{model_name}-all_sectors.html')
         site_inference.sector_echart(
             sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
+            ghg=None,
+            v_unit="Mt_CO2e").save_as(
+                f'{base}-{model_name}-PEH.html')
+        site_inference.sector_echart(
+            sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
             ghg=GHG.CO2,
             v_unit="Mt_CO2e").save_as(
-                f'{base}-{model_name}-OGE.html')
+                f'{base}-{model_name}-PEH-CO2.html')
 
     def figure_uncertainty_hist(self,):
         import numpy as np

@@ -48,11 +48,11 @@ class NIR2025_SparklineEChartHelper(SparklineEChartHelper):
 
                     rng_key, rng_key_ = jrandom.split(rng_key)
                     estimated_sector_ghg_ca_year = ca_dist.sample(rng_key_, (n_samples,))
-                    estimated_sector_total_ca[:, jj] += estimated_sector_ghg_ca_year
+                    estimated_sector_total_ca[:, jj] += estimated_sector_ghg_ca_year * self.v_unit_scale
 
             mean_sector_total = self.compute_stats_and_add_data_for_sector(
                 sector,
-                estimated_sector_total_ca * self.v_unit_scale)
+                estimated_sector_total_ca)
 
             if sector not in LULUCF_Sectors:
                 estimates_without_lulucf += estimated_sector_total_ca
