@@ -21,7 +21,7 @@
     <tbody>
         {% for name, dyn_elem in sim_result.state.projects.items() if 'strategy' in dyn_elem.tags %}
         <tr>
-            <td><a href="/simulations/{{ident}}/strategies/{{name}}/">{{printcname(name)}}</a></td>
+            <td><a href="/models/sim/{{ident}}/strategies/{{name}}/">{{printcname(name)}}</a></td>
             <td>{{dyn_elem.short_description}}</td>
             <td>
                 {% for ipcc_sector in dyn_elem.extra_ipcc_sectors %}
@@ -43,7 +43,7 @@
     <tbody>
         {% for name, dyn_elem in sim_result.state.projects.items() if 'barrier' in dyn_elem.tags %}
         <tr>
-            <td><a href="/simulations/{{ident}}/barriers/{{name}}/">{{printcname(name)}}</a></td>
+            <td><a href="/models/sim/{{ident}}/barriers/{{name}}/">{{printcname(name)}}</a></td>
             <td>{{dyn_elem.short_description}}</td>
             <td>
                 {% for ipcc_sector in ipcc_sectors_from_dynelem(dyn_elem) %}

@@ -1,0 +1,64 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Predictions</h1>
+        <p>Prediction and implementation challenges for probabilistic models of
+        Canada's future emissions.<p>
+    </header>
+
+<h2>Pre-NIR</h2>
+
+<p>
+Pre-NIR-YYYY-MM challenges are about predicting National Inventory Report numbers
+(for the NIR published in year YYYY) before they are pubished (MM months prior to publication).
+</p>
+
+
+{% for challenge_name, challenge_obj in planzero.challenge.registry.items()
+   if challenge_obj.show_on_predictions_page %}
+
+<h3>{{challenge_obj.pretty_name}}</h3>
+
+<p>
+{{ challenge_obj.short_description }}
+</p>
+
+<!-- NEEDS TO BE SORTABLE CLASS NOT ID -->
+<table id="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Name
+              </th>
+              <th>
+                  Short Description
+              </th>
+              <th>
+                  Total Log-Probability
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+        {% for ident, obj in planzero.prob.site_inferences.items() if obj.show_on_models_page %}
+          <tr>
+              <td>
+                  <a href="/models/{{ident}}/">{{ident.replace('_', ' ')}}</a>
+              </td>
+              <td>{{obj.one_line_description() }}</td>
+              <td>
+                  {% if challenge_obj.results_available %}
+                  {{"{:.1f}".format(obj.challenge_scores(challenge_name)["total"])}}
+                  {% else %}
+                  {{siteref("Pending Prediction Challenge Results", "Pending")|safe}}
+                  {% endif %}
+                  </td>
+          </tr>
+          {% endfor %}
+    </tbody>
+</table>
+{% endfor %}
+
+{% include "post-main.html" %}

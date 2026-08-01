@@ -1,6 +1,9 @@
 import enum
 
 
+# TODO: consider renaming this to "Regions" as in, names of places with borders
+# then the provinces and territories are a set of them, not the whole enum
+# the enum can then comfortably include e.g. Canada, World, NWT & Nunavut, Maritime Provinces, etc.
 class ProvinceTerritory(str, enum.Enum):
     BC = 'British Columbia'
     AB = 'Alberta'
@@ -8,8 +11,8 @@ class ProvinceTerritory(str, enum.Enum):
     MB = 'Manitoba'
     ON = 'Ontario'
     QC = 'Quebec'
-    NS = 'Nova Scotia'
     NB = 'New Brunswick'
+    NS = 'Nova Scotia'
     PE = 'Prince Edward Island'
     NL = 'Newfoundland and Labrador'
     YT = 'Yukon'
@@ -118,6 +121,7 @@ class RPP_User(str, enum.Enum):
 
 
 # Leaf nodes of Canada's IPCC taxonomy
+# TODO: call this NIR_Sector, NIR_IPCC_Source, or NIR_IPCC_Category
 class IPCC_Sector(str, enum.Enum):
     # Energy
     SCS__Public_Electricity_and_Heat = 'Public Electricity and Heat Production'
@@ -221,6 +225,15 @@ class IPCC_Sector(str, enum.Enum):
         except KeyError:
             return IPCC_Sector_from_catpath_with_whitespace[catpath]
 
+
+LULUCF_Sectors = {
+    IPCC_Sector.Forest_Land,
+    IPCC_Sector.Cropland,
+    IPCC_Sector.Grassland,
+    IPCC_Sector.Wetlands,
+    IPCC_Sector.Settlements,
+    IPCC_Sector.Harvested_Wood_Products,
+}
 
 
 IPCC_Sector.SCS__Public_Electricity_and_Heat.catpath_no_whitespace = 'Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production'
@@ -343,6 +356,7 @@ IPCC_Sector.Liming_Urea_Other.catpath_no_whitespace = 'Liming,_Urea_Application_
 IPCC_Sector.Liming_Urea_Other.catpath_with_whitespace = 'Liming, Urea Application and Other Carbon-Containing Fertilizers'
 IPCC_Sector.Municipal_Solid_Waste_Landfills.catpath_no_whitespace = 'Municipal_Solid_Waste_Landfills'
 IPCC_Sector.Municipal_Solid_Waste_Landfills.catpath_with_whitespace = 'Municipal Solid Waste Landfills'
+# known typo "Lanfills", possibly comes from NIR2025 csv
 IPCC_Sector.Industrial_Wood_Waste_Landfills.catpath_no_whitespace = 'Industrial_Wood_Waste_Lanfills'
 IPCC_Sector.Industrial_Wood_Waste_Landfills.catpath_with_whitespace = 'Industrial Wood Waste Lanfills'
 IPCC_Sector.Biological_Treatment_of_Solid_Waste.catpath_no_whitespace = 'Biological_Treatment_of_Solid_Waste'
@@ -376,3 +390,13 @@ IPCC_Sector_from_catpath_with_whitespace = {
 
 class SubsidyPrograms(str, enum.Enum):
     Bovaer_Subsidy = 'Bovaer Subsidy'
+
+
+# 1. New 14-color palette minimizing blue-green saturation
+echarts_warm_earth = [
+    '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
+    '#fc8452', '#9a60b4', '#3ba272', '#ea7ccc',
+    '#b58d22', '#44357a', '#9e2a47', '#34495e', '#6e473b'
+]
+col_by_pt = {pt: col for pt, col in zip(PT, echarts_warm_earth)}
+col_ca = echarts_warm_earth[-1]

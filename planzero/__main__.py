@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 
 from pathlib import Path
 
@@ -80,6 +81,11 @@ def request_all_planzero_pages(args):
         print(status_code, '{:.2f}'.format(client.last_get_time), endpoint)
 
 
+def nir_ar2_inference(args):
+    from . import nir_ar2
+    return nir_ar2.main()
+
+
 if __name__ == '__main__':
 
     # create the top-level parser
@@ -106,5 +112,8 @@ if __name__ == '__main__':
     parser_request_all_pages = subparsers.add_parser('request_all_pages')
     parser_request_all_pages.set_defaults(func=request_all_planzero_pages)
 
+    parser_request_all_pages = subparsers.add_parser('nir_ar2_inference')
+    parser_request_all_pages.set_defaults(func=nir_ar2_inference)
+
     args = parser.parse_args()
-    args.func(args)
+    sys.exit(args.func(args))

@@ -15,6 +15,7 @@ def national_emissions_IPCC(year):
     yod = year % 10
     decade = ((year - yod) % 100) // 10
 
+    # TODO: use os.environ['PLANZERO_DATA']
     file_path = '/content/data/EN_Annex9_GHG_IPCC_Canada.xlsx'
 
     df = pd.read_excel(

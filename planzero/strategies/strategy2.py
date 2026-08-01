@@ -46,7 +46,7 @@ class Scale_Bovaer(Strategy2):
     def see_also_html(self, context_vars) -> list[str]:
         sources = [
             ('<a'
-             ' href="/simulations/{{sim_name}}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' href="/models/sim/{{sim_name}}/barriers/Bovaer_Adoption_Limit/">Bovaer'
              ' Adoption Limit</a>, which is the model barrier that sets the rate'
              ' of adoption for this strategy'),
             ('<a'

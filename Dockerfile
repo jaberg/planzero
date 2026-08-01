@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir numpy
 RUN pip install --no-cache-dir matplotlib
 RUN pip install --no-cache-dir pint
 RUN pip install --no-cache-dir networkx
-RUN pip install --no-cache-dir fastapi[standard]
+RUN pip install --no-cache-dir fastapi[standard] httpx2
 RUN pip install --no-cache-dir pandas
 RUN pip install --no-cache-dir pytest
 RUN pip install --no-cache-dir jupyter
@@ -31,6 +31,8 @@ RUN apt-get update
 RUN apt-get install -y build-essential
 RUN pip install --no-cache-dir xarray netCDF4 matplotlib cartopy
 RUN pip install --no-cache-dir scikit-learn
+RUN pip install --no-cache-dir jax
+RUN pip install --no-cache-dir numpyro
 
 COPY ./planzero /content/planzero
 COPY ./data /content/data
@@ -40,12 +42,20 @@ COPY ./app.py /content/app.py
 COPY ./warmup.py /content/warmup.py
 WORKDIR /content
 
+
+# Testing: no diskcache (memcache only), no warmup
+FROM base AS testing
+ENV PLANZERO_DATA="/content/data"
+ENV PLANZERO_USE_DISK_CACHE="0"
+ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
+ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=1
+CMD ["pytest"]
+
+# Production: diskcache, warmup
+FROM base AS production
 ENV PLANZERO_DATA="/content/data"
 ENV PLANZERO_USE_DISK_CACHE="1"
 ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
-
-# Run warmup to populate the disk cache in the image
 RUN python warmup.py
-
 CMD ["fastapi", "run"]

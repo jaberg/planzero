@@ -205,12 +205,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-.build
 
 # planzero
+.build*
 todel
 data/petrinex
 cache/pollution_waste_canada/details*
+cache/inference
 data/neud/*.zip
 .planzero_cache
 large_data/

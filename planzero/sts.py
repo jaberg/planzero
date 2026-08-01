@@ -139,21 +139,31 @@ class STS(BaseModel):
     def query(self, t_query):
         try:
             n_queries = len(t_query)
+            n_dim = 1
         except:
             n_queries = 1
+            n_dim = 0
         if n_queries > 1:
+            assert n_dim == 1
             idxs, valids = zip(*[self._idx_of_time(tqi) for tqi in t_query])
             values = [self.values[idx] for idx in idxs]
             rval = np.asarray(values)
             rval[~np.asarray(valids)] = float('nan')
             return rval * self.v_unit
-        else:
-            idx, valid = self._idx_of_time(t_query)
+        elif n_queries == 1:
+            idx, valid = self._idx_of_time(t_query if n_dim == 0 else t_query[0])
             if valid:
-                return self.values[idx] * self.v_unit
+                if n_dim == 0:
+                    return self.values[idx] * self.v_unit
+                else:
+                    return np.asarray([self.values[idx]]) * self.v_unit
             else:
-                assert valid
-                return float('nan') * self.v_unit
+                if n_dim == 0:
+                    return float('nan') * self.v_unit
+                else:
+                    return np.asarray([float('nan')]) * self.v_unit
+        else:
+            return np.asarray([])
 
     def append(self, t, v):
         if t.u == self.t_unit:
@@ -318,8 +328,9 @@ class STS(BaseModel):
     def bin_integrals(self, bin_boundaries,
                       default_value=float('nan'),
                       interpolation=InterpolationMode.no_interpolation):
-        native_boundaries = [tt.to(self.t_unit).magnitude
-                             for tt in sorted(bin_boundaries)]
+        native_boundaries = bin_boundaries.to(self.t_unit).magnitude
+        for tt0, tt1 in zip(native_boundaries, native_boundaries[1:]):
+            assert tt0 <= tt1
         # Time integrals over bins
         if self.interpolation == InterpolationMode.no_interpolation:
             raise NotImplementedError()
@@ -337,13 +348,14 @@ class STS(BaseModel):
                     current_bin = t1
         times, values = zip(*sorted(bin_sums.items()))
         # trimming off the last times and values because the upper limit wasn't actually a bin
-        return STS(
+        rval = STS(
             times=array.array('d', times[:-1]),
             t_unit=self.t_unit,
             values=array.array('d', [default_value] + list(values[:-1])),
             v_unit=self.t_unit * self.v_unit,
             interpolation=interpolation,
             )
+        return rval
 
     def delay(self, amount):
         native_amount = amount.to(self.t_unit).magnitude

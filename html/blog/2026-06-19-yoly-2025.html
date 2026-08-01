@@ -1,0 +1,391 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</p>
+
+<h2 id="introduction">Introduction</h2>
+
+
+<p>
+There is now also a "Predictions" tab offering a new perspective
+on PlanZero modelling that is possible with probabilistic models.
+The Predictions tab lists prediction challenges and the scores of
+prediction models (for the two models introduced in this post,
+on the prediction challenge that is also introduced in this post).
+</p>
+<p>
+With two models at hand, the post explains how models can be compared
+quantitatively for a particular task of future-emissions-prediction.
+</p>
+
+<p>
+Probabilistic modelling is an approach to modelling based on randomness
+and quantified uncertainty.
+Instead of providing a single,
+guaranteed outcome, a probabilistic model calculates a range of possible
+outcomes and assigns a probability (a likelihood) to each one.
+
+Probabilistic models are good for making predictions,
+because they represent the probability of all possible outcomes.
+
+Predictions can be about the future,
+but they can also be about something in the past, which is useful if, for example,
+we're not exactly sure about some aspect of something that already happened.
+</p>
+
+<p>
+Before we get into the models,
+the first section introduces the technique of probabilistic modelling
+by motivating <i>why</i> PlanZero would employ it, when after all,
+probabilistic modelling is more mathematically and computationally demanding than the 
+non-probabilistic modelling employed so far.
+</p>
+
+
+<h2 id="motivation">Prediction with Quantified Confidence: the Motivation for Probabilistic Modelling</h2>
+
+<p>
+PlanZero's <a href="/about/#overview">mission</a> calls for
+both short-, medium-, and long-term prediction capabilities suitable for the evaluation
+of strategies.
+The credibility and usefulness of model predictions depends on three things:
+<ol>
+    <li>The structure and elements of the model are reasonable.</li>
+    <li>The predictions refine people's prior beliefs, rather than contradicting them.</li>
+    <li>The predictions agree with data, where data is available, while also being precise.</li>
+</ol>
+</p>
+
+<p>
+Non-probabilistic modelling is not generally great across all three areas.
+The kind of modelling
+employed in the previous post on
+<a href="/blog/2026-04-03-bovaer">Bovaer</a>,
+was an example of non-probabilistic modelling.
+
+
+
+from a computational perspective, the modelling
+proceeds from data and initial numerical assumptions, through arithmetic and
+statistical summaries, forward in time, and with one pass through the modelled
+time period of the model, it arrives at a result.
+
+Simulation-based modelling is good with regards to criterion (1) in that predictions can be
+reasonably explained directly in terms of the computation of the model.
+Simulation-based modelling is only so-so with regards to criterion (2) because simulation-based
+modelling does not naturally express <i>how [un]likely</i> a person's current beliefs are,
+the simulation just emits its own prediction.
+Critically,
+simulation-based modelling offers very little support for matching data.
+Data matching is entirely at the discretion of the modeller,
+and the result of simulation does not inherently characterize
+whether data was either used appropriately or fit well.
+</p>
+
+<p>
+Probabilistic modelling is a generalization of simulation-based modelling that
+can produce models that are more credible.
+Probabilistic modelling (particularly so-called directed graphical modelling)
+starts with random variables instead of numbers.
+So for example, instead of starting with
+e.g. the NIR data, a probabilistic model
+starts with the idea that there are emission amounts
+in such-and-such sectors of such-and-such gases (random variables), 
+and that there are emissions for all years
+we care to include in our model.
+While we're at it, we make up broad
+<i>a-priori</i> guesses at how much emissions there were in all these areas and for each year.
+These initial beliefs have a name in probabilistic modelling, they are our <i>priors</i>.
+For example, we might express a prior that {{CO2}} emissions from national electricity generation
+are relatively big, but still smaller than e.g. global emissions.
+As a contrasting example, we might express that the {{NF3}} emissions from a sector that
+isn't known for producing that gas, in a province that isn't known for activity in that sector,
+is probably zero, at least for most years.
+Priors should be broad, inclusive probability distributions
+that include most (if not all) people's beliefs about what the random variables represent.
+</p>
+
+<p>
+The relationship between this probabilistic modelling and simulation-based modelling
+is that if we combine the random variables with arithmetic and statistical expressions
+(like we would do in a simulation-based model),
+then drawing a sample from all the random variables in our prior looks a lot like running
+a simulation-based model.
+This computation has a name in probabilistic modelling:
+<i>sampling from the prior</i>.
+It's kind of fun, to see your prior beliefs transformed into
+sets of numbers that look like hypothetical NIRs because they are our own predictions of the future!
+Looking back at our list of criteria
+for making credible predictions,
+a probabilistic model is similar to a simulation-based one in terms of model structure (criterion 1),
+and it's better than a single scenario from a simulation-based model
+at refining rather than contradicting beliefs (criterion 2)
+because it's natural to draw lots of scenarios from a probabilistic model,
+and the spread of scenarios will include people's beliefs and can reflect the degree of [dis]agreement among people.
+Where probabilistic models really excel though,
+is in their ability to make precise and accurate predictions (criterion 3),
+which I'll explain in the next section.
+</p>
+
+<h3>Inference (also known as tuning, fitting, and training)</h3>
+
+<p>
+Where probabilistic modelling really go above and beyond simulation-based modelling,
+is when it's possible to use some <i>data</i> to refine a model's
+priors before making predictions.
+Using data in this way can make a night vs. day difference to the quality of prediction.
+To illustrate by way of the earlier example of 
+{{CO2|safe}} from national electricity generation,
+I mean something almost too obvious to state:
+if we want our model to make predictions for e.g. year 2023 that agree with the data
+(while also being precise)
+<i>it is helpful to know and incorporate reported historical emissions from
+    recent years e.g. 1990 to 2022</i> (not to mention other data sources that might be even more informative),
+rather than to ignore that data and guess directly from our prior beliefs.
+<i>Inference algorithms</i> can operate on a probabilistic model to incorporate data like this automatically,
+in ways that respect rules of probability theory.
+The result of inference is a <i>posterior</i> distribution over the random variables in a model,
+which typically refines them from those broad inclusive distributions, to more precise ranges of values.
+If we were modelling emissions as coming from a
+non-time-varying Normal distribution with
+a broad, inclusive a-priori variance, inference would refine that prior to be something close to the empirical mean and variance across years 1990 to 2022.
+</p>
+
+<p>
+Probabilistic modelling, when paired with appropriate data sources
+and inference algorithms, 
+encompasses the the state of the art in accurate prediction.
+The techniques for assessing and optimizing the fit of probalisitic models to
+data are well established.
+Probabilistic models can have explainable and reasonable structure,
+with sufficiently broad priors they can accommodate most people's beliefs,
+and when it comes to making predictions that are precise and which agree with data
+when you have it,
+probabilistic modelling with inference is the way to go; simulation-based modelling is not.
+</p>
+
+<p>
+The rest of this post is organized around the development and comparison of
+two probabilistic
+models: the static and AR-2 models mentioned above.
+The site now includes an overview
+of all sectors, gases, provinces and territories for each one
+(<a href="/models/prob/Static_Normals/">static</a>,
+ <a href="/models/prob/AR2/">AR-2</a>)
+but this post
+will introduce each one as a model of just a single sector and gas:
+Harvested Wood Products' {{CO2}} emissions (HWP-{{CO2|safe}}).
+The next section models HWP-{{CO2|safe}}
+with static normal distributions,
+and the section after that does the same for the AR-2 model.
+</p>
+
+<h2 id="comparing">Comparing Models as Predictors of the Future</h2>
+
+<p>
+For every purpose to which a model might be put,
+it is possible to ask how well-suited it is to that purpose,
+and perhaps, which of two particular models is better-suited.
+One way to decide which model is better is to assign each a score
+and then compare the scores.
+In machine learning, <i>evaluation metrics</i> are numerical
+scores for models, as applied to a particular modelling task.
+To the extent that the fitness of a model for some purpose can be estimated
+accurately with an evaluation metric,
+the job of finding a the best models for that purpose becomes an optimization
+problem.
+Framing an optimization problem can be helpful
+because both people and computers are good at solving optimization problems;
+optimization problem statements clarify what is important
+and what can be ignored, at least within the context of that optimization.
+The machine learning community has made great progress over recent
+decades by focusing model development around standard problems.
+I hope that this practice may serve to support emission-reduction efforts
+as well, so long as standard, relevant problems can be identified.
+</p>
+
+<p>
+As a first standard challenge,
+this post introduces a prediction challenge
+which if not necessarily of long-term importance,
+can at least serve to show how the models above can be compared
+numerically.
+The challenge is slightly tricky to describe, so I've provided
+the following diagram to support the explanation below.
+The "Year-Out, Last-Year (YOLY-2025)" prediction challenge
+is to predict,
+on the basis of data that was available one year ahead of its publication, the
+most-recent year's emissions that were covered of the NIR-2025 National Inventory Report, which was year 2023.
+(Technically, I should use the NIR-2024 data for this evaluation,
+but I'm cheating and using years 1990-2022 from NIR-2025 instead because
+it's the data I have at hand.)
+</p>
+
+
+<b>The NIR-2025 Year-Out, Last-Year (YOLY-2025) prediction challenge (of year 2023):</b>
+{{blog.figure_YOLY_2025()|safe}}
+
+<p>
+Both of our models (I'll call them "Const" and "AR2")
+can predict 2023 emissions in NIR-2025 based on previous years' data.
+When I ran inference on these models to make the figures above,
+I generated a sample of 1000 possible assignments of the latent variables,
+which were (ideally) distributed according
+to each model's posterior distribution conditioned on data from years
+1990-2022.
+Every single one of these latent variable assignments can make a prediction for year
+2023.
+The distributions of these predictions for Canada and each province,
+and territory, for {{CO2|safe}} emissions from Harvested Wood Products,
+is shown in the figure below.
+</p>
+
+{{blog.figure_YOLY_2025_violinplots()|safe}}
+
+<p>
+Both models make good predictions, in that the range of values they predict
+includes the actual 2023 emissions data (the solid dot on each violin plot).
+However, the models are different in that the range of values predicted
+by the Const model for each category is relatively large (e.g. 140 Mt{{CO2e|safe}})
+in the case of the national total),
+and by comparison the range of predictions from the AR2 model for each category
+is smaller (e.g. only about 25 Mt{{CO2e|safe}} for the national total.)
+Qualitatively, we can see that the AR2 model is making much bolder predictions,
+and the data for this sector reveal that it also made reasonably correct
+predictions.
+The AR2 model is the better predictor, as
+far as our data is concerned.
+</p>
+
+<p>
+A standard way to to turn this qualitative assessment into a
+model evaluation metric
+is compute the predicted probability of the evaluation
+data, according to the model.
+In the case of this data,
+I think the job is to predict all of the provincial and territorial totals and the national total
+together, with one bad prediction ruining the whole lot. The YOLY-2025
+evaluation metric {{latex("\\mathcal{L}")}} is the 
+entire year's emission data,
+as estimated by the model.
+</p>
+
+<p>
+{{latex("
+\\mathcal{L} =
+\\log\\left(
+P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)})
+\\right)
+", "block")}}
+</p>
+
+<p>
+To use this formula on our models
+we must transform it into an expectation
+over latent variables
+({{latex("\\theta")}})
+so that we can evaluate it
+with the sample
+({{latex("\\hat \\theta")}})
+that we computed by inference of the posterior distribution.
+</p>
+
+<p>
+{{latex("
+\\mathcal{L} =
+\\log\\left(
+\\int_\\theta P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\theta) P(\\theta)
+\\right)
+
+\\approx
+\\log\\left(
+\\frac{1}{n}
+\\sum_{\\hat \\theta_i ~\\sim~ P(\\theta)}^n P(X_{(t=2023)}=\\mathrm{NIR}^{(2023)}|\\hat \\theta_i)
+\\right)
+
+", "block")}}
+</p>
+
+<p>
+This expression can be computed for each model, at least
+for {{CO2|safe}} from Harvested Wood Products.
+The results are in the table below.
+</p>
+<table>
+    <thead>
+        <tr><th>Model</th><th>Evaluation Data Log-Probability {{latex("\\mathcal{L}")}} on {{CO2|safe}} from Harvested Wood Products</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Const (non-time-varying)</td><td>{{"{:.3f}".format(blog.log_prob_2023_const())}}</td></tr>
+        <tr><td>AR2-based model</td><td>{{"{:.3f}".format(blog.log_prob_2023_AR2())}}</td></tr>
+    </tbody>
+</table>
+
+<p>
+The log-probability of the 2023 data under both models is negative.
+Each emission data point is modelled as Normal with a scale
+spanning up to tens of Mt{{CO2e|safe}}, so
+most of them are stretched pretty thinly (distributions always have to sum or integrate to 1.0).
+The logarithm of a tiny positive number is a large negative number.
+The logarithm of a product of tiny positive numbers (such as the probabilities
+of the data points for each province and territory) is
+the sum of the logarithm of each one, and with each logarithm being negative,
+the sum is an even larger negative number.
+The log probability of our evaluation data under the constant model
+is about -107.
+The log probability of our evaluation data under the AR-2 model
+is about -103.
+It may seem that -107 is close to -103 because they're separated by 4%,
+but technically the results are that the actual 2023 emissions data are about {{latex("e^{-103.2-(-107)}\\approx50")}}
+times more probable under the AR2 model than the Constant one.
+The AR2 model predicted the 2023 emissions more precisely, and it turned
+out to be right.
+</p>
+
+<p>
+Log-probability isn't a perfect evaluation metric, but it's pretty good.
+As one example of a shortcoming, it can be gamed
+on Harvested Wood Products
+by a model that makes
+infinite confidence prediction that Nunavut's HWP emissions will be exactly 0.
+That particular silliness can be avoided in a couple of ways (e.g.
+make sure all models handle easy predictions similarly, or add noise to data
+as part of the evaluation metric),
+but in general,
+it's important to use all the tools, cleverness, and data available to us
+to recognize and prevent such silliness for ruining an evaluation
+metric that's otherwise quite useful.
+Log probability isn't a perfect evaluation metric, but
+I believe with a little vigilence, it's a good one;
+by iteratively incorporating models with superior
+evaluation log-likelihood  on YOLY-202X prediction challenges, PlanZero models
+can get quite good at year-out last-year NIR prediction.
+</p>
+
+
+<p>
+It's interesting to consider a hypothetical YOLY-2027 challenge,
+because the "prediction time" for that challenge has passed (April 2026)
+but the NIR-2027 has not yet been published.
+Despite not yet being able to score models on YOLY-2027, YOLY-2027
+is perhaps the most interesting of the three because, it is possible
+to make the models, and their predictions might have value precisely
+<i>because</i> the actual NIR-2027 publication is not available yet.
+(Strictly speaking, the YOLY-2025 challenge should use the
+previously-published NIR-2024 to get data up to year 2022 for model development and posterior inference / training.
+I'm using earlier years from NIR-2025 as a short-cut.
+This short-cut isn't possible for NIR-2027 because indeed,
+only NIR-2026 has been published at this time.)
+</p>
