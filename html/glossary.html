@@ -29,13 +29,13 @@
 <p>
 Term list:
 <ol>
-{% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
+{% for clsname, obj in sorted(planzero.glossary.registry.items()) %}
 <li><a href="#{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</a></li>
 {% endfor %}
 </ol>
 </p>
 
-{% for clsname, obj in sorted(planzero.glossary.glossary_terms.items()) %}
+{% for clsname, obj in sorted(planzero.glossary.registry.items()) %}
 <h3 id="{{clsname}}">
     {% for name in obj.all_pretty_names() %} {{name}}{%if not loop.last%}, {%endif%}{%endfor%}<a href="#{{clsname}}" class="anchor-link" title="Link to this section"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Chain_link_icon_slanted.png/250px-Chain_link_icon_slanted.png"
         width="12.5px"/></a>
@@ -56,7 +56,7 @@ Term list:
     <p><strong style="color: #666;">See Also</strong>
     <ul>
     {% for term, ref_text in sorted(obj.see_also.items()) %}
-    <li><a href="#{{planzero.glossary.glossary_terms_w_aka[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
+    <li><a href="#{{planzero.glossary.aka_registry[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
     {% endfor %}
     {% for obj, hashref, descr in obj.as_discussed_in_posts %}
     <li>[Post] <a href="{{obj.siteref}}{{hashref}}">{{obj.title}}</a> - {{descr}}</li>

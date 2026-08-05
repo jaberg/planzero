@@ -7,17 +7,38 @@ import functools
 import jinja2
 from pydantic import BaseModel, computed_field
 
-glossary_terms = {} # classname -> Singleton instance
-glossary_terms_w_aka = {} # string -> Singleton instance
+from .singleton_registry import SingletonRegistry
+
+registry = SingletonRegistry()
+
+class AKA_Registry(object):
+    def __init__(self):
+        self.aliases = {}
+
+    def refresh_alias_list(self):
+        self.aliases = {}
+        for clsname, obj in registry.items():
+            assert clsname not in self.aliases
+            self.aliases[clsname] = clsname
+            for alias in obj.all_names:
+                assert clsname == self.aliases.setdefault(alias, clsname)
+
+    def __getitem__(self, key):
+        try:
+            clsname = self.aliases[key]
+        except KeyError:
+            self.refresh_alias_list()
+            clsname = self.aliases[key]
+        return registry[clsname]
+
+aka_registry = AKA_Registry()
+
 
 def siteref(term, text=None):
     try:
-        return glossary_terms_w_aka[term].site_reference(text or term)
+        return aka_registry[term].site_reference(text or term)
     except KeyError as exc:
-        try:
-            return glossary_terms[term].site_reference(text)
-        except KeyError as fallback_exc:
-            raise exc
+        raise exc
 
 
 from .blog import latex
@@ -99,17 +120,13 @@ class GlossaryTerm(BaseModel):
     @classmethod
     def __init_subclass__(cls):
         super().__init_subclass__()
-        obj = cls()
-        assert cls.__name__ not in glossary_terms
-        glossary_terms[cls.__name__] = obj
-
-        for name in obj.all_names:
-            assert name not in glossary_terms_w_aka, name
-            glossary_terms_w_aka[name] = obj
+        if getattr(cls, 'include_in_registry', True): # default to True for historical reasons
+            registry.add_class(cls)
 
     def template_globals(self) -> dict[str, object]:
         def lref(term, text=None):
-            return glossary_terms_w_aka[term].local_ref(text)
+            return aka_registry[term].local_ref(text)
+
         return dict(
             CO2e=latex(r'\mathrm{CO}_2\mathrm e '),
             CO2=latex(r'\mathrm{CO}_2'),

@@ -12,6 +12,7 @@ class SingletonRegistry(object):
         self.instances = {}
 
     def add_class(self, cls):
+        assert cls.__name__ not in self.classes
         self.classes[cls.__name__] = cls
 
     def __getitem__(self, key):
