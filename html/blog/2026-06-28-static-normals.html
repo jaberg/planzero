@@ -1,0 +1,50 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{{blog.status_title_html}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+{% if blog.status == BlogStatus.Planned %}
+<div class="box">
+    <p>This post is "<a href="/about#planned-status">Planned</a>".
+    Please bear in mind that it is materially incomplete.</p>
+</div>
+{% endif %}
+
+<!-- Incorporate material from html/blog/2026-05-26-probabilistic-modelling.html -->
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</p>
+
+<h2 id="introduction">Introduction</h2>
+
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>
+Until next time,
+</p>
+<p>
+- James Bergstra
+</p>
+
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+{% include "post-main.html" %}
