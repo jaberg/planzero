@@ -20,6 +20,11 @@
 								</ul>
 							</article>
 
+                            {% if not planned %}
+							<article>
+                            <a href="/?planned=1">Show planned posts</a>
+                            </article>
+                            {% endif %}
 						<!-- Posts -->
 							<section class="posts">
                                 {% for blog in blogs_sorted_by_date %}
