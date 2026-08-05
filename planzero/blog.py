@@ -11,6 +11,7 @@ from .enums import col_by_pt, col_ca
 _classes = []
 _blogs_by_url_filename = {}
 _blogs_sorted_by_date = []
+registry = {}
 
 
 class BlogTag(str, enum.Enum):
@@ -20,6 +21,12 @@ class BlogTag(str, enum.Enum):
     About = 'About'
 
 
+class BlogStatus(str, enum.Enum):
+    Done = "Done"
+    Draft = "Draft"
+    Planned = "Planned"
+
+
 class BlogPost(BaseModel):
 
     date: datetime.datetime
@@ -27,10 +34,15 @@ class BlogPost(BaseModel):
     about: str
     url_filename: str
     author: str
+
+    status: BlogStatus
     published: bool = True
-    draft: bool = False # for published posts, show draft text anyway
-    concept_only: bool = False # there is no html for this post object
+
     tags: set[str] = set()
+
+    @property
+    def draft(self):
+        return self.status == BlogStatus.Draft
 
     @property
     def siteref(self):
@@ -45,6 +57,17 @@ class BlogPost(BaseModel):
     def __init_subclass__(cls):
         super().__init_subclass__()
         _classes.append(cls)
+
+    @property
+    def status_title_html(self):
+        if self.status == BlogStatus.Planned:
+            return f"[Planned] {self.title}"
+        elif self.status == BlogStatus.Draft:
+            return f"[Draft] {self.title}"
+        elif self.status == BlogStatus.Done:
+            return f"{self.title}"
+        else:
+            raise NotImplementedError(self.status)
 
 
 from . import enums
@@ -72,319 +95,31 @@ class HTML_Matplotlib_Figure(HTML_element):
         return svg_string
 
 
-class UncertaintyReductionForCattleEnteric(BlogPost):
-    # Reducing Uncertainty with a better model
-
+class AR2(BlogPost):
     """
-    introduces a new scenario based on statistical modelling and
-    extrapolation of current trends. This "extrapolating" scenario is
-    especially useful for near-term forecasting (near-casting).
-    Near-casting can be more accurate than simply
-    re-using prior-year estimates because Statistics Canada releases some indicator
-    variables with less delay than the ECCC releases the annual NIR.
-    """
-    def __init__(self):
-        super().__init__(
-            date=datetime.datetime(2026, 4, 21),
-            title='Uncertainty in Scenario Forecasting',
-            url_filename="2026-04-21-nearcasting", # rename?
-            author="James Bergstra",
-            tags={BlogTag.BarrierModelling,
-                  BlogTag.NIR_Modelling,
-                  'Enteric Emissions'},
-            concept_only=True,
-            published=False,
-            draft=True,
-            )
-
-
-class Uncertainty(BlogPost):
-
-    """
-    introduces a new scenario based on statistical modelling and
-    extrapolation of current trends. This "extrapolating" scenario is
-    especially useful for near-term forecasting (near-casting).
-    Near-casting can be more accurate than simply
-    re-using prior-year estimates because Statistics Canada releases some indicator
-    variables with less delay than the ECCC releases the annual NIR.
-    """
-    def __init__(self):
-        super().__init__(
-            date=datetime.datetime(2026, 4, 21),
-            title='Uncertainty in Scenario Forecasting',
-            url_filename="2026-04-21-nearcasting", # rename?
-            author="James Bergstra",
-            tags={BlogTag.BarrierModelling,
-                  BlogTag.NIR_Modelling},
-            concept_only=True,
-            published=False,
-            draft=True,
-            )
-
-
-class PreNIR(BlogPost):
-    """
-    TODO
+    This post introduces
+    a new baseline probabilistic model based on two-step autoregressive
+    processes (AR-2).
+    Unlike the Static Normals model it does not assume year-to-year variations
+    are all measurement error, it assumes that they are nearly accurate
+    and that emissions change according to trends.
+    This model estimates national, provincial and territorial emissions
+    for every sector and greenhouse gas.
+    Its near-term predictions are relatively precise, and longer-term
+    predictions are less certain.
     """
 
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 6, 19),
-            title='Year-Out Last-Year Prediction of 2023 Emissions from NIR-2025',
-            url_filename="2026-06-19-yoly-2025",
-            author="James Bergstra",
-            tags={BlogTag.NIR_Modelling,},
-            draft=True,
-            concept_only=True,
-            )
-
-    def figure_YOLY_2025(self):
-        class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
-                import matplotlib.pyplot as plt
-                import numpy as np
-                from datetime import datetime
-
-                sources = {
-                    "NIR-2024": {
-                        "pub_date": "2024-05-03",
-                        "train_start": "1990-01-01",
-                        "train_end": "2022-12-31",
-                    },
-                    "NIR-2025": {
-                        "pub_date": "2025-04-16",
-                        "train_start": "1990-01-01",
-                        "train_end": "2022-12-31",
-                        "test_start": "2023-01-01",
-                        "test_end": "2023-12-31",
-                    },
-                    "Hypothetically admissible extra data)": {
-                        "pub_date": "2023-03-31",
-                        "train_start": "2000-01-01",
-                        "train_end": "2022-12-31",
-                    },
-                    "Data set not available at prediction time": {
-                        "pub_date": "2024-09-30",
-                        "train_start": "2000-01-01",
-                        "train_end": "2022-12-31",
-                    }
-                }
-
-                fig, ax = plt.subplots(figsize=(8, 3.5))
-
-                for ii, (dset_name, dset_info) in enumerate(sources.items()):
-                    for key, val in list(dset_info.items()):
-                        dset_info[key] = datetime.strptime(val, "%Y-%m-%d")
-                    y = -ii
-
-                    # Solid bar: fully available data
-                    ax.barh(y, dset_info["train_end"] - dset_info["train_start"], left=dset_info["train_start"],
-                            height=0.5, color='steelblue', alpha=0.85,
-                            label='Training data' if ii == 0 else None,
-                           )
-                    last_date = dset_info["train_end"]
-                    if 'test_start' in dset_info:
-                        ax.barh(y, dset_info["test_end"] - dset_info["test_start"], left=dset_info["test_start"],
-                                height=0.5, color='lightblue', alpha=0.85,
-                                label="Evaluation data" if ii == 0 else None)
-                        last_date = dset_info["test_end"]
-
-                    # Lag bar: not yet published
-                    ax.barh(y, dset_info["pub_date"] - last_date, left=last_date,
-                            height=0.5, color='tomato', alpha=0.35,
-                            hatch='..', edgecolor='tomato',
-                            label="Publication delay" if ii == 0 else None)
-
-                prediction_time = datetime.strptime("2024-05-16", "%Y-%m-%d")
-                ax.axvline(prediction_time, color='crimson', linestyle='--', lw=1.5, label='Prediction time')
-                ax.axvline(datetime.now(), color='black', linestyle='--', lw=1.5, label='Today')
-
-                ax.set_yticks([-ii for ii in range(len(sources))])
-                ax.set_yticklabels([src for src in sources])
-                ax.set_xlabel("Date")
-                #ax.xaxis.set_major_formatter(lambda x, _: f"–{int(TODAY-x)}d" if x < TODAY else "Today")
-                #ax.set_title("The NIR-2025 Year-Out, Last-Year (YOLY-2025) prediction challenge (of year 2023)")
-                plt.legend(loc='lower left')
-                plt.tight_layout()
-        return RVAL()
-
-    def figure_YOLY_2025_violinplots(self):
-        class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
-                return
-                import planzero
-                from planzero.nir_ar2 import NIR2025_AR2
-                IPCC_Sector = planzero.enums.IPCC_Sector
-                GHG = planzero.enums.GHG
-
-                sector = IPCC_Sector.Harvested_Wood_Products
-                ghg = GHG.CO2
-                model = self.ar2_model(sector, ghg)
-
-                from planzero.enums import col_by_pt, col_ca, PT
-                rcon = model.reconstructed_past()
-                from .nir_constant_predictor import NIR2025_Model
-                const_model = NIR2025_Model.posterior_inference(
-                    sector=IPCC_Sector.Harvested_Wood_Products,
-                    ghg=GHG.CO2,
-                )
-                const_predictions = const_model.predictions()
-
-                from . import nir2025
-                arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
-                ca_2023 = rcon['past-ca-1'][:, -1]
-                #print(rcon['past-pt-1'].shape)
-                import matplotlib.pyplot as plt
-                def monochrome_violinplot(x, ydata, c, label=None):
-                    violin_parts = ax.violinplot([ydata], positions=[x], orientation='horizontal')
-                    violin_parts['bodies'][0].set_color(c)
-                    for part_name in ['cmaxes', 'cmins', 'cbars']:
-                        line_collection = violin_parts[part_name]
-                        line_collection.set_color(c)
-                fig, ax = plt.subplots(figsize=[8, 6])
-                monochrome_violinplot(0, ca_2023 * model.scale, col_ca)
-                monochrome_violinplot(-1, const_predictions['obs_ca'] * model.scale, col_ca)
-                for ii, pt in enumerate(planzero.enums.PT):
-                    if pt == planzero.enums.PT.XX:
-                        continue
-                    monochrome_violinplot(
-                        -2 * (ii + 1),
-                        rcon['past-pt-1'][:, -1, ii] * model.scale,
-                        col_by_pt[pt],
-                    )
-                    monochrome_violinplot(
-                        -2 * (ii + 1) - 1,
-                        const_predictions['obs_pt'][:, ii] * model.scale,
-                        col_by_pt[pt])
-                    plt.text(22_000, -2 * (ii + 1) - 0.8, pt.two_letter_code(), fontsize=12)
-                    plt.text(12_000, -2 * (ii + 1) - 0.2, "AR2")
-                    plt.text(12_000, -2 * (ii + 1) - 1.2, "Const")
-                plt.text(12_000, -2 * (-1 + 1) - 0.2, "AR2")
-                plt.text(12_000, -2 * (-1 + 1) - 1.2, "Const")
-                plt.text(22_000, - 0.8, 'CA', fontsize=12)
-
-                plt.scatter(#[1],
-                            [arr_ca[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
-                                    nir2025.idx_of_ghg[GHG.CO2],
-                                    -1]] * 2,
-                            [0, -1],
-                            c=col_ca,
-                            marker='o',
-                            label="Solid dots: NIR-2025's 2023 emissions",
-                )
-                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
-                                    nir2025.idx_of_ghg[GHG.CO2],
-                                    :, # PT but not XX
-                                    -1],
-                            [-y * 2 for y in range(1, 14)],
-                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
-                            marker='o')
-                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
-                                    nir2025.idx_of_ghg[GHG.CO2],
-                                    :, # PT but not XX
-                                    -1],
-                            [-y * 2 - 1 for y in range(1, 14)],
-                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
-                            marker='o')
-
-                if 0:
-                    plt.yticks(
-                        [-ii * 2 - .5 for ii in range(14)],
-                        ['Canada'] + [pt.value for pt in PT if pt != PT.XX])
-                elif 0:
-                    plt.yticks(
-                        [-ii for ii in range(14 * 2)],
-                        ['Const' if ii % 2 else 'AR2' for ii in range(14 * 2)])
-                else:
-                    plt.yticks([])
-                plt.xlabel('Predicted emissions (kt CO2e)')
-                plt.title('Predictions of CO2 from Harvested Wood Products')
-                ax.yaxis.tick_right()
-                #plt.xlim(-130_000, 20_000)
-                plt.legend(loc='lower left')
-                plt.tight_layout()
-
-        return RVAL()
-
-
-    def log_prob_2023_AR2(self):
-        return float('nan')
-        import numpy as np
-        import planzero
-        from planzero.nir_ar2 import NIR2025_AR2
-        from planzero import nir2025
-
-        IPCC_Sector = planzero.enums.IPCC_Sector
-        GHG = planzero.enums.GHG
-
-        sector = IPCC_Sector.Harvested_Wood_Products
-        ghg = GHG.CO2
-        model = self.ar2_model(sector, ghg)
-
-        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
-        mu_ca = np.sum(model.post_samples['mu'], axis=2)
-
-        arr_idx_of_2023 = arr_ca.shape[2] - 1
-        mu_idx_of_2023 = arr_idx_of_2023 - 2 # 2 from it being AR2 model
-
-
-        eval_mu = np.zeros((1000, 14))
-        eval_mu[:, :13] = model.post_samples['mu'][:, mu_idx_of_2023]
-        eval_mu[:, 13] = mu_ca[:, mu_idx_of_2023]
-
-        eval_sigma = np.zeros(14)
-        eval_sigma[:13] = model.noise_ca * model.pt_rms
-        eval_sigma[13] = model.noise_ca
-
-        eval_obs = np.zeros(14)
-        eval_obs[:13] = arr_pt[
-            nir2025.idx_of_sector[model.sector],
-            nir2025.idx_of_ghg[model.ghg],
-            :,
-            arr_idx_of_2023]
-        eval_obs[13] = arr_ca[
-            nir2025.idx_of_sector[model.sector],
-            nir2025.idx_of_ghg[model.ghg],
-            arr_idx_of_2023]
-
-        import numpyro.distributions as dist
-        log_probs = dist.Normal(
-            eval_mu * model.scale,
-            eval_sigma * model.scale
-        ).log_prob(
-            eval_obs
-        )
-        logprob_X = np.sum(log_probs, axis=1)
-        from scipy.special import logsumexp
-        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
-
-        return rval
-
-
-class TwoProbabilisticModels(BlogPost):
-    """
-    This post introduces probabilistic modelling to PlanZero.
-    Probabilistic modelling extends simulation-based modelling with
-    a capacity to fit model parameters to data.
-    Two models are introduced: a simple baseline that assumes
-    emissions don't change over time, and a more sophisticated
-    model based on a two-step autoregressive process (AR-2).
-    Both models estimate provincial and territorial emissions
-    for every sector and greenhouse gas, in which provincial and
-    territorial emissions sum up to national totals.
-    """
-
-    def __init__(self):
-        super().__init__(
-            date=datetime.datetime(2026, 6, 28),
-            title='Two Probabilistic Models of NIR-2025',
+            date=datetime.datetime(2026, 10, 28),
+            title='Autoregressive Process Modelling of NIR-2025',
             url_filename="2026-05-26-probabilistic-modelling",
             author="James Bergstra",
             tags={BlogTag.NIR_Modelling,
                   'AR2',
                   'Static_Normals',
                  },
-            draft=True,
+            status=BlogStatus.Planned,
             )
 
     @staticmethod
@@ -855,16 +590,16 @@ class TwoProbabilisticModels(BlogPost):
 
 
 class Glossary(BlogPost):
-    """This post announces a new page, a
+    """This post announces a new page:
     a glossary of terms and acronyms with specific meanings in the context of
     PlanZero posts.
     This glossary also introduces modelling terminology to support future posts.
     The modelling terminology is used to reframe the NIR-reconstruction
     project within languages of both strategic management and of statistical
-    modelling. """
+    modelling."""
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 6, 4),
+            date=datetime.datetime(2026, 9, 15),
             title='New: the PlanZero glossary',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
@@ -872,30 +607,371 @@ class Glossary(BlogPost):
                   BlogTag.Strategies,
                   BlogTag.BarrierModelling,
                   BlogTag.NIR_Modelling},
-            draft=True,
+            status=BlogStatus.Planned,
             )
+
+
+class ProbabilisticBovaer(BlogPost):
+    """
+    This post revisits the Bovaer strategy
+    (<a href="/blog/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
+    and adapts it to the Static Normals probabilistic model.
+    This post deprecates the non-probabilistic "Scaling" model
+    and in fact all of the non-probabilistic models in the Models tab in favour
+    of probabilistic modelling generally.
+    """
+
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 8, 30),
+            title='Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer',
+            url_filename="2026-07-22-prob-bovaer",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,
+                  'Static_Normals',
+                  BlogTag.BarrierModelling,
+                  'Bovaer',
+                  enums.IPCC_Sector.Enteric_Fermentation,
+                 },
+            status=BlogStatus.Planned,
+            )
+
+
+class PreNIR(BlogPost):
+
+    #PlanZero is largely about predicting Canada's future emissions,
+    #both with and without strategies aimed at reducing those emissions.
+    #It is difficult to make credible predictions. One way to build credibility
+    #for a model is to show that it predicted the recent past on the basis of the distant past,
+    #and so therefore it should be trusted to predict the future on the basis of up-to-date data.
+    """
+    This post introduces the "<a href="/predictions">Predictions</a>" tab, with PlanZero's first prediction challenge:
+    to predict the latest year of data (2023) from NIR-2025 on the basis of
+    data that was available 12 months prior to its publication (Pre-NIR-2025-12).
+    This challenge is simulated using NIR-2025's data until 2022 instead of NIR-2024,
+    but lays groundwork for future prediction challenges Pre-NIR-2026-12 and Pre-NIR-2027-12
+    that will not be simulated.
+    """
+
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 7, 22),
+            title='Prediction of National Inventory Reports',
+            url_filename="2026-06-19-yoly-2025",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,},
+            status=BlogStatus.Planned,
+            )
+
+    def figure_YOLY_2025(self):
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+                import matplotlib.pyplot as plt
+                import numpy as np
+                from datetime import datetime
+
+                sources = {
+                    "NIR-2024": {
+                        "pub_date": "2024-05-03",
+                        "train_start": "1990-01-01",
+                        "train_end": "2022-12-31",
+                    },
+                    "NIR-2025": {
+                        "pub_date": "2025-04-16",
+                        "train_start": "1990-01-01",
+                        "train_end": "2022-12-31",
+                        "test_start": "2023-01-01",
+                        "test_end": "2023-12-31",
+                    },
+                    "Hypothetically admissible extra data)": {
+                        "pub_date": "2023-03-31",
+                        "train_start": "2000-01-01",
+                        "train_end": "2022-12-31",
+                    },
+                    "Data set not available at prediction time": {
+                        "pub_date": "2024-09-30",
+                        "train_start": "2000-01-01",
+                        "train_end": "2022-12-31",
+                    }
+                }
+
+                fig, ax = plt.subplots(figsize=(8, 3.5))
+
+                for ii, (dset_name, dset_info) in enumerate(sources.items()):
+                    for key, val in list(dset_info.items()):
+                        dset_info[key] = datetime.strptime(val, "%Y-%m-%d")
+                    y = -ii
+
+                    # Solid bar: fully available data
+                    ax.barh(y, dset_info["train_end"] - dset_info["train_start"], left=dset_info["train_start"],
+                            height=0.5, color='steelblue', alpha=0.85,
+                            label='Training data' if ii == 0 else None,
+                           )
+                    last_date = dset_info["train_end"]
+                    if 'test_start' in dset_info:
+                        ax.barh(y, dset_info["test_end"] - dset_info["test_start"], left=dset_info["test_start"],
+                                height=0.5, color='lightblue', alpha=0.85,
+                                label="Evaluation data" if ii == 0 else None)
+                        last_date = dset_info["test_end"]
+
+                    # Lag bar: not yet published
+                    ax.barh(y, dset_info["pub_date"] - last_date, left=last_date,
+                            height=0.5, color='tomato', alpha=0.35,
+                            hatch='..', edgecolor='tomato',
+                            label="Publication delay" if ii == 0 else None)
+
+                prediction_time = datetime.strptime("2024-05-16", "%Y-%m-%d")
+                ax.axvline(prediction_time, color='crimson', linestyle='--', lw=1.5, label='Prediction time')
+                ax.axvline(datetime.now(), color='black', linestyle='--', lw=1.5, label='Today')
+
+                ax.set_yticks([-ii for ii in range(len(sources))])
+                ax.set_yticklabels([src for src in sources])
+                ax.set_xlabel("Date")
+                #ax.xaxis.set_major_formatter(lambda x, _: f"–{int(TODAY-x)}d" if x < TODAY else "Today")
+                #ax.set_title("The NIR-2025 Year-Out, Last-Year (YOLY-2025) prediction challenge (of year 2023)")
+                plt.legend(loc='lower left')
+                plt.tight_layout()
+        return RVAL()
+
+    def figure_YOLY_2025_violinplots(self):
+        class RVAL(HTML_Matplotlib_Figure):
+            def build_figure(_):
+                return
+                import planzero
+                from planzero.nir_ar2 import NIR2025_AR2
+                IPCC_Sector = planzero.enums.IPCC_Sector
+                GHG = planzero.enums.GHG
+
+                sector = IPCC_Sector.Harvested_Wood_Products
+                ghg = GHG.CO2
+                model = self.ar2_model(sector, ghg)
+
+                from planzero.enums import col_by_pt, col_ca, PT
+                rcon = model.reconstructed_past()
+                from .nir_constant_predictor import NIR2025_Model
+                const_model = NIR2025_Model.posterior_inference(
+                    sector=IPCC_Sector.Harvested_Wood_Products,
+                    ghg=GHG.CO2,
+                )
+                const_predictions = const_model.predictions()
+
+                from . import nir2025
+                arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+                ca_2023 = rcon['past-ca-1'][:, -1]
+                #print(rcon['past-pt-1'].shape)
+                import matplotlib.pyplot as plt
+                def monochrome_violinplot(x, ydata, c, label=None):
+                    violin_parts = ax.violinplot([ydata], positions=[x], orientation='horizontal')
+                    violin_parts['bodies'][0].set_color(c)
+                    for part_name in ['cmaxes', 'cmins', 'cbars']:
+                        line_collection = violin_parts[part_name]
+                        line_collection.set_color(c)
+                fig, ax = plt.subplots(figsize=[8, 6])
+                monochrome_violinplot(0, ca_2023 * model.scale, col_ca)
+                monochrome_violinplot(-1, const_predictions['obs_ca'] * model.scale, col_ca)
+                for ii, pt in enumerate(planzero.enums.PT):
+                    if pt == planzero.enums.PT.XX:
+                        continue
+                    monochrome_violinplot(
+                        -2 * (ii + 1),
+                        rcon['past-pt-1'][:, -1, ii] * model.scale,
+                        col_by_pt[pt],
+                    )
+                    monochrome_violinplot(
+                        -2 * (ii + 1) - 1,
+                        const_predictions['obs_pt'][:, ii] * model.scale,
+                        col_by_pt[pt])
+                    plt.text(22_000, -2 * (ii + 1) - 0.8, pt.two_letter_code(), fontsize=12)
+                    plt.text(12_000, -2 * (ii + 1) - 0.2, "AR2")
+                    plt.text(12_000, -2 * (ii + 1) - 1.2, "Const")
+                plt.text(12_000, -2 * (-1 + 1) - 0.2, "AR2")
+                plt.text(12_000, -2 * (-1 + 1) - 1.2, "Const")
+                plt.text(22_000, - 0.8, 'CA', fontsize=12)
+
+                plt.scatter(#[1],
+                            [arr_ca[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
+                                    nir2025.idx_of_ghg[GHG.CO2],
+                                    -1]] * 2,
+                            [0, -1],
+                            c=col_ca,
+                            marker='o',
+                            label="Solid dots: NIR-2025's 2023 emissions",
+                )
+                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
+                                    nir2025.idx_of_ghg[GHG.CO2],
+                                    :, # PT but not XX
+                                    -1],
+                            [-y * 2 for y in range(1, 14)],
+                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
+                            marker='o')
+                plt.scatter(arr_pt[nir2025.idx_of_sector[IPCC_Sector.Harvested_Wood_Products],
+                                    nir2025.idx_of_ghg[GHG.CO2],
+                                    :, # PT but not XX
+                                    -1],
+                            [-y * 2 - 1 for y in range(1, 14)],
+                            c=[col_by_pt[pt] for pt in PT if pt != PT.XX],
+                            marker='o')
+
+                if 0:
+                    plt.yticks(
+                        [-ii * 2 - .5 for ii in range(14)],
+                        ['Canada'] + [pt.value for pt in PT if pt != PT.XX])
+                elif 0:
+                    plt.yticks(
+                        [-ii for ii in range(14 * 2)],
+                        ['Const' if ii % 2 else 'AR2' for ii in range(14 * 2)])
+                else:
+                    plt.yticks([])
+                plt.xlabel('Predicted emissions (kt CO2e)')
+                plt.title('Predictions of CO2 from Harvested Wood Products')
+                ax.yaxis.tick_right()
+                #plt.xlim(-130_000, 20_000)
+                plt.legend(loc='lower left')
+                plt.tight_layout()
+
+        return RVAL()
+
+
+    def log_prob_2023_AR2(self):
+        return float('nan')
+        import numpy as np
+        import planzero
+        from planzero.nir_ar2 import NIR2025_AR2
+        from planzero import nir2025
+
+        IPCC_Sector = planzero.enums.IPCC_Sector
+        GHG = planzero.enums.GHG
+
+        sector = IPCC_Sector.Harvested_Wood_Products
+        ghg = GHG.CO2
+        model = self.ar2_model(sector, ghg)
+
+        arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+        mu_ca = np.sum(model.post_samples['mu'], axis=2)
+
+        arr_idx_of_2023 = arr_ca.shape[2] - 1
+        mu_idx_of_2023 = arr_idx_of_2023 - 2 # 2 from it being AR2 model
+
+
+        eval_mu = np.zeros((1000, 14))
+        eval_mu[:, :13] = model.post_samples['mu'][:, mu_idx_of_2023]
+        eval_mu[:, 13] = mu_ca[:, mu_idx_of_2023]
+
+        eval_sigma = np.zeros(14)
+        eval_sigma[:13] = model.noise_ca * model.pt_rms
+        eval_sigma[13] = model.noise_ca
+
+        eval_obs = np.zeros(14)
+        eval_obs[:13] = arr_pt[
+            nir2025.idx_of_sector[model.sector],
+            nir2025.idx_of_ghg[model.ghg],
+            :,
+            arr_idx_of_2023]
+        eval_obs[13] = arr_ca[
+            nir2025.idx_of_sector[model.sector],
+            nir2025.idx_of_ghg[model.ghg],
+            arr_idx_of_2023]
+
+        import numpyro.distributions as dist
+        log_probs = dist.Normal(
+            eval_mu * model.scale,
+            eval_sigma * model.scale
+        ).log_prob(
+            eval_obs
+        )
+        logprob_X = np.sum(log_probs, axis=1)
+        from scipy.special import logsumexp
+        rval = logsumexp(logprob_X, b=1.0 / len(logprob_X))
+
+        return rval
+
+
+
+
+class StaticNormals(BlogPost):
+    """
+    This post introduces a "Static Normals" probabilistic model to PlanZero 
+    that is the first to fit overarching assumptions to data, and the first
+    to make predictions.
+    The overarching assumption is that regional sub-totals should add up to
+    national totals (which is often the case in the data, but not always).
+    The predictions are trivial: that all years are the same.
+    These predictions aren't very precise because the model
+    assumes variation from year to year
+    is all measurement error and the historical range of variation will continue indefinitely.
+    Static Normals is intended as a baseline in PlanZero against which more complex
+    models will be judged: they shouldn't be poorer predictors of the future
+    than Static Normals.
+    """
+
+    def __init__(self):
+        super().__init__(
+            date=datetime.datetime(2026, 6, 28),
+            title='Static Normals',
+            url_filename="2026-06-28-static-normals",
+            author="James Bergstra",
+            tags={BlogTag.NIR_Modelling,
+                  'Static_Normals',
+                 },
+            status=BlogStatus.Planned,
+            )
+
 
 class ProbabilisticNIR2025(BlogPost):
     """This post introduces a PlanZero's first probabilistic model:
-    an interpretation of the NIR-2025 data including the uncertainty
-    estimates from Annex 2. The PlanZero site now includes a Models tab,
+    an interpretation of the NIR-2025 data including its uncertainty
+    estimates. The PlanZero site now includes a Models tab,
     with a section for probabilistic models (which represent and visualize
     emissions uncertainty). This treatment of uncertainty is a fundamental
     aspect of PlanZero's future modelling work.
+    This post also introduces "Planned" status for posts as a mechanism for communicating
+    roadmap and organizing ongoing work.
     """
 
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 5, 20),
-            title='A Probabilistic NIR',
+            title='A Probabilistic NIR-2025',
             url_filename="2026-05-20-prob-nir",
             author="James Bergstra",
+            status=BlogStatus.Draft,
             tags={BlogTag.NIR_Modelling},
-            draft=True,
             )
 
     @staticmethod
-    def generate_assets():
+    def generate_asset_annex2_rows(path):
+        from . import nir2025
+        from .enums import IPCC_Sector, GHG
+        from .html import html_by_ghg
+        table = dict(nir2025.annex2_source_category_by_sector())
+        assert (IPCC_Sector.Cropland, GHG.CH4) not in table
+        table[IPCC_Sector.Cropland, GHG.CH4] = 'Blend: Conversion of Forest Land and Grass Land'
+        table[IPCC_Sector.Settlements, GHG.CH4] = 'Blend: Conversion of Forest Land and Grass Land'
+        table[IPCC_Sector.Settlements, GHG.N2O] = 'Blend: Conversion of Forest Land and Grass Land'
+        with open(path, 'w') as ofile:
+            for sector in IPCC_Sector:
+                sources = set(
+                    [table[sector, ghg] for ghg in GHG
+                     if (sector, ghg) in table])
+                if len(sources) == 0:
+                    raise NotImplementedError() # doesn't happen
+                    ofile.write(f'<tr><td>{sector.catpath_with_whitespace}</td>')
+                    ofile.write(f'<td></td>')
+                    ofile.write(f'<td>undefined</td></tr>\n')
+                elif len(sources) == 1:
+                    source_cat, = sources
+                    ofile.write(f'<tr><td>{sector.catpath_with_whitespace}</td>')
+                    ofile.write(f'<td>All</td>')
+                    ofile.write(f'<td>{source_cat}</td></tr>\n')
+                else:
+                    for ghg in GHG:
+                        if (sector, ghg) in table:
+                            ofile.write(f'<tr><td>{sector.catpath_with_whitespace}</td>')
+                            ofile.write(f'<td>{html_by_ghg[ghg]}</td>')
+                            ofile.write(f'<td>{table[sector, ghg]}</td></tr>\n')
+
+    @classmethod
+    def generate_assets(cls):
         from . import prob
         from .enums import IPCC_Sector, GHG
 
@@ -906,6 +982,10 @@ class ProbabilisticNIR2025(BlogPost):
             div_id=f"{model_name}_all_sectors",
             v_unit="Mt_CO2e").save_as(
                 f'{base}-{model_name}-all_sectors.html')
+        site_inference.uncertain_sparkline_matrix_echart(
+            div_id=f"{model_name}_all_sectors2",
+            v_unit="Mt_CO2e").save_as(
+                f'{base}-{model_name}-all_sectors2.html')
         site_inference.sector_echart(
             sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
             ghg=None,
@@ -916,6 +996,10 @@ class ProbabilisticNIR2025(BlogPost):
             ghg=GHG.CO2,
             v_unit="Mt_CO2e").save_as(
                 f'{base}-{model_name}-PEH-CO2.html')
+
+        cls.generate_asset_annex2_rows(
+                f'{base}-{model_name}-annex2_rows.html')
+
 
     def figure_uncertainty_hist(self,):
         import numpy as np
@@ -1086,6 +1170,7 @@ class ProbabilisticNIR2025(BlogPost):
                 plt.tight_layout()
         return RVAL()
 
+
 class About(BlogPost):
     """Going meta: Refining the vision and mission,
     acknowledging the project contributors, and 
@@ -1096,6 +1181,7 @@ class About(BlogPost):
             date=datetime.datetime(2026, 4, 23),
             title='About this project: rewriting and expanding planzero.ca/about',
             url_filename="2026-04-12-about",
+            status=BlogStatus.Done,
             author="James Bergstra",
             tags={BlogTag.About,
                  },
@@ -1117,6 +1203,7 @@ class ModellingBovaer(BlogPost):
             title='Modelling a Bovaer Strategy',
             url_filename="2026-04-03-bovaer",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.BarrierModelling,
                   enums.IPCC_Sector.Enteric_Fermentation,
                   'Scale_Bovaer',
@@ -1148,6 +1235,7 @@ class IPCC_HeavyDutyDieselVehicles(BlogPost):
             title='Heavy-Duty Diesel Vehicles: Emissions Calculations',
             url_filename="2026-04-01-heavy-duty-diesel",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.Transport__Road__Heavy_Duty_Diesel_Vehicles,
                  },
@@ -1169,6 +1257,7 @@ class IPCC_EntericFermentation(BlogPost):
             title='Enteric Fermentation: Emissions Calculations',
             url_filename="2026-03-31-enteric",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.Enteric_Fermentation,
                  },
@@ -1189,6 +1278,7 @@ class IPCC_MCS_LightGasolineCarsAndTrucks(BlogPost):
             title='Cars and Trucks: Emissions Calculations',
             url_filename="2026-03-30-light-duty-gasoline-trucks",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Trucks,
                   enums.IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Vehicles,
@@ -1217,6 +1307,7 @@ class IPCC_SCS_Residential(BlogPost):
             title='Residential Stationary Combustion Sources: Emissions Calculations',
             url_filename="2026-03-26-scs-residential",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.SCS__Residential,
                  },
@@ -1238,6 +1329,7 @@ class IPCC_SCS_OilAndGas_Exploration(BlogPost):
             title='Stationary Combustion to Extract Oil and Gas: Emissions Calculations',
             url_filename="2026-03-11-og-extraction",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.SCS__Oil_and_Gas_Extraction,
                  },
@@ -1258,6 +1350,7 @@ class IPCC_VentingNaturalGas(BlogPost):
             title='Oil and Natural Gas Venting: Emissions Calculations',
             url_filename="2026-03-02-venting",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.Fugitive__Venting,
                  },
@@ -1278,6 +1371,7 @@ class IPCC_ForestAndHWP(BlogPost):
             title='Emissions calculations for Harvested Wood Products and Forest Land',
             url_filename="2026-02-22-forest-hwp",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.Harvested_Wood_Products,
                   enums.IPCC_Sector.Forest_Land,
@@ -1299,6 +1393,7 @@ class IPCC_PublicElectricity(BlogPost):
             title='Emission calculations for Public Electricity and Heat',
             url_filename="2026-02-12-public-electricity",
             author="James Bergstra",
+            status=BlogStatus.Done,
             tags={BlogTag.NIR_Modelling,
                   enums.IPCC_Sector.SCS__Public_Electricity_and_Heat,
                  },
@@ -1320,6 +1415,7 @@ class CNZEAA(BlogPost):
             title="The Paris Agreement and the CNZEAA",
             url_filename="2026-02-02-cnzeaa",
             author="James Bergstra",
+            status=BlogStatus.Done,
             CNZEAA_targets=list(ipcc_canada.CNZEAA_targets()),
             net_emissions_total_without_LULUCF=list(ipcc_canada.net_emissions_total_without_LULUCF()),
             net_emissions_total=list(ipcc_canada.net_emissions_total()),
@@ -1406,6 +1502,7 @@ class GHG_Emissions(BlogPost):
             title="A Model of Greenhouse Gas Emissions",
             url_filename="2026-01-21-unfccc",
             author="James Bergstra",
+            status=BlogStatus.Done,
             a="bar",
             equations=equations,
             figure_svgs=dict(
@@ -1442,6 +1539,7 @@ class Contributing(BlogPost):
             date=datetime.datetime(2026, 1, 6),
             title="Contributing (even for myself)",
             url_filename="2026-01-06-contributing",
+            status=BlogStatus.Done,
             tags={BlogTag.About,},
             author="James Bergstra")
 
@@ -1454,6 +1552,7 @@ class HowMightWe(BlogPost):
             date=datetime.datetime(2025, 12, 5),
             title='How might Canada achieve Net-Zero?',
             url_filename="2025-12-05-first-post",
+            status=BlogStatus.Done,
             tags={BlogTag.About,},
             author="James Bergstra")
 
@@ -1462,9 +1561,9 @@ def init_blogs_by_url_filename():
     global _blogs_sorted_by_date
     for cls in _classes:
         obj = cls()
-        if not obj.concept_only:
-            _blogs_by_url_filename[obj.url_filename] = obj
-            _blogs_sorted_by_date.append(obj)
+        registry[cls.__name__] = obj
+        _blogs_by_url_filename[obj.url_filename] = obj
+        _blogs_sorted_by_date.append(obj)
     _blogs_sorted_by_date.sort(key=lambda x: x.date, reverse=True)
 
 # TODO: handle this in the metaclass, update the _blogs_sorted_by_date on access

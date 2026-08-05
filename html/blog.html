@@ -27,14 +27,14 @@
 								<article>
 									<header>
                                         <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
-                                        <h2><a href="/blog/{{blog.url_filename}}">{%if blog.draft or not blog.published %}[Draft] {% endif %}{{blog.title}}</a></h2>
+                                        <h2><a href="{{blog.siteref}}">{{blog.status_title_html}}</a></h2>
 									</header>
                                     <!--
 									<a href="#" class="image fit"><img src="images/pic02.jpg" alt="" /></a>
                                     -->
-                                    <p>{{blog.about}} </p>
+                                    <p>{{blog.about|safe}} </p>
 									<ul class="actions special">
-                                        <li><a href="/blog/{{blog.url_filename}}" class="button">Full Post</a></li>
+                                        <li><a href="{{blog.siteref}}" class="button">Full Post</a></li>
 									</ul>
 								</article>
                                 {% endif %}

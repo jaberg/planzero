@@ -16,6 +16,7 @@ Table of Contents:
         <ul>
             <li><a href="#post-purpose">The Purpose of Posts</a></li>
             <li><a href="#draft-status">Draft Status</a></li>
+            <li><a href="#planned-status">Planned Status</a></li>
             <li><a href="#post-dates">Post Dates</a></li>
             <li><a href="#post-authorship">Post Authorship and Acknowledgements</a></li>
         </ul>
@@ -133,12 +134,34 @@ If a post is a draft, then:
     <li>The text of the post is subject to change without notice.</li>
     <li>The entire post may be hidden, withdrawn, removed, etc.</li>
 </ul>
-If a post is not in draft, then it should never be materially changed.
+If a post is <i>not</i> in draft, then it should never be materially changed.
 If aspects of a post are superceded, they will be amended to link to the new
 post(s) introducing the superceding content.
 (All such changes will be tracked in git in any event.
 Git history should only be amended in order to remove accidentally committed
 material, including sensitive or confidential material.)
+</p>
+
+<h3 id="planned-status">Planned Status</h3>
+<p>
+For earlier-stage posts,
+instead of "Draft",
+a post can have a status of "Planned".
+Planned posts are public, but they are not done yet, so sometimes not visible by default.
+Planned posts are visible by e.g. <a href="/?planned=1">this URL</a>.
+A planned post has, at minimum, a title and a description.
+The purpose of planned posts is to communicate a roadmap. When a planned post is no longer missing content, then it will be marked instead as a Draft.
+If a post is Planned, then:
+<ul>
+    <li>The word "PLANNED" appears in large letters in the title, wherever it appears.</li>
+    <li>The post content is materially incomplete.
+        If a page exists for the post at all, then and a boxed area near the top of that page
+        outlines the missing content.
+    </li>
+    <li>Like Draft: The content of the post is not stable.</li>
+    <li>Like Draft: The text of the post is subject to change without notice.</li>
+    <li>Like Draft: The entire post may be hidden, withdrawn, removed, etc.</li>
+</ul>
 </p>
 
 <h3 id="post-dates">Post Dates</h3>
@@ -148,6 +171,7 @@ The dates of posts should be set to create a coherent narrative, and
 reflect the approximate time that work was done.
 The date of a post need not reflect the
 time the work was started, completed, or last edited.
+Planned posts in particular may have dates in the future.
 </p>
 <p>
 When a non-draft post is amended to include a link to a superceding post,

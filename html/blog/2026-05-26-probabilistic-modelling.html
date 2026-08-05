@@ -3,9 +3,31 @@
 <section class="post">
     <header class="major">
         <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
-        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <h1>{{blog.status_title_html}}</h1>
         <p>{{blog.about}}</p>
     </header>
+
+{% if blog.status == BlogStatus.Planned %}
+<div class="box">
+    <p>This post is "<a href="/about#planned-status">Planned</a>".
+    Please bear in mind that it is materially incomplete.
+    </p>
+    <p>
+    It was drafted in late-spring 2026 and feedback was that it was
+    confusing, and made the reader want to stop reading and encourage me to go find some machine learning people to talk to.
+    The plan for fixing it is, broadly, to
+    <ul>
+        <li>Move the introduction and motivation to several posts.</li>
+        <li>Move the static model to its own post
+            (<a href="{{planzero.blog.registry['StaticNormals'].siteref}}">
+                {{planzero.blog.registry['StaticNormals'].title}}</a>)
+        </li>
+        <li>Rearrange the AR-2 content into an Abstract / Appendix presentation, especially to move details of model description out of the Abstract</li>
+        <li>Ensure the AR2 model works with the <a href="{{planzero.blog.registry['ProbabilisticBovaer'].siteref}}">Bovaer Strategy</a></li>
+    </ul>
+    </p>
+</div>
+{% endif %}
 
 <p>
 Table of Contents:

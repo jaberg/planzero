@@ -31,6 +31,7 @@ import planzero.enums
 
 u = planzero.ureg
 
+HOME_SHOW_PLANNED_POSTS = (os.environ['PLANZERO_HOME_SHOW_PLANNED_POSTS'] == '1')
 HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
 def app_cache(f):
@@ -419,7 +420,11 @@ async def get_about(request: Request):
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/posts/", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
-async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POSTS):
+async def get_index(
+    request: Request,
+    planned:bool=HOME_SHOW_PLANNED_POSTS,
+    unpublished:bool=HOME_SHOW_UNPUBLISHED_POSTS,
+    ):
     return templates.TemplateResponse(
         request=request,
         name="blog.html",
@@ -429,6 +434,7 @@ async def get_index(request: Request, unpublished:bool=HOME_SHOW_UNPUBLISHED_POS
             fade_in_intro=True,
             blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
+            planned=planned,
             unpublished=unpublished,
             ),
     )
@@ -464,5 +470,6 @@ default_context = dict(
     printcname=(lambda cname: cname.replace('_', ' ')),
     blogs_by_tag=planzero.blog.blogs_by_tag,
     latex=planzero.blog.latex,
+    BlogStatus=planzero.blog.BlogStatus,
     )
 

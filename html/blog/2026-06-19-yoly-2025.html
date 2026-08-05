@@ -3,9 +3,32 @@
 <section class="post">
     <header class="major">
         <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
-        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <h1>{{blog.status_title_html}}</h1>
         <p>{{blog.about}}</p>
     </header>
+
+{% if blog.status == BlogStatus.Planned %}
+<div class="box">
+    <p>This post is "<a href="/about#planned-status">Planned</a>".
+    What's here is rough, and it is incomplete.
+    It was written in late-spring 2026 but did not reach draft status.
+    The plan for fixing it is, broadly, to 
+    <ul>
+        <li>Shorten it.</li>
+        <li>Switch to Abstract / Appendix structure</li>
+        <li>Apply the metric to the <a href="{{ planzero.blog.registry['StaticNormals'].siteref}}">Static Normals</a> model</li>
+        <li>Visualize and discuss the results. The Static Normals model
+        is probably not great for some sectors, but it's probably nearly
+        perfect for some as well.
+        </li>
+        <li>
+            Weigh and discuss the possibility of using AR2 for only
+            some sectors, so that the AR2 model is a hybrid.
+        </li>
+    </ul>
+    </p>
+</div>
+{% endif %}
 
 <p>
 Table of Contents:
@@ -328,8 +351,8 @@ The results are in the table below.
         <tr><th>Model</th><th>Evaluation Data Log-Probability {{latex("\\mathcal{L}")}} on {{CO2|safe}} from Harvested Wood Products</th></tr>
     </thead>
     <tbody>
-        <tr><td>Const (non-time-varying)</td><td>{{"{:.3f}".format(blog.log_prob_2023_const())}}</td></tr>
-        <tr><td>AR2-based model</td><td>{{"{:.3f}".format(blog.log_prob_2023_AR2())}}</td></tr>
+        <!-- used to call blog.log_prob_2023_const -->
+        <!-- used to call blog.log_prob_2023_AR2 -->
     </tbody>
 </table>
 

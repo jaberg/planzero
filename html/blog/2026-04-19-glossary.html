@@ -3,9 +3,17 @@
 <section class="post">
     <header class="major">
         <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
-        <h1>{% if blog.draft or not blog.published %}[DRAFT] {% endif %} {{blog.title}}</h1>
+        <h1>{{blog.status_title_html}}</h1>
         <p>{{blog.about}}</p>
     </header>
+
+{% if blog.status == BlogStatus.Planned %}
+<div class="box">
+    <p>This post is "<a href="/about#planned-status">Planned</a>".
+    Please bear in mind that it is materially incomplete.
+    </p>
+</div>
+{% endif %}
 
 <p>
 Table of Contents:
@@ -34,35 +42,69 @@ Table of Contents:
 
 <h2 id="introduction">Introduction</h2>
 <p>
-PlanZero has been accumulating a lexicon since its first post, but in
+In developing the post on
 <a href="/blog/2026-04-03-bovaer">modelling Bovaer adoption</a>,
-it became clear to me that the project was entering a new phase.
-I struggled to explain, in that post, what I had done; the first draft was
-very long and difficult to follow.
-Not only did the writing need re-working, but
-PlanZero's implementation itself needed reworking, in order to function
-with the degree of conceptual clarity that I wanted to offer in writing
-about how it worked.
-This is the second of two follow ups, which complete the rewrite.
-The first follow-up post (<a href="/blog/2026-04-12-about">About this project...</a>) introduced, among other things, the <a href="/blog/2026-04-12-about#draft-status">"Draft Status"</a>
-to offer a mechanism for this level of re-writing,
-and this post aims to
-bring the conceptual clarity that was missing
-from that first draft.
-This post announces a new <a href="/glossary">glossary</a> page,
-and explains the glossary terms relating to modelling.
-There are already more terms in the glossary than are explained here (almost
-fifty, including terms relating to data sources, climate organizations, and
-source code version control). I'll amend some previous posts to link to the glossary as appropriate,
-and call out glossary additions in new posts going forward.
+it became clear that PlanZero was entering a new phase.
+The first draft of that post was very long and difficult to follow.
+Not only did the writing need re-working, but PlanZero's implementation itself needed reworking.
+I wrote a post introducing <a href="/blog/2026-04-12-about#draft-status">"Draft Status"</a> to provide a process for the re-work.
+The subsequent work to incorporate uncertainty (LINK) applied even more design pressure on PlanZero.
+This post is about what a PlanZero model is.
+It defines a model in terms which are now available in a <a href="/glossary">glossary</a>.
+PlanZero's Models page has been updated and consolidated so that there aren't two sub-sections,
+there's just one list of models, and two models listed:
+* NIR2025, the probabilistic model introduced in THIS POST
+* Static Normals, a baseline probabilistic model implementing an assumption that there will be no long-term trends in any of the NIR emissions sectors.
+The strategy of Bovaer adoption has been reimplemented in terms of the Static Normals model (instead of the assumption that the future would be like 2023).
+</P>
+
+<p>
+This post provides an overview of the glossary's initial contents.
+This post is organized around three top-level content sections.
+The first section is an <a href="#overview">overview</a> of the terms in the <a href="/glossary">glossary</a> as of time of writing.
 </p>
 <p>
-This post is organized around three top-level content sections.
-The first one is an <a href="#overview">overview</a> of the new <a href="/glossary">glossary</a>.
-The second one is about how PlanZero models work at
-a <i>computational level</i>, in terms of
-<a href="#timeseries">time series</a>,
-<a href="#dynelem">dynamic element</a>,
+Having a glossary, it also seems natural to add in a few terms with meanings that are somewhat particular to PlanZero.
+I hope the glossary provides the beginnings of some developer / contributor documentation,
+and of a bibliography of important sources and resources.
+For now, PlanZero has a glossary, and it is largely made up of terms relating to probabilistic modelling and software version control.
+With the publication of this post I'll amend some previous posts to link to the glossary as appropriate,
+and call out glossary additions in new posts going forward.
+</p>
+
+<p>
+The second section (mathematical and computational modelling elements) is about probabilistic models.
+At this level,
+<a href="#timeseries">time series</a>
+and <a href="#dynelem">dynamic elements</a>
+organize variables and specifiy how they relate to one another.
+Model descriptions at this level determine how to simulate PlanZero models and fit them to data.
+</p>
+
+<p>
+The third section (strategic and economic modelling elements) is about how PlanZero models are described higher-level terms, such as
+<!--
+The third section is about how PlanZero models work at a <i>semantic level</i>,
+as <a href="#modelling">models of emissions and economic activity</a>, in terms of e.g.
+-->
+drivers, <!-- aka activity -->
+emission factors,
+subsidy programs,
+emission contributions,
+strategies,
+and barriers.
+Model descriptions at this level highlight the scope and nature of a PlanZero model.
+<!--
+This section explains how  national emissions,
+as well as the possible effects of new technologies and government programs.
+-->
+Bovaer adoption, as the first worked example, has driven many design choices
+here. As the set of strategies grows, I expect the modelling framework to grow too,
+but this is how it works for now.
+</p>
+
+
+<!--
 <a href="#simulation">simulation</a>,
 and <a href="#scenario">scenario</a>.
 This section explains how dynamic elements define recurrent mathematical
@@ -73,21 +115,8 @@ It is the closest thing to technical documentation that exists on the website to
 and might feel like low-level irrelevant details to some readers; if that's you,
 feel free to skip ahead to the next section on emissions modeling.
 </p>
-<p>
-The third section is about how PlanZero models work at a <i>semantic level</i>,
-as <a href="#modelling">models of emissions and economic activity</a>, in terms of e.g.
-drivers,
-emission factors,
-subsidy programs,
-emission contributions,
-strategies,
-and barriers.
-This section explains how PlanZero models the computation of national emissions,
-as well as the possible effects of new technologies and government programs.
-Bovaer adoption, as the first worked example, has driven many design choices
-here. As the set of strategies grows, I expect the modelling framework to grow too,
-but this is how it works for now.
-</P>
+-->
+
 
 <h2 id="overview">Glossary Overview</h2>
 
@@ -149,6 +178,13 @@ and link to this post for more context.
 
 
 <h2 id="simulation">Simulation Framework</h2>
+
+<div class="box">
+    I've changed my mind about this since drafting it.
+    Probabilistic modelling is unavoidable, and needs to be
+    the foundation of this level of description.
+</div>
+
 <p>
 This section introduces the simulation system used in PlanZero, which involves four concepts:
 <ul>
