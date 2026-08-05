@@ -150,6 +150,24 @@ class GlossaryTerm(BaseModel):
         return f'<a href="/glossary#{self.__class__.__name__}">{text}</a>'
 
 
+class Concentrated_Distribution(GlossaryTerm):
+    """
+    A concentrated distribution is a probability distribution
+    with most of its probability mass on a small number of possible values
+    compared to the full set of possible values. It's an informal description
+    of a distribution. The opposite of a concentrated distribution over
+    a finite set of possibilities would be a uniform distribution,
+    which is a well-defined distribution. There's not really such a thing
+    as the opposite of a concentrated distribution over e.g. all real numbers,
+    but one distribution may be described as being more concentrated than another.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Probability_Distribution': 'a distribution may be more or less concentrated',
+        }
+
 
 class Time_Series(GlossaryTerm):
     """A PlanZero time series is a modelling data structure for representing
@@ -240,7 +258,6 @@ class Unit_of_Measure(GlossaryTerm):
             'Time Series': 'Time Series are associated with a unit of measure',
             'Dynamic Element': 'Dynamic Element initialization logic configures the unit of measure of each time series in a simulation',
         }
-
 
 
 class Dynamic_Element(GlossaryTerm):
@@ -1575,7 +1592,7 @@ class Inference_Algorithm(GlossaryTerm):
     @computed_field
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
         ]
 
 
@@ -1584,6 +1601,8 @@ class Random_Variable(GlossaryTerm):
     term in a probabilistic model. A random variable is associated
     with a probability distribution.
     """
+
+    # TODO: Rename: UNKNOWN_VARIABLE
 
     @property
     def see_also(self) -> dict[str, str]:
@@ -1594,8 +1613,22 @@ class Random_Variable(GlossaryTerm):
     @computed_field
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
         ]
+
+
+class Predictive_Model(GlossaryTerm):
+    """
+    A model that includes probability distributions for
+    events in the future.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Stochastic_Model': 'a more general class of models, which may or may not include distributions related to future events',
+        }
+
 
 class Probability_Density_Function(GlossaryTerm):
     """A mathematical function that is never negative,
@@ -1626,8 +1659,9 @@ class Probability_Distribution(GlossaryTerm):
     @computed_field
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+            (blog.ProbabilisticNIR2025(), '#appendix-model-distribution', "Appendix 1 is an introduction to probabilistic modelling"),
         ]
+
 
 class Credible_Interval(GlossaryTerm):
     """A <a href="https://en.wikipedia.org/wiki/Credible_interval">credible interval</a> is the set of values that a
@@ -1647,8 +1681,9 @@ class Credible_Interval(GlossaryTerm):
     @computed_field
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+            (blog.ProbabilisticNIR2025(), '#appendix-visualizing', "credibility intervals are used to visualize probabilistic models"),
         ]
+
 
 class Bayesian_Inference(GlossaryTerm):
     """Bayesian inference is the use of
@@ -1672,7 +1707,7 @@ class Bayesian_Inference(GlossaryTerm):
     @computed_field
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
         ]
 
 

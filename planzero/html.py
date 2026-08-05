@@ -1,4 +1,5 @@
 from pydantic import BaseModel, ConfigDict
+from .enums import GHG
 
 class StrictBaseModel(BaseModel):
 
@@ -52,6 +53,16 @@ class HTML_Math_Latex(HTML_element):
         mathml = latex2mathml.converter.convert(self.latex, display=self.display)
         return mathml
 
+
+html_by_ghg = {
+    GHG.CO2:HTML_Math_Latex(latex=r'\mathrm{CO}_2').as_html(),
+    GHG.CH4:HTML_Math_Latex(latex=r'\mathrm{CH}_4').as_html(),
+    GHG.N2O:HTML_Math_Latex(latex=r"\mathrm N_2 \mathrm O").as_html(),
+    GHG.HFCs:'HFCs',
+    GHG.PFCs:'PFCs',
+    GHG.SF6:HTML_Math_Latex(latex=r'\mathrm{SF}_6').as_html(),
+    GHG.NF3:HTML_Math_Latex(latex=r'\mathrm{NF}_3').as_html(),
+}
 
 class EChartTitle(StrictBaseModel):
     text:str

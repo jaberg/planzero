@@ -523,183 +523,182 @@ def uncertainty_percent_by_IPCC_Sector_GHG_1990():
     return uncertainty_percent_by_IPCC_Sector_GHG(
         percent_col='Combined Uncertainty (%) - Base Year')
 
-@cache
-def uncertainty_percent_by_IPCC_Sector_GHG(percent_col:str):
+
+def annex2_source_category_by_sector():
     df = load_uncertainty()
-    rval = {}
+    rval = {} # (IPCC_Sector, GHG) -> source_cat:str
     for record in df.iloc:
-        desc = record['IPCC_Source_Category']
+        source_cat = record['IPCC_Source_Category']
         ghg = GHG(record['Gas'])
-        pc = record[percent_col]
 
-        if desc == "Fuel Combustion - Public Electricity and Heat Production":
-            rval[IPCC_Sector.SCS__Public_Electricity_and_Heat, ghg] = pc
+        if source_cat == "Fuel Combustion - Public Electricity and Heat Production":
+            rval[IPCC_Sector.SCS__Public_Electricity_and_Heat, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Petroleum Refining":
-            rval[IPCC_Sector.SCS__Petroleum_Refining_Industries, ghg] = pc
+        elif source_cat == "Fuel Combustion - Petroleum Refining":
+            rval[IPCC_Sector.SCS__Petroleum_Refining_Industries, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Manufacture of Solid Fuels and Other Energy Industries":
-            rval[IPCC_Sector.SCS__Oil_and_Gas_Extraction, ghg] = pc
+        elif source_cat == "Fuel Combustion - Manufacture of Solid Fuels and Other Energy Industries":
+            rval[IPCC_Sector.SCS__Oil_and_Gas_Extraction, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Manufacturing Industries and Construction":
-            rval[IPCC_Sector.SCS__Manufacturing__NonFerrous, ghg] = pc
-            rval[IPCC_Sector.SCS__Manufacturing__Pulp_and_Paper, ghg] = pc
-            rval[IPCC_Sector.SCS__Manufacturing__Chemical, ghg] = pc
-            rval[IPCC_Sector.SCS__Manufacturing__Cement, ghg] = pc
-            rval[IPCC_Sector.SCS__Manufacturing__Other, ghg] = pc
-            rval[IPCC_Sector.SCS__Manufacturing__Iron_and_Steel, ghg] = pc
-            rval[IPCC_Sector.SCS__Construction, ghg] = pc
-            rval[IPCC_Sector.SCS__Agriculture_and_Forestry, ghg] = pc
-            rval[IPCC_Sector.SCS__Mining, ghg] = pc
+        elif source_cat == "Fuel Combustion - Manufacturing Industries and Construction":
+            rval[IPCC_Sector.SCS__Manufacturing__NonFerrous, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Manufacturing__Pulp_and_Paper, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Manufacturing__Chemical, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Manufacturing__Cement, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Manufacturing__Other, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Manufacturing__Iron_and_Steel, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Construction, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Agriculture_and_Forestry, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Mining, ghg] = source_cat
 
-        elif desc == "Fuel Combustion -Off-Roadb":
-            rval[IPCC_Sector.Transport__Other__Agriculture_and_Forestry, ghg] = pc
-            rval[IPCC_Sector.Transport__Other__Commercial_and_Institutional, ghg] = pc
-            rval[IPCC_Sector.Transport__Other__Mfg_Mining_Construction, ghg] = pc
-            rval[IPCC_Sector.Transport__Other__Residential, ghg] = pc
-            rval[IPCC_Sector.Transport__Other__Other, ghg] = pc
+        elif source_cat == "Fuel Combustion -Off-Roadb":
+            rval[IPCC_Sector.Transport__Other__Agriculture_and_Forestry, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Other__Commercial_and_Institutional, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Other__Mfg_Mining_Construction, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Other__Residential, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Other__Other, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Civil Aviation":
-            rval[IPCC_Sector.Transport__Air__Domestic_Civil, ghg] = pc
+        elif source_cat == "Fuel Combustion - Civil Aviation":
+            rval[IPCC_Sector.Transport__Air__Domestic_Civil, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Road Transportation":
-            rval[IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Vehicles, ghg] = pc
-            rval[IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Trucks, ghg] = pc
-            rval[IPCC_Sector.Transport__Road__Heavy_Duty_Gasoline_Vehicles, ghg] = pc
-            rval[IPCC_Sector.Transport__Road__Motorcycles, ghg] = pc
-            rval[IPCC_Sector.Transport__Road__Light_Duty_Diesel_Vehicles, ghg] = pc
-            rval[IPCC_Sector.Transport__Road__Light_Duty_Diesel_Trucks, ghg] = pc
-            rval[IPCC_Sector.Transport__Road__Propane_and_Natural_Gas_Vehicles, ghg] = pc
-            rval[IPCC_Sector.Transport__Road__Heavy_Duty_Diesel_Vehicles, ghg] = pc
+        elif source_cat == "Fuel Combustion - Road Transportation":
+            rval[IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Vehicles, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Trucks, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Road__Heavy_Duty_Gasoline_Vehicles, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Road__Motorcycles, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Road__Light_Duty_Diesel_Vehicles, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Road__Light_Duty_Diesel_Trucks, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Road__Propane_and_Natural_Gas_Vehicles, ghg] = source_cat
+            rval[IPCC_Sector.Transport__Road__Heavy_Duty_Diesel_Vehicles, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Railways":
-            rval[IPCC_Sector.Transport__Rail, ghg] = pc
+        elif source_cat == "Fuel Combustion - Railways":
+            rval[IPCC_Sector.Transport__Rail, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Navigation":
-            rval[IPCC_Sector.Transport__Marine__Domestic, ghg] = pc
+        elif source_cat == "Fuel Combustion - Navigation":
+            rval[IPCC_Sector.Transport__Marine__Domestic, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Pipeline Transport":
-             rval[IPCC_Sector.Transport__Other__Pipeline, ghg] = pc
+        elif source_cat == "Fuel Combustion - Pipeline Transport":
+             rval[IPCC_Sector.Transport__Other__Pipeline, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Other Sectors":
-            rval[IPCC_Sector.SCS__Commercial_and_Institutional, ghg] = pc
-            rval[IPCC_Sector.SCS__Residential, ghg] = pc
+        elif source_cat == "Fuel Combustion - Other Sectors":
+            rval[IPCC_Sector.SCS__Commercial_and_Institutional, ghg] = source_cat
+            rval[IPCC_Sector.SCS__Residential, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Fishing":
-            rval[IPCC_Sector.Transport__Marine__Fishing, ghg] = pc
+        elif source_cat == "Fuel Combustion - Fishing":
+            rval[IPCC_Sector.Transport__Marine__Fishing, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Other (Military Aviation)":
-            rval[IPCC_Sector.Transport__Air__Military, ghg] = pc
+        elif source_cat == "Fuel Combustion - Other (Military Aviation)":
+            rval[IPCC_Sector.Transport__Air__Military, ghg] = source_cat
 
-        elif desc == "Fuel Combustion - Other (Military Navigation)":
-            rval[IPCC_Sector.Transport__Marine__Military, ghg] = pc
+        elif source_cat == "Fuel Combustion - Other (Military Navigation)":
+            rval[IPCC_Sector.Transport__Marine__Military, ghg] = source_cat
 
-        elif desc == "Fugitive Sources - Coal Mining":
-            rval[IPCC_Sector.Fugitive__Coal, ghg] = pc
+        elif source_cat == "Fugitive Sources - Coal Mining":
+            rval[IPCC_Sector.Fugitive__Coal, ghg] = source_cat
 
-        elif desc == "Fugitive Sources - Oil & Gas":
-            rval[IPCC_Sector.Fugitive__Oil, ghg] = pc
-            rval[IPCC_Sector.Fugitive__Natural_Gas, ghg] = pc
+        elif source_cat == "Fugitive Sources - Oil & Gas":
+            rval[IPCC_Sector.Fugitive__Oil, ghg] = source_cat
+            rval[IPCC_Sector.Fugitive__Natural_Gas, ghg] = source_cat
 
-        elif desc == "Fugitive Sources - Venting":
-            rval[IPCC_Sector.Fugitive__Venting, ghg] = pc
+        elif source_cat == "Fugitive Sources - Venting":
+            rval[IPCC_Sector.Fugitive__Venting, ghg] = source_cat
 
-        elif desc == "Fugitive Sources - Flaring":
-            rval[IPCC_Sector.Fugitive__Flaring, ghg] = pc
+        elif source_cat == "Fugitive Sources - Flaring":
+            rval[IPCC_Sector.Fugitive__Flaring, ghg] = source_cat
 
-        elif desc == "Fugitive Sources - Venting & Flaring": # for CO2
-            rval[IPCC_Sector.Fugitive__Flaring, ghg] = pc
-            rval[IPCC_Sector.Fugitive__Venting, ghg] = pc
+        elif source_cat == "Fugitive Sources - Venting & Flaring": # for CO2
+            rval[IPCC_Sector.Fugitive__Flaring, ghg] = source_cat
+            rval[IPCC_Sector.Fugitive__Venting, ghg] = source_cat
 
-        elif desc == "CO2 Transport and Storage":
-            rval[IPCC_Sector.CO2_Transport_and_Storage, ghg] = pc
+        elif source_cat == "CO2 Transport and Storage":
+            rval[IPCC_Sector.CO2_Transport_and_Storage, ghg] = source_cat
 
-        elif desc == "IPPU - Cement Production":
-            rval[IPCC_Sector.Cement_Production, ghg] = pc
+        elif source_cat == "IPPU - Cement Production":
+            rval[IPCC_Sector.Cement_Production, ghg] = source_cat
 
-        elif desc == "IPPU - Lime Production":
-            rval[IPCC_Sector.Lime_Production, ghg] = pc
+        elif source_cat == "IPPU - Lime Production":
+            rval[IPCC_Sector.Lime_Production, ghg] = source_cat
             
-        elif desc == "IPPU - Glass Production":
+        elif source_cat == "IPPU - Glass Production":
             pass
-        elif desc == "IPPU - Other Uses of Soda Ash":
-            pass
-
-        elif desc == "IPPU - Other (Magnesite Use)":
-            pass
-        elif desc == "IPPU - Other (Limestone and Dolomite Use)":
-            rval[IPCC_Sector.Mineral_Product_Use, ghg] = pc
-
-        elif desc == "IPPU - Ammonia Production":
-            rval[IPCC_Sector.Ammonia_Production, ghg] = pc
-
-        elif desc == "IPPU - Nitric Acid Production":
-            rval[IPCC_Sector.Nitric_Acid_Production, ghg] = pc
-        elif desc == "IPPU - Adipic Acid Production":
-            rval[IPCC_Sector.Adipic_Acid_Production, ghg] = pc
-        elif desc == "IPPU - Soda Ash Production":
+        elif source_cat == "IPPU - Other Uses of Soda Ash":
             pass
 
-        elif desc == "IPPU - Petrochemical and Carbon Black Production":
-            rval[IPCC_Sector.Petrochemical_and_Carbon_Black_Production, ghg] = pc
-        elif desc == "IPPU - Petrochemical and Carbon Black Production (including carbide production)":
-            rval[IPCC_Sector.Petrochemical_and_Carbon_Black_Production, ghg] = pc
+        elif source_cat == "IPPU - Other (Magnesite Use)":
+            pass
+        elif source_cat == "IPPU - Other (Limestone and Dolomite Use)":
+            rval[IPCC_Sector.Mineral_Product_Use, ghg] = source_cat
 
-        elif desc == "IPPU - Fluorochemical Production":
+        elif source_cat == "IPPU - Ammonia Production":
+            rval[IPCC_Sector.Ammonia_Production, ghg] = source_cat
+
+        elif source_cat == "IPPU - Nitric Acid Production":
+            rval[IPCC_Sector.Nitric_Acid_Production, ghg] = source_cat
+        elif source_cat == "IPPU - Adipic Acid Production":
+            rval[IPCC_Sector.Adipic_Acid_Production, ghg] = source_cat
+        elif source_cat == "IPPU - Soda Ash Production":
+            pass
+
+        elif source_cat == "IPPU - Petrochemical and Carbon Black Production":
+            rval[IPCC_Sector.Petrochemical_and_Carbon_Black_Production, ghg] = source_cat
+        elif source_cat == "IPPU - Petrochemical and Carbon Black Production (including carbide production)":
+            rval[IPCC_Sector.Petrochemical_and_Carbon_Black_Production, ghg] = source_cat
+
+        elif source_cat == "IPPU - Fluorochemical Production":
             # HFCs
-            rval[IPCC_Sector.Production_and_Consumption_of_Halocarbons, ghg] = pc
+            rval[IPCC_Sector.Production_and_Consumption_of_Halocarbons, ghg] = source_cat
 
-        elif desc == "IPPU - Iron and Steel Production":
-            rval[IPCC_Sector.Iron_and_Steel_Production, ghg] = pc
-        elif desc == "IPPU - Aluminium Production":
-            rval[IPCC_Sector.Aluminium_Production, ghg] = pc
-        elif desc == "IPPU - Magnesium Production":
-            rval[IPCC_Sector.Magnesium_Production_and_Casting, ghg] = pc
-        elif desc == "IPPU - Non-Energy Products from Fuels and Solvent Use Other - Other (Other and Undifferentiated)":
-            rval[IPCC_Sector.Non_Energy_Products_from_Fuels_and_Solvent_Use, ghg] = pc
+        elif source_cat == "IPPU - Iron and Steel Production":
+            rval[IPCC_Sector.Iron_and_Steel_Production, ghg] = source_cat
+        elif source_cat == "IPPU - Aluminium Production":
+            rval[IPCC_Sector.Aluminium_Production, ghg] = source_cat
+        elif source_cat == "IPPU - Magnesium Production":
+            rval[IPCC_Sector.Magnesium_Production_and_Casting, ghg] = source_cat
+        elif source_cat == "IPPU - Non-Energy Products from Fuels and Solvent Use Other - Other (Other and Undifferentiated)":
+            rval[IPCC_Sector.Non_Energy_Products_from_Fuels_and_Solvent_Use, ghg] = source_cat
 
-        elif desc == "IPPU - Non-Energy Products from Fuels and Solvent Use Other - Other (Use of Urea in SCR Vehicles)":
-            rval[IPCC_Sector.Non_Energy_Products_from_Fuels_and_Solvent_Use, ghg] = pc
+        elif source_cat == "IPPU - Non-Energy Products from Fuels and Solvent Use Other - Other (Use of Urea in SCR Vehicles)":
+            rval[IPCC_Sector.Non_Energy_Products_from_Fuels_and_Solvent_Use, ghg] = source_cat
 
-        elif desc == "IPPU - Integrated Circuit or Semiconductor":
+        elif source_cat == "IPPU - Integrated Circuit or Semiconductor":
             # PFCs, SF6, NF3
-            rval[IPCC_Sector.Production_and_Consumption_of_Halocarbons, ghg] = pc
+            rval[IPCC_Sector.Production_and_Consumption_of_Halocarbons, ghg] = source_cat
             pass
-        elif desc == "IPPU - Other Emissive Applications":
+        elif source_cat == "IPPU - Other Emissive Applications":
             pass
-        elif desc == "IPPU - Product Uses as Substitutes for Ozone Depleting Substances":
+        elif source_cat == "IPPU - Product Uses as Substitutes for Ozone Depleting Substances":
             # HFCs
-            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = pc
+            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = source_cat
             pass
-        elif desc == "IPPU - Electrical Equipment":
+        elif source_cat == "IPPU - Electrical Equipment":
             # SF6
-            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = pc
+            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = source_cat
             pass
-        elif desc == "IPPU - Other (Medical Applications of N2O)":
+        elif source_cat == "IPPU - Other (Medical Applications of N2O)":
             #N2O
-            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = pc
-        elif desc == "IPPU - Other (Uses of N2O for Propellant)":
+            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = source_cat
+        elif source_cat == "IPPU - Other (Uses of N2O for Propellant)":
             pass # percents are the same as above (medical applications)
-        elif desc == "IPPU - Other Contained Product Uses":
+        elif source_cat == "IPPU - Other Contained Product Uses":
             # PFCs
-            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = pc
+            rval[IPCC_Sector.Other_Product_Manufacture_and_Use, ghg] = source_cat
 
-        elif desc == "Agriculture - Total CH4": # aggregate
+        elif source_cat == "Agriculture - Total CH4": # aggregate
             pass
-        elif desc == "Agriculture - Enteric Fermentation":
-            rval[IPCC_Sector.Enteric_Fermentation, ghg] = pc
-        elif desc == "Agriculture - Manure Management ":
+        elif source_cat == "Agriculture - Enteric Fermentation":
+            rval[IPCC_Sector.Enteric_Fermentation, ghg] = source_cat
+        elif source_cat == "Agriculture - Manure Management ":
             # CH4
-            rval[IPCC_Sector.Manure_Management, ghg] = pc
-        elif desc == "Agriculture - Field Burning of Agricultural Residues":
-            rval[IPCC_Sector.Field_Burning_of_Agricultural_Residues, ghg] = pc
-        elif desc == "Agriculture - Total N2O": # aggregate
+            rval[IPCC_Sector.Manure_Management, ghg] = source_cat
+        elif source_cat == "Agriculture - Field Burning of Agricultural Residues":
+            rval[IPCC_Sector.Field_Burning_of_Agricultural_Residues, ghg] = source_cat
+        elif source_cat == "Agriculture - Total N2O": # aggregate
             pass
-        elif desc == "Agriculture - Manure Management Direct Emissions ":
+        elif source_cat == "Agriculture - Manure Management Direct Emissions ":
             # N2O
-            rval[IPCC_Sector.Manure_Management, ghg] = pc
+            rval[IPCC_Sector.Manure_Management, ghg] = source_cat
             pass
-        elif desc == "Agriculture - Manure Management Indirect Emissions ":
+        elif source_cat == "Agriculture - Manure Management Indirect Emissions ":
             # N2O
             # Admittedly an error to pass, but correct behaviour doesn't seem
             # possible.
@@ -708,52 +707,69 @@ def uncertainty_percent_by_IPCC_Sector_GHG(percent_col:str):
             # contributor to IPCC_Sector.Manure_Management than the direct
             # emissions above, so use the pc from Direct Emissions
             pass
-        elif desc == "Agriculture - Direct Agriculture Soils ":
-            rval[IPCC_Sector.Agricultural_Soils_Direct, ghg] = pc
-        elif desc == "Agriculture - Indirect Agriculture Soils":
-            rval[IPCC_Sector.Agricultural_Soils_Indirect, ghg] = pc
-        elif desc == "Agriculture - Total CO2":
+        elif source_cat == "Agriculture - Direct Agriculture Soils ":
+            rval[IPCC_Sector.Agricultural_Soils_Direct, ghg] = source_cat
+        elif source_cat == "Agriculture - Indirect Agriculture Soils":
+            rval[IPCC_Sector.Agricultural_Soils_Indirect, ghg] = source_cat
+        elif source_cat == "Agriculture - Total CO2":
             pass
-        elif desc == "Agriculture - Limestone CaCO3":
+        elif source_cat == "Agriculture - Limestone CaCO3":
             pass
-        elif desc == "Agriculture - Urea Application":
+        elif source_cat == "Agriculture - Urea Application":
             # CO2
             # both this and "Limestone CaCO3" above offer percentage
             # uncertainty for the sector. The error estimates are similar,
             # so just going with this one.
-            rval[IPCC_Sector.Liming_Urea_Other, ghg] = pc
-        elif desc == "Agriculture - Other Carbon-Containing Fertilizers":
+            rval[IPCC_Sector.Liming_Urea_Other, ghg] = source_cat
+        elif source_cat == "Agriculture - Other Carbon-Containing Fertilizers":
             pass
-        elif desc == "LULUCF - Forest Land Remaining Forest Land":
-            rval[IPCC_Sector.Forest_Land, ghg] = pc
-        elif desc == "LULUCF - Land Converted to Forest Land":
+        elif source_cat == "LULUCF - Forest Land Remaining Forest Land":
+            rval[IPCC_Sector.Forest_Land, ghg] = source_cat
+        elif source_cat == "LULUCF - Land Converted to Forest Land":
             pass
-        elif desc == "LULUCF - Cropland ":
-            rval[IPCC_Sector.Cropland, ghg] = pc
-        elif desc == "LULUCF - Grassland":
-            rval[IPCC_Sector.Grassland, ghg] = pc
-        elif desc == "LULUCF - Wetlands ":
-            rval[IPCC_Sector.Wetlands, ghg] = pc
-        elif desc == "LULUCF - Settlements ":
-            rval[IPCC_Sector.Settlements, ghg] = pc
-        elif desc == "LULUCF - Conversion of Forest Land ":
+        elif source_cat == "LULUCF - Cropland ":
+            rval[IPCC_Sector.Cropland, ghg] = source_cat
+        elif source_cat == "LULUCF - Grassland":
+            rval[IPCC_Sector.Grassland, ghg] = source_cat
+        elif source_cat == "LULUCF - Wetlands ":
+            rval[IPCC_Sector.Wetlands, ghg] = source_cat
+        elif source_cat == "LULUCF - Settlements ":
+            rval[IPCC_Sector.Settlements, ghg] = source_cat
+        elif source_cat == "LULUCF - Conversion of Forest Land ":
             pass
-        elif desc == "LULUCF - Harvested Wood Products (HWP)":
-            rval[IPCC_Sector.Harvested_Wood_Products, ghg] = pc
-        elif desc == "Solid Waste Disposal - Managed Waste Disposal Sites":
-            rval[IPCC_Sector.Municipal_Solid_Waste_Landfills, ghg] = pc
-        elif desc == "Biological Treatment of Solid Waste - Composting":
-            rval[IPCC_Sector.Biological_Treatment_of_Solid_Waste, ghg] = pc
-        elif desc == "Biological Treatment of Solid Waste - Anerobic Digestion - Industrial & Municipal Facilities":
-            rval[IPCC_Sector.Industrial_Wood_Waste_Landfills, ghg] = pc
+        elif source_cat == "LULUCF - Harvested Wood Products (HWP)":
+            rval[IPCC_Sector.Harvested_Wood_Products, ghg] = source_cat
+        elif source_cat == "Solid Waste Disposal - Managed Waste Disposal Sites":
+            rval[IPCC_Sector.Municipal_Solid_Waste_Landfills, ghg] = source_cat
+        elif source_cat == "Biological Treatment of Solid Waste - Composting":
+            rval[IPCC_Sector.Biological_Treatment_of_Solid_Waste, ghg] = source_cat
+        elif source_cat == "Biological Treatment of Solid Waste - Anerobic Digestion - Industrial & Municipal Facilities":
+            rval[IPCC_Sector.Industrial_Wood_Waste_Landfills, ghg] = source_cat
 
-        elif desc == "Incineration and Open Burning of Waste - Waste Incineration":
-            rval[IPCC_Sector.Incineration_and_Open_Burning_Waste, ghg] = pc
-        elif desc == "Wastewater Treatment and Discharge":
-            rval[IPCC_Sector.Municipal_Wastewater_Treatment_and_Discharge, ghg] = pc
-            rval[IPCC_Sector.Industrial_Wastewater_Treatment_and_Discharge, ghg] = pc
+        elif source_cat == "Incineration and Open Burning of Waste - Waste Incineration":
+            rval[IPCC_Sector.Incineration_and_Open_Burning_Waste, ghg] = source_cat
+        elif source_cat == "Wastewater Treatment and Discharge":
+            rval[IPCC_Sector.Municipal_Wastewater_Treatment_and_Discharge, ghg] = source_cat
+            rval[IPCC_Sector.Industrial_Wastewater_Treatment_and_Discharge, ghg] = source_cat
         else:
-            raise NotImplementedError(desc)
+            raise NotImplementedError(source_cat)
+
+    return rval
+
+
+@cache
+def uncertainty_percent_by_IPCC_Sector_GHG(percent_col:str):
+    df = load_uncertainty()
+    tmp = {}
+    for record in df.iloc:
+        desc = record['IPCC_Source_Category']
+        ghg = GHG(record['Gas'])
+        pc = record[percent_col]
+        tmp[desc, ghg] = pc
+
+    rval = {}
+    for ((sector, ghg), source_cat) in annex2_source_category_by_sector().items():
+        rval[sector, ghg] = tmp[source_cat, ghg]
 
     # extra guesses
     assert (IPCC_Sector.Cropland, GHG.CH4) not in rval
