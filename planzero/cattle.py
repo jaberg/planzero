@@ -3,8 +3,11 @@ from functools import cache as memcache
 from pydantic import Field, computed_field
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import RidgeCV
-from sklearn.metrics import mean_absolute_error, root_mean_squared_error
+try:
+    from sklearn.linear_model import RidgeCV
+    from sklearn.metrics import mean_absolute_error, root_mean_squared_error
+except ImportError:
+    pass
 
 from .ureg import u
 from .enums import IPCC_Sector, PT, GHG

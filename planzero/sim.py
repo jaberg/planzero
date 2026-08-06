@@ -71,7 +71,7 @@ class SimulationResult(BaseModel):
                 sector_total,
                 times=self.year_times,
                 v_unit=u.Mt_CO2e,
-                url=f'/simulations/{self.simulation_name}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/')
+                url=f'/models/sim/{self.simulation_name}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/')
             values = [vdict['value'] for vdict in data]
             if max(values) <= 0:
                 # all negative
@@ -238,7 +238,7 @@ class SimulationResult(BaseModel):
                 diff_ts,
                 times=self.year_times,
                 v_unit=u.kt_CO2e,
-                url=f'/simulations/{self.simulation_name}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/'
+                url=f'/models/sim/{self.simulation_name}/ipcc-sectors/{ipcc_sector.catpath_no_whitespace}/'
             )
             
             values = [vdict['value'] for vdict in data]

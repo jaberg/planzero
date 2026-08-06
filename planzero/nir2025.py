@@ -3,14 +3,17 @@ import os
 
 import numpy as np
 import pandas as pd
-import jax
-import jax.numpy as jnp
-from scipy.optimize import minimize
+try:
+    import jax
+    import jax.numpy as jnp
+    from scipy.optimize import minimize
 
-# Enable Float64 for Gaussian Process numerical stability
-from jax import config
-config.update("jax_enable_x64", True)
-import numpyro.distributions as dist
+    # Enable Float64 for Gaussian Process numerical stability
+    from jax import config
+    config.update("jax_enable_x64", True)
+    import numpyro.distributions as dist
+except ImportError:
+    pass
 
 
 from . import ipcc_canada

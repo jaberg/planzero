@@ -38,8 +38,9 @@ def endpoints():
     rval.extend([
         "/",
         "/ipcc-sectors/",
-        "/strategies/",
         "/models",
+        #"/predictions/",
+        "/strategies/",
         "/glossary/",
         "/about/",
     ])

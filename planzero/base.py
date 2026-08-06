@@ -14,7 +14,10 @@ import time
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-import pandas as pd
+try:
+    import pandas as pd
+except:
+    pass
 import pint
 from pydantic import BaseModel, computed_field
 

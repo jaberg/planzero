@@ -14,11 +14,17 @@ _blogs_sorted_by_date = []
 registry = {}
 
 
+
 class BlogTag(str, enum.Enum):
+    """
+    These correspond to points where we show "Posts Developing This Page"
+    lists. Blogs should not be tagged with arbitrary strings.
+    """
     NIR_Modelling = "NIR Modelling"
     Strategies = 'Strategies'
     BarrierModelling = 'Barrier Modelling'
-    About = 'About'
+    About = 'About' # bottom of About page
+    StaticNormals = "Static Normals"  # Static Normals model pages
 
 
 class BlogStatus(str, enum.Enum):
@@ -38,6 +44,11 @@ class BlogPost(BaseModel):
     status: BlogStatus
     published: bool = True
 
+    # TODO: enforce BlogTags e.g.
+    # tags: set[BlogTag] = set()
+    # But also consider that IPCC_Sector tags are also
+    # valid as blog tags. What else?
+    # Models, Strategies, Barriers... anything else?
     tags: set[str] = set()
 
     @property
@@ -123,10 +134,8 @@ class AR2(BlogPost):
             title='Autoregressive Process Modelling of NIR-2025',
             url_filename="2026-05-26-probabilistic-modelling",
             author="James Bergstra",
-            tags={BlogTag.NIR_Modelling,
-                  'AR2',
-                  'Static_Normals',
-                 },
+            #tags={BlogTag.NIR_Modelling,
+                 #},
             status=BlogStatus.Planned,
             )
 
@@ -611,10 +620,12 @@ class Glossary(BlogPost):
             title='New: the PlanZero glossary',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
-            tags={BlogTag.About,
-                  BlogTag.Strategies,
-                  BlogTag.BarrierModelling,
-                  BlogTag.NIR_Modelling},
+            #tags={
+                # BlogTag.About, # Does it? How?
+                # BlogTag.Strategies,
+                # BlogTag.BarrierModelling,
+                # BlogTag.NIR_Modelling,
+            #},
             status=BlogStatus.Planned,
             )
 
@@ -635,12 +646,10 @@ class ProbabilisticBovaer(BlogPost):
             title='Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer',
             url_filename="2026-07-22-prob-bovaer",
             author="James Bergstra",
-            tags={BlogTag.NIR_Modelling,
-                  'Static_Normals',
-                  BlogTag.BarrierModelling,
-                  'Bovaer',
-                  enums.IPCC_Sector.Enteric_Fermentation,
-                 },
+            #tags={
+                  ## TODO: the probabilistic models?
+                  #enums.IPCC_Sector.Enteric_Fermentation,
+                 #},
             status=BlogStatus.Planned,
             )
 
@@ -667,7 +676,7 @@ class PreNIR(BlogPost):
             title='Prediction of National Inventory Reports',
             url_filename="2026-06-19-yoly-2025",
             author="James Bergstra",
-            tags={BlogTag.NIR_Modelling,},
+            #tags={BlogTag.NIR_Modelling,},
             status=BlogStatus.Planned,
             )
 
@@ -916,10 +925,12 @@ class StaticNormals(BlogPost):
         super().__init__(
             date=datetime.datetime(2026, 6, 28),
             title='Static Normals',
+            # html/blog/2026-06-28-static-normals.html
             url_filename="2026-06-28-static-normals",
             author="James Bergstra",
-            tags={BlogTag.NIR_Modelling,
-                  'Static_Normals',
+            tags={#BlogTag.NIR_Modelling,
+                  #'Static_Normals',
+                  BlogTag.About,
                  },
             status=BlogStatus.Planned,
             )
@@ -943,7 +954,10 @@ class ProbabilisticNIR2025(BlogPost):
             url_filename="2026-05-20-prob-nir",
             author="James Bergstra",
             status=BlogStatus.Draft,
-            tags={BlogTag.NIR_Modelling},
+            tags={
+                BlogTag.NIR_Modelling,
+                BlogTag.About,
+                },
             )
 
     @staticmethod

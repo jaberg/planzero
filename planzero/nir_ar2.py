@@ -2,16 +2,19 @@
 """
 Example inference that's fast and represents a lower bound on accuracy.
 """
-import jax.numpy as jnp
-import jax.random as jrandom
-import numpy as np
-import numpyro
-import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS
-from numpyro.infer import Predictive
-from numpyro.infer import init_to_median, init_to_feasible, init_to_value
+try:
+    import jax.numpy as jnp
+    import jax.random as jrandom
+    import numpy as np
+    import numpyro
+    import numpyro.distributions as dist
+    from numpyro.infer import MCMC, NUTS
+    from numpyro.infer import Predictive
+    from numpyro.infer import init_to_median, init_to_feasible, init_to_value
 
-from numpyro.contrib.control_flow import scan
+    from numpyro.contrib.control_flow import scan
+except ImportError:
+    pass
 import os
 from pathlib import Path
 import yaml

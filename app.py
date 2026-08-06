@@ -1,4 +1,5 @@
 import datetime
+import functools
 import json
 import os
 
@@ -34,10 +35,28 @@ u = planzero.ureg
 HOME_SHOW_PLANNED_POSTS = (os.environ['PLANZERO_HOME_SHOW_PLANNED_POSTS'] == '1')
 HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
+
+try:
+    import diskcache
+except ImportError:
+    diskcache = None
+
+APP_CACHE_DIR = os.environ['PLANZERO_APP_CACHE_DIR']
+USE_DISK_CACHE = (os.environ['PLANZERO_USE_DISK_CACHE'] == '1')
+
+_app_cache = None
+
 def app_cache(f):
-    if planzero.my_functools.USE_DISK_CACHE:
+    if USE_DISK_CACHE and diskcache:
         # this branch is used in deployed code
-        return planzero.my_functools.cache(f)
+        # (via production_server in Dockerfile)
+        # In production, the cache must be pre-installed
+        # because otherwise many necessary files will be missing
+        # and pages won't render.
+        global _app_cache
+        if _app_cache is None:
+            _app_cache = diskcache.Cache(APP_CACHE_DIR)
+        return _app_cache.memoize()(f)
     else:
         # this branch is used in dev mode,
         # where, coincidentally, it's preferred to
@@ -122,20 +141,30 @@ async def get_ipcc_sectors_category(
             error_text=f"Sorry, we don't have the analysis page for {catpath} yet")
 
 
-@app.get("/models/sim/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
-async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier_name: str):
+@app_cache
+def get_simulation_barrier_impact_html(sim_name, barrier_name):
     sim = planzero.sim.simulation_result(sim_name)
-    return templates.TemplateResponse(
-        request=request,
-        name="scenario_barrier.html",
-        context=dict(
+    template = templates.get_template("scenario_barrier.html")
+    rval = template.render(
+        dict(
             default_context,
             sim=sim,
             active_tab='simulations',
             sim_name=sim_name,
             barrier_name=barrier_name,
-            ),
-    )
+            ))
+    return rval
+
+
+@app.get("/models/sim/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier_name: str):
+    html = get_simulation_barrier_impact_html(sim_name, barrier_name)
+    if html:
+        return HTMLResponse(content=html)
+    else:
+        return await get_ipcc_sectors(
+            request,
+            error_text=f"Sorry, no such simulation and/or barrier")
 
 
 @app_cache
@@ -209,6 +238,23 @@ async def get_models_prob_page(ident:str, sector_path:str, request: Request):
     return HTMLResponse(content=html)
 
 
+@app_cache
+def get_simulation_ipcc_sectors_category_html(sim_name, catpath):
+    sim = planzero.sim.simulation_result(sim_name)
+    chart = sim.echart_ipcc_sector(catpath)
+    template = templates.get_template("scenario_ipcc_sector.html")
+    rval = template.render(
+        dict(
+            default_context,
+            active_tab='simulations',
+            sim_name=sim_name,
+            ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
+            catpath=catpath,
+            chart=chart,
+            ))
+    return rval
+
+
 @app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
 @app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
 @app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
@@ -226,21 +272,9 @@ async def get_simulation_ipcc_sectors_category(
     else:
         catpath = f'{category}'
 
-    sim = planzero.sim.simulation_result(sim_name)
-    chart = sim.echart_ipcc_sector(catpath)
+    html = get_simulation_ipcc_sectors_category_html(sim_name, catpath)
+    return HTMLResponse(content=html)
 
-    return templates.TemplateResponse(
-        request=request,
-        name="scenario_ipcc_sector.html",
-        context=dict(
-            default_context,
-            active_tab='simulations',
-            sim_name=sim_name,
-            ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
-            catpath=catpath,
-            chart=chart,
-            ),
-    )
 
 @app_cache
 def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
@@ -298,8 +332,8 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
     return HTMLResponse(content=html)
 
 
-@app.get("/strategies/", response_class=HTMLResponse)
-async def get_strategies(request: Request):
+@app_cache
+def get_strategies_html():
     sims_by_dynelems = {}
     sectors_by_dynelems = {}
     for sitesim_name, sitesim in planzero.sim.site_simulations.items():
@@ -314,18 +348,23 @@ async def get_strategies(request: Request):
                     .update(sectors_by_de[dynelem.identifier])
             sectors_by_dynelems[dynelem.__class__.__name__].update(
                 dynelem.extra_ipcc_sectors)
-    return templates.TemplateResponse(
-        request=request,
-        name="strategies.html",
-        context=dict(
+    template = templates.get_template("strategies.html")
+    rval =  template.render(
+        dict(
             default_context,
             active_tab='strategies',
             npv_unit='MCAD',
             nph_unit='exajoule',
             sims_by_dynelems=sims_by_dynelems,
             sectors_by_dynelems=sectors_by_dynelems,
-            ),
-    )
+            ))
+    return rval
+
+
+@app.get("/strategies/", response_class=HTMLResponse)
+async def get_strategies(request: Request):
+    html = get_strategies_html()
+    return HTMLResponse(content=html)
 
 
 @app_cache

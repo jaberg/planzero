@@ -10,24 +10,13 @@
 {% if blog.status == BlogStatus.Planned %}
 <div class="box">
     <p>This post is "<a href="/about#planned-status">Planned</a>".
-    Please bear in mind that it is materially incomplete.</p>
+    The technical modelling work has been done, but this post hasn't been written yet.</p>
 </div>
 {% endif %}
 
+<h2 id="overview">Overview</h2>
+
 <!-- Incorporate material from html/blog/2026-05-26-probabilistic-modelling.html -->
-
-<p>
-Table of Contents:
-<ul>
-    <li><a href="#introduction">Introduction</a></li>
-    <li><a href="#conclusion">Conclusion</a></li>
-</ul>
-</p>
-
-<h2 id="introduction">Introduction</h2>
-
-
-<h2 id="conclusion">Conclusion</h2>
 
 <p>
 Until next time,
@@ -35,6 +24,69 @@ Until next time,
 <p>
 - James Bergstra
 </p>
+
+
+<p>
+<b>Appendices</b>
+<ul>
+    <li><a href="#appendix-model">Model Description</a></li>
+    <li><a href="#appendix-results">Results: Inference and Analysis</a></li>
+    <li><a href="#appendix-architecture">Supporting Update to PlanZero's Build System</a></li>
+</ul>
+</p>
+
+<h2 id="appendix-architecture">Supporting Update to PlanZero's Build System</h2>
+
+<p>
+The Static Normals model is the first in PlanZero to create build artifacts of a significant size.
+The samples from the MCMC chains are not huge, but they are tens or hundreds of megabytes,
+depending on how long they're configured to be.
+PlanZero's build and deployment implementation was modified not to save these MCMC chains in git,
+or upload them to fly.io.
+</p>
+
+<p>
+PlanZero's Dockerfile was modified to use a multi-stage build to
+produce a small docker image for fly.io
+that does not contain large data files or raw model samples.
+The following flow-chart illustrates the dependencies between docker images
+defined in the Dockerfile.
+It has been added to the <a href="/about/#build-data-flow">About page</a> in a new section about Architecture.
+</p>
+
+<pre class="mermaid">
+
+flowchart TB
+
+python_arm["Python:3.11-slim [ARM64]"]
+
+base["base"]
+
+testing["testing"]
+
+build_cache["build_cache"]
+
+production_server["production_server"]
+
+production_server_amd64["production_server_amd64"]
+
+python_arm --> base
+base --> testing
+testing --> build_cache
+
+base --> production_server
+
+build_cache -. copy pre-rendered pages .-> production_server
+
+python_amd["Python:3.11-slim [AMD64]"]
+
+
+build_cache -. copy pre-rendered pages .-> production_server_amd64
+
+python_amd --> production_server_amd64
+
+
+</pre>
 
 
 <ul class="actions special">
@@ -47,4 +99,8 @@ Until next time,
 </ul>
 </section>
 </div>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
 {% include "post-main.html" %}

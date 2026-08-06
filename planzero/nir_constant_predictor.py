@@ -4,13 +4,17 @@ Example inference that's fast and represents a lower bound on accuracy.
 import os
 
 
-import jax.numpy as jnp
-import jax.random as jrandom
-import numpy as np
-import numpyro
-import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS
-from numpyro.infer import Predictive
+try:
+    import jax.numpy as jnp
+    import jax.random as jrandom
+    import numpy as np
+    import numpyro
+    import numpyro.distributions as dist
+    from numpyro.infer import MCMC, NUTS
+    from numpyro.infer import Predictive
+except ImportError:
+    pass
+
 from pathlib import Path
 from pydantic import BaseModel, computed_field
 import yaml

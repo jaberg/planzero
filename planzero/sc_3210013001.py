@@ -1,6 +1,9 @@
 import enum
 
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    pass
 
 from .ureg import u
 from .enums import PT

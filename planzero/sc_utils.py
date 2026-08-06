@@ -1,8 +1,13 @@
-from stats_can.sc import (pathlib, pd, zipfile, parse_tables, download_tables)
-import stats_can
 import markdown
-
 import pandas as pd
+import pathlib
+
+try:
+    from stats_can.sc import (pd, zipfile, parse_tables, download_tables)
+    import stats_can
+except ImportError:
+    pass
+
 import numpy as np
 
 def sc_metadata_by_product_id(productId):

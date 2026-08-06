@@ -79,12 +79,9 @@ class GlossaryTerm(BaseModel):
     def aka(self) -> list[str]:
         return []
 
-    def all_pretty_names(self):
-        rval = list(self.all_names)
-        if '_' in rval[0]:
-            return rval[1:]
-        else:
-            return rval
+    def pretty_names(self):
+        pretty_names = set(name.replace('_', ' ') for name in self.all_names)
+        return list(sorted(pretty_names))
 
     @computed_field
     def all_names(self) -> list[str]:

@@ -21,6 +21,7 @@ Table of Contents:
             <li><a href="#post-authorship">Post Authorship and Acknowledgements</a></li>
         </ul>
     </li>
+    <li><a href="#architecture">Architecture</a></li>
     <li><a href="#manifesto">Manifesto (Dec 5, 2025)</a></li>
     <li><a href="#posts">Posts Developing this Page</a></li>
 </ul>
@@ -198,7 +199,6 @@ PlanZero hasn't yet benefited from funding or sponsorship, but if that happens,
 I will acknowledge it publicly.</p>
 
 <h3 id="contributing">Post Drafting Guidance for Contributors</h3>
-
 <p>
 PlanZero is an open-source project. You are welcome to make a fork on GitHub,
 and I'd be delighted to learn more about your interest via
@@ -212,6 +212,61 @@ It's far from developer documentation but it's a start.
 Please do get in touch as mentioned above though, I looking forward
 to hearing from you.
 </p>
+
+<h2 id="architecture">Architecture</h2>
+
+<p>
+PlanZero is rooted in a project on GitHub.
+The modelling described by its source code can entail significant of
+computation, the data sets informing those models can be large,
+users needs of the project aren't yet well understood,
+and the operating budget is small.
+Over time, as the project bumps up against various limits the strategies for
+overcoming them will be documented here.
+</p>
+
+<h3 id="build-data-flow">Build Data Flow</h3>
+
+<p>
+PlanZero's Dockerfile uses a multi-stage build to
+produce a small docker image for fly.io
+that does not contain large data files or raw model samples.
+Deployment is currently only possible from my laptop.
+</p>
+
+<pre class="mermaid">
+
+flowchart TB
+
+python_arm["Python:3.11-slim [ARM64]"]
+
+base["base"]
+
+testing["testing"]
+
+build_cache["build_cache"]
+
+production_server["production_server"]
+
+production_server_amd64["production_server_amd64"]
+
+python_arm --> base
+base --> testing
+testing --> build_cache
+
+base --> production_server
+
+build_cache -. copy pre-rendered pages .-> production_server
+
+python_amd["Python:3.11-slim [AMD64]"]
+
+
+build_cache -. copy pre-rendered pages .-> production_server_amd64
+
+python_amd --> production_server_amd64
+
+
+</pre>
 
 <h2 id="manifesto">Manifesto (Dec 5, 2025)</h2>
 
@@ -278,4 +333,8 @@ And I hope that I can help make some of it happen.
 </section>
 </div>
 
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
 {% include "post-main.html" %}

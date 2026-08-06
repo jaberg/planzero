@@ -1,10 +1,17 @@
-import jax
-import jax.numpy as jnp
-import jax.random as jrandom
-import numpyro
-import numpyro.distributions as dist
-from numpyro.distributions import Distribution, constraints
-from numpyro.distributions.util import promote_shapes
+try:
+    import jax
+    import jax.numpy as jnp
+    import jax.random as jrandom
+    import numpyro
+    import numpyro.distributions as dist
+    from numpyro.distributions import Distribution, constraints
+    from numpyro.distributions.util import promote_shapes
+
+except ImportError:
+    Distribution = object
+    class constraints:
+        real = None
+        positive = None
 
 class SymmetricBlendedLogNormal(Distribution):
     """A 3-element mixture model implementing a symmatric version of

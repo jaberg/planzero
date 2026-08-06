@@ -4,12 +4,19 @@ target = ${PROJECTNAME}
 	docker build --target base -t $(target):base .
 	touch .build.base
 
+
 .build.test: Dockerfile
 	docker build --target testing -t $(target):test .
 	touch .build.test
 
+
+.build.cache: Dockerfile
+	docker build --target build_cache -t $(target):cache .
+	touch .build.cache
+
+
 .build.prod: Dockerfile
-	docker build --target production -t $(target):prod .
+	docker build --target production_server -t $(target):prod .
 	touch .build.prod
 
 bash: .build.test
@@ -17,6 +24,13 @@ bash: .build.test
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target):test \
+		bash
+
+bash_prod: .build.prod
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target):prod \
 		bash
 
 jupyter: .build.test
@@ -30,6 +44,7 @@ jupyter: .build.test
 test: .build.test
 	docker run \
 		-v ${PWD}:/mnt/ \
+		-e PLANZERO_DATA=/mnt/data \
 		-w /mnt/ \
 		-it --rm $(target):test \
 		pytest -W error --maxfail=2 .
@@ -64,7 +79,7 @@ prodlike: .build.prod
 		fastapi run --port=8015 --host=0.0.0.0
 
 deploy:
-	fly deploy
+	fly deploy --local-only
 
 clean:
 	rm .build.*

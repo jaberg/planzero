@@ -129,7 +129,7 @@ the following 58 terms:
         <tr>
     {% for ii, (clsname, obj) in enumerate(sorted(planzero.glossary.registry.items())) %}
     {% if ii and ii % 3 == 0 %}</tr><tr>{% endif %}
-    <td><a href="#{{clsname}}">{% for name in obj.all_names %} {{name.replace('_', ' ')}}{%if not loop.last%}, {%endif%}{%endfor%}</a></td>
+    <td><a href="#{{clsname}}">{% for name in obj.pretty_names() %}{{name}}{%if not loop.last%}, {%endif%}{%endfor%}</a></td>
     {% endfor %}
         </tr>
     </tbody>

@@ -1,4 +1,7 @@
-import jax.random as jrandom
+try:
+    import jax.random as jrandom
+except ImportError:
+    pass
 import numpy as np
 from pydantic import computed_field
 
