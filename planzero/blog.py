@@ -928,9 +928,9 @@ class StaticNormals(BlogPost):
 class ProbabilisticNIR2025(BlogPost):
     """This post introduces a PlanZero's first probabilistic model:
     an interpretation of the NIR-2025 data including its uncertainty
-    estimates. The PlanZero site now includes a Models tab,
-    with a section for probabilistic models (which represent and visualize
-    emissions uncertainty). This treatment of uncertainty is a fundamental
+    estimates. The PlanZero site now includes a Models tab
+    with a section for probabilistic models, which represent and visualize
+    emissions uncertainty. This treatment of uncertainty is a fundamental
     aspect of PlanZero's future modelling work.
     This post also introduces "Planned" status for posts as a mechanism for communicating
     roadmap and organizing ongoing work.

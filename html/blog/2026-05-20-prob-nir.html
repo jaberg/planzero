@@ -7,90 +7,107 @@
         <p>{{blog.about}}</p>
     </header>
 
-<h2 id="abstract">Abstract</h2>
+<h2 id="abstract">Overview</h2>
 
-<!-- introduction -->
 <p>
-PlanZero has not yet incorporated estimates of uncertainty from {{siteref("NIR", "NIR-2025")}}, but I would like for PlanZero models to make predictions,
-and for those predictions to be credible;
-for the purpose of
-evaluating emission predictions, the uncertainty in published data is important.
-The NIR-2025 follows IPCC-2006 reporting guidance in defining uncertainty as <i>lack of knowledge of the true
-value of a variable, that can be described as a probability density function</i>.
-Probability density functions, in this context,
-define the range and likelihood of possibilities for emissions estimates
-(for background see {{siteref("Probability Density Function", "glossary")}} or
-<a href="#appendix-models">Appendix 1</a>).
-This post introduces a probabilistic <a href="/models/prob/NIR2025/">NIR-2025 model</a> (found under the new "<a href="/models/">Models</a>" above tab)
-with probability density functions for each sector, region, gas, and year 1990-2023 (inclusive) covered by NIR-2025
-(see
-<a href="#appendix-sbln">Appendix 2</a>
-and
-<a href="#appendix-uncertainty">Appendix 3</a>
-for how PlanZero interpreted NIR-2025 uncertainty data).
-The probabilistic NIR-2025 model is intended to support the evaluation of future work on
-{{siteref("Predictive_Model", "predictive models")|safe}},
-whose job will be to predict probability density functions for emissions before they are published (
-<a href="#appendix-evaluating">Appendix 4</a>
-describes a method for evaluating predictive models quantitatively on the basis of the probabilistic NIR-2025 model).
+As of this post, PlanZero incorporates uncertainty estimates from {{siteref("NIR", "NIR-2025")}}
+into a new kind of model in PlanZero, a probabilistic model.
+The emissions estimates in NIR-2025 were meant to be interpreted in
+a probabilistic framework,
+and interpreting reported emissions this way makes it possible to
+show them more completely, and evaluate NIR predictions
+relative to confidence in their estimated values.
 </p>
 
 <p>
-This post also introduces a new style of visualization that
-can communicate probabilistic models: an overview by sector (see below),
-with an ability to click-through and see emissions by region and by greenhouse gas
-(see
-<a href="#appendix-visualizing">Appendix 5</a> for examples and documentation of how the figures are made).
-The overview figure shows that uncertainty is low for the sectors with largest emissions, although there is visibly more uncertainty
+The NIR-2025 follows IPCC-2006 reporting guidance in defining uncertainty as <i>lack of knowledge of the true
+value of a variable, that can be described as a probability density function</i>.
+Probability density functions, in this context,
+define the range and likelihood of possibilities for emissions estimates.
+This post introduces a probabilistic <a href="/models/prob/NIR2025/">NIR-2025 model</a> (found under the new "<a href="/models/">Models</a>" tab above)
+with probability density functions for each sector, region, gas, and year 1990-2023 covered by NIR-2025.
+As probabilistic modelling is new to PlanZero,
+this post includes a primer on probability density functions, distributions, and probabilistic models as <a href="#appendix-models">Appendix 1</a>.
+</p>
+
+<p>
+The density functions used to model per-sector-region-gas-year emissions in the NIR-2025 model are custom parametric density functions,
+which this post dubs "Symmetric Blended Log-Normal" (SBLN) distributions.
+These distributions are used to blend Normal and Log-Normal distributions so that
+all sectors can be modelled with the same type of distribution, regardless of whether the sector
+emissions are naturally non-negative or not.
+Details about the design of this distribution can be found in <a href="#appendix-sbln">Appendix 2</a>.
+</p>
+
+<p>
+Some judgement and creativity was required to estimate the parameters of the SBLN distributions
+for each combination of sector, region, gas, and year.
+The NIR-2025 does not estimate means for every combination, and uncertainty values are listed using a different
+taxonomy of sectors, and only for national totals, and only for years 1990 and 2023.
+For the large positive emissions that dominate the totals, the SBLN distributions were approximately log-normal with the desired mean and variance,
+but in cases of zeros, missing data, or not-necessarily-positive emissions,
+various other distributions were used.
+The details of how the parameters of the SBLN distribution were set in all cases can be found in <a href="#appendix-uncertainty">Appendix 3</a>.
+</p>
+
+<p>
+The probabilistic NIR-2025 model introduced here is intended to support the evaluation of future work on
+{{siteref("Predictive_Model", "predictive models")|safe}},
+whose job (in future posts) will be to predict emission amounts before they are published.
+<a href="#appendix-evaluating">Appendix 4</a>
+describes a method for evaluating predictive models quantitatively on the basis of the probabilistic NIR-2025 model,
+such that a score of zero corresponds to perfect distributional prediction across all sector-gas-region-year combinations,
+and anything else represents a magnitude-weighted KL-divergence from the NIR-2025 model.
+</p>
+
+<p>
+This post also introduces a new style of visualization to
+communicate probabilistic models: an overview by sector (see below),
+with an ability to click-through and see emissions in one sector by region and by greenhouse gas.
+<a href="#appendix-visualizing">Appendix 5</a> documents both types of graphic.
+The vertical axis for all panels is annual emissions in Mt{{CO2e}},
+the horizontal axis is time (the time range is adjustable via the scroll bar at the bottom of the graphic).
+The overview graphic below shows that uncertainty is low for the sectors with largest emissions, although there is visibly more uncertainty
 when it comes to emissions from enteric fermentation and
 even larger uncertainty when it comes to e.g. municipal solid waste landfills.
 The largest uncertainty of all is in emissions from forest land,
-shown at the bottom of the figure among other sectors for land-use, land-use change, and forestry.
+shown at the bottom of the graphic among other sectors for land-use, land-use change, and forestry.
 </p>
 
 {% include "blog/2026-05-20-prob-nir-NIR2025-all_sectors.html" %}
 
 <p>
-Finally, this post also brings a procedural change, introducing "Planned" as an earlier-stage status for posts.
-A post with "Planned" in its title instead of e.g. "Draft"
-is public, but
-appears on the landing page only when "planned=1" is in the url,
-e.g. <a href="/?planned=1">this landing page including planned posts</a>.
-A planned post has a titles and description, but may or may not link to a post page; if there's a post page, that page is missing critical content and a box under its title outlines the missing pieces.
-The purpose of planned posts is to communicate a roadmap. When a planned post is no longer missing content, then it will be marked instead as a Draft
-(see <a href="/about/#draft-status">existing handling of Draft posts</a>).
-</p>
-
-<p>
-The Abstract / Appendix format used in this post breaks with the Introduction / Content / Conclusion pattern used to date
+Finally, this post also brings a procedural change, introducing
+"<a href="/about/#planned-status">Planned</a>" as an earlier-stage status for posts.
+The purpose of planned posts is to communicate a roadmap.
+When a planned post is no longer missing content, then it will be marked instead as a Draft.
+Relatedly, the Overview / Appendix format used in this post breaks with the Introduction / Content / Conclusion pattern used to date
 for two reasons:
-(1) the Abstract / Appendix format is better for communicating
-multiple levels of technical depth, because the Abstract quickly lays out the
+(1) the Overview / Appendix format is better for communicating
+multiple levels of technical depth, because the Overview quickly lays out the
 key message for the broadest audience and invites readers to dive deeper only
 where they wish;
-(2) the Abstract / Appendix format accelerates iterative writing,
+(2) the Overview / Appendix format accelerates iterative writing,
 because each appendix is a small piece that can be written relatively independently of the whole post.
-I hope that the introduction of Planned posts and the use of Abstract / Appendix structure
-can organize and communicate what has become a multi-month backlog of unfinished content:
+I hope that the introduction of Planned posts and the use of Overview / Appendix structure
+helps organize and communicate several planned posts:
 <ol>
     <li><a href="{{ planzero.blog.registry['StaticNormals'].siteref}}">Static Normals</a>:
         a baseline predictive model of national emissions
     </li>
     <li><a href="{{ planzero.blog.registry['PreNIR'].siteref}}">
-            Simulating the evaluation of a predictive model with NIR-2025 data
+            Evaluating a predictive model with NIR-2025 data
         </a>
     </li>
     <li><a href="{{ planzero.blog.registry['ProbabilisticBovaer'].siteref}}">Strategies in probabilistic models: another look at Bovaer</a></li>
     <li><a href="{{ planzero.blog.registry['Glossary'].siteref}}">What is a PlanZero model?</a> Introducing a PlanZero glossary</li>
     <li><a href="{{ planzero.blog.registry['AR2'].siteref}}">Improving NIR prediction with autoregressive probabilistic modelling</a></li>
 </ol>
-Of course, beyond that, there's more work yet, e.g. to incorporate the NIR-2026, to make predictions for NIR-2027,
-to incorporate PlanZero's work on the drivers of sectoral activity into refined models
-of each sector, and ultimately to model the impacts of emission reduction strategies.
+Of course, beyond that, there's much more do to ultimately model the impacts of emission reduction strategies. But these posts are partly written, even if their contents are incomplete and sometimes misplaced.
 </p>
 
 <p>
-Until the next tranche settles into comprehensible form,
+Until the next post reaches Draft status,
 </p>
 
 <p>
@@ -827,7 +844,7 @@ The probabilistic NIR developed in this post can be visualized
 be visualized in a set of graphics that can now
 be found in the "<a href="/models/">Models</a>" tab of the PlanZero navigation bar.
 There are two types of graphic.
-The main graphic, featured above in the <a href="#abstract">Abstract</a>,
+The main graphic, featured above in the <a href="#abstract">Overview</a>,
 and reproduced below
 provides an overview
 of national emissions time-series for all 71 sectors.
