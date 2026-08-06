@@ -28,6 +28,7 @@
 						<!-- Posts -->
 							<section class="posts">
                                 {% for blog in blogs_sorted_by_date %}
+                                {% if planned or blog.draft or blog.done %}
                                 {% if blog.published or unpublished %}
 								<article>
 									<header>
@@ -42,6 +43,7 @@
                                         <li><a href="{{blog.siteref}}" class="button">Full Post</a></li>
 									</ul>
 								</article>
+                                {% endif %}
                                 {% endif %}
                                 {% endfor %}
 							</section>

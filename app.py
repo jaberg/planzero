@@ -422,7 +422,7 @@ async def get_about(request: Request):
 @app.get("/", response_class=HTMLResponse)
 async def get_index(
     request: Request,
-    planned:bool=HOME_SHOW_PLANNED_POSTS,
+    planned:int=HOME_SHOW_PLANNED_POSTS,
     unpublished:bool=HOME_SHOW_UNPUBLISHED_POSTS,
     ):
     return templates.TemplateResponse(

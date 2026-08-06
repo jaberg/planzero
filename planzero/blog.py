@@ -45,6 +45,14 @@ class BlogPost(BaseModel):
         return self.status == BlogStatus.Draft
 
     @property
+    def done(self):
+        return self.status == BlogStatus.Done
+
+    @property
+    def planned(self):
+        return self.status == BlogStatus.Planned
+
+    @property
     def siteref(self):
         return f'/post/{self.url_filename}'
 
