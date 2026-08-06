@@ -99,13 +99,12 @@ ENV PATH="/app/venv/bin:$PATH"
 COPY ./base_requirements.txt base_requirements.txt
 RUN pip install --no-cache-dir -r base_requirements.txt
 
-# COPY CACHE
-COPY --from=build_cache /content/.planzero_app_cache /content/.planzero_app_cache
-
 # MAINTAIN COPY-PASTE FROM production_server
+COPY --from=build_cache /content/.planzero_app_cache /content/.planzero_app_cache
 COPY ./planzero /content/planzero
 COPY ./html /content/html
 COPY ./app.py /content/app.py
+COPY ./data/EN_GHG_IPCC_Can_Prov_Terr.csv /content/data/EN_GHG_IPCC_Can_Prov_Terr.csv
 WORKDIR /content
 
 ENV PLANZERO_DATA="/content/data"
