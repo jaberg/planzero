@@ -8,13 +8,16 @@ from . import (
     prob,
     )
 
+HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
 def endpoints():
     rval = []
 
     rval.extend([
-        f"/blog/{url_filename}/"
-        for url_filename in blog._blogs_by_url_filename])
+        f"/post/{url_filename}/"
+        for url_filename, post in blog._blogs_by_url_filename.items()
+        if post.published or HOME_SHOW_UNPUBLISHED_POSTS
+    ])
 
     for sim_name, site_sim in sorted(sim.site_simulations.items()):
         rval.append(f"/models/sim/{sim_name}/")
