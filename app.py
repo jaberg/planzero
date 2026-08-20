@@ -367,6 +367,10 @@ async def get_strategies(request: Request):
     return HTMLResponse(content=html)
 
 
+class CannotRenderPublishedPost(Exception):
+    pass
+
+
 @app_cache
 def get_blog_html(post_name: str):
     blog = planzero.blog._blogs_by_url_filename.get(post_name)
@@ -380,13 +384,16 @@ def get_blog_html(post_name: str):
                 prev_url_filename = planzero.blog._blogs_sorted_by_date[ii + 1].url_filename
             break
 
-    return templates.get_template(f"/blog/{post_name}.html").render(dict(
-        default_context,
-        active_tab='blog',
-        blog=blog,
-        prev_url_filename=prev_url_filename,
-        next_url_filename=next_url_filename,
-        ))
+    if blog.published or HOME_SHOW_UNPUBLISHED_POSTS:
+        return templates.get_template(f"/blog/{post_name}.html").render(dict(
+            default_context,
+            active_tab='blog',
+            blog=blog,
+            prev_url_filename=prev_url_filename,
+            next_url_filename=next_url_filename,
+            ))
+    else:
+        raise CannotRenderPublishedPost()
 
 
 @app.get("/blog/{post_name}", response_class=HTMLResponse)
@@ -398,6 +405,8 @@ async def get_blog(request: Request, post_name:str):
     except IOError as err:
         print(err)
         raise HTTPException(status_code=404, detail="url not recognized")
+    except CannotRenderPublishedPost:
+        raise HTTPException(status_code=404, detail="cannot render unpublished post")
 
 ## MODELS
 

@@ -42,14 +42,19 @@ class BlogPost(BaseModel):
     author: str
 
     status: BlogStatus
-    published: bool = True
 
+    published: bool = True
+    # published=False means post will not appear on website, regardless of status.
+    # This attribute is useful for overriding to render a page locally
+    # that cannot be rendered from e.g. github workflows.
+    # github workflows run with PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
+
+    tags: set[str] = set()
     # TODO: enforce BlogTags e.g.
     # tags: set[BlogTag] = set()
     # But also consider that IPCC_Sector tags are also
     # valid as blog tags. What else?
     # Models, Strategies, Barriers... anything else?
-    tags: set[str] = set()
 
     @property
     def draft(self):
@@ -137,6 +142,7 @@ class AR2(BlogPost):
             #tags={BlogTag.NIR_Modelling,
                  #},
             status=BlogStatus.Planned,
+            published=False,
             )
 
     @staticmethod
