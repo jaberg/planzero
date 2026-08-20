@@ -49,4 +49,5 @@ jobs:
           PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/.planzero_app_cache"
           PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
           PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
+          GITHUB_WORKSPACE: "${{github.workspace}}"
         run: pytest -W error --maxfail=10 .
