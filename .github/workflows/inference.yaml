@@ -9,6 +9,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install base dependencies
+        run: pip install -r base_requirements.txt
+
+      - name: Install dev dependencies
+        run: pip install -r requirements_dev.txt
+
       - name: Cache Static Normals
         id: cache-static-normals
         uses: actions/cache@v5
