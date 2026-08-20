@@ -531,5 +531,6 @@ default_context = dict(
     blogs_by_tag=planzero.blog.blogs_by_tag,
     latex=planzero.blog.latex,
     BlogStatus=planzero.blog.BlogStatus,
+    HOME_SHOW_UNPUBLISHED_POSTS=HOME_SHOW_UNPUBLISHED_POSTS,
     )
 

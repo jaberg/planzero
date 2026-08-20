@@ -16,7 +16,13 @@
     <ul>
         <li>Shorten it.</li>
         <li>Switch to Abstract / Appendix structure</li>
-        <li>Apply the metric to the <a href="{{ planzero.blog.registry['StaticNormals'].siteref}}">Static Normals</a> model</li>
+        <li>Apply the metric to the
+    {% if HOME_SHOW_UNPUBLISHED_POSTS %}
+            <a href="{{ planzero.blog.registry['StaticNormals'].siteref}}">Static Normals</a>
+    {% else %}
+        Static Normals
+    {% endif %}
+            model</li>
         <li>Visualize and discuss the results. The Static Normals model
         is probably not great for some sectors, but it's probably nearly
         perfect for some as well.
@@ -205,8 +211,10 @@ two probabilistic
 models: the static and AR-2 models mentioned above.
 The site now includes an overview
 of all sectors, gases, provinces and territories for each one
+    {% if HOME_SHOW_UNPUBLISHED_POSTS %}
 (<a href="/models/prob/Static_Normals/">static</a>,
  <a href="/models/prob/AR2/">AR-2</a>)
+ {% endif %}
 but this post
 will introduce each one as a model of just a single sector and gas:
 Harvested Wood Products' {{CO2}} emissions (HWP-{{CO2|safe}}).

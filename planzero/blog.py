@@ -48,6 +48,8 @@ class BlogPost(BaseModel):
     # This attribute is useful for overriding to render a page locally
     # that cannot be rendered from e.g. github workflows.
     # github workflows run with PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
+    #
+    # TODO: rename this "add to registry" or something
 
     tags: set[str] = set()
     # TODO: enforce BlogTags e.g.
@@ -1589,9 +1591,10 @@ def init_blogs_by_url_filename():
     global _blogs_sorted_by_date
     for cls in _classes:
         obj = cls()
-        registry[cls.__name__] = obj
-        _blogs_by_url_filename[obj.url_filename] = obj
-        _blogs_sorted_by_date.append(obj)
+        if obj.published:
+            registry[cls.__name__] = obj
+            _blogs_by_url_filename[obj.url_filename] = obj
+            _blogs_sorted_by_date.append(obj)
     _blogs_sorted_by_date.sort(key=lambda x: x.date, reverse=True)
 
 # TODO: handle this in the metaclass, update the _blogs_sorted_by_date on access
