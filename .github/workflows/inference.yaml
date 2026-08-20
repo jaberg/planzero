@@ -14,8 +14,6 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-
-      - name: Install base dependencies
         run: pip install -r base_requirements.txt
 
       - name: Install dev dependencies
