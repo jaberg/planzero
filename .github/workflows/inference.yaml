@@ -1,0 +1,19 @@
+name: Inference
+
+on: push
+
+jobs:
+  estimate_static_normal_model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Cache Static Normals
+        id: cache-static-normals
+        uses: actions/cache@v4
+        with:
+          path: /foo
+          key: foo-v1
+
+      - if: ${{ steps.cache-static-normals.outputs.cache-hit != 'true'}}
+        name: Populate the cache
+        run: date >> /foo
