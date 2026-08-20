@@ -524,7 +524,7 @@ class AR2(BlogPost):
                 alpha=0.2,
                 interpolate=True,
                 color=col_by_pt[pt],
-                label='$\mu$ 95% CI',
+                label=r'$\mu$ 95% CI',
                 )
 
             spread_pt_ii = hpdi(rec_pt[:, :, list_idx], 0.95)
@@ -535,13 +535,13 @@ class AR2(BlogPost):
                 alpha=0.1,
                 interpolate=True,
                 color=col_by_pt[pt],
-                label='$X$ 95% CI',
+                label=r'$X$ 95% CI',
                 )
             ax.plot(
                 rec_yrs,
                 np.mean(spread_pt_ii, axis=0) * scale,
                 color=col_by_pt[pt],
-                label='$X$ mean = $\mu$ mean',
+                label=r'$X$ mean = $\mu$ mean',
                 ls=':',
                 )
 
