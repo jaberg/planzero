@@ -6,14 +6,16 @@ jobs:
   estimate_static_normal_model:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Cache Static Normals
         id: cache-static-normals
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
-          path: /foo
+          path: ~/foo
           key: foo-v1
 
-      - if: ${{ steps.cache-static-normals.outputs.cache-hit != 'true'}}
-        name: Populate the cache
-        run: date >> /foo
+      - name: Populate the cache
+        if: ${{ steps.cache-static-normals.outputs.cache-hit != 'true'}}
+        run: date >> ~/foo
