@@ -36,4 +36,11 @@ jobs:
         run: date >> ~/foo
 
       - name: Pytest
+        env: |
+          PLANZERO_DATA=~/data
+          PLANZERO_USE_DISK_CACHE=1
+          PLANZERO_CACHE_DIR=~/.planzero_cache
+          PLANZERO_APP_CACHE_DIR=~/.planzero_app_cache
+          PLANZERO_HOME_SHOW_PLANNED_POSTS=0
+          PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
         run: pytest -W error --maxfail=10 .
