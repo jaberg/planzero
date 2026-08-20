@@ -1123,14 +1123,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax0.plot(
                     x,
                     np.exp(ca_dist.log_prob(x * 1000)))
-                ax0.set_title("National Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
-                ax0.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax0.set_title(r"National Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
+                ax0.set_xlabel(r"Emissions ($\mathrm{MtCO_2e}$)")
                 ax0.set_ylabel("Probability Density")
                 axtexts(
                     ax0,
-                    [f"$\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
+                    [f"$\\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
                      f"$\\rho={ca_dist.rolloff / 1000:.2f}~MtCO_2e$",
-                     f"$\sigma={ca_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={ca_dist.relerr * 100:.2f}$%",
                     ])
 
                 x = np.linspace(0, 150, 500)
@@ -1138,14 +1138,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax1.plot(
                     x,
                     np.exp(pt_dist.log_prob(x)))
-                ax1.set_title("Nunavut Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
-                ax1.set_xlabel("Emissions ($\mathrm{ktCO_2e}$)")
+                ax1.set_title(r"Nunavut Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
+                ax1.set_xlabel(r"Emissions ($\mathrm{ktCO_2e}$)")
                 ax1.set_ylabel("Probability Density")
                 axtexts(
                     ax1,
-                    [f"$\mu={pt_dist.mu:.2f}~ktCO_2e$",
+                    [f"$\\mu={pt_dist.mu:.2f}~ktCO_2e$",
                      f"$\\rho={pt_dist.rolloff:.2f}~ktCO_2e$",
-                     f"$\sigma={pt_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={pt_dist.relerr * 100:.2f}$%",
                     ],
                     left_offset=.6,
                     )
@@ -1159,14 +1159,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax.plot(
                     x,
                     np.exp(ca_dist.log_prob(x * 1000)))
-                ax.set_title("National Forest Land $\mathrm{CO_2}$ Emissions in 2009")
-                ax.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax.set_title(r"National Forest Land $\mathrm{CO_2}$ Emissions in 2009")
+                ax.set_xlabel(r"Emissions ($\mathrm{MtCO_2e}$)")
                 ax.set_ylabel("Probability Density")
                 axtexts(
                     ax,
-                    [f"$\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
+                    [f"$\\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
                      f"$\\rho={ca_dist.rolloff / 1000:.2f}~MtCO_2e$",
-                     f"$\sigma={ca_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={ca_dist.relerr * 100:.2f}$%",
                     ],
                     left_offset=.6,
                     )
@@ -1177,14 +1177,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax.plot(
                     x,
                     np.exp(pt_dist.log_prob(x * 1000)))
-                ax.set_title("Ontario Forest Land $\mathrm{CO_2}$ Emissions in 2009")
-                ax.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax.set_title(r"Ontario Forest Land $\mathrm{CO_2}$ Emissions in 2009")
+                ax.set_xlabel(r"Emissions ($\mathrm{MtCO_2e}$)")
                 ax.set_ylabel("Probability Density")
                 axtexts(
                     ax,
-                    [f"$\mu={pt_dist.mu / 1000:.2f}~MtCO_2e$",
+                    [f"$\\mu={pt_dist.mu / 1000:.2f}~MtCO_2e$",
                      f"$\\rho={pt_dist.rolloff / 1000:.2f}~MtCO_2e$",
-                     f"$\sigma={pt_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={pt_dist.relerr * 100:.2f}$%",
                     ],
                     left_offset=.6,
                     )
