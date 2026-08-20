@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 # from https://data-donnees.az.ec.gc.ca/data/substances/monitor/canada-s-official-greenhouse-gas-inventory/A-IPCC-Sector?lang=en
 
+print('DEBUG', os.environ['PLANZERO_DATA'])
+
 inv = pd.read_csv(os.path.join(os.environ['PLANZERO_DATA'], 'EN_GHG_IPCC_Can_Prov_Terr.csv'))
 
 inv['CategoryPathWithWhitespace'] = (
