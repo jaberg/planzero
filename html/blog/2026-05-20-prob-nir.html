@@ -92,16 +92,20 @@ because each appendix is a small piece that can be written relatively independen
 I hope that the introduction of Planned posts and the use of Overview / Appendix structure
 helps organize and communicate several planned posts:
 <ol>
+    {% if HOME_SHOW_UNPUBLISHED_POSTS %}
     <li><a href="{{ planzero.blog.registry['StaticNormals'].siteref}}">Static Normals</a>:
         a baseline predictive model of national emissions
     </li>
+    {% endif %}
     <li><a href="{{ planzero.blog.registry['PreNIR'].siteref}}">
             Evaluating a predictive model with NIR-2025 data
         </a>
     </li>
     <li><a href="{{ planzero.blog.registry['ProbabilisticBovaer'].siteref}}">Strategies in probabilistic models: another look at Bovaer</a></li>
     <li><a href="{{ planzero.blog.registry['Glossary'].siteref}}">What is a PlanZero model?</a> Introducing a PlanZero glossary</li>
+    {% if HOME_SHOW_UNPUBLISHED_POSTS %}
     <li><a href="{{ planzero.blog.registry['AR2'].siteref}}">Improving NIR prediction with autoregressive probabilistic modelling</a></li>
+    {% endif %}
 </ol>
 Of course, beyond that, there's much more do to ultimately model the impacts of emission reduction strategies. But these posts are partly written, even if their contents are incomplete and sometimes misplaced.
 </p>

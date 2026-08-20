@@ -1,3 +1,5 @@
+import os
+
 from pydantic import BaseModel, ConfigDict
 from .enums import GHG
 
@@ -405,6 +407,7 @@ class UncertainSparklineMatrixEChart(HTML_element):
 
 
 import inspect
+GITHUB_WORKSPACE = os.environ.get('GITHUB_WORKSPACE')
 
 def coderef_filepath(obj):
     file_path = inspect.getsourcefile(obj)
@@ -412,9 +415,12 @@ def coderef_filepath(obj):
         file_path = file_path[len('/mnt/'):]
     elif file_path.startswith('/content/planzero'):
         file_path = file_path[len('/content/'):]
+    elif GITHUB_WORKSPACE and file_path.startswith(f'{GITHUB_WORKSPACE}/planzero'):
+        file_path = file_path[len(f'{GITHUB_WORKSPACE}/'):]
     else:
         assert 0, file_path
     return file_path
+
 
 def coderef_url(obj):
     file_path = coderef_filepath(obj)

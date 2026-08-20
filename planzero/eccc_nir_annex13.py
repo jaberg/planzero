@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 from .ureg import u
@@ -7,8 +9,9 @@ from .my_functools import cache
 @cache
 def national_electricity_CO2e_from_combustion():
 
-    # Define the file path (use forward slashes or a raw string for Windows paths)
-    file_path = '/mnt/data/EN_Annex13_Electricity_Intensity.xlsx'
+    file_path = os.path.join(
+        os.environ['PLANZERO_DATA'],
+        'EN_Annex13_Electricity_Intensity.xlsx')
 
     years = [1990, 2005, 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
     # Import the Excel file into a pandas DataFrame

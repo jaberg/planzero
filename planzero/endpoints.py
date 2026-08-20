@@ -1,3 +1,5 @@
+import os
+
 from . import (
     ipcc_canada,
     enums,
@@ -8,13 +10,16 @@ from . import (
     prob,
     )
 
+HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
 def endpoints():
     rval = []
 
     rval.extend([
-        f"/blog/{url_filename}/"
-        for url_filename in blog._blogs_by_url_filename])
+        f"/post/{url_filename}/"
+        for url_filename, post in blog._blogs_by_url_filename.items()
+        if post.published or HOME_SHOW_UNPUBLISHED_POSTS
+    ])
 
     for sim_name, site_sim in sorted(sim.site_simulations.items()):
         rval.append(f"/models/sim/{sim_name}/")
@@ -30,6 +35,8 @@ def endpoints():
             rval.append(f"/models/sim/{sim_name}/ipcc-sectors/{catpath}/")
 
     for model_name, site_inf in sorted(prob.site_inferences.items()):
+        if not site_inf.show_on_models_page:
+            continue
         rval.append(f"/models/prob/{model_name}/")
 
         for catpath in ipcc_canada.catpaths:

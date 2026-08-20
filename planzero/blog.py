@@ -42,14 +42,21 @@ class BlogPost(BaseModel):
     author: str
 
     status: BlogStatus
-    published: bool = True
 
+    published: bool = True
+    # published=False means post will not appear on website, regardless of status.
+    # This attribute is useful for overriding to render a page locally
+    # that cannot be rendered from e.g. github workflows.
+    # github workflows run with PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
+    #
+    # TODO: rename this "add to registry" or something
+
+    tags: set[str] = set()
     # TODO: enforce BlogTags e.g.
     # tags: set[BlogTag] = set()
     # But also consider that IPCC_Sector tags are also
     # valid as blog tags. What else?
     # Models, Strategies, Barriers... anything else?
-    tags: set[str] = set()
 
     @property
     def draft(self):
@@ -137,6 +144,7 @@ class AR2(BlogPost):
             #tags={BlogTag.NIR_Modelling,
                  #},
             status=BlogStatus.Planned,
+            published=False,
             )
 
     @staticmethod
@@ -524,7 +532,7 @@ class AR2(BlogPost):
                 alpha=0.2,
                 interpolate=True,
                 color=col_by_pt[pt],
-                label='$\mu$ 95% CI',
+                label=r'$\mu$ 95% CI',
                 )
 
             spread_pt_ii = hpdi(rec_pt[:, :, list_idx], 0.95)
@@ -535,13 +543,13 @@ class AR2(BlogPost):
                 alpha=0.1,
                 interpolate=True,
                 color=col_by_pt[pt],
-                label='$X$ 95% CI',
+                label=r'$X$ 95% CI',
                 )
             ax.plot(
                 rec_yrs,
                 np.mean(spread_pt_ii, axis=0) * scale,
                 color=col_by_pt[pt],
-                label='$X$ mean = $\mu$ mean',
+                label=r'$X$ mean = $\mu$ mean',
                 ls=':',
                 )
 
@@ -1123,14 +1131,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax0.plot(
                     x,
                     np.exp(ca_dist.log_prob(x * 1000)))
-                ax0.set_title("National Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
-                ax0.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax0.set_title(r"National Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
+                ax0.set_xlabel(r"Emissions ($\mathrm{MtCO_2e}$)")
                 ax0.set_ylabel("Probability Density")
                 axtexts(
                     ax0,
-                    [f"$\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
+                    [f"$\\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
                      f"$\\rho={ca_dist.rolloff / 1000:.2f}~MtCO_2e$",
-                     f"$\sigma={ca_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={ca_dist.relerr * 100:.2f}$%",
                     ])
 
                 x = np.linspace(0, 150, 500)
@@ -1138,14 +1146,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax1.plot(
                     x,
                     np.exp(pt_dist.log_prob(x)))
-                ax1.set_title("Nunavut Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
-                ax1.set_xlabel("Emissions ($\mathrm{ktCO_2e}$)")
+                ax1.set_title(r"Nunavut Public Electricity $\mathrm{CO_2}$ Emissions in 1995")
+                ax1.set_xlabel(r"Emissions ($\mathrm{ktCO_2e}$)")
                 ax1.set_ylabel("Probability Density")
                 axtexts(
                     ax1,
-                    [f"$\mu={pt_dist.mu:.2f}~ktCO_2e$",
+                    [f"$\\mu={pt_dist.mu:.2f}~ktCO_2e$",
                      f"$\\rho={pt_dist.rolloff:.2f}~ktCO_2e$",
-                     f"$\sigma={pt_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={pt_dist.relerr * 100:.2f}$%",
                     ],
                     left_offset=.6,
                     )
@@ -1159,14 +1167,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax.plot(
                     x,
                     np.exp(ca_dist.log_prob(x * 1000)))
-                ax.set_title("National Forest Land $\mathrm{CO_2}$ Emissions in 2009")
-                ax.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax.set_title(r"National Forest Land $\mathrm{CO_2}$ Emissions in 2009")
+                ax.set_xlabel(r"Emissions ($\mathrm{MtCO_2e}$)")
                 ax.set_ylabel("Probability Density")
                 axtexts(
                     ax,
-                    [f"$\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
+                    [f"$\\mu={ca_dist.mu / 1000:.2f}~MtCO_2e$",
                      f"$\\rho={ca_dist.rolloff / 1000:.2f}~MtCO_2e$",
-                     f"$\sigma={ca_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={ca_dist.relerr * 100:.2f}$%",
                     ],
                     left_offset=.6,
                     )
@@ -1177,14 +1185,14 @@ class ProbabilisticNIR2025(BlogPost):
                 ax.plot(
                     x,
                     np.exp(pt_dist.log_prob(x * 1000)))
-                ax.set_title("Ontario Forest Land $\mathrm{CO_2}$ Emissions in 2009")
-                ax.set_xlabel("Emissions ($\mathrm{MtCO_2e}$)")
+                ax.set_title(r"Ontario Forest Land $\mathrm{CO_2}$ Emissions in 2009")
+                ax.set_xlabel(r"Emissions ($\mathrm{MtCO_2e}$)")
                 ax.set_ylabel("Probability Density")
                 axtexts(
                     ax,
-                    [f"$\mu={pt_dist.mu / 1000:.2f}~MtCO_2e$",
+                    [f"$\\mu={pt_dist.mu / 1000:.2f}~MtCO_2e$",
                      f"$\\rho={pt_dist.rolloff / 1000:.2f}~MtCO_2e$",
-                     f"$\sigma={pt_dist.relerr * 100:.2f}$%",
+                     f"$\\sigma={pt_dist.relerr * 100:.2f}$%",
                     ],
                     left_offset=.6,
                     )
@@ -1583,9 +1591,10 @@ def init_blogs_by_url_filename():
     global _blogs_sorted_by_date
     for cls in _classes:
         obj = cls()
-        registry[cls.__name__] = obj
-        _blogs_by_url_filename[obj.url_filename] = obj
-        _blogs_sorted_by_date.append(obj)
+        if obj.published:
+            registry[cls.__name__] = obj
+            _blogs_by_url_filename[obj.url_filename] = obj
+            _blogs_sorted_by_date.append(obj)
     _blogs_sorted_by_date.sort(key=lambda x: x.date, reverse=True)
 
 # TODO: handle this in the metaclass, update the _blogs_sorted_by_date on access
