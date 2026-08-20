@@ -3,7 +3,7 @@ name: Inference
 on: push
 
 jobs:
-  estimate_static_normal_model:
+  Test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,3 +34,6 @@ jobs:
       - name: Populate the cache
         if: ${{ steps.cache-static-normals.outputs.cache-hit != 'true'}}
         run: date >> ~/foo
+
+      - name: Pytest
+        run: pytest -W error --maxfail=10 .
