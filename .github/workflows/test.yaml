@@ -51,3 +51,6 @@ jobs:
           PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
           GITHUB_WORKSPACE: "${{github.workspace}}"
         run: pytest -W error --maxfail=10 .
+
+# https://github.com/tespkg/actions-cache
+# https://github.com/itchyny/s3-cache-action
