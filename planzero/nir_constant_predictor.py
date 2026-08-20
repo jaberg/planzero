@@ -1159,6 +1159,10 @@ class Static_Normals(SiteInference):
         return "Very simple baseline model - non-time-varying estimates"
 
     @computed_field
+    def show_on_models_page(self) -> bool:
+        return False
+
+    @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         helper = SparklineEChartHelper(div_id=None,
                                        model_name='Static_Normals',
