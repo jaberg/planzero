@@ -35,6 +35,8 @@ def endpoints():
             rval.append(f"/models/sim/{sim_name}/ipcc-sectors/{catpath}/")
 
     for model_name, site_inf in sorted(prob.site_inferences.items()):
+        if not site_inf.show_on_models_page:
+            continue
         rval.append(f"/models/prob/{model_name}/")
 
         for catpath in ipcc_canada.catpaths:

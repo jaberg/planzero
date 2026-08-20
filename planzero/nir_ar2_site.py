@@ -285,6 +285,10 @@ class AR2(SiteInference):
         return "Simple baseline model - 2-step autoregressive estimator"
 
     @computed_field
+    def show_on_models_page(self) -> bool:
+        return False
+
+    @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         helper = SparklineEChartHelper(div_id=None,
                                        model_name='AR2',

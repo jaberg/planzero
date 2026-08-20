@@ -200,6 +200,8 @@ async def get_simulation_page(ident:str, request: Request):
 @app_cache
 def get_models_prob_page_html(ident:str):
     site_inference = planzero.prob.site_inferences[ident]
+    if not site_inference.show_on_models_page:
+        return None
     return templates.get_template("models_prob.html").render(
         dict(
             default_context,
@@ -211,7 +213,10 @@ def get_models_prob_page_html(ident:str):
 @app.get("/models/prob/{ident}/", response_class=HTMLResponse)
 async def get_models_prob_page(ident:str, request: Request):
     html = get_models_prob_page_html(ident)
-    return HTMLResponse(content=html)
+    if html:
+        return HTMLResponse(content=html)
+    else:
+        raise HTTPException(status_code=404, detail="No such model")
 
 
 # models/prob/{ident}/sector/{sector_value}
@@ -219,6 +224,8 @@ async def get_models_prob_page(ident:str, request: Request):
 @app_cache
 def get_models_prob_sector_page_html(ident:str, sector_path:str):
     site_inference = planzero.prob.site_inferences[ident]
+    if not site_inference.show_on_models_page:
+        return None
     return templates.get_template("models_prob_sector.html").render(
         dict(
             default_context,
@@ -235,7 +242,10 @@ async def get_models_prob_page(ident:str, sector_path:str, request: Request):
     while sector_path.endswith('/'):
         sector_path = sector_path[:-1]
     html = get_models_prob_sector_page_html(ident, sector_path=sector_path)
-    return HTMLResponse(content=html)
+    if html:
+        return HTMLResponse(content=html)
+    else:
+        raise HTTPException(status_code=404, detail="No such model or sector")
 
 
 @app_cache
