@@ -68,7 +68,7 @@ jobs:
         with:
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
 
-      - run: flyctl deploy --remote-only --build-target gh_workflow
+      - run: flyctl deploy --remote-only --config fly_gh.toml
         env:
           FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
 
