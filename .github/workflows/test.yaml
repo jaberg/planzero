@@ -50,12 +50,15 @@ jobs:
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
 
   deploy:
+    needs: build_and_test
     if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     environment: "Fly Deploy"
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          lfs: true
 
       - name: Install flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
