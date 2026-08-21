@@ -114,3 +114,33 @@ ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
 CMD ["fastapi", "run"]
+
+
+
+FROM --platform=linux/amd64 python:3.11-slim AS gh_workflow
+
+# MAINTAIN: COPY-PASTE FROM base
+WORKDIR /app
+RUN pip install --no-cache-dir virtualenv
+RUN virtualenv venv
+ENV PATH="/app/venv/bin:$PATH"
+COPY ./base_requirements.txt base_requirements.txt
+RUN pip install --no-cache-dir -r base_requirements.txt
+
+# app cache copied into CWD by .github/workflows/test.yaml artifact download
+COPY .planzero_app_cache /content/.planzero_app_cache
+
+# MAINTAIN COPY-PASTE FROM production_server
+COPY ./planzero /content/planzero
+COPY ./html /content/html
+COPY ./app.py /content/app.py
+COPY ./data/EN_GHG_IPCC_Can_Prov_Terr.csv /content/data/EN_GHG_IPCC_Can_Prov_Terr.csv
+WORKDIR /content
+
+ENV PLANZERO_DATA="/content/data"
+ENV PLANZERO_USE_DISK_CACHE="1"
+ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
+ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
+ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
+ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
+CMD ["fastapi", "run"]
