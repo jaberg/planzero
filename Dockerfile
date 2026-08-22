@@ -128,7 +128,7 @@ COPY ./base_requirements.txt base_requirements.txt
 RUN pip install --no-cache-dir -r base_requirements.txt
 
 # app cache copied into CWD by .github/workflows/test.yaml artifact download
-COPY .planzero_app_cache /content/.planzero_app_cache
+COPY _planzero_app_cache /content/_planzero_app_cache
 
 # MAINTAIN COPY-PASTE FROM production_server
 COPY ./planzero /content/planzero
@@ -139,8 +139,8 @@ WORKDIR /content
 
 ENV PLANZERO_DATA="/content/data"
 ENV PLANZERO_USE_DISK_CACHE="1"
-ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
-ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
+ENV PLANZERO_CACHE_DIR="/content/_planzero_cache"
+ENV PLANZERO_APP_CACHE_DIR="/content/_planzero_app_cache"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
 CMD ["fastapi", "run"]
