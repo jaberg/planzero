@@ -45,11 +45,12 @@ jobs:
         if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v7
         with:
-          path: "${{ github.workspace }}/.planzero_app_cache"
+          path: "${{ github.workspace }}/.planzero_app_cache/"
+          if-no-files-found: error
 
       - name: Setup Tmate Session
         uses: mxschmitt/action-tmate@v3
-        if: true
+        if: false
 
 
   deploy:
