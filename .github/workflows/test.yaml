@@ -47,6 +47,11 @@ jobs:
         with:
           path: "${{ github.workspace }}/.planzero_app_cache"
 
+      - name: Setup Tmate Session
+        uses: mxschmitt/action-tmate@v3
+        if: true
+
+
   deploy:
     needs: build_and_test
     if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
