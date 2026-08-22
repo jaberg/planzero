@@ -38,6 +38,7 @@ jobs:
           PLANZERO_DATA: "${{ github.workspace }}/data"
           PLANZERO_USE_DISK_CACHE: "1"
           PLANZERO_CACHE_DIR: "${{ github.workspace }}/.planzero_cache"
+          PLANZERO_APP_CACHE_DIR: "${{ env.PLANZERO_APP_CACHE_DIR }}"
           PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
           PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
           GITHUB_WORKSPACE: "${{github.workspace}}"
