@@ -2,9 +2,6 @@ name: Test Suite
 
 on: push
 
-env:
-  PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/.planzero_app_cache"
-
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
@@ -38,7 +35,7 @@ jobs:
           PLANZERO_DATA: "${{ github.workspace }}/data"
           PLANZERO_USE_DISK_CACHE: "1"
           PLANZERO_CACHE_DIR: "${{ github.workspace }}/.planzero_cache"
-          PLANZERO_APP_CACHE_DIR: "${{ env.PLANZERO_APP_CACHE_DIR }}"
+          PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/.planzero_app_cache"
           PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
           PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
           GITHUB_WORKSPACE: "${{github.workspace}}"
@@ -48,7 +45,7 @@ jobs:
         if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v7
         with:
-          path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
+          path: "${{ github.workspace }}/.planzero_app_cache"
 
   deploy:
     needs: build_and_test
@@ -67,7 +64,7 @@ jobs:
       - name: Load App cache
         uses: actions/download-artifact@v8
         with:
-          path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
+          path: "${{ github.workspace }}/.planzero_app_cache"
 
       - run: flyctl deploy --remote-only --config fly_gh.toml
         env:
