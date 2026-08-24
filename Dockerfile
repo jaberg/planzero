@@ -19,14 +19,8 @@ FROM base AS development
 # intermediate stage, not used directly in e.g. Makefile
 RUN apt-get update
 RUN apt-get install -y build-essential
-RUN pip install --no-cache-dir pytest
-RUN pip install --no-cache-dir jupyter
-RUN pip install --no-cache-dir openpyxl xlrd
-RUN pip install --no-cache-dir xarray netCDF4 matplotlib cartopy
-RUN pip install --no-cache-dir scikit-learn
-RUN pip install --no-cache-dir jax
-RUN pip install --no-cache-dir numpyro
-RUN pip install --no-cache-dir boto3
+COPY ./requirements_dev.txt requirements_dev.txt
+RUN pip install --no-cache-dir -r requirements_dev.txt
 
 
 FROM development AS testing
