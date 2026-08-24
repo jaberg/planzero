@@ -103,7 +103,7 @@ helps organize and communicate several planned posts:
     </li>
     <li><a href="{{ planzero.blog.registry['ProbabilisticBovaer'].siteref}}">Strategies in probabilistic models: another look at Bovaer</a></li>
     <li><a href="{{ planzero.blog.registry['Glossary'].siteref}}">What is a PlanZero model?</a> Introducing a PlanZero glossary</li>
-    {% if HOME_SHOW_UNPUBLISHED_POSTS %}
+    {% if False and HOME_SHOW_UNPUBLISHED_POSTS %}
     <li><a href="{{ planzero.blog.registry['AR2'].siteref}}">Improving NIR prediction with autoregressive probabilistic modelling</a></li>
     {% endif %}
 </ol>
@@ -220,8 +220,8 @@ In Ontario, if not the rest of Canada, it is typically introduced in secondary
 school, and covered in greater detail at various university levels
 with application to areas of science, engineering, medicine,
 social studies, mathematics etc. where probabilities are used.
-For more information and orientation, see e.g. wikipedia (
-start with e.g. <a href="https://en.wikipedia.org/wiki/Probability">Probability</a>)
+For more information and orientation, see e.g. wikipedia
+(start with e.g. <a href="https://en.wikipedia.org/wiki/Probability">Probability</a>)
 or prompt an LLM-based AI with a question such as "Could you help me learn about probability density functions?" for a personalized introduction.
 </p>
 
@@ -238,6 +238,10 @@ a mean ({{latex("\\mu")|safe}}),
 a roll-off ({{latex("\\rho")|safe}}), and
 a relative uncertainty ({{latex("\\sigma")|safe}}) such that 1.0 means 100%,
 and a lower bound ({{latex("\\beta")|safe}}) that truncates the density distribution.
+Qualitatively, the roll-off parameter here controls what counts as a "small"
+magnitude for the emission; relative uncertainty applies to values that are larger
+than the roll-off, and below the roll-off a fixed amount of uncertainty is modelled,
+regardless of the mean.
 The three components of an SBLN distribution are:
 <ol>
     <li>A <a href="https://en.wikipedia.org/wiki/Normal_distribution">normal distribution</a> with mean {{latex("\\mu")|safe}},
@@ -282,16 +286,16 @@ For some examples of what SBLN distributions can look like, here are some distri
 
 <p>
 The <a href="https://unfccc.int/documents/646186">NIR-2025 section 1.5 ("Uncertainty Assessment")</a> begins:
-<i>While national GHG inventories should be accurate, complete, comparable, transparent and consistent, estimates will always
+
+<blockquote>While national GHG inventories should be accurate, complete, comparable, transparent and consistent, estimates will always
 inherently involve some uncertainty. Uncertainties in the inventory estimates may be caused by systematic and/or random
-uncertainties in the input parameters or estimation models.</i>
-The NIR text explains that
-the 2006 IPCC guidelines specify
-that <i>the primary purpose of providing quantitative uncertainty information is to assist in setting priorities for the improvement of
-future inventories and to guide decisions about which methods to use</i>
-and observes that
-<i>typically, the uncertainties associated with trends and
-    the national totals are much lower than those associated with individual gases and sectors.</i>
+uncertainties in the input parameters or estimation models.</blockquote>
+Further, the NIR text explains that
+<blockquote>The 2006 IPCC Guidelines specify
+that the primary purpose of providing quantitative uncertainty information is to assist in setting priorities for the improvement of
+future inventories and to guide decisions about which methods to use.
+Typically, the uncertainties associated with trends and
+    the national totals are much lower than those associated with individual gases and sectors.</blockquote>
 </p>
 
 <p>
@@ -742,7 +746,7 @@ are overly-confident, {{siteref("Concentrated_Distribution", "highly-concentrate
 
 <p>
 I said that the KL divergence was a debatable choice because
-there are lots measures of distributional similarity.
+there are lots of measures of distributional similarity.
 This <a href="https://www.cs.cornell.edu/courses/cs6742/2017fa/handouts/lee-ch2.3.pdf">course note PDF</a> from CS6742 at Cornell lists a few,
 and the Wikipedia <a href="https://en.wikipedia.org/wiki/Scoring_rule">page on scoring rules</a> provides an overview of alternatives and considerations.
 If users of NIR predictions have particular needs or considerations, then
@@ -844,7 +848,7 @@ and the predictive models (e.g.  {{latex("M^{(pred)}_{2025,2026}")|safe}}).
 <h2 id="appendix-visualizing">Appendix 5: Visualizing Probabilistic NIR Models</h2>
 
 <p>
-The probabilistic NIR developed in this post can be visualized
+The probabilistic NIR developed in this post can
 be visualized in a set of graphics that can now
 be found in the "<a href="/models/">Models</a>" tab of the PlanZero navigation bar.
 There are two types of graphic.

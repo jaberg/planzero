@@ -1725,3 +1725,33 @@ class Pending_Prediction_Challenge_Results(GlossaryTerm):
         return [
             (blog.PreNIR(), '#', "prediction time vs. evaluation time"),
         ]
+
+
+class Symmetric_Blended_Log_Normal_Distribution(GlossaryTerm):
+
+    """<p>A symmetric blended log-normal distribution is a
+    custom parametric probability distribution used in PlanZero
+    to model quantities that are characterized by relative uncertainty,
+    but which may sometimes be both negative and positive, such as
+    emissions in certain sectors.
+    </p>
+    <p>The details of this distribution can be found in a
+<a href="https://github.com/jaberg/planzero/blob/d1972c58f1b8463be5fb3462e7b1c3179d273fa0/SymmetricBlendedLogNormal.ipynb">Jupyter notebook</a>
+hosted on PlanZero's GitHub page.</p>
+    """
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['SBLN']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Probability_Distribution': 'The SBLN is a probability distribution',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.ProbabilisticNIR2025(), '#appendix-sbln', "Probabilistic NIR2025, Appendix 2"),
+        ]
