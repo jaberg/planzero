@@ -1,6 +1,13 @@
 name: Test Suite
 
-on: push
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    types: [opened, reopened, synchronize]
+    # closed event type triggers close_pr.yaml workflow
 
 env:
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
@@ -14,7 +21,7 @@ jobs:
         with:
           lfs: true
 
-      - name: Setup Tmate Session
+      - name: Setup Tmate session
         uses: mxschmitt/action-tmate@v3
         if: false
 
@@ -43,16 +50,13 @@ jobs:
           GITHUB_WORKSPACE: "${{github.workspace}}"
         run: pytest -W error --maxfail=10 .
 
-      - name: Save App Cache for Deploy
-        if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
+      - name: Save app cache for deploy
+        if: github.repository == 'jaberg/planzero'
         uses: actions/upload-artifact@v7
         with:
+          name: App Cache
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
           if-no-files-found: error
-
-      - name: Setup Tmate Session
-        uses: mxschmitt/action-tmate@v3
-        if: false
 
 
   deploy:
@@ -72,11 +76,50 @@ jobs:
       - name: Load App cache
         uses: actions/download-artifact@v8
         with:
+          name: App Cache
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
 
       - run: flyctl deploy --remote-only --config fly_gh.toml
         env:
           FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
+
+
+  branch_deploy:
+    needs: build_and_test
+    if: (github.repository == 'jaberg/planzero') && (github.ref != 'refs/heads/main')
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+
+    # Only run one deployment at a time per PR.
+    concurrency:
+      group: pr-${{ github.event.number }}
+
+    # Deploying apps with this "review" environment allows the URL for the app to be displayed in the PR UI.
+    # Feel free to change the name of this environment.
+    environment:
+      name: Fly Review
+      # The script in the `deploy` sets the URL output for each review app.
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Load App cache
+        uses: actions/download-artifact@v8
+        with:
+          name: App Cache
+          path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
+
+      - name: Deploy PR app to Fly.io
+        id: deploy
+        uses: superfly/fly-pr-review-apps@1.2.1
+        env:
+          FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
+        with:
+          config: fly_gh.toml
 
 # https://github.com/tespkg/actions-cache
 # https://github.com/itchyny/s3-cache-action
