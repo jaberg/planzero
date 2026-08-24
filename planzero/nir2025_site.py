@@ -11,7 +11,7 @@ from . import nir2025 as site_nir # as the reference model for the site
 
 from .nir_ar2_site import SparklineEChartHelper # TODO: rename e.g. TimeVaryingSparklineEChartHelper
 from .nir_ar2_site import RegionalSparklineEChartHelper # TODO: rename e.g. TimeVaryingSparklineEChartHelper
-from .prob import SiteInference
+from .prob import SiteInference, ClassVar
 
 
 n_samples = 250 # enough to do the job, not too slowly
@@ -121,6 +121,8 @@ class NIR2025(SiteInference):
     and per greenhouse gas, are taken from the 2025 National Inventory Report data,
     incorporating uncertainty estimates from Annex 2 of the report.
     """
+
+    include_in_registry: ClassVar[bool] = True
 
     def one_line_description(self):
         return "Data with uncertainty from NIR-2025"

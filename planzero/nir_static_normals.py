@@ -21,6 +21,10 @@ from .nir_constant_predictor import constant_model
 from . import model_db
 from . import my_functools
 
+model_family = 'StaticNormal'
+model_version = 2
+model_version_description = "Switching to distributional NIR data"
+
 
 def weighted_constant_model(scaled_pt=None, scaled_ca=None, weights=1):
     n_regions = 13
@@ -45,35 +49,35 @@ def weighted_constant_model(scaled_pt=None, scaled_ca=None, weights=1):
                        dist.Normal(jnp.sum(mu), sigma_ca),
                        obs=scaled_ca)
 
+def model_id_from_data_cutoff(data_cutoff):
+    model_id = 'model_{}'.format(
+        model_db.stable_hash(
+            str((model_family, model_version, data_cutoff))))
+    return model_id
 
-def main_touch_model(args):
+
+def touch_model(data_cutoff):
     with model_db.connect() as conn:
         cursor = conn.cursor()
+        model_id = model_id_from_data_cutoff(data_cutoff)
 
-        family='StaticNormal'
-        version = 2
-        version_description = "Switching to distributional NIR data"
-        data_cutoff = datetime.date(year=2024, month=12, day=31)
-        model_id = 'model_{}'.format(model_db.stable_hash(str(
-            (family, version, data_cutoff))))
         try:
             model_db.by_id('Model', model_id=model_id)
         except model_db.NoRecord:
             model_db.insert_model(
                 cursor=cursor,
                 model_id=model_id,
-                family=family,
-                version=version,
-                version_description=version_description,
+                family=model_family,
+                version=model_version,
+                version_description=model_version_description,
                 data_cutoff=data_cutoff,
                 )
 
 
-def main_touch_components(args):
+def touch_components(data_cutoff):
+    model_id = model_id_from_data_cutoff(data_cutoff)
     arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
-    from .enums import IPCC_Sector, GHG
 
-    model_id = args.model_id
     with model_db.connect() as conn:
         cursor = conn.cursor()
         for sector in IPCC_Sector:
@@ -157,6 +161,19 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
 
     params, = model_db.params_BayesianNormal(component_id)
     data_cutoff_date = params['data_cutoff']
+
+    # Check if the grouped samples have been saved. If they're
+    # present, assume they are correct.
+    try:
+        grouped_samples = model_db.save_ndarray_group(
+            model_id=params['model_id'],
+            component_id=component_id,
+            group_id='grouped_samples')
+        if grouped_samples:
+            return
+    except IOError:
+        pass
+
     # Design pattern:
     # in this function, train/ infer this component by looking at the
     # data_cutoff parameter, and including as many data sources as
@@ -214,7 +231,19 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
     if payload.get('print_summary'):
         mcmc.print_summary()
     grouped_samples = mcmc.get_samples(group_by_chain=True)
-    model_db.save_ndarray_group(component_id, 'grouped_samples', grouped_samples)
+    model_db.save_ndarray_group(
+        model_id=params['model_id'],
+        component_id=component_id,
+        group_id='grouped_samples',
+        ndarray_d=grouped_samples)
+
+
+def inference_work_loop(data_cutoff):
+    model_id = model_id_from_data_cutoff(data_cutoff)
+
+    for payload in model_db.task_completion_iter():
+        assert payload['entrypoint'] == 'static_normals_inference'
+        entrypoint_static_normals_inference(payload)
 
 
 def post_samples_from_grouped_samples(grouped_samples):

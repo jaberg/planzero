@@ -10,6 +10,9 @@ import sqlite3
 
 from .enums import GHG, IPCC_Sector
 
+MODEL_CACHE_ROOT = os.environ['PLANZERO_MODEL_CACHE_ROOT']
+assert MODEL_CACHE_ROOT
+
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
     return val.isoformat()
@@ -23,9 +26,7 @@ def convert_date(val):
 sqlite3.register_adapter(datetime.date, adapt_date_iso)
 sqlite3.register_converter("date", convert_date)
 
-
 db_filename = "my_database.db"
-root_ndarray = 'cache/Ndarray'
 
 
 def connect(timeout=5.0):
@@ -166,20 +167,19 @@ def sectors_by_component_id(component_id):
             yield IPCC_Sector(row[0])
 
 
-def save_ndarray_group(component_id, group_id, ndarray_d):
-
-    os.makedirs(root_ndarray, exist_ok=True)
+def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
+    os.makedirs(os.path.join([MODEL_CACHE_ROOT, model_id]), exist_ok=True)
     saved_paths = []
     try:
         with connect() as conn:
             for key, val in ndarray_d.items():
-                file_name = f'{component_id}-{key}'
-                path = f'{root_ndarray}/{file_name}.npy'
+                file_name = f'{component_id}-{key}.npy'
                 cursor = conn.execute(
                     """INSERT INTO Ndarray
                     (component_id, group_id, key, file_name)
                     VALUES (?, ?, ?, ?);""",
                     (component_id, group_id, key, file_name))
+                path = os.path.join([MODEL_CACHE_ROOT, model_id, file_name])
                 fp = np.lib.format.open_memmap(
                     path,
                     mode='w+',
@@ -194,7 +194,7 @@ def save_ndarray_group(component_id, group_id, ndarray_d):
         raise
 
 
-def load_ndarray_group(component_id, group_id):
+def load_ndarray_group(model_id, component_id, group_id):
     rval = {}
     with connect() as conn:
         cursor = conn.execute(
@@ -205,7 +205,7 @@ def load_ndarray_group(component_id, group_id):
             ;""",
             (component_id, group_id,))
         for key, file_name in cursor:
-            path = f'{root_ndarray}/{file_name}.npy'
+            path = os.path.join([MODEL_CACHE_ROOT, model_id, file_name])
             rval[key] = np.load(path, mmap_mode='r')
     return rval
 
@@ -240,7 +240,7 @@ def params_Normal(component_id):
 def params_BayesianNormal(component_id):
     with connect() as conn:
         cursor = conn.execute(
-        """SELECT num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector
+        """SELECT num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector, Model.model_id
         FROM Component_BayesianNormal
         JOIN ComponentMapping ON Component_BayesianNormal.component_id = ComponentMapping.component_id
         JOIN Model on ComponentMapping.model_id = Model.model_id
@@ -528,23 +528,14 @@ def recover_crashed_tasks(timeout_seconds: int = 300):
         if recovered:
             print(f"[Reaper] Recovered {len(recovered)} abandoned tasks.")
 
-entrypoints = {}
 
+def task_completion_iter(worker_id=None):
+    if worker_id is None:
+        worker_id = f'worker_{str(uuid.uuid4())}'
 
-def init_entrypoints():
-    from . import nir_static_normals
-    entrypoints['static_normals_inference'] \
-            = nir_static_normals.entrypoint_static_normals_inference
-
-
-def main_worker(args):
-    if not args.worker_id:
-        args.worker_id = f'worker_{str(uuid.uuid4())}'
     crashed_task_timeout_seconds = 300
-    init_entrypoints()
 
     recover_crashed_tasks(timeout_seconds=crashed_task_timeout_seconds)
-    print("Worker starting...")
     deadline_buffer = 10 # seconds
     while True:
         task_id, payload = claim_task(worker_id=args.worker_id)
@@ -552,8 +543,7 @@ def main_worker(args):
         if task_id:
             print(f"Claimed Task {task_id}: {payload}")
             try:
-                fn = entrypoints[payload['entrypoint']]
-                fn(payload)
+                yield payload
                 complete_task(task_id=task_id, worker_id=args.worker_id)
                 print(f"Successfully completed Task {task_id}")
 

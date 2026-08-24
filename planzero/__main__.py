@@ -86,6 +86,21 @@ def nir_ar2_inference(args):
     return nir_ar2.main()
 
 
+def main_model_id(args):
+    from . import prob
+    return prob.registry[args.model].main_model_id()
+
+
+def main_inference_prep(args):
+    from . import prob
+    return prob.registry[args.model].main_inference_prep()
+
+
+def main_inference_work(args):
+    from . import prob
+    return prob.registry[args.model].main_inference_work()
+
+
 if __name__ == '__main__':
 
     # create the top-level parser
@@ -114,6 +129,18 @@ if __name__ == '__main__':
 
     parser_request_all_pages = subparsers.add_parser('nir_ar2_inference')
     parser_request_all_pages.set_defaults(func=nir_ar2_inference)
+
+    parser_model_id = subparsers.add_parser('model_id')
+    parser_model_id.add_argument('--model', help='model name')
+    parser_model_id.set_defaults(func=main_model_id)
+
+    parser_inference_prep = subparsers.add_parser('inference_prep')
+    parser_inference_prep.add_argument('--model', help='model name')
+    parser_inference_prep.set_defaults(func=main_inference_prep)
+
+    parser_inference_work = subparsers.add_parser('inference_work')
+    parser_inference_work.add_argument('--model', help='model name')
+    parser_inference_work.set_defaults(func=main_inference_work)
 
     args = parser.parse_args()
     sys.exit(args.func(args))

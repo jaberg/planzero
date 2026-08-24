@@ -11,6 +11,7 @@ on:
 
 env:
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
+  PLANZERO_MODEL_CACHE_ROOT: "_model_cache"
 
 jobs:
   build_and_test:
@@ -40,6 +41,30 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements_dev.txt
 
+      - name: Initialize model database
+        run: python -m planzero.model_db init_db
+
+      # Static Normals 2024-12-31
+
+      - name: Cache key for Static_Normals_2024_12_31
+        run: |
+          echo "MODEL_ID_Static_Normals_2024_12_31=$((python -m planzero model_id --model=Static_Normals_2024_12_31))" >> "$GITHUB_ENV"
+
+      - name: Cache inference for Static_Normals_2024_12_31
+        id: cache-static-normals-2024-12-31
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ env.MODEL_KEY_Static_Normals_2024_12_31 }}
+          key: ${{ env.MODEL_KEY_Static_Normals_2024_12_31 }}
+
+      - name: Prepare for Static Normals inference
+        run: python -m planzero inference_prep --model=Static_Normals_2024_12_31
+
+      - name: Perform Static Normals inference
+        run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+
+      # Run test and populate app cache (diskcache)
+
       - name: Pytest
         env:
           PLANZERO_DATA: "${{ github.workspace }}/data"
@@ -58,8 +83,7 @@ jobs:
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
           if-no-files-found: error
 
-
-  deploy:
+  deploy_main:
     needs: build_and_test
     if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
@@ -84,7 +108,7 @@ jobs:
           FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
 
 
-  branch_deploy:
+  deploy_PR:
     needs: build_and_test
     if: (github.repository == 'jaberg/planzero') && (github.ref != 'refs/heads/main')
     runs-on: ubuntu-latest
@@ -112,17 +136,6 @@ jobs:
         with:
           name: App Cache
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
-
-      - name: Check if secret is accessible
-        env:
-          MY_SECRET: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          if [ -z "$MY_SECRET" ]; then
-            echo "❌ Secret is EMPTY or NOT accessible to this job."
-            exit 1
-          else
-            echo "✅ Secret is PRESENT and accessible."
-          fi
 
       - name: Deploy PR app to Fly.io
         id: deploy
