@@ -4,6 +4,7 @@ on:
   pull_request:
     types: [closed]
 
+jobs:
   shutdown_app:
     if: github.repository == 'jaberg/planzero'
     runs-on: ubuntu-latest
