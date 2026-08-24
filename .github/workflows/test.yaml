@@ -71,8 +71,7 @@ jobs:
 
       # Run test and populate app cache (diskcache)
 
-      - name: Pytest
-        env:
+      - name: Run all tests
         run: pytest -W error --maxfail=10 .
 
       - name: Save app cache for deploy
