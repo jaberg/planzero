@@ -4,8 +4,8 @@ on:
   pull_request:
     types: [closed]
 
-  branch_deploy:
-    if: (github.repository == 'jaberg/planzero') && (github.ref != 'refs/heads/main')
+  shutdown_app:
+    if: github.repository == 'jaberg/planzero'
     runs-on: ubuntu-latest
     outputs:
       url: ${{ steps.deploy.outputs.url }}

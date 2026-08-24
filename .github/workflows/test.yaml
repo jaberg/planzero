@@ -12,6 +12,9 @@ on:
 env:
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
   PLANZERO_MODEL_CACHE_ROOT: "_model_cache"
+  PLANZERO_DATA: "${{ github.workspace }}/data"
+  PLANZERO_CACHE_DIR: "${{ github.workspace }}/_planzero_cache"
+  GITHUB_WORKSPACE: "${{ github.workspace }}"  # used for glossary code lookup
 
 jobs:
   build_and_test:
@@ -67,12 +70,9 @@ jobs:
 
       - name: Pytest
         env:
-          PLANZERO_DATA: "${{ github.workspace }}/data"
           PLANZERO_USE_DISK_CACHE: "1"
-          PLANZERO_CACHE_DIR: "${{ github.workspace }}/_planzero_cache"
           PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
           PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
-          GITHUB_WORKSPACE: "${{github.workspace}}"
         run: pytest -W error --maxfail=10 .
 
       - name: Save app cache for deploy
