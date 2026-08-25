@@ -232,6 +232,7 @@ PlanZero's Dockerfile uses a multi-stage build to
 produce a small docker image for fly.io
 that does not contain large data files or raw model samples.
 Deployment is currently only possible from my laptop.
+(for source-of-truth, see <a href="https://github.com/jaberg/planzero/blob/main/Dockerfile">"Dockerfile" on GH</a>.)
 </p>
 
 <pre class="mermaid">
@@ -244,6 +245,8 @@ base["base"]
 
 testing["testing"]
 
+development["development"]
+
 build_cache["build_cache"]
 
 production_server["production_server"]
@@ -252,6 +255,7 @@ production_server_amd64["production_server_amd64"]
 
 python_arm --> base
 base --> testing
+testing --> development
 testing --> build_cache
 
 base --> production_server

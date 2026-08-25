@@ -1,12 +1,5 @@
 FROM python:3.11-slim AS base
 
-#ARG GIT_COMMIT_COUNT
-#ARG GIT_HEAD_HASH
-#ARG R2_ACCOUNT_ID
-#ARG R2_ACCESS_KEY_ID
-#ARG R2_SECRET_ACCESS_KEY
-#ARG R2_BUCKET_NAME
-
 WORKDIR /app
 
 RUN pip install --no-cache-dir virtualenv
@@ -15,7 +8,7 @@ ENV PATH="/app/venv/bin:$PATH"
 COPY ./base_requirements.txt base_requirements.txt
 RUN pip install --no-cache-dir -r base_requirements.txt
 
-FROM base AS development
+FROM base AS testing
 # intermediate stage, not used directly in e.g. Makefile
 RUN apt-get update
 RUN apt-get install -y build-essential
@@ -23,14 +16,30 @@ COPY ./requirements_dev.txt requirements_dev.txt
 RUN pip install --no-cache-dir -r requirements_dev.txt
 
 
-FROM development AS testing
+FROM testing AS development
+
+RUN apt-get install -y tmux ncurses-base
+RUN apt-get install -y git git-lfs
+RUN apt-get install -y curl
+RUN apt-get install -y nodejs npm # for pyright neovim plugin
+
+# TODO: arg/logic to configure architecture here:
+ENV NVIM_ARCH="arm64"
+RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-$NVIM_ARCH.tar.gz
+RUN tar -C /opt -xzf nvim-linux-$NVIM_ARCH.tar.gz
+
+# add to bashrc so these vars are set inside tmux shells
+RUN echo 'export PATH=/app/venv/bin:$PATH' >> /root/.bashrc   # virtualenv
+RUN echo 'export PATH=$PATH:/opt/nvim-linux-$NVIM_ARCH/bin' >> /root/.bashrc  # neovim
+
 # built on dev machine
 # run on dev machine
 # used for most dev activities in Makefile
-ENV PLANZERO_DATA="/content/data"
+ENV PLANZERO_DATA="/mnt/data"
 ENV PLANZERO_USE_DISK_CACHE="0"
-ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
-ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
+ENV PLANZERO_APP_CACHE_DIR="/mnt/.planzero_app_cache"
+ENV PLANZERO_CACHE_DIR="/mnt/.planzero_cache"
+ENV PLANZERO_MODEL_CACHE_ROOT="/mnt/.planzero_model_cache_root"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=1
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=1
 # TODO: pull in the source code, data etc. to run dockerized tests
@@ -38,13 +47,14 @@ ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=1
 #CMD ["pytest"]
 
 
-FROM development AS build_cache
+FROM testing AS build_cache
 # built on dev machine (GH workflow requires inference results)
 # run on dev machine
 ENV PLANZERO_DATA="/content/data"
 ENV PLANZERO_USE_DISK_CACHE="1"
 ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
 ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
+ENV PLANZERO_MODEL_CACHE_ROOT="/content/.planzero_model_cache_root"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
 

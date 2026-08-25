@@ -4,10 +4,13 @@ target = ${PROJECTNAME}
 	docker build --target base -t $(target):base .
 	touch .build.base
 
-
-.build.test: Dockerfile
+.build.dev: Dockerfile
 	docker build --target testing -t $(target):test .
-	touch .build.test
+	# touch .build.test   # uncomment to skip build command
+
+.build.dev: Dockerfile
+	docker build --target development -t $(target):dev .
+	# touch .build.test   # uncomment to skip build command
 
 
 .build.cache: Dockerfile
@@ -19,12 +22,18 @@ target = ${PROJECTNAME}
 	docker build --target production_server -t $(target):prod .
 	touch .build.prod
 
-bash: .build.test
+
+tmux: .build.dev
 	docker run \
 		-v ${PWD}:/mnt/ \
+		-v ~/.config/git:/root/.config/git \
+		-v ~/.config/nvim:/root/.config/nvim \
+		-v ~/.config/tmux:/root/.config/tmux \
+		-e TERM=xterm-256color \
+		-e COLORTERM=truecolor \
 		-w /mnt/ \
-		-it --rm $(target):test \
-		bash
+		-it --rm $(target):dev \
+		tmux
 
 bash_prod: .build.prod
 	docker run \
@@ -38,7 +47,7 @@ jupyter: .build.test
 		-v ${PWD}:/mnt/ \
 		-p 127.0.0.1:8013:8013 \
 		-w /mnt/ \
-		-it --rm $(target):test \
+		-it --rm $(target):dev \
 		jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
 
 test: .build.test
@@ -63,13 +72,13 @@ test_200: .build.test
 		-it --rm $(target):test \
 		pytest -W error --maxfail=1 -vv -k endpoints test_200.py
 
-local: .build.test
+local: .build.dev
 	docker run \
 		-e PLANZERO_DATA=/mnt/data/ \
 		-v ${PWD}:/mnt/ \
 		-p 127.0.0.1:8012:8012 \
 		-w /mnt/ \
-		-it --rm $(target):test \
+		-it --rm $(target):dev \
 		fastapi dev --port=8012 --host=0.0.0.0
 
 prodlike: .build.prod
@@ -164,56 +173,6 @@ warmup_cache_speed_test: .build.test
 		-it --rm $(target):test \
 		python warmup.py
 
-demo_neud: .build.test
-	# TODO: move this into __main__.py
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -m planzero.neud
-
-demo_sc_32_10_0130_01: .build.test
-	# TODO: move this into __main__.py
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -m planzero.sc_3210013001
-
-
-html/blog/2026-04-03-bovaer_assets: .build.test
-	# these asset files are meant to be stored in git
-	# the script is used during development to re-generate them
-	# after the post is beyond amendment, this build script could be removed
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -c "import planzero; planzero.blog.ModellingBovaer.generate_assets()"
-
-
-cache/inference/Static_Normals/sentinel: .build.test
-	# Perform inference for the Static_Normals model
-	# save multiple files in this directory
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -m planzero.nir_constant_predictor
-
-
-cache/inference/AR2/sentinel: .build.test
-	# Perform inference for the AR2 model
-	# save multiple files in this directory
-	#
-	# Slow to run though! Takes maybe 2 hours?
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-e PLANZERO_USE_DISK_CACHE=0 \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -m planzero nir_ar2_inference
-
 
 html/blog/2026-05-26-probabilistic-modelling-assets: .build.test
 	# these asset files are meant to be stored in git
@@ -224,21 +183,3 @@ html/blog/2026-05-26-probabilistic-modelling-assets: .build.test
 		-w /mnt/ \
 		-it --rm $(target):test \
 		python -c "import planzero; planzero.blog.TwoProbabilisticModels.generate_assets()"
-
-
-html/blog/2026-05-20-prob-nir-assets: .build.test
-	# these asset files are meant to be stored in git
-	# the script is used during development to re-generate them
-	# after the post is beyond amendment, this build script could be removed
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -c "import planzero; planzero.blog.ProbabilisticNIR2025.generate_assets()"
-
-my_database: .build.test planzero/model_db.py
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -m planzero.model_db init
