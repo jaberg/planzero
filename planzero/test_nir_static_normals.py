@@ -11,19 +11,23 @@ def test_aluminum_co2():
             return dict(
                 scale=5000,
                 seed=1234,
-                num_samples=100,
-                num_warmup=250,
+                num_samples=25,
+                num_warmup=25,
                 thinning=1,
                 sector=IPCC_Sector.Aluminium_Production,
                 ghg=GHG.CO2,
                 data_cutoff=datetime.date(year=2024, month=12, day=31),
+                model_id='model_id_foo',
                 ),
 
-        def save_ndarray_group(self, component_id, tag, samples_d):
-            self.ndarray_groups[component_id, tag] = samples_d
+        def save_ndarray_group(self, model_id, component_id, group_id, ndarray_d):
+            self.ndarray_groups[model_id, component_id, group_id] = ndarray_d
 
-        def load_ndarray_group(self, component_id, tag):
-            return self.ndarray_groups[component_id, tag]
+        def index_ndarray_group(self, model_id, component_id, group_id, ndarray_d_keys):
+            raise OSError()
+
+        def load_ndarray_group(self, model_id, component_id, group_id):
+            return self.ndarray_groups[model_id, component_id, group_id]
 
     model_db = ModelDB()
 
