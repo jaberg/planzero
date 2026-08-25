@@ -241,4 +241,4 @@ my_database: .build.test planzero/model_db.py
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target):test \
-		python -m planzero.model_db init_db
+		python -m planzero.model_db init

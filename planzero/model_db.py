@@ -596,7 +596,6 @@ parser = argparse.ArgumentParser(prog='planzero')
 subparsers = parser.add_subparsers(help='subcommand help')
 
 subparser = subparsers.add_parser('init')
-#subparser.add_argument('--year', type=int, default=2005, help='year')
 subparser.set_defaults(func=main_init_db)
 
 subparser = subparsers.add_parser('task_list')

@@ -48,7 +48,7 @@ jobs:
         run: pip install -r requirements_dev.txt
 
       - name: Initialize model database
-        run: python -m planzero.model_db init_db
+        run: python -m planzero.model_db init
 
       # Static Normals 2024-12-31
 
