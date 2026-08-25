@@ -162,20 +162,20 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
     component_id = payload['component_id']
 
     params, = model_db.params_BayesianNormal(component_id)
-    data_cutoff_date = params['data_cutoff']
 
     # Check if the grouped samples have been saved. If they're
     # present, assume they are correct.
     try:
-        grouped_samples = model_db.load_ndarray_group(
+        grouped_samples = model_db.index_ndarray_group(
             model_id=params['model_id'],
             component_id=component_id,
-            group_id='grouped_samples')
-        if grouped_samples:
+            group_id='grouped_samples',
+            ndarray_d_keys=['mu', 'sigma_pt', 'sigma_ca'])
+        if len(grouped_samples) == 3:
             return
-        assert 0, ('load_ndarray_group failed', payload, params)
-    except IOError:
-        raise
+        assert 0, (payload, params)
+    except OSError:
+        pass # at least one file is missing, probably all of them
 
     # Design pattern:
     # in this function, train/ infer this component by looking at the

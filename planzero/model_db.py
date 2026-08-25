@@ -3,10 +3,10 @@ import datetime
 import hashlib
 import json
 import os
+import sqlite3
 import uuid
 
 import numpy as np
-import sqlite3
 
 from .enums import GHG, IPCC_Sector
 
@@ -170,6 +170,27 @@ def sectors_by_component_id(component_id):
             yield IPCC_Sector(row[0])
 
 
+def index_ndarray_group(model_id, component_id, group_id, ndarray_d_keys) -> dict:
+    """Create an ndarray group by loading corresponding values from disk
+    where they have been cached.
+
+    It's an operation that combines elements of loading and saving. It does
+    not modify files on disk.
+    """
+    rval = {}
+    with connect() as conn:
+        for key in ndarray_d_keys:
+            file_name = f'{component_id}-{key}.npy'
+            conn.execute(
+                """INSERT INTO Ndarray
+                (component_id, group_id, key, file_name)
+                VALUES (?, ?, ?, ?);""",
+                (component_id, group_id, key, file_name))
+            path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
+            rval[key] = np.load(path, mmap_mode='r')
+    return rval
+
+
 def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
     os.makedirs(os.path.join(MODEL_CACHE_ROOT, model_id), exist_ok=True)
     saved_paths = []
@@ -177,7 +198,7 @@ def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
         with connect() as conn:
             for key, val in ndarray_d.items():
                 file_name = f'{component_id}-{key}.npy'
-                cursor = conn.execute(
+                conn.execute(
                     """INSERT INTO Ndarray
                     (component_id, group_id, key, file_name)
                     VALUES (?, ?, ?, ?);""",

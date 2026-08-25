@@ -1,6 +1,8 @@
 import datetime
 import enum
 
+import numpy as np
+
 from .enums import IPCC_Sector, GHG, LULUCF_Sectors, col_by_pt, col_ca
 from .html import (
     UncertainSparklineMatrixEChart,
