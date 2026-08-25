@@ -5,6 +5,7 @@ import json
 import os
 import sqlite3
 import uuid
+from collections.abc import Iterator
 
 import numpy as np
 
@@ -249,14 +250,14 @@ def params_Normal(component_id):
         n_yielded = 0
         for row in cursor:
             n_yielded += 1
-            yield dict(
-                location=row[0],
-                scale=row[1],
-                v_unit=row[2],
-                data_cutoff=row[3],
-                ghg=GHG(row[4]),
-                sector=IPCC_Sector(row[5]),
-                )
+            yield {
+                    'location': row[0],
+                    'scale': row[1],
+                    'v_unit': row[2],
+                    'data_cutoff': row[3],
+                    'ghg': GHG(row[4]),
+                    'sector': IPCC_Sector(row[5]),
+                }
         if n_yielded == 0:
             raise NoRecord(component_id)
 
@@ -276,24 +277,24 @@ def params_BayesianNormal(component_id):
         n_yielded = 0
         for row in cursor:
             n_yielded += 1
-            yield dict(
-                num_samples=row[0],
-                num_warmup=row[1],
-                thinning=row[2],
-                seed=row[3],
-                scale=row[4],
-                data_cutoff=row[5],
-                ghg=GHG(row[6]),
-                sector=IPCC_Sector(row[7]),
-                model_id=row[8],
-                )
+            yield {
+                    'num_samples': row[0],
+                    'num_warmup': row[1],
+                    'thinning': row[2],
+                    'seed': row[3],
+                    'scale': row[4],
+                    'data_cutoff': row[5],
+                    'ghg': GHG(row[6]),
+                    'sector': IPCC_Sector(row[7]),
+                    'model_id': row[8],
+                  }
         if n_yielded == 0:
             raise NoRecord(component_id)
 
 
 def insert_model(cursor, model_id, family, version, data_cutoff,
                  version_description=''):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     Model (model_id, family, version, version_description, data_cutoff)
     VALUES (?, ?, ?, ?, ?);"""
     cursor.execute(
@@ -309,7 +310,7 @@ def insert_component_mapping(
     region,
     component_id,
     ):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     ComponentMapping (
         model_id, ghg, NIR_sector, region, component_id)
     VALUES (?, ?, ?, ?, ?);"""
@@ -325,7 +326,7 @@ def insert_component_type(
     model_id,
     ):
     assert component_type in ('Normal', 'BayesianNormal')
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     ComponentType (component_id, component_type, model_id)
     VALUES (?, ?, ?);"""
     cursor.execute(
@@ -340,7 +341,7 @@ def insert_component_normal(
     scale,
     v_unit,
     ):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     Component_Normal (
         component_id, location, scale, v_unit)
     VALUES (?, ?, ?, ?);"""
@@ -358,7 +359,7 @@ def insert_component_bayesian_normal(
     seed,
     scale=1,
     ):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     Component_BayesianNormal (
         component_id, num_samples, num_warmup, thinning, seed, scale)
     VALUES (?, ?, ?, ?, ?, ?);"""
@@ -390,11 +391,12 @@ def model_latest_version(family, data_cutoff):
         if row is None:
             raise NoRecord()
         model_version, model_id = row
-        return dict(
-            family=family,
-            data_cutoff=data_cutoff,
-            version=model_version,
-            model_id=model_id)
+        return {
+                'family': family,
+                'data_cutoff': data_cutoff,
+                'version': model_version,
+                'model_id': model_id,
+            }
 
 
 def components_by_model(model_id):
@@ -491,7 +493,7 @@ def complete_task(*, task_id: int, worker_id: str):
     """Worker explicitly acknowledges the task is done."""
     with connect() as conn:
         cursor = conn.execute(
-            f"""UPDATE Task
+            """UPDATE Task
             SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP
             WHERE id = ? and worker_id = ?
             RETURNING id
@@ -506,7 +508,7 @@ def complete_task(*, task_id: int, worker_id: str):
 def main_task_complete(args):
     with connect() as conn:
         cursor = conn.execute(
-            f"""UPDATE Task
+            """UPDATE Task
             SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP
             WHERE id = ?
             RETURNING id
@@ -523,7 +525,7 @@ def main_task_reset(args):
     with connect() as conn:
         assert args.task_id == 'all'
         cursor = conn.execute(
-            f"""UPDATE Task
+            """UPDATE Task
             SET status = 'PENDING',
                 completed_at = NULL,
                 claimed_at = NULL,
@@ -558,9 +560,9 @@ def task_completion_iter(
     worker_id=None,
     crashed_task_timeout_seconds=300,
     raise_on_failure=True,
-    ):
+    ) -> Iterator[dict]:
     if worker_id is None:
-        worker_id = f'worker_{str(uuid.uuid4())}'
+        worker_id = f'worker_{uuid.uuid4()!s}'
 
 
     recover_crashed_tasks(timeout_seconds=crashed_task_timeout_seconds)
@@ -603,8 +605,7 @@ def by_id(table, conn=None, **kwargs):
             raise Exception(query) from  err
         for row in cursor:
             return row
-        else:
-            raise NoRecord()
+        raise NoRecord()
 
 
 def stable_hash(data: str, n_chars=8) -> str:

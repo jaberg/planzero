@@ -3,31 +3,34 @@ import enum
 
 import numpy as np
 
-from .enums import IPCC_Sector, GHG, LULUCF_Sectors, col_by_pt, col_ca
+from . import model_db, nir2025
+from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors, col_by_pt, col_ca
 from .html import (
-    UncertainSparklineMatrixEChart,
+    EChartDataZoomElem,
+    EChartGrid,
+    EChartItemStyle,
+    EChartLineStyle,
     EChartMatrix,
     EChartMatrixBody,
     EChartMatrixBodyDataElem,
     EChartMatrixCorner,
-    EChartMatrixXY,
     EChartMatrixXAxis,
+    EChartMatrixXY,
     EChartMatrixYAxis,
-    EChartToolTip,
-    EChartDataZoomElem,
-    EChartGrid,
     EChartSeriesBase,
-    EChartLineStyle,
-    EChartItemStyle,
+    EChartToolTip,
     GridLinkElem,
-    )
+    UncertainSparklineMatrixEChart,
+)
 from .nir_static_normals import (
+    BNs_by_sector_ghg,
     inference_work_loop,
     model_id_from_data_cutoff,
+    normals_by_sector_ghg,
+    touch_components,
     touch_model,
-    touch_components)
-
-from .prob import SiteInference, ClassVar, computed_field
+)
+from .prob import ClassVar, SiteInference, computed_field
 
 
 class PseudoSectors(str, enum.Enum):
@@ -35,14 +38,14 @@ class PseudoSectors(str, enum.Enum):
     Total_without_LULUCF = 'Total without LULUCF'
 
 
-class SparklineEChartHelper(object):
+class SparklineEChartHelper:
 
-    palette = [
+    palette = (
         '#5470c6', '#91cc75', '#fac858', '#ee6666',
         '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
         '#ea7ccc', '#4A90E2', '#50E3C2', '#F5A623',
         '#D0021B', '#8B572A', '#417505', '#BD10E0'
-    ]
+    )
 
     n_non_lulucf_rows = 10
     n_total_rows = n_non_lulucf_rows + 2
@@ -61,7 +64,7 @@ class SparklineEChartHelper(object):
 
         # has to be every year or else scaling doesn't work properly
         # when combined with historic actuals
-        self.years = np.arange(1990, 2050+1)
+        self.years = np.arange(1990, 2050 + 1)
 
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
@@ -76,20 +79,20 @@ class SparklineEChartHelper(object):
     def add_data_for_sector(self, sector, sector_mean, lbound, ubound):
         assert sector not in self.data_by_sector
         assert ubound >= lbound
-        self.data_by_sector[sector] = dict(
-            mean=sector_mean,
-            ubound=ubound,
-            lbound=lbound,
-            CI=ubound - lbound,
-            means=[sector_mean for yr in self.years],
-            ubounds=[ubound for yr in self.years],
-            lbounds=[lbound for yr in self.years],
-            CIs=[ubound - lbound for yr in self.years],
-            neg_shift=[min(ubound, 0) for yr in self.years],
-            neg_shade=[min(lbound, 0) - min(ubound, 0) for yr in self.years],
-            pos_shift=[max(lbound, 0) for yr in self.years],
-            pos_shade=[max(ubound, 0) - max(lbound, 0) for yr in self.years],
-            )
+        self.data_by_sector[sector] = {
+            'mean': sector_mean,
+            'ubound': ubound,
+            'lbound': lbound,
+            'CI': ubound - lbound,
+            'means': [sector_mean for yr in self.years],
+            'ubounds': [ubound for yr in self.years],
+            'lbounds': [lbound for yr in self.years],
+            'CIs': [ubound - lbound for yr in self.years],
+            'neg_shift': [min(ubound, 0) for yr in self.years],
+            'neg_shade': [min(lbound, 0) - min(ubound, 0) for yr in self.years],
+            'pos_shift': [max(lbound, 0) for yr in self.years],
+            'pos_shade': [max(ubound, 0) - max(lbound, 0) for yr in self.years],
+            }
 
     def load_data(self):
         self.config = load_config(allow_version_mismatch=False)
@@ -185,7 +188,7 @@ class SparklineEChartHelper(object):
         rval.append(EChartMatrixBodyDataElem(
             coord=[0, 0],
             value='Total without LULUCF',
-            label=dict(color='#999', fontSize=fontSize, position='insideTop'),
+            label={'color': '#999', 'fontSize': fontSize, 'position': 'insideTop'},
             ))
         for row in range(self.n_non_lulucf_rows):
             for col in range(self.n_cols):
@@ -205,9 +208,11 @@ class SparklineEChartHelper(object):
                                .replace('and Solvent Use', ', Solvents')
                                .replace('Carbon-Containing', '')
                               ),
-                        label=dict(color='#999',
-                                   fontSize=fontSize,
-                                   position='insideTop'),
+                        label={
+                            'color': '#999',
+                            'fontSize': fontSize,
+                            'position': 'insideTop'
+                            },
                         )
                     )
 
@@ -218,15 +223,14 @@ class SparklineEChartHelper(object):
                 value='Land-Use, Land-Use Change, and Forestry (LULUCF)',
                 coordClamp=True,
                 mergeCells=True,
-                label=dict(color='#999',
-                           fontSize=14),
+                label={'color': '#999', 'fontSize': 14},
                 )
             )
 
         rval.append(EChartMatrixBodyDataElem(
             coord=[0, self.n_total_rows - 1],
             value='Total with LULUCF',
-            label=dict(color='#999', fontSize=fontSize, position='insideTop'),
+            label={'color': '#999', 'fontSize': fontSize, 'position': 'insideTop'},
             ))
 
         assert self.n_cols >= len(LULUCF_Sectors) + 1
@@ -235,9 +239,7 @@ class SparklineEChartHelper(object):
                 EChartMatrixBodyDataElem(
                     coord=[col_minus_1 + 1, self.n_total_rows - 1],
                     value=sector.value,
-                    label=dict(color='#999',
-                               fontSize=fontSize,
-                               position='insideTop'),
+                    label={'color': '#999', 'fontSize': fontSize, 'position': 'insideTop'},
                     )
                 )
         return rval
@@ -324,10 +326,10 @@ class SparklineEChartHelper(object):
                 id=f'xAxis_{col}|{row}',
                 gridId=f'grid_{col}|{row}',
                 scale=True,
-                axisTick=dict(show=False),
-                axisLabel=dict(show=False),
-                axisLine=dict(show=False),
-                splitLine=dict(show=False),
+                axisTick={'show': False},
+                axisLabel={'show': False},
+                axisLine={'show': False},
+                splitLine={'show': False},
                 boundaryGap=False,
                 ))
         self.yAxis_list.append(
@@ -338,12 +340,12 @@ class SparklineEChartHelper(object):
                 scale=True,
                 max=ymax,
                 min=ymin,
-                axisLabel=dict(showMaxLabel=True,
-                               fontSize=9,
-                               customValues=yAxis_customValues,
-                              ),
-                axisLine=dict(show=False),
-                axisTick=dict(show=False),
+                axisLabel={'showMaxLabel': True,
+                               'fontSize': 9,
+                               'customValues': yAxis_customValues,
+                              },
+                axisLine={'show': False},
+                axisTick={'show': False},
                 ))
 
         # historical actuals
@@ -394,7 +396,7 @@ class SparklineEChartHelper(object):
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
                     data=list(zip(self.years, data['neg_shift'])),
-                    stack=f'stack_{str(sector)}'
+                    stack=f'stack_{sector:s}'
                     ))
             self.series_list.append(
                 EChartSeriesBase(
@@ -404,10 +406,10 @@ class SparklineEChartHelper(object):
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
+                    areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
                     data=list(zip(self.years, data['neg_shade'])),
-                    stack=f'stack_{str(sector)}'
+                    stack=f'stack_{sector:s}'
                     ))
         if data['ubound'] >= 0:
             self.series_list.append(
@@ -419,7 +421,7 @@ class SparklineEChartHelper(object):
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
                     data=list(zip(self.years, data['pos_shift'])),
-                    stack=f'stack_{str(sector)}'
+                    stack=f'stack_{sector:s}'
                     ))
             self.series_list.append(
                 EChartSeriesBase(
@@ -429,10 +431,10 @@ class SparklineEChartHelper(object):
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
+                    areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
                     data=list(zip(self.years, data['pos_shade'])),
-                    stack=f'stack_{str(sector)}'
+                    stack=f'stack_{sector:s}'
                     ))
 
     def add_non_lulucf_cells(self):
@@ -523,7 +525,7 @@ class PseudoRegion(str, enum.Enum):
     NationalTotal = 'National Total'
 
 
-class RegionalSparklineEChartHelper(object):
+class RegionalSparklineEChartHelper:
 
     """
     Build a minigrid for a single sector.
@@ -562,20 +564,20 @@ class RegionalSparklineEChartHelper(object):
     def add_data_for_region(self, region, mean, lbound, ubound):
         assert region not in self.data_by_region
         assert ubound >= lbound
-        self.data_by_region[region] = dict(
-            mean=mean,
-            ubound=ubound,
-            lbound=lbound,
-            CI=ubound - lbound,
-            means=[mean for yr in self.years],
-            ubounds=[ubound for yr in self.years],
-            lbounds=[lbound for yr in self.years],
-            CIs=[ubound - lbound for yr in self.years],
-            neg_shift=[min(ubound, 0) for yr in self.years],
-            neg_shade=[min(lbound, 0) - min(ubound, 0) for yr in self.years],
-            pos_shift=[max(lbound, 0) for yr in self.years],
-            pos_shade=[max(ubound, 0) - max(lbound, 0) for yr in self.years],
-            )
+        self.data_by_region[region] = {
+            'mean': mean,
+            'ubound': ubound,
+            'lbound': lbound,
+            'CI': ubound - lbound,
+            'means': [mean for yr in self.years],
+            'ubounds': [ubound for yr in self.years],
+            'lbounds': [lbound for yr in self.years],
+            'CIs': [ubound - lbound for yr in self.years],
+            'neg_shift': [min(ubound, 0) for yr in self.years],
+            'neg_shade': [min(lbound, 0) - min(ubound, 0) for yr in self.years],
+            'pos_shift': [max(lbound, 0) for yr in self.years],
+            'pos_shade': [max(ubound, 0) - max(lbound, 0) for yr in self.years],
+            }
 
     def load_data(self):
         self.config = load_config(allow_version_mismatch=False)
@@ -655,9 +657,9 @@ class RegionalSparklineEChartHelper(object):
                     EChartMatrixBodyDataElem(
                         coord=[col, row],
                         value=(region.value),
-                        label=dict(color='#999',
-                                   fontSize=fontSize,
-                                   position='insideTop'),
+                        label={'color': '#999',
+                               'fontSize': fontSize,
+                               'position': 'insideTop'},
                         )
                     )
         return rval
@@ -736,10 +738,10 @@ class RegionalSparklineEChartHelper(object):
                 id=f'xAxis_{col}|{row}',
                 gridId=f'grid_{col}|{row}',
                 scale=True,
-                axisTick=dict(show=False),
-                axisLabel=dict(show=False),
-                axisLine=dict(show=False),
-                splitLine=dict(show=False),
+                axisTick={'show': False},
+                axisLabel={'show': False},
+                axisLine={'show': False},
+                splitLine={'show': False},
                 boundaryGap=False,
                 ))
         self.yAxis_list.append(
@@ -750,12 +752,12 @@ class RegionalSparklineEChartHelper(object):
                 scale=True,
                 max=ymax,
                 min=ymin,
-                axisLabel=dict(showMaxLabel=True,
-                               fontSize=9,
-                               customValues=yAxis_customValues,
-                              ),
-                axisLine=dict(show=False),
-                axisTick=dict(show=False),
+                axisLabel={'showMaxLabel': True,
+                           'fontSize': 9,
+                           'customValues': yAxis_customValues,
+                           },
+                axisLine={'show': False},
+                axisTick={'show': False},
                 ))
 
         actuals = self.actuals_in_v_unit_scale(region)
@@ -797,7 +799,7 @@ class RegionalSparklineEChartHelper(object):
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
                     data=list(zip(self.years, data['neg_shift'])),
-                    stack=f'stack_{str(region)}'
+                    stack=f'stack_{region:s}'
                     ))
             self.series_list.append(
                 EChartSeriesBase(
@@ -807,10 +809,10 @@ class RegionalSparklineEChartHelper(object):
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
+                    areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
                     data=list(zip(self.years, data['neg_shade'])),
-                    stack=f'stack_{str(region)}'
+                    stack=f'stack_{region:s}'
                     ))
         if data['ubound'] >= 0:
             self.series_list.append(
@@ -822,7 +824,7 @@ class RegionalSparklineEChartHelper(object):
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
                     data=list(zip(self.years, data['pos_shift'])),
-                    stack=f'stack_{str(region)}'
+                    stack=f'stack_{region:s}'
                     ))
             self.series_list.append(
                 EChartSeriesBase(
@@ -832,10 +834,10 @@ class RegionalSparklineEChartHelper(object):
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
+                    areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
                     data=list(zip(self.years, data['pos_shade'])),
-                    stack=f'stack_{str(region)}'
+                    stack=f'stack_{region:s}'
                     ))
 
     def add_regional_cells(self):
@@ -966,16 +968,18 @@ class Static_Normals_2024_12_31(SiteInference):
             sector=sector,
             ghg=ghg,
             div_id=f'{self.__class__.__name__}_regional_sparkline_echart_{ghg.value if ghg else "all"}',
-            v_unit=v_unit)
+            v_unit=v_unit,
+            model_id=self.model_id)
         helper.load_data()
         helper.order_regions()
         helper.add_regional_cells()
         return helper.make_echart()
 
     def _challenge_score_PreNIR_2025_06(self):
-        from . import nir_static_normals
-        from . import model_db
         from scipy.special import logsumexp
+
+        from . import model_db, nir_static_normals
+
         model_id = model_db.model_latest_version(
             family='StaticNormal',
             data_cutoff='2024-12-31',

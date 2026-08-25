@@ -1,15 +1,13 @@
 import datetime
-import functools
 import json
 import os
 
+import jinja2
 import numpy as np
-
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import jinja2
 
 app = FastAPI()
 
@@ -26,9 +24,9 @@ templates = Jinja2Templates(
 
 import planzero
 import planzero.blog
-import planzero.ipcc_home
-import planzero.est_nir
 import planzero.enums
+import planzero.est_nir
+import planzero.ipcc_home
 
 u = planzero.ureg
 
