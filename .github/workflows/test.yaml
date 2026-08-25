@@ -64,7 +64,7 @@ jobs:
 
       - name: Setup Tmate session
         uses: mxschmitt/action-tmate@v3
-        if: true
+        if: false
 
       - name: Prepare for Static Normals inference
         run: python -m planzero inference_prep --model=Static_Normals_2024_12_31
