@@ -53,8 +53,7 @@ jobs:
       # Static Normals 2024-12-31
 
       - name: Cache key for Static_Normals_2024_12_31
-        run: |
-          echo "MODEL_ID_Static_Normals_2024_12_31=$((python -m planzero model_id --model=Static_Normals_2024_12_31))" >> "$GITHUB_ENV"
+        run: echo "MODEL_ID_Static_Normals_2024_12_31=$(python -m planzero model_id --model=Static_Normals_2024_12_31)" >> "$GITHUB_ENV"
 
       - name: Cache inference for Static_Normals_2024_12_31
         id: cache-static-normals-2024-12-31
