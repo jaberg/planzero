@@ -173,9 +173,9 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
             group_id='grouped_samples')
         if grouped_samples:
             return
+        assert 0, ('load_ndarray_group failed', payload, params)
     except IOError:
-        pass
-    assert 0, ('load_ndarray_group failed', payload)
+        raise
 
     # Design pattern:
     # in this function, train/ infer this component by looking at the
