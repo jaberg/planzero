@@ -529,22 +529,25 @@ def recover_crashed_tasks(timeout_seconds: int = 300):
             print(f"[Reaper] Recovered {len(recovered)} abandoned tasks.")
 
 
-def task_completion_iter(worker_id=None):
+def task_completion_iter(
+    worker_id=None,
+    crashed_task_timeout_seconds=300,
+    raise_on_failure=True,
+    ):
     if worker_id is None:
         worker_id = f'worker_{str(uuid.uuid4())}'
 
-    crashed_task_timeout_seconds = 300
 
     recover_crashed_tasks(timeout_seconds=crashed_task_timeout_seconds)
     deadline_buffer = 10 # seconds
     while True:
-        task_id, payload = claim_task(worker_id=args.worker_id)
+        task_id, payload = claim_task(worker_id=worker_id)
 
         if task_id:
             print(f"Claimed Task {task_id}: {payload}")
             try:
                 yield payload
-                complete_task(task_id=task_id, worker_id=args.worker_id)
+                complete_task(task_id=task_id, worker_id=worker_id)
                 print(f"Successfully completed Task {task_id}")
 
             except Exception as e:
@@ -552,7 +555,7 @@ def task_completion_iter(worker_id=None):
                 print(f"Task {task_id} failed: {e}")
                 with connect() as conn:
                     conn.execute("UPDATE Task SET status = 'FAILED' WHERE id = ?", (task_id,))
-                if args.raise_on_failure:
+                if raise_on_failure:
                     raise e
         else:
             break
@@ -615,13 +618,6 @@ subparser.set_defaults(func=main_component_type_list)
 subparser = subparsers.add_parser('model_delete')
 subparser.add_argument('ids', nargs='+')
 subparser.set_defaults(func=main_model_delete)
-
-subparser = subparsers.add_parser('worker')
-subparser.add_argument('--raise-on-failure', action="store_true")
-subparser.add_argument('--worker-id', default='')
-subparser.add_argument('--reaper-timeout-s', type=float, default=300)
-subparser.add_argument('--on-complete', type=str, default='exit') # exit, wait
-subparser.set_defaults(func=main_worker)
 
 subparser = subparsers.add_parser('task_reset')
 subparser.add_argument('--task-id', type=str, default='all')
