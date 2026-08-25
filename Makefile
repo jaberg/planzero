@@ -184,3 +184,15 @@ html/blog/2026-05-26-probabilistic-modelling-assets: .build.test
 		-w /mnt/ \
 		-it --rm $(target):test \
 		python -c "import planzero; planzero.blog.TwoProbabilisticModels.generate_assets()"
+
+build_and_test:
+	# replicates the logic of .github/workflows/test.yaml build_and_test
+	# meant to be run *inside* docker development env
+	# the environment and docker command should configure the project root
+	# as /mnt
+	# and set the environment variables to use subfolders as cache directories
+	rm -f ./my_database.db
+	python -m planzero.model_db init
+	python -m planzero inference_prep --model=Static_Normals_2024_12_31
+	python -m planzero inference_work --model=Static_Normals_2024_12_31
+	pytest -W error --maxfail=10 .
