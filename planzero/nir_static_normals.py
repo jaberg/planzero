@@ -48,6 +48,7 @@ def weighted_constant_model(scaled_pt=None, scaled_ca=None, weights=1):
                        dist.Normal(jnp.sum(mu), sigma_ca),
                        obs=scaled_ca)
 
+
 def model_id_from_data_cutoff(data_cutoff):
     model_id = 'model_{}'.format(
         model_db.stable_hash(
@@ -127,12 +128,14 @@ def touch_components(data_cutoff):
                         component_id=component_id,
                         component_type='Normal',
                         model_id=model_id)
+                    # TODO: estimating that there's a 50% chance the emission will be negative is
+                    # silly for most sectors.
                     model_db.insert_component_normal(
                         cursor=cursor,
                         component_id=component_id,
                         location=0,
                         scale=1,
-                        v_unit=f'kt CO2e')
+                        v_unit='kt CO2e')
                 else:
                     model_db.insert_component_type(
                         cursor=cursor,
@@ -149,10 +152,10 @@ def touch_components(data_cutoff):
                         scale=scale)
                     model_db.insert_task(
                         cursor=cursor,
-                        payload=dict(
-                            entrypoint='static_normals_inference',
-                            component_id=component_id,
-                            ))
+                        payload={
+                            'entrypoint': 'static_normals_inference',
+                            'component_id': component_id,
+                            })
 
 
 def entrypoint_static_normals_inference(payload, model_db=model_db):
@@ -172,6 +175,7 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
             return
     except IOError:
         pass
+    assert 0, ('load_ndarray_group failed', payload)
 
     # Design pattern:
     # in this function, train/ infer this component by looking at the
