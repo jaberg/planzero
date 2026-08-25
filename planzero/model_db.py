@@ -30,7 +30,10 @@ db_filename = "my_database.db"
 
 
 def connect(timeout=5.0):
-    conn = sqlite3.connect(db_filename, timeout=timeout)
+    conn = sqlite3.connect(
+        db_filename,
+        detect_types=sqlite3.PARSE_DECLTYPES, # use register_converter calls above
+        timeout=timeout)
     conn.execute("PRAGMA journal_mode = WAL;")
     return conn
 
@@ -168,7 +171,7 @@ def sectors_by_component_id(component_id):
 
 
 def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
-    os.makedirs(os.path.join([MODEL_CACHE_ROOT, model_id]), exist_ok=True)
+    os.makedirs(os.path.join(MODEL_CACHE_ROOT, model_id), exist_ok=True)
     saved_paths = []
     try:
         with connect() as conn:
@@ -179,7 +182,7 @@ def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
                     (component_id, group_id, key, file_name)
                     VALUES (?, ?, ?, ?);""",
                     (component_id, group_id, key, file_name))
-                path = os.path.join([MODEL_CACHE_ROOT, model_id, file_name])
+                path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
                 fp = np.lib.format.open_memmap(
                     path,
                     mode='w+',
@@ -205,7 +208,7 @@ def load_ndarray_group(model_id, component_id, group_id):
             ;""",
             (component_id, group_id,))
         for key, file_name in cursor:
-            path = os.path.join([MODEL_CACHE_ROOT, model_id, file_name])
+            path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
             rval[key] = np.load(path, mmap_mode='r')
     return rval
 
@@ -246,7 +249,7 @@ def params_BayesianNormal(component_id):
         JOIN Model on ComponentMapping.model_id = Model.model_id
         WHERE Component_BayesianNormal.component_id = ?
         GROUP BY 
-        num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector
+                  num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector, Model.model_id
             ;""",
         (component_id,))
         n_yielded = 0
@@ -261,6 +264,7 @@ def params_BayesianNormal(component_id):
                 data_cutoff=row[5],
                 ghg=GHG(row[6]),
                 sector=IPCC_Sector(row[7]),
+                model_id=row[8],
                 )
         if n_yielded == 0:
             raise NoRecord(component_id)

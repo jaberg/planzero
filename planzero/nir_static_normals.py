@@ -14,7 +14,6 @@ from numpyro.infer import MCMC, NUTS
 from numpyro.infer import Predictive
 
 from . import nir2025
-from .prob import SiteInference
 from .enums import IPCC_Sector, GHG, PT, LULUCF_Sectors
 
 from .nir_constant_predictor import constant_model
@@ -165,7 +164,7 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
     # Check if the grouped samples have been saved. If they're
     # present, assume they are correct.
     try:
-        grouped_samples = model_db.save_ndarray_group(
+        grouped_samples = model_db.load_ndarray_group(
             model_id=params['model_id'],
             component_id=component_id,
             group_id='grouped_samples')
