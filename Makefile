@@ -29,6 +29,7 @@ tmux: .build.dev
 		-v ~/.config/git:/root/.config/git \
 		-v ~/.config/nvim:/root/.config/nvim \
 		-v ~/.config/tmux:/root/.config/tmux \
+		-v ~/.ssh:/root/.ssh \
 		-e TERM=xterm-256color \
 		-e COLORTERM=truecolor \
 		-w /mnt/ \
