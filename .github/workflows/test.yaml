@@ -62,6 +62,10 @@ jobs:
           path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
           key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
 
+      - name: Setup Tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: true
+
       - name: Prepare for Static Normals inference
         run: python -m planzero inference_prep --model=Static_Normals_2024_12_31
 
