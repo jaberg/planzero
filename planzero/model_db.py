@@ -151,24 +151,34 @@ def init_db():
     conn.close()
 
 
-def GHGs_by_component_id(component_id):
+def component_scopes_by_model_id(model_id):
     with connect() as conn:
         cursor = conn.execute(
-        """SELECT DISTINCT ghg FROM ComponentMapping
+        """SELECT NIR_sector, ghg, region, component_id FROM ComponentMapping
+        WHERE model_id = ?;""",
+        (model_id,))
+        for row in cursor:
+            yield {
+                    'sector': IPCC_Sector(row[0]),
+                    'ghg': GHG(row[1]),
+                    'region': row[2],
+                    'component_id': row[3],
+                    }
+
+
+def component_scope_by_id(component_id):
+    with connect() as conn:
+        cursor = conn.execute(
+        """SELECT NIR_sector, ghg, region FROM ComponentMapping
         WHERE component_id = ?;""",
         (component_id,))
         for row in cursor:
-            yield GHG(row[0])
-
-
-def sectors_by_component_id(component_id):
-    with connect() as conn:
-        cursor = conn.execute(
-            """SELECT DISTINCT NIR_sector FROM ComponentMapping
-            WHERE component_id = ?;""",
-            (component_id,))
-        for row in cursor:
-            yield IPCC_Sector(row[0])
+            yield {
+                    'sector': IPCC_Sector(row[0]),
+                    'ghg': GHG(row[1]),
+                    'region': row[2],
+                    'component_id': component_id,
+                    }
 
 
 def index_ndarray_group(model_id, component_id, group_id, ndarray_d_keys) -> dict:
@@ -408,9 +418,48 @@ def components_by_model(model_id):
             ;""",
             (model_id,))
         for row in cursor:
-            yield dict(
-                component_id=row[0],
-                component_type=row[1])
+            yield {
+                    'component_id': row[0],
+                    'component_type': row[1],
+                    }
+
+
+def normal_components_by_model(model_id):
+    with connect() as conn:
+        cursor = conn.execute(
+            """SELECT ComponentType.component_id, location, scale, v_unit
+            FROM ComponentType
+            JOIN Component_Normal on ComponentType.component_id = Component_Normal.component_id
+            WHERE model_id = ?
+            ;""",
+            (model_id,))
+        for row in cursor:
+            yield {
+                'component_id': row[0],
+                'location': row[1],
+                'scale': row[2],
+                'v_unit': row[3],
+                }
+
+
+def BayesianNormal_components_by_model(model_id):
+    with connect() as conn:
+        cursor = conn.execute(
+            """SELECT ComponentType.component_id, num_samples, num_warmup, thinning, seed, scale
+            FROM ComponentType
+            JOIN Component_BayesianNormal on ComponentType.component_id = Component_BayesianNormal.component_id
+            WHERE model_id = ?
+            ;""",
+            (model_id,))
+        for row in cursor:
+            yield {
+                'component_id': row[0],
+                'num_samples': row[1],
+                'num_warmup': row[2],
+                'thinning': row[3],
+                'seed': row[4],
+                'scale': row[5],
+                }
 
 
 def delete_model(model_id):

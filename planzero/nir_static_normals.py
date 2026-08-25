@@ -242,11 +242,33 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
 
 
 def inference_work_loop(data_cutoff):
-    model_id = model_id_from_data_cutoff(data_cutoff)
-
     for payload in model_db.task_completion_iter():
         assert payload['entrypoint'] == 'static_normals_inference'
         entrypoint_static_normals_inference(payload)
+
+
+def normals_by_sector_ghg(model_id) -> dict:
+    normal_components = {
+            comp_d['component_id']: comp_d
+            for comp_d in model_db.normal_components_by_model(model_id)}
+    rval = {}
+    for scope_d in model_db.component_scopes_by_model_id(model_id):
+        comp_id = scope_d['component_id']
+        if comp_id in normal_components:
+            rval[scope_d['sector'], scope_d['ghg']] = normal_components[comp_id]
+    return rval
+
+
+def BNs_by_sector_ghg(model_id) -> dict:
+    BN_components = {
+            comp_d['component_id']: comp_d
+            for comp_d in model_db.BayesianNormal_components_by_model(model_id)}
+    rval = {}
+    for scope_d in model_db.component_scopes_by_model_id(model_id):
+        comp_id = scope_d['component_id']
+        if comp_id in BN_components:
+            rval[scope_d['sector'], scope_d['ghg']] = BN_components[comp_id]
+    return rval
 
 
 def post_samples_from_grouped_samples(grouped_samples):

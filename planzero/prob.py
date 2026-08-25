@@ -30,10 +30,10 @@ class SiteInference(BaseModel):
 
     include_in_registry: ClassVar[bool] = False
 
-    def main_model_id(self):
+    def main_model_id(self) -> int:
         # if model corresponds to a model in model_db, print model_id to
         # stdout and return 0
-        print('')
+        print()
         return 1
 
     def main_inference_cache_key(self):

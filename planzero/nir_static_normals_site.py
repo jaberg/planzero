@@ -53,7 +53,7 @@ class SparklineEChartHelper:
 
     credibility_interval_95 = (.025, .975)
 
-    def __init__(self, div_id, v_unit, model_name):
+    def __init__(self, div_id, v_unit, model_name, model_id):
         self.div_id = div_id
         self.model_name = model_name
         self.grid_list = []
@@ -61,6 +61,7 @@ class SparklineEChartHelper:
         self.yAxis_list = []
         self.series_list = []
         self.grid_links = []
+        self.model_id = model_id
 
         # has to be every year or else scaling doesn't work properly
         # when combined with historic actuals
@@ -75,6 +76,7 @@ class SparklineEChartHelper:
             self.v_unit_scale = 1
         else:
             raise NotImplementedError(v_unit)
+
 
     def add_data_for_sector(self, sector, sector_mean, lbound, ubound):
         assert sector not in self.data_by_sector
@@ -95,9 +97,15 @@ class SparklineEChartHelper:
             }
 
     def load_data(self):
-        self.config = load_config(allow_version_mismatch=False)
 
-        n_samples = 100 # match saved data
+        self.normals_by_sector_ghg = normals_by_sector_ghg(self.model_id)
+        self.BNs_by_sector_ghg = BNs_by_sector_ghg(self.model_id)
+
+        for BN_d in self.BNs_by_sector_ghg.values():
+            n_samples = BN_d['num_samples']
+            break
+        else:
+            assert 0, 'no BayesianNormal components found'
         n_new_draws = 125
 
         mean_with_lulucf = 0
@@ -106,6 +114,7 @@ class SparklineEChartHelper:
         mean_without_lulucf = 0
         estimates_without_lulucf = np.zeros((n_new_draws, n_samples))
 
+
         for sector in IPCC_Sector:
             sector_mean = 0
 
@@ -113,10 +122,14 @@ class SparklineEChartHelper:
             estimates = rng.standard_normal((n_new_draws, n_samples, len(GHG)))
 
             for ii, ghg in enumerate(GHG):
-                if [str(sector), str(ghg)] in self.config['near_zero_sector_ghgs']:
+                if (sector, ghg) in self.normals_by_sector_ghg:
                     estimates[:, :, ii] = 0
                 else:
-                    config_sg, samples = load_config_samples(sector, ghg)
+                    BN_d = self.BNs_by_sector_ghg[sector, ghg]
+                    samples = model_db.load_ndarray_group(
+                            model_id=self.model_id,
+                            component_id=BN_d['component_id'],
+                            group_id='grouped_samples')
                     n_chains, n_samples_, n_regions = samples['mu'].shape
                     assert n_samples_ == n_samples
                     sector_mean_ghg = float(
@@ -124,11 +137,11 @@ class SparklineEChartHelper:
                         .reshape((n_chains * n_samples, n_regions))
                         .mean(axis=0) # across samples and chains
                         .sum(axis=0)) # over regions
-                    sector_mean += sector_mean_ghg * config_sg['scale'] * self.v_unit_scale
+                    sector_mean += sector_mean_ghg * BN_d['scale'] * self.v_unit_scale
 
                     estimates[:, :, ii] *= samples['sigma_ca']
                     estimates[:, :, ii] += samples['mu'].sum(axis=2)
-                    estimates[:, :, ii] *= config_sg['scale'] * self.v_unit_scale
+                    estimates[:, :, ii] *= BN_d['scale'] * self.v_unit_scale
 
             sector_estimates = np.sum(estimates, axis=2)
 
@@ -538,7 +551,7 @@ class RegionalSparklineEChartHelper:
 
     credibility_interval_95 = (.025, .975)
 
-    def __init__(self, sector, ghg:GHG|None, div_id, v_unit):
+    def __init__(self, sector, ghg:GHG|None, div_id, v_unit, model_id):
         self.sector = sector
         self.ghg = ghg
         self.div_id = div_id
@@ -546,6 +559,7 @@ class RegionalSparklineEChartHelper:
         self.xAxis_list = []
         self.yAxis_list = []
         self.series_list = []
+        self.model_id = model_id
 
         # has to be every year or else scaling doesn't work properly
         # when combined with historic actuals
@@ -580,9 +594,14 @@ class RegionalSparklineEChartHelper:
             }
 
     def load_data(self):
-        self.config = load_config(allow_version_mismatch=False)
+        self.normals_by_sector_ghg = normals_by_sector_ghg(self.model_id)
+        self.BNs_by_sector_ghg = BNs_by_sector_ghg(self.model_id)
 
-        n_samples = 100 # match saved data
+        for BN_d in self.BNs_by_sector_ghg.values():
+            n_samples = BN_d['num_samples']
+            break
+        else:
+            assert 0, 'no BayesianNormal components found'
         n_new_draws = 125
 
         rng = np.random.default_rng(seed=123)
@@ -590,24 +609,26 @@ class RegionalSparklineEChartHelper:
         estimates_ghg_ca = rng.standard_normal((n_new_draws, n_samples, len(GHG)))
 
         for ii, ghg in enumerate(GHG):
-            if [str(self.sector), str(ghg)] in self.config['near_zero_sector_ghgs']:
-                estimates_ghg_pt[:, :, ii] = 0
-                estimates_ghg_ca[:, :, ii] = 0
-            elif self.ghg is not None and self.ghg != ghg:
+            if ((self.sector, ghg) in self.normals_by_sector_ghg
+                or (self.ghg is not None and self.ghg != ghg)):
                 estimates_ghg_pt[:, :, ii] = 0
                 estimates_ghg_ca[:, :, ii] = 0
             else:
-                config_sg, samples = load_config_samples(self.sector, ghg)
-                n_chains, n_samples_, n_regions = samples['mu'].shape
+                BN_d = self.BNs_by_sector_ghg[self.sector, ghg]
+                samples = model_db.load_ndarray_group(
+                        model_id=self.model_id,
+                        component_id=BN_d['component_id'],
+                        group_id='grouped_samples')
+                _, n_samples_, _ = samples['mu'].shape
                 assert n_samples_ == n_samples
 
                 estimates_ghg_pt[:, :, ii] *= samples['sigma_pt']
                 estimates_ghg_pt[:, :, ii] += samples['mu']
-                estimates_ghg_pt[:, :, ii] *= config_sg['scale'] * self.v_unit_scale
+                estimates_ghg_pt[:, :, ii] *= BN_d['scale'] * self.v_unit_scale
 
                 estimates_ghg_ca[:, :, ii] *= samples['sigma_ca']
                 estimates_ghg_ca[:, :, ii] += samples['mu'].sum(axis=2)
-                estimates_ghg_ca[:, :, ii] *= config_sg['scale'] * self.v_unit_scale
+                estimates_ghg_ca[:, :, ii] *= BN_d['scale'] * self.v_unit_scale
 
         estimates_pt = estimates_ghg_pt.sum(axis=2)
         estimates_ca = estimates_ghg_ca.sum(axis=2)
@@ -915,9 +936,13 @@ class Static_Normals_2024_12_31(SiteInference):
 
     data_cutoff:object = datetime.date(year=2024, month=12, day=31)
 
-    def main_model_id(self):
-        model_id = model_id_from_data_cutoff(self.data_cutoff)
-        print(model_id)
+    @property
+    def model_id(self):
+        return model_id_from_data_cutoff(self.data_cutoff)
+
+    def main_model_id(self) -> int:
+        print(self.model_id)
+        return 0
 
     def main_inference_prep(self):
         touch_model(self.data_cutoff)
@@ -932,13 +957,15 @@ class Static_Normals_2024_12_31(SiteInference):
 
     @computed_field
     def show_on_models_page(self) -> bool:
-        return True
+        return False
 
     @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        helper = SparklineEChartHelper(div_id=None,
-                                       model_name='Static_Normals',
-                                       v_unit='Mt_CO2e')
+        helper = SparklineEChartHelper(
+                div_id=None,
+                model_name='Static_Normals',
+                v_unit='Mt_CO2e',
+                model_id=self.model_id)
         helper.load_data()
         sector = PseudoSectors.Total_with_LULUCF
         rval = (helper.data_by_sector[sector]['lbound'],
@@ -946,7 +973,11 @@ class Static_Normals_2024_12_31(SiteInference):
         return rval
 
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
-        helper = SparklineEChartHelper(div_id, v_unit, model_name=self.__class__.__name__)
+        helper = SparklineEChartHelper(
+                div_id,
+                v_unit,
+                model_name=self.__class__.__name__,
+                model_id=self.model_id)
         helper.load_data()
         helper.order_sectors()
         helper.add_total_cells()
@@ -955,10 +986,10 @@ class Static_Normals_2024_12_31(SiteInference):
         return helper.make_echart()
 
     def GHGs_for_sector(self, sector):
-        config = load_config(allow_version_mismatch=False)
+        normals = normals_by_sector_ghg(self.model_id)
         rval = []
         for ghg in GHG:
-            if [str(sector), str(ghg)] in config['near_zero_sector_ghgs']:
+            if (sector, ghg) in normals:
                 continue
             rval.append(ghg)
         return rval
@@ -987,6 +1018,7 @@ class Static_Normals_2024_12_31(SiteInference):
 
         # product (log-domain sum) over components' predictions
         loglik_samples = 0
+        some_denominator = 10
         for rd in model_db.components_by_model(model_id): # rd -> results/record dictionary
             if rd['component_type'] == 'Normal':
                 loglik_samples += nir_static_normals.loglik_NIR_Normal(
@@ -1002,10 +1034,10 @@ class Static_Normals_2024_12_31(SiteInference):
                 raise NotImplementedError(rd)
 
         # log-domain mean over samples
-        rval = logsumexp(loglik_samples, b=1.0 / len(loglik_samples))
-        return dict(total=float(rval))
+        rval, _ = logsumexp(loglik_samples, b=1.0 / some_denominator)
+        return {'total': float(rval)}
 
     def challenge_scores(self, challenge_name):
         if challenge_name == 'PreNIR_2025_06':
             return self._challenge_score_PreNIR_2025_06()
-        return dict(total=float('nan'))
+        return {'total': float('nan')}
