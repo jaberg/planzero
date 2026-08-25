@@ -53,14 +53,15 @@ jobs:
       # Static Normals 2024-12-31
 
       - name: Cache key for Static_Normals_2024_12_31
-        run: echo "MODEL_ID_Static_Normals_2024_12_31=$(python -m planzero model_id --model=Static_Normals_2024_12_31)" >> "$GITHUB_ENV"
+        id: cache_key_static_normals_2024_12_31
+        run: echo "model_id=$(python -m planzero model_id --model=Static_Normals_2024_12_31)" >> "$GITHUB_OUTPUT"
 
       - name: Cache inference for Static_Normals_2024_12_31
-        id: cache-static-normals-2024-12-31
+        id: cache_static_normals_2024_12_31
         uses: actions/cache@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ env.MODEL_KEY_Static_Normals_2024_12_31 }}
-          key: ${{ env.MODEL_KEY_Static_Normals_2024_12_31 }}
+          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
+          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
 
       - name: Prepare for Static Normals inference
         run: python -m planzero inference_prep --model=Static_Normals_2024_12_31
