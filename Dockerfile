@@ -35,6 +35,7 @@ RUN echo 'export PATH="$PATH:/opt/nvim-linux-$NVIM_ARCH/bin"' >> /root/.bashrc  
 # so we can parallelize high level
 RUN echo 'export OMP_NUM_THREADS=1' >> /root/.bashrc
 RUN echo 'export OPENBLAS_NUM_THREADS=1' >> /root/.bashrc
+RUN echo 'export JAX_ENABLE_X64=1' >> /root/.bashrc
 RUN echo 'export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 inter_op_parallelism_threads=1"' >> /root/.bashrc
 
 

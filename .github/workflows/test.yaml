@@ -10,6 +10,10 @@ on:
     # closed event type triggers close_pr.yaml workflow
 
 env:
+  GITHUB_WORKSPACE: "${{ github.workspace }}"  # used for glossary code lookup
+  JAX_ENABLE_X64: "1"
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
   PLANZERO_CACHE_DIR: "${{ github.workspace }}/_planzero_cache"
   PLANZERO_DATA: "${{ github.workspace }}/data"
@@ -17,7 +21,7 @@ env:
   PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
   PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
   PLANZERO_USE_DISK_CACHE: "1"
-  GITHUB_WORKSPACE: "${{ github.workspace }}"  # used for glossary code lookup
+  XLA_FLAGS: "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 inter_op_parallelism_threads=1"
 
 jobs:
   build_and_test:
@@ -66,8 +70,15 @@ jobs:
       - name: Prepare for Static Normals inference
         run: python -m planzero inference_prep --model=Static_Normals_2024_12_31
 
-      - name: Perform Static Normals inference
-        run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+      - parallel:
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
         if: steps.cache_restore_static_normals_2024_12_31.outputs.cache-hit != 'true'
