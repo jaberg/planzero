@@ -386,16 +386,17 @@ def loglik_NIR_BayesianNormal(
 
 @my_functools.cache
 def KL_NIR_BayesianNormal(
-    component_id,
-    NIR_year,
-    emission_year,
+    model_id,
+    component_id, # TODO: should be sector, gas, etc?
+    NIR_year, # target
+    emission_year, # target
     model_db=model_db,
     ):
     assert NIR_year == 2025
     assert emission_year == 2023
 
     params, = model_db.params_BayesianNormal(component_id)
-    grouped_samples = model_db.load_ndarray_group(component_id, 'grouped_samples')
+    grouped_samples = model_db.load_ndarray_group(model_id, component_id, 'grouped_samples')
     post_samples = post_samples_from_grouped_samples(grouped_samples)
 
     sample_size = params['num_samples'] // params['thinning']
@@ -457,7 +458,7 @@ def KL_NIR_BayesianNormal(
         kl_ii = expected_log_p - expected_log_q
         kls.append(float(kl_ii))
         if params['sector'] == IPCC_Sector.Aluminium_Production and params['ghg'] == GHG.CO2:
-            print('')
+            print()
             print(ii, kl_ii, pt)
             print('eval_obs', eval_obs[ii])
             print('P', dist_p, 'mu', dist_p.mu, 'min', min(x), 'mean', np.mean(x), 'max', max(x))

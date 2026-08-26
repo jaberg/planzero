@@ -957,7 +957,7 @@ class Static_Normals_2024_12_31(SiteInference):
 
     @computed_field
     def show_on_models_page(self) -> bool:
-        return False
+        return True
 
     @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
