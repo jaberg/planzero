@@ -32,6 +32,7 @@ tmux: .build.dev
 		-v ~/.ssh:/root/.ssh \
 		-e TERM=xterm-256color \
 		-e COLORTERM=truecolor \
+		-p 127.0.0.1:8012:8012 \
 		-w /mnt/ \
 		-it --rm $(target):dev \
 		tmux
@@ -73,14 +74,8 @@ test_200: .build.test
 		-it --rm $(target):test \
 		pytest -W error --maxfail=1 -vv -k endpoints test_200.py
 
-local: .build.dev
-	docker run \
-		-e PLANZERO_DATA=/mnt/data/ \
-		-v ${PWD}:/mnt/ \
-		-p 127.0.0.1:8012:8012 \
-		-w /mnt/ \
-		-it --rm $(target):dev \
-		fastapi dev --port=8012 --host=0.0.0.0
+local:
+	fastapi dev --port=8012 --host=0.0.0.0
 
 prodlike: .build.prod
 	docker run \
