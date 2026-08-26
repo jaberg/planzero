@@ -192,7 +192,22 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
         n_training_years = 34
 
     nir_rng_key = jrandom.key(123)
+
+    # Sample this many possible emission amounts from the
+    # Probabilistic NIR, as an empirical approximation of the distribution.
+    # The larger the sample, the higher-fidelity is the approximation,
+    # and the slower the computation.
+    #
+    # Aug 26, 2026: sample_size 100 led to about 3h for model inference on GitHub.
+    #
+    # In future, accelerate and improve inference with a closed-form
+    # estimator instead of using so many points.
+    # Or just drop it to e.g. 10 or 25?? I have no idea how many is enough.
+    #
+    # As a hack to improve small-sample performance, probably overwrite
+    # the first column of samples with the actual data means.
     NIR_emission_sample_size = 100
+
     weights = jnp.array([1.0 / NIR_emission_sample_size] * NIR_emission_sample_size)
 
     ca_sample = np.empty((NIR_emission_sample_size, n_training_years))
@@ -208,7 +223,6 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
         for jj, pt in enumerate(real_PTs):
             nir_rng_key, rng_key_ = jrandom.split(nir_rng_key)
             pt_sample[:, ii, jj,] = pt_dists[jj].sample(rng_key_, (NIR_emission_sample_size,))
-
 
     scaled_ca = jnp.array(ca_sample / params['scale'])
     scaled_pt = jnp.array(pt_sample / params['scale'])
@@ -372,131 +386,119 @@ def loglik_NIR_BayesianNormal(
     # the estimates from other ghgs, sectors, etc.
     assert np.isfinite(logprob_X).all()
 
-    ## DEBUG
-    #KL_NIR_BayesianNormal(component_id, NIR_year, emission_year)
-    ##
     return logprob_X
 
+def _mixture_log_prob(q_mu, q_sigma, x):
+    """x: 1D, samples from P
+    q_mu: 1D, mixture component means
+    q_sigma: 1D, mixture component std devs
+    """
+    N, = x.shape
+    chain_len, = q_mu.shape
+    mixture_components = dist.Normal(q_mu[:, None], q_sigma[:, None])
+    component_log_q = mixture_components.log_prob(x)
+    assert component_log_q.shape == (chain_len, N)
+    log_q = logsumexp(component_log_q, b=1.0 / chain_len, axis=0)
+    return log_q
 
-@my_functools.cache
-def KL_NIR_BayesianNormal(
+
+def _KL_NIR_BayesianNormal(
     model_id,
-    component_id, # TODO: should be sector, gas, etc?
+    sector,
+    ghg,
+    comp_d,
     NIR_year, # target
     emission_year, # target
+    rng_key,
     model_db=model_db,
     ):
-    assert NIR_year == 2025
-    assert emission_year == 2023
+    """Return a vector of 14 numbers: real PTs first, then Canada total.
 
-    params, = model_db.params_BayesianNormal(component_id)
-    grouped_samples = model_db.load_ndarray_group(model_id, component_id, 'grouped_samples')
+    The approximating distribution is taken to be an equally-weighted mixture
+    of samples from the posterior.
+    """
+    assert NIR_year == 2025
+    rval =  np.zeros(14)
+
+    grouped_samples = model_db.load_ndarray_group(
+            model_id, comp_d['component_id'], 'grouped_samples')
     post_samples = post_samples_from_grouped_samples(grouped_samples)
 
-    sample_size = params['num_samples'] // params['thinning']
+    sample_size = comp_d['num_samples'] // comp_d['thinning']
 
     mu = post_samples['mu'] # (sample_size, 13)
     mu_ca = mu.sum(axis=1) # (sample_size,)
 
-    from planzero import nir2025
-    arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
-    arr_idx_of_2023 = arr_ca.shape[2] - 1
-
     eval_mu = np.zeros((sample_size, 14))
     eval_mu[:, :13] = mu
     eval_mu[:, 13] = mu_ca
-    eval_mu *= params['scale']
+    eval_mu *= comp_d['scale']
 
     eval_sigma = np.zeros((sample_size, 14))
     eval_sigma[:, :13] = post_samples['sigma_pt'][0]
     eval_sigma[:, 13] = post_samples['sigma_ca']
-    eval_sigma *= params['scale']
+    eval_sigma *= comp_d['scale']
 
-    eval_obs = np.zeros(14)
-    eval_obs[:13] = arr_pt[
-        nir2025.idx_of_sector[params['sector']],
-        nir2025.idx_of_ghg[params['ghg']],
-        :,
-        arr_idx_of_2023]
-    eval_obs[13] = arr_ca[
-        nir2025.idx_of_sector[params['sector']],
-        nir2025.idx_of_ghg[params['ghg']],
-        arr_idx_of_2023]
-    valid_mask = np.isfinite(eval_obs)
+    # estimate KL empirically over this many samples
+    # TODO: estimate in closed form
+    NIR_emission_sample_size = 100
 
-    ca2023_dist, pt2023_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
-        sector=params['sector'],
-        ghg=params['ghg'],
-        year=2023)
+    real_PTs = [pt for pt in PT if pt != PT.XX]
+    ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
+        sector=sector,
+        ghg=ghg,
+        year=emission_year)
 
-    # KL computation
-    kls = []
-    rng_key = jrandom.key(123)
-    N = 500 # sample size for empirical KL estimation
-    for ii, (dist_p, pt) in enumerate(zip(pt2023_dists + [ca2023_dist], PT)):
-        rng_key, rng_key_ = jrandom.split(rng_key)
-        x = dist_p.sample(rng_key_, (N,))
-        log_p = dist_p.log_prob(x)
-        assert log_p.shape == (N,)
-        expected_log_p = log_p.mean()
+    for jj, pt in enumerate(real_PTs):
+        rng_key, tmp_key = jrandom.split(rng_key)
+        pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
+        log_p = pt_dists[jj].log_prob(pt_sample)
+        assert np.all(np.isfinite(log_p))
+        log_q = _mixture_log_prob(eval_mu[:, jj], eval_sigma[:, jj], pt_sample)
+        assert np.all(np.isfinite(log_q))
+        rval[jj] = max((log_p - log_q).mean(), 0)
 
-        # interpret the MCMC samples as components of large mixture model
-        component_dist_q = dist.Normal(eval_mu[:, ii, None], eval_sigma[:, ii, None])
-        component_log_q = component_dist_q.log_prob(x)
-        assert component_log_q.shape == (sample_size, N)
-        from scipy.special import logsumexp
-
-        log_q = logsumexp(component_log_q, b=1.0 / sample_size, axis=0)
-        assert log_q.shape == (N,)
-        expected_log_q = log_q.mean()
-        kl_ii = expected_log_p - expected_log_q
-        kls.append(float(kl_ii))
-        if params['sector'] == IPCC_Sector.Aluminium_Production and params['ghg'] == GHG.CO2:
-            print()
-            print(ii, kl_ii, pt)
-            print('eval_obs', eval_obs[ii])
-            print('P', dist_p, 'mu', dist_p.mu, 'min', min(x), 'mean', np.mean(x), 'max', max(x))
-            rng_key, rng_key_ = jrandom.split(rng_key)
-            x_q = component_dist_q.sample(rng_key_, (N,)).flatten()
-            print('Q', component_dist_q, f'min {min(x_q.flatten())} mean {np.mean(x_q.flatten())} max {max(x_q.flatten())}')
-
-    #print(params['sector'], params['ghg'], sum(kls))
-    #print(' ' * 10, kls)
-    return sum(kls)
+    rng_key, tmp_key = jrandom.split(rng_key)
+    ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
+    log_p = ca_dist.log_prob(ca_sample)
+    assert np.all(np.isfinite(log_p))
+    log_q = _mixture_log_prob(eval_mu[:, 13], eval_sigma[:, 13], ca_sample)
+    assert np.all(np.isfinite(log_q))
+    rval[13] = max((log_p - log_q).mean(), 0)
+    return rval
 
 
-def main_all(args):
-    model_db.init_db()
-    main_touch_model(args)
+@my_functools.cache
+def weighted_KL_score(year, model_id, seed_int=1234):
+    abs_ktCO2e = np.zeros((len(IPCC_Sector),
+                        len(GHG),
+                        len(PT)))
+    # weights are abs( expected true value)
+    # aka abs NIR2025 estimated national means
 
-    main_touch_components(
-        parser.parse_args(
-            ['touch_components', '--model-id', 'model_fe117e9d55ab2a02']))
-    model_db.main_worker(
-        model_db.parser.parse_args(
-            ['worker', '--raise-on-failure',
-             '--on-complete=exit',
-            ]))
+    _, arr_ca = nir2025.ktCO2e_dense_w_nan()
+    arr_idx_of_year = nir2025.idx_of_year[year]
+    abs_m_sgt = abs(arr_ca[:, :, arr_idx_of_year])
+    abs_ktCO2e[:] = abs_m_sgt[:, :, None]
 
+    # zero-out the tiny sector-gas combinations
+    for ii in range(abs_ktCO2e.shape[2]):
+        abs_ktCO2e[ abs_ktCO2e < 1 ] = 0
 
-if __name__ == '__main__':
-    import argparse
-    import sys
+    KL_values = np.zeros_like(abs_ktCO2e)
 
-    # create the top-level parser
-    parser = argparse.ArgumentParser(prog='planzero')
-    subparsers = parser.add_subparsers(help='subcommand help')
+    rng_key = jrandom.key(seed_int)
+    # now estimate the sector-gas KL divergences
+    for (sector, ghg), comp_d in BNs_by_sector_ghg(model_id).items():
+        print(sector, ghg)
+        KL_sg = _KL_NIR_BayesianNormal(
+                model_id,
+                sector=sector, ghg=ghg, comp_d=comp_d,
+                NIR_year=2025, emission_year=year,
+                rng_key=rng_key)
+        KL_values[nir2025.idx_of_sector[sector], nir2025.idx_of_ghg[ghg]] = KL_sg
 
-    subparser = subparsers.add_parser('touch_model')
-    #subparser.add_argument('--year', type=int, default=2005, help='year')
-    subparser.set_defaults(func=main_touch_model)
-
-    subparser = subparsers.add_parser('touch_components')
-    subparser.add_argument('--model-id', type=str)
-    subparser.set_defaults(func=main_touch_components)
-
-    subparser = subparsers.add_parser('all')
-    subparser.set_defaults(func=main_all)
-
-    args = parser.parse_args()
-    sys.exit(args.func(args))
+    print(abs_ktCO2e)
+    print(abs_ktCO2e.sum())
+    weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
+    return weighted_divergence, abs_ktCO2e, KL_values
