@@ -3,34 +3,20 @@ import os
 
 import numpy as np
 import pandas as pd
-try:
-    import jax
-    import jax.numpy as jnp
-    from scipy.optimize import minimize
 
-    # Enable Float64 for Gaussian Process numerical stability
-    from jax import config
-    config.update("jax_enable_x64", True)
+try:
     import numpyro.distributions as dist
 except ImportError:
     pass
 
-
-from . import ipcc_canada
 from . import ghgvalues
-from .base import State, DynamicElement
-from .enums import (
-    IPCC_Sector,
-    IPCC_Sector_from_catpath_with_whitespace,
-    PT,
-    GHG)
-from .objtensor import ObjectTensor
-from .ureg import u, kt_by_ghg
-from .sts import SparseTimeSeries, STS
+from .base import DynamicElement, State
+from .enums import GHG, PT, IPCC_Sector, IPCC_Sector_from_catpath_with_whitespace
 from .my_functools import cache
+from .objtensor import ObjectTensor
+from .sts import STS, SparseTimeSeries
 from .symmetric_blended_lognormal import SymmetricBlendedLogNormal
-
-
+from .ureg import kt_by_ghg, u
 
 nir2025_year_ints = np.arange(1990, 2024)
 

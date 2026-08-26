@@ -9,6 +9,7 @@ import numpy as np
 import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
+from scipy.special import logsumexp
 
 from . import model_db, my_functools, nir2025
 from .enums import GHG, PT, IPCC_Sector
@@ -281,7 +282,6 @@ def loglik_NIR_Normal(
     params, = model_db.params_Normal(component_id)
 
     assert NIR_year == 2025
-    from planzero import nir2025
     arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
 
     assert emission_year == 2023
@@ -299,7 +299,6 @@ def loglik_NIR_Normal(
         arr_idx_of_2023]
     valid_mask = np.isfinite(eval_obs)
 
-    import numpyro.distributions as dist
     # log_probs: 14 elements
     ca_scale = params['scale']
     ca_var = ca_scale ** 2
