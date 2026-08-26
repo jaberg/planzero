@@ -15,7 +15,6 @@ RUN apt-get install -y build-essential
 COPY ./requirements_dev.txt requirements_dev.txt
 RUN pip install --no-cache-dir -r requirements_dev.txt
 
-
 FROM testing AS development
 
 RUN apt-get install -y tmux ncurses-base
@@ -29,8 +28,15 @@ RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linu
 RUN tar -C /opt -xzf nvim-linux-$NVIM_ARCH.tar.gz
 
 # add to bashrc so these vars are set inside tmux shells
-RUN echo 'export PATH=/app/venv/bin:$PATH' >> /root/.bashrc   # virtualenv
-RUN echo 'export PATH=$PATH:/opt/nvim-linux-$NVIM_ARCH/bin' >> /root/.bashrc  # neovim
+RUN echo 'export PATH="/app/venv/bin:$PATH"' >> /root/.bashrc   # virtualenv
+RUN echo 'export PATH="$PATH:/opt/nvim-linux-$NVIM_ARCH/bin"' >> /root/.bashrc  # neovim
+
+# Configure JAX to use just one core per process,
+# so we can parallelize high level
+RUN echo 'export OMP_NUM_THREADS=1' >> /root/.bashrc
+RUN echo 'export OPENBLAS_NUM_THREADS=1' >> /root/.bashrc
+RUN echo 'export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 inter_op_parallelism_threads=1"' >> /root/.bashrc
+
 
 # built on dev machine
 # run on dev machine
