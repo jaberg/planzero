@@ -216,61 +216,71 @@ to hearing from you.
 <h2 id="architecture">Architecture</h2>
 
 <p>
-PlanZero is rooted in a project on GitHub.
-The modelling described by its source code can entail significant of
-computation, the data sets informing those models can be large,
-users needs of the project aren't yet well understood,
+PlanZero, as a software project, is <a href="https://github.com/jaberg/planzero">hosted on GitHub</a>.
+Its modelling can require significant computation,
+the data sets informing those models can be large,
 and the operating budget is small.
-Over time, as the project bumps up against various limits the strategies for
-overcoming them will be documented here.
+For now, the PlanZero site is built on GitHub using <a href="https://docs.github.com/en/actions">GitHub Actions</a>,
+a product feature of GitHub's project hosting that provides a limited (currently ample) amount of computation and storage
+for free to open-source projects, including PlanZero.
 </p>
 
-<h3 id="build-data-flow">Build Data Flow</h3>
+<h3 id="github-build-data-flow">GitHub Build Workflow</h3>
 
-<p>
-PlanZero's Dockerfile uses a multi-stage build to
-produce a small docker image for fly.io
-that does not contain large data files or raw model samples.
-Deployment is currently only possible from my laptop.
-(for source-of-truth, see <a href="https://github.com/jaberg/planzero/blob/main/Dockerfile">"Dockerfile" on GH</a>.)
-</p>
 
 <pre class="mermaid">
 
 flowchart TB
 
-python_arm["Python:3.11-slim [ARM64]"]
+gh_build_and_test["Build and Test\n(Job)"]
 
-base["base"]
+gh_deploy_main["Deploy Main\n(Job)"]
 
-testing["testing"]
+gh_deploy_pr["Deploy Pull-Request\n(Job)"]
 
-development["development"]
+app_cache[("App Cache\n(Workflow Artifact)")]
 
-build_cache["build_cache"]
+inference_cache[("Model Inference Results\n(Cache Object)")]
 
-production_server["production_server"]
+inference_cache <-. "Per-model-version samples" .-> gh_build_and_test
 
-production_server_amd64["production_server_amd64"]
+gh_build_and_test --> gh_deploy_main
+gh_build_and_test --> gh_deploy_pr
 
-python_arm --> base
-base --> testing
-testing --> development
-testing --> build_cache
+gh_build_and_test -. "Pre-rendered pages" .-> app_cache
 
-base --> production_server
-
-build_cache -. copy pre-rendered pages .-> production_server
-
-python_amd["Python:3.11-slim [AMD64]"]
-
-
-build_cache -. copy pre-rendered pages .-> production_server_amd64
-
-python_amd --> production_server_amd64
-
+app_cache .-> gh_deploy_main
+app_cache .-> gh_deploy_pr
 
 </pre>
+
+<p>
+Model inference can be computationally expensive, and the results don't change with every commit to the project.
+PlanZero uses an explicit and ad-hoc versioning system for models, in order to leverage GitHub's <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching">Dependency Cache</a> capability
+in a controlled way.
+The design for the Static Normals model is that the entire model is cached on the basis of a version number in the source code, the name of the class,
+and the cutoff date for data available for inference. Whenever the model code, or any dependency, or data assumption changes, the version number must be
+explicitly changed (raised), which will change the cache key, which will cause GitHub to recompute the inference of the model and save the results.
+Free-tier jobs are limited to 6 hours for open-source projects,
+so there's some incentive to ensure that the PlanZero site can be built from scratch in that amount of time.
+</p>
+<p>
+The Build and Test phase sometimes includes inference, but always runs unit tests, including a sweep through all of the pages hosted on the planzero website.
+In the process of rendering them as part of the unit test suite, these pages are cached to disk,
+and that whole cache of pages is stored as a <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts">Workflow Artifact</a>.
+The set of pages isn't a large amount of data, and it's important to test frequently, so the tests run on every commit and the app cache is built every time the main branch
+or a pull-request branch changes.
+</p>
+
+<p>
+The last jobs in the workflow download the pre-rendered pages and deploy the webserver and pre-built pages.
+PlanZero sites are hosted by Fly.io, which hosts the main <a href="https://planzero.ca">planzero.ca</a> site,
+as well as per-pull-request preview sites for work in progress.
+The set of active pull-requests is available on the project page <a href="https://github.com/jaberg/planzero/pulls">on GitHub</a>.
+PlanZero is not currently a purely static site, but I can imagine committing to making it purely static in future in order to e.g. improve initial page-load performance
+and lower hosting costs.
+</p>
+
 
 <h2 id="manifesto">Manifesto (Dec 5, 2025)</h2>
 
