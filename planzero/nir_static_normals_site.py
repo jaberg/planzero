@@ -1034,7 +1034,7 @@ class Static_Normals_2024_12_31(SiteInference):
                 raise NotImplementedError(rd)
 
         # log-domain mean over samples
-        rval, _ = logsumexp(loglik_samples, b=1.0 / some_denominator)
+        rval = logsumexp(loglik_samples, b=1.0 / some_denominator)
         return {'total': float(rval)}
 
     def challenge_scores(self, challenge_name):

@@ -276,6 +276,7 @@ def loglik_NIR_Normal(
     NIR_year,
     emission_year,
     ):
+    return float('nan')
 
     params, = model_db.params_Normal(component_id)
 
@@ -322,6 +323,7 @@ def loglik_NIR_BayesianNormal(
     NIR_year,
     emission_year,
     ):
+    return float('nan')
     assert NIR_year == 2025
     assert emission_year == 2023
 
@@ -372,7 +374,7 @@ def loglik_NIR_BayesianNormal(
     assert np.isfinite(logprob_X).all()
 
     ## DEBUG
-    KL_NIR_BayesianNormal(component_id, NIR_year, emission_year)
+    #KL_NIR_BayesianNormal(component_id, NIR_year, emission_year)
     ##
     return logprob_X
 
