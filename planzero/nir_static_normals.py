@@ -2,8 +2,6 @@
 Example inference that's fast and represents a lower bound on accuracy.
 """
 import datetime
-import os
-
 
 import jax.numpy as jnp
 import jax.random as jrandom
@@ -11,14 +9,9 @@ import numpy as np
 import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
-from numpyro.infer import Predictive
 
-from . import nir2025
-from .enums import IPCC_Sector, GHG, PT, LULUCF_Sectors
-
-from .nir_constant_predictor import constant_model
-from . import model_db
-from . import my_functools
+from . import model_db, my_functools, nir2025
+from .enums import GHG, PT, IPCC_Sector
 
 model_family = 'StaticNormal'
 model_version = 2
