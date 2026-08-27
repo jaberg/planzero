@@ -81,6 +81,7 @@ class SiteInference(BaseModel):
     def prediction_scores_prenir_2025_06(self) -> dict:
         raise NotImplementedError()
 
+    @computed_field
     def show_prediction_quality(self) -> bool:
         return False
 
