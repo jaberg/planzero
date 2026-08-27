@@ -5,14 +5,14 @@ except ImportError:
 import numpy as np
 from pydantic import computed_field
 
-from .enums import LULUCF_Sectors, PT, IPCC_Sector, GHG
 from . import nir2025  # as the model being rendered by this code
-from . import nir2025 as site_nir # as the reference model for the site
-
-from .nir_ar2_site import SparklineEChartHelper # TODO: rename e.g. TimeVaryingSparklineEChartHelper
-from .nir_ar2_site import RegionalSparklineEChartHelper # TODO: rename e.g. TimeVaryingSparklineEChartHelper
-from .prob import SiteInference, ClassVar
-
+from . import nir2025 as site_nir  # as the reference model for the site
+from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
+from .nir_ar2_site import (
+    RegionalSparklineEChartHelper,  # TODO: rename e.g. TimeVaryingSparklineEChartHelper
+    SparklineEChartHelper,  # TODO: rename e.g. TimeVaryingSparklineEChartHelper
+)
+from .prob import ClassVar, SiteInference
 
 n_samples = 250 # enough to do the job, not too slowly
 n_years = 34
