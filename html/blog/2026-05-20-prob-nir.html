@@ -773,14 +773,14 @@ M^{(ref)}, M^{(pred)}
 \\frac{
 \\sum_{s,g,r,t : |m_{(s,g,t)}| > 1 kt CO_2e,~t > T}
 \\mathrm{abs} \\left(
-\\mathbb{E}_{P_{(s,g,r,t)}}[x]
+m_{(s,g,t)}
 \\right)
 \\mathrm{KL} \\left(P_{(s,g,r,t)} \\| Q_{(s,g,r,t)}
 \\right)
 }{
 \\sum_{s,g,r,t : |m_{(s,g,t)}| > 1 kt CO_2e,~t > T}
 \\mathrm{abs} \\left(
-\\mathbb{E}_{P_{(s,g,r,t)}}[x]
+m_{(s,g,t)}
 \\right)
 }
 """
@@ -806,13 +806,13 @@ and (b)
 that they're predictions, i.e. about times {{latex("t>T")|safe}} after some threshold year {{latex("T")|safe}}.
 For each relevant, predicted year,
 the metric sums up the KL-divergence between the reference and predicted distributions,
-as weighted by the magnitude of emissions impact.
+as weighted by the magnitude of sector-gas impact.
 The comparison metric can only be zero for perfectly-matching models,
 harshly penalizes overly-confident predictions,
 and weights errors in distribution-matching by how much the distributions matter
 to the overall sum of national emissions.
 The denominator decouples the scale of the function from the scale
-of the emissions contributions.
+of the emissions themselves.
 There's some oddness in summing over the national totals
 (region being Canada) alongside the regions being provinces and territories,
 but I don't think it's a problem.
