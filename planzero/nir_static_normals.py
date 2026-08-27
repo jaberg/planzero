@@ -490,7 +490,6 @@ def weighted_KL_score(year, model_id, seed_int=1234):
     rng_key = jrandom.key(seed_int)
     # now estimate the sector-gas KL divergences
     for (sector, ghg), comp_d in BNs_by_sector_ghg(model_id).items():
-        print(sector, ghg)
         KL_sg = _KL_NIR_BayesianNormal(
                 model_id,
                 sector=sector, ghg=ghg, comp_d=comp_d,
@@ -498,7 +497,5 @@ def weighted_KL_score(year, model_id, seed_int=1234):
                 rng_key=rng_key)
         KL_values[nir2025.idx_of_sector[sector], nir2025.idx_of_ghg[ghg]] = KL_sg
 
-    print(abs_ktCO2e)
-    print(abs_ktCO2e.sum())
     weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
     return weighted_divergence, abs_ktCO2e, KL_values

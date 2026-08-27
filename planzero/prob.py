@@ -68,16 +68,21 @@ class SiteInference(BaseModel):
 
     @computed_field
     def short_description(self) -> str:
-        return self.__class__.__doc__
+        rval = self.__class__.__doc__
+        if rval is None:
+            return ''
+        else:
+            return rval
 
     @computed_field
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         return (float('nan'), float('nan'))
 
-    def challenge_scores(self, challenge_name):
-        return dict(
-            total=float('nan'),
-            )
+    def prediction_scores_prenir_2025_06(self) -> dict:
+        raise NotImplementedError()
+
+    def show_prediction_quality(self) -> bool:
+        return False
 
 
 from . import nir2025_site

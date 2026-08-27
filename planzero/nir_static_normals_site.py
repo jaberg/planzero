@@ -29,6 +29,7 @@ from .nir_static_normals import (
     normals_by_sector_ghg,
     touch_components,
     touch_model,
+    weighted_KL_score,
 )
 from .prob import ClassVar, SiteInference, computed_field
 
@@ -1006,38 +1007,25 @@ class Static_Normals_2024_12_31(SiteInference):
         helper.add_regional_cells()
         return helper.make_echart()
 
-    def _challenge_score_PreNIR_2025_06(self):
-        from scipy.special import logsumexp
+    def prediction_scores_prenir_2025_06(self):
+        assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
+        weighted_div, _, KLs = weighted_KL_score(
+                year=2023, model_id=self.model_id)
+        scores_ca = {}
+        scores_pt = {}
+        for ii, sector in enumerate(IPCC_Sector):
+            scores_ca[sector] = dict(zip(GHG, KLs[ii, :, 13]))
+            for jj, pt in enumerate(PT):
+                if pt == PT.XX:
+                    continue
+                scores_pt[sector, pt] = dict(zip(GHG, KLs[ii, :, :13]))
+        rval = {
+                'weighted_divergence': weighted_div,
+                'scores_ca': scores_ca,
+                'scores_pt': scores_pt,
+                }
+        return rval
 
-        from . import model_db, nir_static_normals
-
-        model_id = model_db.model_latest_version(
-            family='StaticNormal',
-            data_cutoff='2024-12-31',
-            )['model_id']
-
-        # product (log-domain sum) over components' predictions
-        loglik_samples = 0
-        some_denominator = 10
-        for rd in model_db.components_by_model(model_id): # rd -> results/record dictionary
-            if rd['component_type'] == 'Normal':
-                loglik_samples += nir_static_normals.loglik_NIR_Normal(
-                    rd['component_id'],
-                    NIR_year=2025,
-                    emission_year=2023)
-            elif rd['component_type'] == 'BayesianNormal':
-                loglik_samples += nir_static_normals.loglik_NIR_BayesianNormal(
-                    rd['component_id'],
-                    NIR_year=2025,
-                    emission_year=2023)
-            else:
-                raise NotImplementedError(rd)
-
-        # log-domain mean over samples
-        rval = logsumexp(loglik_samples, b=1.0 / some_denominator)
-        return {'total': float(rval)}
-
-    def challenge_scores(self, challenge_name):
-        if challenge_name == 'PreNIR_2025_06':
-            return self._challenge_score_PreNIR_2025_06()
-        return {'total': float('nan')}
+    def show_prediction_quality(self):
+        assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
+        return True
