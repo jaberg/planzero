@@ -4,13 +4,13 @@ target = ${PROJECTNAME}
 	docker build --target base -t $(target):base .
 	touch .build.base
 
-.build.dev: Dockerfile
+.build.test: Dockerfile
 	docker build --target testing -t $(target):test .
 	# touch .build.test   # uncomment to skip build command
 
 .build.dev: Dockerfile
 	docker build --target development -t $(target):dev .
-	# touch .build.test   # uncomment to skip build command
+	# touch .build.dev   # uncomment to skip build command
 
 
 .build.cache: Dockerfile
@@ -33,9 +33,17 @@ tmux: .build.dev
 		-e TERM=xterm-256color \
 		-e COLORTERM=truecolor \
 		-p 127.0.0.1:8012:8012 \
+		-p 127.0.0.1:8013:8013 \
 		-w /mnt/ \
 		-it --rm $(target):dev \
 		tmux
+
+local:
+	fastapi dev --port=8012 --host=0.0.0.0
+
+jupyter: .build.test
+	jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
+
 
 bash_prod: .build.prod
 	docker run \
@@ -43,14 +51,6 @@ bash_prod: .build.prod
 		-w /mnt/ \
 		-it --rm $(target):prod \
 		bash
-
-jupyter: .build.test
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-p 127.0.0.1:8013:8013 \
-		-w /mnt/ \
-		-it --rm $(target):dev \
-		jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
 
 test: .build.test
 	docker run \
@@ -74,8 +74,6 @@ test_200: .build.test
 		-it --rm $(target):test \
 		pytest -W error --maxfail=1 -vv -k endpoints test_200.py
 
-local:
-	fastapi dev --port=8012 --host=0.0.0.0
 
 prodlike: .build.prod
 	docker run \
