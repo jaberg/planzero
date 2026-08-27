@@ -932,7 +932,7 @@ class StaticNormals(BlogPost):
     def __init__(self):
         super().__init__(
             date=datetime.datetime(2026, 6, 28),
-            title='Static Normals',
+            title='Static Normals: A baseline predictive model',
             # html/blog/2026-06-28-static-normals.html
             url_filename="2026-06-28-static-normals",
             author="James Bergstra",

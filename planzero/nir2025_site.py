@@ -12,7 +12,12 @@ from .nir_ar2_site import (
     RegionalSparklineEChartHelper,  # TODO: rename e.g. TimeVaryingSparklineEChartHelper
 )
 from .prob import ClassVar, SiteInference
-from .sparkline_echart_helper import PseudoSectors, SparklineEChartHelperBase
+from .sparkline_echart_helper import (
+    PseudoRegion,
+    PseudoSectors,
+    RegionalSparklineEChartHelperBase,
+    SparklineEChartHelperBase,
+)
 
 n_samples = 250 # enough to do the job, not too slowly
 n_years = 34

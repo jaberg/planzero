@@ -81,6 +81,9 @@ class SiteInference(BaseModel):
     def prediction_scores_prenir_2025_06(self) -> dict:
         raise NotImplementedError()
 
+    def challenge_result_url(self, challenge_name) -> str:
+        return ''
+
     @computed_field
     def show_prediction_quality(self) -> bool:
         return False

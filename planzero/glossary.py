@@ -1726,6 +1726,51 @@ class Pending_Prediction_Challenge_Results(GlossaryTerm):
             (blog.PreNIR(), '#', "prediction time vs. evaluation time"),
         ]
 
+class NIR_Prediction(GlossaryTerm):
+    """
+    In the context of PlanZero, NIR prediction
+    refers either generally to the challenge of predicting
+    the final years' emissions in an National greenhouse gas Inventory Report (NIR)
+    prior to the report's publication,
+    or specifically to the PlanZero machine learning problem statements
+    reflecting that challenge with the weighted-KL divergence model
+    evaluation metric.
+    """
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.StaticNormals(), '#appendix-prenir', "Introduces the Pre-NIR-2025-06 prediction challenge, which uses a weighted KL-divergence to compare model predictions to reference distributions."),
+        ]
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['PreNIR']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Weighted_KL_Divergence': 'The scoring method for model predictions',
+        }
+
+class Weighted_KL_Divergence(GlossaryTerm):
+    """In PlanZero, the term "weighted KL divergence" typically refers
+    to the specific weighting of KL divergences between actual and predicted
+    emissions that is used to score NIR-predicting models probabilistic models.
+    """
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.ProbabilisticNIR2025(), '#appendix-evaluating', "Develops the weighted KL divergence formula for scoring NIR predictions against a reference probabilistic interprentation of an NIR"),
+            (blog.StaticNormals(), '#appendix-prenir', "Introduces the Pre-NIR-2025-06 prediction challenge, which uses a weighted KL-divergence to compare model predictions to reference distributions."),
+        ]
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Metric': 'Weighted KL divergence is used to score how well (technicall, how poorly) a predictive model approximates a reference one.',
+        }
 
 class Symmetric_Blended_Log_Normal_Distribution(GlossaryTerm):
 
