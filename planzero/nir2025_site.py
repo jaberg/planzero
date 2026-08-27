@@ -10,16 +10,16 @@ from . import nir2025 as site_nir  # as the reference model for the site
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
 from .nir_ar2_site import (
     RegionalSparklineEChartHelper,  # TODO: rename e.g. TimeVaryingSparklineEChartHelper
-    SparklineEChartHelper,  # TODO: rename e.g. TimeVaryingSparklineEChartHelper
 )
 from .prob import ClassVar, SiteInference
+from .sparkline_echart_helper import PseudoSectors, SparklineEChartHelperBase
 
 n_samples = 250 # enough to do the job, not too slowly
 n_years = 34
 n_regions = 13
 
 
-class NIR2025_SparklineEChartHelper(SparklineEChartHelper):
+class NIR2025_SparklineEChartHelper(SparklineEChartHelperBase):
 
     def load_data(self):
         self.years = np.arange(1990, 2023 + 1)

@@ -281,14 +281,14 @@ class PseudoSectors(str, enum.Enum):
     Total_without_LULUCF = 'Total without LULUCF'
 
 
-class SparklineEChartHelper(object):
+class SparklineEChartHelper:
 
-    palette = [
+    palette = (
         '#5470c6', '#91cc75', '#fac858', '#ee6666',
         '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
         '#ea7ccc', '#4A90E2', '#50E3C2', '#F5A623',
         '#D0021B', '#8B572A', '#417505', '#BD10E0'
-    ]
+    )
 
     n_non_lulucf_rows = 10
     n_total_rows = n_non_lulucf_rows + 2
@@ -297,6 +297,7 @@ class SparklineEChartHelper(object):
     credibility_interval_95 = (.025, .975)
 
     def __init__(self, div_id, v_unit, model_name):
+        assert 0
         self.div_id = div_id
         self.model_name = model_name
         self.grid_list = []
@@ -312,30 +313,34 @@ class SparklineEChartHelper(object):
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
         self.data_by_sector = {} # real sector and pseudo-sector
-        if v_unit == 'Mt_CO2e':
-            self.v_unit_scale = 0.001
-        elif v_unit == 'kt_CO2e':
-            self.v_unit_scale = 1
+        self.v_unit = v_unit
+
+    @property
+    def v_unit_scale(self) -> float:
+        if self.v_unit == 'Mt_CO2e':
+            return 0.001
+        elif self.v_unit == 'kt_CO2e':
+            return 1
         else:
-            raise NotImplementedError(v_unit)
+            raise NotImplementedError(self.v_unit)
 
     def add_data_for_sector(self, sector, sector_mean, lbound, ubound):
         assert sector not in self.data_by_sector
         assert ubound >= lbound
-        self.data_by_sector[sector] = dict(
-            mean=sector_mean,
-            ubound=ubound,
-            lbound=lbound,
-            CI=ubound - lbound,
-            means=[sector_mean for yr in self.years],
-            ubounds=[ubound for yr in self.years],
-            lbounds=[lbound for yr in self.years],
-            CIs=[ubound - lbound for yr in self.years],
-            neg_shift=[min(ubound, 0) for yr in self.years],
-            neg_shade=[min(lbound, 0) - min(ubound, 0) for yr in self.years],
-            pos_shift=[max(lbound, 0) for yr in self.years],
-            pos_shade=[max(ubound, 0) - max(lbound, 0) for yr in self.years],
-            )
+        self.data_by_sector[sector] = {
+            "mean": sector_mean,
+            "ubound": ubound,
+            "lbound": lbound,
+            "CI": ubound - lbound,
+            "means": [sector_mean for yr in self.years],
+            "ubounds": [ubound for yr in self.years],
+            "lbounds": [lbound for yr in self.years],
+            "CIs": [ubound - lbound for yr in self.years],
+            "neg_shift": [min(ubound, 0) for yr in self.years],
+            "neg_shade": [min(lbound, 0) - min(ubound, 0) for yr in self.years],
+            "pos_shift": [max(lbound, 0) for yr in self.years],
+            "pos_shade": [max(ubound, 0) - max(lbound, 0) for yr in self.years],
+            }
 
     def load_data(self):
         self.config = load_config(allow_version_mismatch=False)
@@ -769,7 +774,7 @@ class PseudoRegion(str, enum.Enum):
     NationalTotal = 'National Total'
 
 
-class RegionalSparklineEChartHelper(object):
+class RegionalSparklineEChartHelper:
 
     """
     Build a minigrid for a single sector.
