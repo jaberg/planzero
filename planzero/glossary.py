@@ -1576,14 +1576,16 @@ class Greenhouse_Gas(GlossaryTerm):
 
 
 class Inference_Algorithm(GlossaryTerm):
-    """An inference algorithm is for discovering plausible values of
-    unobserved (latent) variables in a stochastic [probabilistic] model.
+    """An inference algorithm samples from the posterior distribution of latent variables in a probabilistic model,
+    often by applying Bayes' rule systematically across a formal specification of the model.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
             'Stochastic_Model': 'Inference algorithms only make sense for stochastic models',
+            'Posterior_Distribution': 'Inference algorithms sample from posterior distributions',
+            'Latent_Variable': 'Inference algorithms provide samples for latent variables'
         }
 
     @computed_field
@@ -1593,25 +1595,32 @@ class Inference_Algorithm(GlossaryTerm):
         ]
 
 
-class Random_Variable(GlossaryTerm):
-    """A random variable is an unknown scalar- or vector-valued
-    term in a probabilistic model. A random variable is associated
-    with a probability distribution.
+class Unknown_Variable(GlossaryTerm):
+    """An unknown variable is an unknown scalar- or vector-valued
+    term in a probabilistic model. Often it could be known, measured
+    or estimated, but we may lack sufficient information or equipment to do so.
+    Sometimes it's not theoretically possible to measure something (like
+    the number of cars on the road 10 years in the future,
+    because it hasn't happened yet) but we can still include it in a model
+    as an unknown variable.
     """
-
-    # TODO: Rename: UNKNOWN_VARIABLE
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Stochastic_Model': 'Random variables are the random parts of stochastic models',
+            'Stochastic_Model': 'A model associates unknown variables with probability distributions',
+            'Probability_Distribution': 'In order to reason about a variable without knowing exactly what it is, we assume a set of values that it might have using a probability distribution.',
         }
 
     @computed_field
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+                (blog.StaticNormals(), '#appendix-notation', "Appendix 1: Probabilistic Modelling Notation"),
         ]
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Random Variable']
 
 
 class Predictive_Model(GlossaryTerm):
@@ -1643,13 +1652,13 @@ class Probability_Density_Function(GlossaryTerm):
 class Probability_Distribution(GlossaryTerm):
     """A probability distribution is the act or result of
     distributing probability across the possibly true values of a
-    random variable.
+    unknown variable.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Random_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
+            'Unknown_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
             'Probability_Density_Function': 'a description of how to distribute probability over a continuous set of possible values, such as a range of real numbers',
         }
 
@@ -1658,6 +1667,62 @@ class Probability_Distribution(GlossaryTerm):
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-model-distribution', "Appendix 1 is an introduction to probabilistic modelling"),
         ]
+
+
+class Joint_Distribution(GlossaryTerm):
+    """A joint probability distribution is act or result of
+    distributing probability across possible values for multiple
+    unknown variables. If the probability of each value for each variable
+    does not depend on the others, then that variable is said to be "independent"
+    of the rest, but that's the exception to the rule that generally,
+    variables are not independent of each another.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Probability_Distribution': 'Joint distributions are probability distributions, over multiple unknown variables.',
+                'Stochastic_Model': 'Probabilistic models define joint distributions over variables',
+                }
+
+
+class Conditional_Distribution(GlossaryTerm):
+    """A conditional distribution is a probability distribution
+    over one or more unknown variables in a model,
+    conditioned on assumptions about other variables in the model.
+    If a conditional distribution is over multiple variables,
+    then it is called a conditional joint distribution.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Probability_Distribution': 'Conditional distributions are probability distributions.',
+                'Stochastic_Model': 'Probabilistic models can be used to derive conditional distributions among their variables',
+                }
+
+
+class Posterior_Distribution(GlossaryTerm):
+    """A posterior distribution is the result of conditioning on stochastic model on the observation of data.
+    The observation of data generally changes the distribution of probability for the remaining variables, called latent variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Inference_Algorithm': 'Inference in stochastic models can sometimes be done by standard algorithms.',
+                'Conditional_Distribution': 'Posterior distributions are conditional distributions in which the conditioning is on observed data',
+                'Latent_Variable': 'Unobserved unknown variables in a probabilistic model are called latent variables; a posterior distribution is over latent variables.',
+                }
+
+class Latent_Variable(GlossaryTerm):
+    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data. """
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Inference_Algorithm': 'Inference of latent variables can sometimes be done by standard algorithms.',
+                'Posterior_Distribution': 'A posterior distribution is over latent variables.',
+                }
 
 
 class Credible_Interval(GlossaryTerm):
@@ -1670,7 +1735,7 @@ class Credible_Interval(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Random_Variable': 'the model element associated with a credible interval',
+            'Unknown_Variable': 'the model element associated with a credible interval',
             'Probabilistic Model': 'credible intervals arise only in probabilistic modelling',
             'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
         }

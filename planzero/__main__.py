@@ -100,6 +100,10 @@ def main_inference_work(args):
     from . import prob
     return prob.registry[args.model].main_inference_work()
 
+def main_generate_assets(args):
+    from . import blog as post
+    post.registry[args.post_cls].generate_assets()
+
 
 if __name__ == '__main__':
 
@@ -141,6 +145,11 @@ if __name__ == '__main__':
     parser_inference_work = subparsers.add_parser('inference_work')
     parser_inference_work.add_argument('--model', help='model name')
     parser_inference_work.set_defaults(func=main_inference_work)
+
+    parser_generate_assets = subparsers.add_parser('generate_assets')
+    parser_generate_assets.add_argument('--post-cls', help='post class name')
+    parser_generate_assets.set_defaults(func=main_generate_assets)
+
 
     args = parser.parse_args()
     sys.exit(args.func(args))

@@ -1,11 +1,9 @@
-import enum
-from pydantic import BaseModel
 import datetime
+import enum
 
-from . import enums
-from . import est_nir
-from . import sim
+from pydantic import BaseModel
 
+from . import enums, est_nir, sim
 from .enums import col_by_pt, col_ca
 
 _classes = []
@@ -95,30 +93,17 @@ class BlogPost(BaseModel):
         else:
             raise NotImplementedError(self.status)
 
+    def generate_assets(self):
+        pass
 
-from . import enums
-from .ureg import u
 
-from io import StringIO
-from .html import HTML_element
-from .html import HTML_Math_Latex
-import matplotlib.pyplot as plt
 from . import ipcc_canada
+from .html import HTML_Math_Latex, HTML_Matplotlib_Figure
+from .ureg import u
 
 
 def latex(latex, display='inline'): # display inline or block
     return HTML_Math_Latex(latex=latex, display=display).as_html()
-
-
-class HTML_Matplotlib_Figure(HTML_element):
-
-    def as_html(self):
-        self.build_figure()
-        svg_buffer = StringIO()
-        plt.savefig(svg_buffer, format="svg")
-        plt.close()
-        svg_string = svg_buffer.getvalue()
-        return svg_string
 
 
 class AR2(BlogPost):
@@ -246,101 +231,6 @@ class AR2(BlogPost):
                 color=col_by_pt[pt],
             )
 
-    def const_sector_ghg_pt(self, ax, sector, ghg, pt, list_idx, model, predictions):
-        from . import nir2025
-        import numpy as np
-        import jax.numpy as jnp
-        from numpyro.diagnostics import hpdi
-
-        scale = model.scale
-
-        x = nir2025.nir2025_year_ints
-        if pt is None:
-            # spread
-            spread_ca = hpdi(predictions['obs_ca'], 0.95)
-            ax.fill_between(
-                x,
-                np.ones(len(x)) * spread_ca[0] * scale,
-                np.ones(len(x)) * spread_ca[1] * scale,
-                alpha=0.1,
-                interpolate=True,
-                color=col_ca,
-                )
-            # mean
-            ax.axhline(
-                jnp.mean(predictions['obs_ca']) * scale,
-                c=col_ca,
-            )
-            # data
-            ax.scatter(
-                nir2025.nir2025_year_ints,
-                model.jnp_ca * scale / model.scale,
-                color=col_ca,
-            )
-            for ii, pt in enumerate(enums.PT):
-                if pt == enums.PT.XX:
-                    continue
-                ax.scatter(
-                    nir2025.nir2025_year_ints,
-                    model.jnp_pt[ii] * scale / model.scale,
-                    color=col_by_pt[pt],
-                )
-        else:
-            # spread
-            #print('obs_pt shape', predictions['obs_pt'].shape)
-            spread_pt = hpdi(predictions['obs_pt'][:, list_idx], 0.95)
-            #print('mu shape', model.post_samples['mu'].shape)
-            spread_pt_mu = hpdi(model.post_samples['mu'][:, list_idx], 0.95)
-            #print('spread_pt shape', spread_pt.shape)
-            ax.fill_between(
-                x,
-                np.ones(len(x)) * spread_pt[0] * scale,
-                np.ones(len(x)) * spread_pt[1] * scale,
-                alpha=0.1,
-                interpolate=True,
-                color=col_by_pt[pt],
-                )
-            ax.fill_between(
-                x,
-                np.ones(len(x)) * spread_pt_mu[0] * scale,
-                np.ones(len(x)) * spread_pt_mu[1] * scale,
-                alpha=0.2,
-                interpolate=True,
-                color=col_by_pt[pt],
-                )
-            # latent mean
-            ax.axhline(
-                jnp.mean(predictions['obs_pt'][:, list_idx]) * scale,
-                c=col_by_pt[pt],
-                ls=':',
-                label='estimated mu',
-            )
-            # data
-            ax.scatter(
-                nir2025.nir2025_year_ints,
-                model.jnp_pt[list_idx] * scale / model.scale,
-                color=col_by_pt[pt],
-                label='data',
-            )
-            # data mean
-            ax.axhline(
-                np.nanmean(model.jnp_pt[list_idx] * scale / model.scale),
-                color=col_by_pt[pt],
-                ls='-',
-                label='data mean',
-            )
-            lbound = min(0,
-                           spread_pt[0] * scale,
-                           np.nanmin(model.jnp_pt[list_idx] * scale / model.scale))
-            ubound = max(0,
-                           spread_pt[1] * scale,
-                           np.nanmax(model.jnp_pt[list_idx] * scale / model.scale))
-            ludiff = ubound - lbound
-            ax.set_ylim(
-                lbound - .05 * ludiff,
-                ubound + .05 * ludiff)
-
-
     def foo(self,):
         assert 0
         IPCC_Sector = enums.IPCC_Sector
@@ -373,7 +263,7 @@ class AR2(BlogPost):
         ]
 
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
+            def build_figure_plt(_, plt):
                 n_cols = 3
                 fig, axs = plt.subplots(4, n_cols, figsize=(10, 12))
                 for row, axrow in enumerate(axs):
@@ -391,40 +281,6 @@ class AR2(BlogPost):
         return RVAL()
 
 
-    def static_normals_HWP_CO2(self,):
-        IPCC_Sector = enums.IPCC_Sector
-        GHG = enums.GHG
-        PT = enums.PT
-        sector = IPCC_Sector.SCS__Commercial_and_Institutional
-        sector = IPCC_Sector.Harvested_Wood_Products
-        ghg = GHG.CO2
-
-        from .nir_constant_predictor import NIR2025_Model
-        model = NIR2025_Model.posterior_inference(
-            sector=sector, ghg=ghg)
-        predictions = model.predictions()
-
-        class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
-                n_cols = 2
-                fig, axs = plt.subplots(7, n_cols, figsize=(9, 17))
-                for row, axrow in enumerate(axs):
-                    for col, ax in enumerate(axrow):
-                        list_idx = col + row * n_cols
-                        if list_idx == 0:
-                            pt = None
-                        else:
-                            pt = list(enums.PT)[list_idx - 1]
-                        self.const_sector_ghg_pt(
-                            ax, sector, ghg, pt, list_idx - 1, model, predictions)
-                        if col == 0:
-                            ax.set_ylabel('Emissions (CO2e)')
-                        ax.set_title(pt.value if pt else "Canada")
-                        if pt:
-                            ax.legend(loc='lower right')
-                plt.tight_layout()
-        return RVAL()
-
     def figure_ar2_rhat(self):
         IPCC_Sector = enums.IPCC_Sector
         GHG = enums.GHG
@@ -435,7 +291,7 @@ class AR2(BlogPost):
         from numpyro.diagnostics import summary
         diagnostics = summary(grouped_samples, prob=0.90, group_by_chain=True)
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
+            def build_figure_plt(_, plt):
 
                 for param, stats in diagnostics.items():
                     plt.hist(stats['r_hat'].flatten(), alpha=.2, label=param)
@@ -573,7 +429,7 @@ class AR2(BlogPost):
         import numpy as np
 
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
+            def build_figure_plt(_, plt):
                 n_cols = 2
                 fig, axs = plt.subplots(7, n_cols, figsize=(9, 17))
                 for row, axrow in enumerate(axs):
@@ -596,22 +452,6 @@ class AR2(BlogPost):
                 plt.tight_layout()
         return RVAL()
 
-    def figure_normal(self,):
-        import numpy as np
-        import numpyro.distributions as dist
-        class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(self):
-                fig, (ax0, ax1) = plt.subplots(1, 2, figsize=(8, 4))
-                ax0.set_title("Normal(0, 1)")
-                x = np.linspace(-3, 3, 100)
-                ax0.plot(x, np.exp(dist.Normal(0, 1).log_prob(x)))
-                ax0.set_ylabel('Density')
-
-                ax1.set_title("LogNormal(-1, .7)")
-                x = np.linspace(0, 1, 100)
-                ax1.plot(x, np.exp(dist.LogNormal(-1, 0.7).log_prob(x)))
-                plt.tight_layout()
-        return RVAL()
 
 
 class Glossary(BlogPost):
@@ -690,7 +530,7 @@ class PreNIR(BlogPost):
 
     def figure_YOLY_2025(self):
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
+            def build_figure_plt(_, plt):
                 import matplotlib.pyplot as plt
                 import numpy as np
                 from datetime import datetime
@@ -760,7 +600,7 @@ class PreNIR(BlogPost):
 
     def figure_YOLY_2025_violinplots(self):
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(_):
+            def build_figure_plt(_, plt):
                 return
                 import planzero
                 from planzero.nir_ar2 import NIR2025_AR2
@@ -911,37 +751,7 @@ class PreNIR(BlogPost):
         return rval
 
 
-
-
-class StaticNormals(BlogPost):
-    """
-    This post introduces a "Static Normals" probabilistic model to PlanZero 
-    that is the first to fit overarching assumptions to data, and the first
-    to make predictions.
-    The overarching assumption is that regional sub-totals should add up to
-    national totals (which is often the case in the data, but not always).
-    The predictions are trivial: that all years are the same.
-    These predictions aren't very precise because the model
-    assumes variation from year to year
-    is all measurement error and the historical range of variation will continue indefinitely.
-    Static Normals is intended as a baseline in PlanZero against which more complex
-    models will be judged: they shouldn't be poorer predictors of the future
-    than Static Normals.
-    """
-
-    def __init__(self):
-        super().__init__(
-            date=datetime.datetime(2026, 6, 28),
-            title='Static Normals: A baseline predictive model',
-            # html/blog/2026-06-28-static-normals.html
-            url_filename="2026-06-28-static-normals",
-            author="James Bergstra",
-            tags={#BlogTag.NIR_Modelling,
-                  #'Static_Normals',
-                  BlogTag.About,
-                 },
-            status=BlogStatus.Planned,
-            )
+from .nir_static_normals_post import StaticNormals
 
 
 class ProbabilisticNIR2025(BlogPost):
@@ -1039,7 +849,7 @@ class ProbabilisticNIR2025(BlogPost):
             return np.sign(x) * np.log1p(abs(x))
 
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(self):
+            def build_figure_plt(self, plt):
                 fig, ax0, = plt.subplots(1, 1, figsize=(6, 4))
                 ax0.set_title("Sector-Gas Emissions Uncertainty for year 2023 in NIR-2025")
                 ax0.scatter(
@@ -1072,7 +882,7 @@ class ProbabilisticNIR2025(BlogPost):
         import numpy as np
         import numpyro.distributions as dist
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(self):
+            def build_figure_plt(self, plt):
                 (fig, ax) = plt.subplots(1, 1, figsize=(8, 4))
 
                 ax.set_title('Probability Assessment Using a "Log-Normal" Probability Density Function')
@@ -1119,7 +929,7 @@ class ProbabilisticNIR2025(BlogPost):
                         horizontalalignment='left')
 
         class RVAL(HTML_Matplotlib_Figure):
-            def build_figure(self):
+            def build_figure_plt(self, plt):
                 fig, ((ax0, ax1), (ax2, ax3)) \
                         = plt.subplots(2, 2, figsize=(10, 7))
 
@@ -1459,7 +1269,7 @@ class GHG_Emissions_CO2e_v_Heat(HTML_Matplotlib_Figure):
     legend_loc:str = 'upper right'
     add_circle:bool = False
 
-    def build_figure(self):
+    def build_figure_plt(self, plt):
         fig, ax = plt.subplots()
         plt.title(self.title)
         years = [year for year in range(2000, 2101)]

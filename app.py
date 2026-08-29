@@ -416,6 +416,7 @@ async def get_blog(request: Request, post_name:str):
         html = get_blog_html(post_name)
         return HTMLResponse(content=html)
     except IOError as err:
+        print(err)
         raise HTTPException(status_code=404, detail="url not recognized")
     except CannotRenderUnPublishedPost:
         raise HTTPException(status_code=404, detail="cannot render unpublished post")

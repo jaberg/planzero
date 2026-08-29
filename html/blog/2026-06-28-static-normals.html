@@ -29,16 +29,476 @@ Until next time,
 <p>
 <b>Appendices</b>
 <ul>
-    <li><a href="#appendix-model">Model Description</a></li>
-    <li><a href="#appendix-results">Results: Inference and Analysis</a></li>
-    <li><a href="#appendix-prenir">Pre-NIR-2025-06: a NIR Prediction Challenge</a></li>
-    <li><a href="#appendix-architecture">Supporting Update to PlanZero's Build System</a></li>
+    <li><a href="#appendix-notation">Appendix 1: Probabilistic Modelling Notation</a></li>
+    <li><a href="#appendix-model">Appendix 2: Model Description</a></li>
+    <li><a href="#appendix-bayesian-inference">Appendix 3: Background in Bayesian Inference</a></li>
+    <li><a href="#appendix-prenir">Appendix 4: Pre-NIR-2025-m06, a NIR Prediction Challenge</a></li>
+    <li><a href="#appendix-architecture">Appendix 5: Supporting Update to PlanZero's Build System</a></li>
 </ul>
 </p>
 
+<h2 id="appendix-notation">Probabilistic Modelling Notation</h2>
+
+<p>
+Some probability notation is conventional, in order to express probabilistic models.
+It builds on the introduction to probability in
+<a href="/blog/2026-05-20-prob-nir#appendix-models">Appendix 1 of the Probabilistic NIR-2025 post</a>.
+Probabilistic modelling is a huge topic.
+Basic concepts of probability are introduced across many years of
+primary and secondary schooling,
+and covered in greater detail at university levels.
+For more information and orientation, see e.g. wikipedia
+(<a href="https://en.wikipedia.org/wiki/Statistical_model">Statistical Model</a>,
+<a href="https://en.wikipedia.org/wiki/Graphical_model">Graphical Models</a>),
+many tutorials online that are specific to probabilistic programming
+software packages
+(e.g. Stan, PyMC, Pyro; PlanZero currently uses NumPyro)
+or a textbook such as 
+<a href="https://www.penguinrandomhouse.com/books/654485/probabilistic-graphical-models-by-daphne-koller-and-nir-friedman/">Probabilistic Graphical Models (Koller and Friedman, 2009)</a>
+for greater depth.
+</p>
+
+
+<p>
+The following modelling notation used in this post to describe the Static Normals
+model and introduce Bayesian inference in <a href="appendix-inference">Appendix 4: Inference in the Static Normals Model</a>.
+<ul>
+    <li> {{latex("P(X=0)")}} means there's a number we don't know, we're calling it an {{latex("X")}}, and this is the probability it is actually 0.
+	    {{latex("X")}} is called an {{ siteref("Unknown_Variable", "unknown variable")|safe}} in PlanZero, although many references refer to such a variable as a <i>random variable</i>.</li>
+    <li>{{latex("P(X)")}} is, intuitively, the table
+	mapping all the values {{latex("X")}} might take to their probabilities.
+	The probabilities add up to 1 to represent the fact that {{latex("X")}}
+	must take one of them.
+	The table might be infinitely large (e.g. a probability for each integer).
+	Although it can be an abuse of notation,
+	I'll also sometimes write {{latex("P(X)")}} to refer
+	to a function defining the density of probability mass
+	when the possibilities for
+	{{latex("X")}} are a continuous domain of values, such as the real numbers.
+    </li>
+    <li>{{latex("P(0)")}} is shorthand for {{latex("P(X=0)")}} when it's clear from surrounding context we're talking about {{latex("X")}}</li>
+    <li> {{latex("\\mathcal{N}(\\mu, \\sigma^2)")}} is a Normal distribution, which is non-negative function that sums (integrates) to 1. It is parameterized by two numbers:
+        {{latex("\\mu")}} the mean, and {{latex("\\sigma^2")}} the variance.
+	It's conventional to write {{latex("\\sigma^2")}} as the argument to
+	the normal distribution because {{latex("\\sigma")}} itself is qualitatively
+	the "width" of the distribution and only positive-valued variances are valid.
+	Normal distributions are widely used in probabilistic modelling.
+	You can read more about them on <a href="https://en.wikipedia.org/wiki/Normal_distribution">wikipedia</a>, and see its shape
+	in the figure below.
+	(Sometimes these are called <i>Gaussians</i> but I'm going to call them Normals to be consistent with the probabilistic programming library I'm using.)</li>
+    <li>
+	{{latex("\\mathrm{Lognormal}(\\mu, \\sigma^2)")}}
+	is a <a href="https://en.wikipedia.org/wiki/Log-normal_distribution">log-normal distribution</a>, a distribution over positive-valued
+	real numbers with a given mean and relative uncertainty.
+	There's an example below illustrating one possible shape of 
+	log-normal distribution, with 
+	{{latex("\\mu=-1")}} and
+	{{latex("\\sigma^2=.7")}}.
+	Note that unlike the regular normal, {{latex("\\mu")}} being negative
+	doesn't make the distribution negative, it squeezes the distribution
+	leftward toward 0.
+	The {{latex("\\sigma^2")}} parameter doesn't exactly modulate the width,
+	as it does for the normal distribution, but it reflects relative uncertainty,
+	and it does affect both the shape and the mean of the distribution.
+    </li>
+    <li> {{latex("X ~\\sim~ \\mathcal{N}(0, 1)")}} means (1) that {{latex("X")}} is
+        an unknown variable in some probabilistic model, and (2) that its probability distribution (or density)
+        {{latex("P(X)")}} is the thing to the right of the "{{latex("\\sim")}}"
+        symbol. In this example, {{latex("X")}} is distributed according to
+	a normal distribution with mean 0 and variance 1.</li>
+    <li> {{latex("P(A=0, B=1)")}} features comma-separated terms.
+	    The equals-signs mean the terms are criteria.
+            {{latex("P(A=0, B=1)")}} means the probability that unknown variable
+	    {{latex("A")}} is 0 <i>and</i> unknown variable {{latex("B")}} is 1.</li>
+    <li> {{latex("P(A, B)")}} also features comma-separated terms,
+	    but the terms aren't predicates with equals-signs.
+	    This is the notation for the probability table
+	    (or function, as appropriate to the domains of {{latex("A")}} and {{latex("B")}})
+	    that maps every possible value of {{latex("A")}} and
+	    every possible value of {{latex("B")}} given that value of {{latex("A")}},
+	    to the probability of them <i>both</i> taking those respective values.
+	    This sort of probability distribution is called a
+	    {{siteref("Joint_Distribution", "joint distribution")|safe}} because
+	    it is a distribution over multiple unknown variables.
+    </li>
+    <li> {{latex("P(A=0| B=1)")}} uses the | symbol to mean the probability that {{latex("A=0")}} <i>if</i> we make an additional assumption about {{latex("B")}}, namely that it is 1.
+	    {{latex("P(A|B=1)")}} is called a {{siteref("Conditional_Distribution", "conditional distribution")}} because it defines a probability distribution for
+	    {{latex("A")|safe}} that is <i>conditional</i> on
+	    additional assumptions / criteria. A probabilistic model
+	    that includes {{latex("A")}} and {{latex("B")}} defines
+	    either explicitly or implicitly
+	    how they can be related by conditional distributions.
+	    Joint distributions such as {{latex("P(A, B)")}} can always be written
+	    as products involving conditionals {{latex("P(A, B) = P(A|B)P(B) = P(B|A)P(A)")}},
+	    and sometimes, such as when deriving techniques for Bayesian inference,
+	    such rewriting is very helpful.
+    </li>
+</ul>
+The following figure contrasts the effects of
+{{latex("\\mu")}} and {{latex("\\sigma")}} in normal and log-normal distributions,
+which are used to define the Static Normals model in <a href="appendix-model">Appendix 2: Model Description</a>.
+{{ blog.figure_normal() | safe}}
+</p>
+
+
 <h2 id="appendix-model">Model Description</h2>
-<h2 id="appendix-results">Results: Inference and Analysis</h2>
+
+<p>
+PlanZero's "Static Normals" model 
+of the 2025 National Inventory Report (NIR-2025, or just NIR in this post)
+is that for each ...
+<ul>
+    <li>IPCC sector (I'll call these "sectors")</li>
+    <li>greenhouse gas (sometimes just "gas")</li>
+    <li>province and territory (I'll call these "regions")</li>
+    <li>and year (from 1990 to 2023)</li>
+</ul>
+... there is a quantity of emitted gas in units of e.g. kt{{CO2e}} that has been
+estimated in support of
+Canada's reporting obligations under the Paris Agreement.
+Furthermore, there is a quantity of emissions for the whole country,
+which is the sum of emissions from the provinces and territories.
+</p>
+
+<p>
+Finally, and most radically,
+the model is called "static normals" because it
+assumes that these quantities of emissions don't change over time.
+Instead, it assumes that the different estimates of emissions from year to year in the NIR
+are the results of completely random fluctuations, totally
+unforseeable and outside of anyone's control, which will continue
+indefinitely into the future following the same Normal
+distribution of annual emissions as has been observed historically.
+This is a unrealistic assumption because in many sectors,
+the reported emissions are defined in the NIR (following IPCC Guidelines) as being proportional to e.g., the
+number of cars, or trucks, or heads of cattle, which are highly correlated
+from year to year, and which follow long-term trends.
+Yet, there's no rule against using unrealistic assumptions in models.
+The consequences of making unrealistic assumptions in models
+are uncertainty and/or inaccuracy.
+We'll use this model to establish a baseline for uncertainty
+and inaccuracy in prediction, which can serve as a benchmark for
+future models aiming for greater certainty and accuracy on the basis
+of e.g. greater realism.
+</p>
+
+<p>
+Formally, the Static Normals model is the following set of
+distributions over unknown quantities:
+<table>
+	<thead>
+		<tr>
+			<th>Unknown Variable and Distribution</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+	    <tr>
+		    <td>{{latex("\\mu_{(s,g,r)} ~\\sim~ \\mathcal{N}(0, 1)")}}</td>
+		    <td>A-priori, 
+			    after emissions are scaled for each sector ({{latex("s")}}) and gas ({{latex("g")}}) so that 0 means 0 and 1 means the maximum
+			    absolute value of national emissions for that sector and gas over time ({{latex("\\alpha_{(s, g)} = \\max_{t}|m_{(s,g,t)}|")}}),
+			    the scaled emissions can be expected to be around {{latex("0\pm 1")}}.
+			    The Static Normals model approximates this with a normal distribution and calls the
+			    unknown, scaled time-invariant emissions amount for each sector, gas, region combination {{latex("\\mu_{(s, g, r)}")}}.
+			    This and other <i>a-priori</i> distributions are designed to be refined by <i>inference</i> as explained in <a href="appendix-inference">Appendix 4: Inference</a>.
+		    </td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("\\sigma_{(s,g,r)} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}}</td>
+		    <td>A-priori, the variance in <i>regional</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("\\sigma_{(s,g)} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}} </td>
+		    <td>A-priori, the variance <i>national</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("X_{(s,g,r,t)} ~\\sim~ \\mathcal{N}(\\alpha_{(s, g)} \\mu_{(s,g, r)}, \\alpha_{(s, g)}^2 \\sigma_{(s,g, r)}^2)")}}</td>
+		    <td>The model-estimated NIR emissions for each sector ({{latex("s")}}), gas ({{latex("g")}}), region ({{latex("r")}}, province or territory),
+			and annual time period ({{latex("t")}}),
+			are unknown variables ({{latex("X_{(s,g,r,t)}")|safe}})
+			whose probability is
+			normally distributed about mean {{latex("\\mu_{(s, g, r)}")}} with variance {{latex("\\sigma^2_{(s, g, r)}")}}.
+			Note that the distribution is the same for all annual time periods (giving the model its name "Static Normals").
+		    </td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("Y_{(s,g,t)} ~\\sim~ \\mathcal{N}(\\sum_{r \\in \\mathrm{regions}}\\alpha_{(s, g)} \\mu_{(s,g, r)}, \\alpha_{(s, g)}^2 \\sigma_{(s,g)}^2)")}}</td>
+		    <td>The model-estimated national-total emissions for each sector ({{latex("s")}}), gas ({{latex("g")}}), and annual time period ({{latex("t")}})
+			    are unknown variables ({{latex("Y_{(s,g,t)}")|safe}})
+			    whose probability is
+			    centred at the sum of regional means, with separate national variance.
+			    The distribution is the same for all annual time periods.
+		    </td>
+	    </tr>
+	</tbody>
+</table>
+</p>
+
+
+<h2 id="appendix-bayesian-inference">Background in Bayesian Inference</h2>
+<p>
+{{siteref("Inference Algorithm", "Bayesian inference")|safe}} in probabilistic models is about redistributing probability for unknown variables
+in order to balance two competing objectives:
+(1) to remain probable according to the a-priori distributions,
+and yet (2) to explain observations.
+The Static Normals model described in <a href="#appendix-model">Appendix 2: Model Description</a>
+includes a-priori probability distributions over {{latex("\\mu")}} and {{latex("\\sigma")}}
+that induce distributions over {{latex("X")}} and {{latex("Y")}}, which are meant to estimate quantities in an NIR.
+Yet we can observe the NIR-2025, in terms of either raw data, or the distributions developed in PlanZero's NIR-2025 model
+(see <a href="/post/2026-05-20-prob-nir">Probabilistic NIR-2025</a> post for details).
+[Bayesian] Inference algorithms can answer the question: <i>What are the conditional distributions over {{latex("\\mu")}} and {{latex("\\sigma")}} given
+	certain observable values for {{latex("X")}} and {{latex("Y")}}?</i>
+This specific kind of {{siteref("Conditional_Distribution", "conditional distribution")}}, being a distribution conditioned on data,
+is called a {{siteref("Posterior_Distribution", "posterior distribution")}}.
+The unobserved variables in the model are called {{siteref("Latent_Variable", "latent variables")}},
+and so a posterior distribution is a conditional distribution over the latent variables.
+</p>
+
+<p>
+If only <i>some</i> of the observable data is used for conditioning, then the remaining data can be used to evaluate a model's predictions.
+For example, if we only condition on emissions data up to 2022,
+then variables related to year 2023 will be latent ones and inference will assign them posterior distributions.
+These posterior distributions can be interpreted as the model's <i>predictions</i> for 2023.
+<a href="#appendix-prenir">Appendix 4: Pre-NIR-2026-m06, a NIR Prediction Challenge</a> evaluates such predictions from the Static Normals model,
+using the method of inference discussed here in this Appendix.
+</p>
+
+
+<p>
+Inference algorithms work on the basis of <i>Bayes' Theorem</i>.
+In standard probability notation,
+for any pair of unknown variables {{latex("A")}} and {{latex("B")}},
+Bayes' theorem looks like:
+</p>
+
+<p>
+{{latex(
+"P(A|B) = \\frac{P(A, B)}{P(B)} = \\frac{P(B|A)P(A)}{P(B)}= \\frac{P(B|A)P(A)}{\\int_a P(B|A=a)P(A=a)}",
+"block")}}
+</p>
+
+
+<p>
+Bayes' theorem shows how to relate
+a conditional distribution of the form {{latex("P(A|B)")}}
+to conditional distributions the other way around: {{latex("P(B|A)")}} and {{latex("P(A)")}}.
+Bayes' theorem is critical to inference in the Static Normals model because
+<ul>
+	<li>in order to make predictions, the Static Normals model was defined with the conditionals one way, namely {{latex("P(X,Y|\\mu, \\sigma)")}}</li>
+	<li>to observe NIR data, we need the opposite conditional distribution {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(regional~totals)}},~Y = \\mathrm{NIR_{(national~totals)}})")}}</li>
+</ul>
+
+
+<p>
+I don't know if it's possible to write down a formula for the posterior distribution
+{{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(regional~totals)}},~Y = \\mathrm{NIR_{(national~totals)}})")}}.
+For some models, there are closed forms for some posterior distributions, but it's not always possible.
+What's often practical, is the use of Monte Carlo (random) estimators to compute <i>samples</i> of points
+from the desired distribution, based only on the conditional distributions used to define the model.
+Even with a Ph.D. in machine learning, I still find
+these algorithms amazing (read up on e.g.
+<a href="https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo">MCMC algorithms</a> or
+<a href="https://pyro.ai/examples/svi_part_i.html">stochastic variational inference</a> if you're interested in how these algorithms work).
+This intersection of statistics, machine learning, and computer science is still the subject of active research,
+but the core capability of sampling from posterior distributions is relatively mature
+and for the purposes of this post we'll take it as given.
+</p>
+
+<p>
+<i>Probabilistic programming systems</i> enable someone such as myself to
+define a probabilistic model by simply implementing a sampling process
+(such as the one in the left column of the table in Appendix-2 that defined the model) in a programming language,
+and then request inference in that model with simple standardized function calls.
+The implementation of these function calls involves relatively sophisticated software techniques
+(e.g. tracing and runtime program transformations in order to run backward over the computations that defined the model)
+but the output is simple: samples from
+{{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(regional)}},
+Y=\\mathrm{NIR_{(national)}})")}}.
+PlanZero uses the combination of <a href="https://docs.jax.dev/en/latest/">Jax</a> and
+<a href="https://num.pyro.ai/en/stable/">NumPyro</a> as a probabilistic programming system,
+and the <a href="https://num.pyro.ai/en/stable/mcmc.html">NUTS</a> MCMC algorithm in NumPyro for sampling from the posterior.
+</p>
+
+
+<h2 id="appendix-inference">Inference in the Static Normals Model</h2>
+
+<p>
+Running <a href="https://num.pyro.ai/en/stable/mcmc.html">NumPyro's NUTS</a> inference algorithm for the static model above,
+using the NIR-2025 emissions data regarding {{CO2|safe}} emissions
+from the Harvested Wood Products sector (HWP), results in the following ranges of values
+for
+{{latex("\\mu_{\\mathrm{(HWP, CO_2)}}")}} (shown as darker shaded region)
+and {{latex("\\sigma_{\\mathrm{(HWP, CO_2)}}")}} (shown via lightly-shaded 95% credible intervals on
+the regional and per-year random variables within
+{{latex("X_{\\mathrm{(HWP, CO_2)}}")}} and
+{{latex("Y_{\\mathrm{(HWP, CO_2)}}")}}).
+</p>
+
+<p>
+Looking at the modelling results ({{latex("\\mu")}} and {{latex("\\sigma")}})
+we see some good and some bad.
+It is good, that {{latex("\\mu")}} (mean is dotted horizontal line,
+95% credible interval is darker shaded region) 
+typically goes through the data points somewhere near the middle.
+Likewise,
+{{latex("\\sigma")}} has been estimated such that the data mostly fall within
+the lightly-shaded regions, with a few points popping out above or below;
+which is approximately we expect from a 95% {{siteref("Credible Interval", "credible interval")|safe}} after fitting to the data.
+That said, it is bad that we see large blocks of shaded region without any data,
+which is a symptom of temporal correlation in the data.
+(We'll compare this quality of fit with a different model in the next sections.)
+</p>
+
+<p>
+Note also that there are differences between the
+horizontal solid lines (each region's sample mean)
+and the horizontal dotted lines (each region {{latex("r")}}'s
+mean {{latex("\\mu_{\\mathrm{(HWP,CO_2,r)}}")}}).
+The darker shaded region helps put their difference into perspective.
+The darker shaded region is the 95% credible interval for
+{{latex("\\mu_{\\mathrm{(HWP,CO_2,r)})}")}}
+(the upper and lower limits of the central 95% of sampled values from the latent variable's posterior distribution).
+For two regions, British Columbia and Quebec, the
+data mean lies slightly outside of their regional {{latex("\\mu_{\\mathrm{(HWP,CO_2,r)}}")}} credibility interval.
+This means that it is improbable,
+based on the model, and the data, that
+either {{latex("\\mu_{\\mathrm{(HWP,CO_2,BC)}}")}} or
+{{latex("\\mu_{\\mathrm{(HWP,CO_2,QC)}}")}} is really the data
+mean for each of those provinces.
+I chose Harvested Wood Products' {{CO2|safe}} emissions
+because there were a number of years where the regional and national totals
+are thousands of kt{{CO2|safe}} apart.
+Unsurprisingly,
+inference in this model reveals
+that a discrepancy also exists terms of sample means-since-1990.
+Remember,
+the regional latent random variables {{latex("\\mu_{s,g,r}")}}
+in the model were required to add up to a national total,
+whereas actual regional and national totals in NIR-2025 do not always add up this way. The inference algorithm
+has estimated a sample of values for {{latex("\\mu_{s,g,r}")}} that
+balances (a) fitting the regional emissions data, (b) fitting the national total emissions, and (c) respecting the prior distributions in the model.
+</p>
+
+
+<p>
+This figure doesn't show {{latex("\\mu")|safe}} specifically because it's a
+standard style of figure for any of probabilistic model of that sector.
+But it does show the posterior samples of
+{{latex("\\mu")|safe}}
+{{latex("\\sigma")|safe}}
+relate to the set of plausible emissions values.
+</p>
+
+<p>
+In fact,
+PlanZero now includes this sort of modelling for all of Canada's emissions
+sectors. The <a href="/models/prob/Static_Normals/">Static
+    Normals model overview</a> includes the following figure,
+showing some quality of fit across the board.
+The colours correspond to high-level emissions categories:
+<ul>
+    <li>dark blue for energy used in stationary combustion (e.g. for public electricity, oil and gas extraction, etc.)</li>
+    <li>light green for energy used in vehicles (e.g. light-duty, heavy-duty, off-road, marine, etc.)</li>
+    <li>purple for fugitive sources(e.g. venting, flaring)</li>
+    <li>wheat for agriculture-related emissions (e.g. soil, manure)</li>
+    <li>pink for waste-related emissions (e.g. landfills)</li>
+    <li>other colours for various industrial activities (mineral products, chemicals, metals)</li>
+</ul>
+The emissions sectors are ordered according to decreasing upper bound on their
+credible intervals. The largest sectors (e.g. public heat, oil and gas extraction) are across the top after the national total without Land-Use, Land-Use Changes, and Forestry (LULUCF), on a common scale from 0 to 150 Mt{{CO2e|safe}}.
+The next row down has emissions on a scale from 0 to 52 Mt{{CO2e|safe}} with things like residential heating and enteric fermentation,
+and subsequent rows go down from there to the bottom row where the scale is relatively small.
+</p>
+
+<p>
+Mouse-over the slider below to see the active date range and adjust it to focus on specific periods.
+Click on each panel for a deeper-dive into modelled emissions in that sector.
+</p>
+
+{% include "blog/2026-06-28-static-normals-Static_Normals_2024_12_31-all_sectors.html" %}
+
+<p>
+That concludes the introduction of PlanZero's "Static Normals" model.
+It is a probabilistic model, but the modelling assumption that each NIR emission
+sector total is actually unchanging throughout history and into the future is
+a very untrue assumption for many sectors.
+There has been consistent significant reduction in emissions from e.g. public
+electricity production over the past two decades as coal generators have
+been phased out.
+On the other hand, the emissions from oil and gas extraction have risen
+enormously over that same period due to changes in the scale and methods of
+oil extraction operations.
+The Static Normals model is designed for simplicity, and it cannot model such effects.
+The next section introduces a different model based on auto-regressive
+random processes, which has the property that inference
+can be described as learning trends in data
+(this is why machine <i>learning</i> in the field of computer
+science has that name). The predictions of the AR2 model are more aligned with at least
+my own, if not most people's intuitions, for how emissions rates change over time.
+</p>
+
+
+<h3 id="appendix-national-totals">National Totals vs. Regional Subtotals</h3>
+
+<p>
+Surprisingly, at least to me, regional total emissions in NIR-2025 do not always sum up to the corresponding national total.
+If we define the sum of regions vs. national total discrepancy as the maximum difference over years and provinces,
+there are 11/486 with a discrepancy over 1Mt{{CO2e|safe}} (there are 486 sector and GHG combinations).
+At the level of 100kt{{CO2e}} discrepancy, there are about twice as many combinations over the threshold, and 
+at the level of 10kt{{CO2e}} discrepancy, twice as many again.
+I defined "Relative Discrepancy" as the discrepancy divided by the greater of itself and the root mean square of national totals,
+as a way to relate discrepancies to the scale of numbers in their sectors.
+<table id="gemini-sort-data-table">
+    <thead>
+        <tr><th>IPCC Sector</th><th>GHG</th><th>Max Discrepancy (kt{{CO2e}})</th><th>Relative Discrepancy</th></tr>
+    </thead>
+    <tbody>
+        <tr><td>Petroleum Refining Industries</td><td>{{CO2}}</td><td>2430.85</td><td>14.4%</td></tr>
+        <tr><td>Commercial and Institutional</td><td>{{CO2}}</td><td>1271.44</td><td>4.1%</td></tr>
+        <tr><td>Cement Production</td><td>{{CO2}}</td><td>2421.59</td><td>36.7%</td></tr>
+        <tr><td>Lime Production</td><td>{{CO2}}</td><td>1421.05</td><td>84.4%</td></tr>
+        <tr><td>Ammonia Production</td><td>{{CO2}}</td><td>3090.34</td><td>100.0%</td></tr>
+        <tr><td>Nitric Acid Production</td><td>{{N2O}}</td><td>1097.89</td><td>100.0%</td></tr>
+        <tr><td>Petrochemical and Carbon Black Production</td><td>{{CO2}}</td><td>4398.65</td><td>100.0%</td></tr>
+        <tr><td>Non-Energy Products from Fuels and Solvent Use</td><td>{{CO2}}</td><td>7395.02</td><td>67.7%</td></tr>
+        <tr><td>Non-Energy Products from Fuels and Solvent Use</td><td>{{N2O}}</td><td>1068.83</td><td>100.0%</td></tr>
+        <tr><td>Forest Land</td><td>{{CO2}}</td><td>1731.42</td><td>2.1%</td></tr>
+        <tr><td>Harvested Wood Products</td><td>{{CO2}}</td><td>53296.13</td><td>100.0%</td></tr>
+    </tbody>
+</table>
+For several modest-to-minor sectors, the size of the
+discrepancy is sometimes at the same order of magnitude as the national total,
+and even for large sectors such as harvested wood products and [static combustion in] commercial and institutional environments,
+there are numerically significant discrepancies.
+</p>
+
+<p>
+As a consequence for sectors with discrepancies, there is greater uncertainty in the posterior distribution after inference.
+For sector-gas combinations with discrepancies, the Bayesian inference procedure will rove more widely over possible values for {{latex("\\mu")}}
+and {{latex("\\sigma")}} as there are multiple ways to sort-of-satisfy the objective of making the regional totals likely
+and sort-of-satisfy the objective of making the national total likely, but no single best way to make all of them likely when
+the totals simply don't add up.
+</p>
+
+<p>
+As an example, let's look at the results of inference for Harvested Wood Products' (HWP) {{CO2|safe}} emissions.
+
+{% include "blog/2026-06-28-static-normals-Static_Normals_2024_12_31-HWP.html" %}
+
+The National Total (figure above, top left panel) shows the black lines covering more of the upper part of the shaded region than the lower part.
+The shaded region is the model's prediction of what the emissions might be.
+The panel shows that the model estimates true emissions as more negative than the reported national data.
+At the same time, looking at British Columbia, it's the opposite:
+the model estimates true emissions as less negative than the reported provincial data.
+The reason that each panel isn't balanced is the reported national total emissions are not the sum of regional reported emissions.
+The modelled national total is <i>constrained</i> to be the sum of regional totals; the consequence, visible in the figure above,
+is larger uncertainty in the inference of what's going on with HWP {{CO2}} emissions.
+</p>
+
 <h2 id="appendix-prenir">Pre-NIR-2025-06: a NIR Prediction Challenge</h2>
+
+
 <h2 id="appendix-architecture">Supporting Update to PlanZero's Build System</h2>
 
 <p>
