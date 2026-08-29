@@ -62,6 +62,10 @@ class StaticNormals(BlogPost):
             div_id=f"{model_name}_all_sectors",
             v_unit="Mt_CO2e").save_as(
                 f'{base}-{model_name}-all_sectors.html')
+        site_inference.uncertain_sparkline_matrix_echart(
+            div_id=f"{model_name}_all_sectors_B",
+            v_unit="Mt_CO2e").save_as(
+                f'{base}-{model_name}-all_sectors_B.html')
         site_inference.sector_echart(
             sector=IPCC_Sector.Harvested_Wood_Products,
             ghg=GHG.CO2,

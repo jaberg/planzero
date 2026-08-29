@@ -168,16 +168,6 @@ warmup_cache_speed_test: .build.test
 		python warmup.py
 
 
-html/blog/2026-05-26-probabilistic-modelling-assets: .build.test
-	# these asset files are meant to be stored in git
-	# the script is used during development to re-generate them
-	# after the post is beyond amendment, this build script could be removed
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		python -c "import planzero; planzero.blog.TwoProbabilisticModels.generate_assets()"
-
 build_and_test:
 	# replicates the logic of .github/workflows/test.yaml build_and_test
 	# meant to be run *inside* docker development env
