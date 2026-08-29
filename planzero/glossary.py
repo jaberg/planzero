@@ -1645,7 +1645,7 @@ class Probability_Density_Function(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Random_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
+            'Unknown_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
         }
 
 
