@@ -19,6 +19,27 @@
 {% include "blog/2026-06-28-static-normals-Static_Normals_2024_12_31-all_sectors_B.html" %}
 
 <p>
+That concludes the introduction of PlanZero's "Static Normals" model.
+It is a probabilistic model, but the modelling assumption that each NIR emission
+sector total is actually unchanging throughout history and into the future is
+a very untrue assumption for many sectors.
+There has been consistent significant reduction in emissions from e.g. public
+electricity production over the past two decades as coal generators have
+been phased out.
+On the other hand, the emissions from oil and gas extraction have risen
+enormously over that same period due to changes in the scale and methods of
+oil extraction operations.
+The Static Normals model is designed for simplicity, and it cannot model such effects.
+The next section introduces a different model based on auto-regressive
+random processes, which has the property that inference
+can be described as learning trends in data
+(this is why machine <i>learning</i> in the field of computer
+science has that name). The predictions of the AR2 model are more aligned with at least
+my own, if not most people's intuitions, for how emissions rates change over time.
+</p>
+
+
+<p>
 Until next time,
 </p>
 <p>
@@ -32,12 +53,13 @@ Until next time,
     <li><a href="#appendix-notation">Appendix 1: Probabilistic Modelling Notation</a></li>
     <li><a href="#appendix-model">Appendix 2: Model Description</a></li>
     <li><a href="#appendix-bayesian-inference">Appendix 3: Background in Bayesian Inference</a></li>
-    <li><a href="#appendix-prenir">Appendix 4: Pre-NIR-2025-m06, a NIR Prediction Challenge</a></li>
-    <li><a href="#appendix-architecture">Appendix 5: Supporting Update to PlanZero's Build System</a></li>
+    <li><a href="#appendix-inference">Appendix 4: Inference in the Standard Normals Model</a></li>
+    <li><a href="#appendix-prenir">Appendix 5: Pre-NIR-2025-m06, a NIR Prediction Challenge</a></li>
+    <li><a href="#appendix-architecture">Appendix 6: Update to PlanZero's Build System</a></li>
 </ul>
 </p>
 
-<h2 id="appendix-notation">Probabilistic Modelling Notation</h2>
+<h2 id="appendix-notation">Appendix 1: Probabilistic Modelling Notation</h2>
 
 <p>
 Some probability notation is conventional, in order to express probabilistic models.
@@ -141,7 +163,7 @@ which are used to define the Static Normals model in <a href="#appendix-model">A
 </p>
 
 
-<h2 id="appendix-model">Model Description</h2>
+<h2 id="appendix-model">Appendix 2: Model Description</h2>
 
 <p>
 PlanZero's "Static Normals" model 
@@ -236,7 +258,7 @@ distributions over unknown quantities:
 </p>
 
 
-<h2 id="appendix-bayesian-inference">Background in Bayesian Inference</h2>
+<h2 id="appendix-bayesian-inference">Appendix 3: Background in Bayesian Inference</h2>
 <p>
 {{siteref("Inference Algorithm", "Bayesian inference")|safe}} in probabilistic models is about redistributing probability for unknown variables
 in order to balance two competing objectives:
@@ -321,7 +343,7 @@ and the <a href="https://num.pyro.ai/en/stable/mcmc.html">NUTS</a> MCMC algorith
 </p>
 
 
-<h2 id="appendix-inference">Inference in the Static Normals Model</h2>
+<h2 id="appendix-inference">Appendix 4: Inference in the Static Normals Model</h2>
 
 <p>
 Running <a href="https://num.pyro.ai/en/stable/mcmc.html">NumPyro's NUTS</a> inference algorithm for the static model above,
@@ -330,6 +352,9 @@ and then re-sampling {{latex("Y")}} according to the original model for visualiz
 given the posterior {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(regional)}}, Y=\\mathrm{NIR_{(national)}})")}},
 gives rise to the following figure,
 now available at the <a href="/models/prob/Static_Normals_2024_12_31/">Static Normals model overview</a> page.
+Inference for all models involved 250 warmup steps, followed by 500 samples with no thinning.
+Details of sampling can be found in
+<a href="https://github.com/jaberg/planzero/blob/1979623a7c271a3989c9dd04651fcc535247d463/planzero/nir_static_normals.py#L1">nir_static_normals.py at time of writing</a>.
 </p>
 
 {% include "blog/2026-06-28-static-normals-Static_Normals_2024_12_31-all_sectors.html" %}
@@ -366,91 +391,36 @@ Click on each panel for a deeper-dive into modelled emissions in that sector.
 </p>
 
 
+<h3>Qualitative Assessment of Quality of Fit</h3>
 
 <p>
-from the Harvested Wood Products sector (HWP), results in the following ranges of values
-for
-{{latex("\\mu_{\\mathrm{(HWP, CO_2)}}")}} (shown as darker shaded region)
-and {{latex("\\sigma_{\\mathrm{(HWP, CO_2)}}")}} (shown via lightly-shaded 95% credible intervals on
-the regional and per-year random variables within
-{{latex("X_{\\mathrm{(HWP, CO_2)}}")}} and
-{{latex("Y_{\\mathrm{(HWP, CO_2)}}")}}).
+To my eye, inference worked well.
+The data usually lie within the middle of the 
+95% {{siteref("Credible Interval", "credible intervals")|safe}}, indicated as the coloured regions,
+as they should do about 95% of the time.
+The credible intervals are tight when the NIR-2025 data is relatively certain and steady over time,
+e.g. stationary combustion across petroleum refining industries, second row, rightmost panel.
+The credible intervals are wider when the data is less certain (e.g. municipal solid waste landfills, second row, middle column)
+and when there have been large variances over time (e.g. stationary combustion for public heat and electricity, top row, second from the left).
 </p>
 
 <p>
-Looking at the modelling results ({{latex("\\mu")}} and {{latex("\\sigma")}})
-we see some good and some bad.
-It is good, that {{latex("\\mu")}} (mean is dotted horizontal line,
-95% credible interval is darker shaded region) 
-typically goes through the data points somewhere near the middle.
-Likewise,
-{{latex("\\sigma")}} has been estimated such that the data mostly fall within
-the lightly-shaded regions, with a few points popping out above or below;
-which is approximately we expect from a 95% {{siteref("Credible Interval", "credible interval")|safe}} after fitting to the data.
-That said, it is bad that we see large blocks of shaded region without any data,
-which is a symptom of temporal correlation in the data.
-(We'll compare this quality of fit with a different model in the next sections.)
-</p>
-
-<p>
-Note also that there are differences between the
-horizontal solid lines (each region's sample mean)
-and the horizontal dotted lines (each region {{latex("r")}}'s
-mean {{latex("\\mu_{\\mathrm{(HWP,CO_2,r)}}")}}).
-The darker shaded region helps put their difference into perspective.
-The darker shaded region is the 95% credible interval for
-{{latex("\\mu_{\\mathrm{(HWP,CO_2,r)})}")}}
-(the upper and lower limits of the central 95% of sampled values from the latent variable's posterior distribution).
-For two regions, British Columbia and Quebec, the
-data mean lies slightly outside of their regional {{latex("\\mu_{\\mathrm{(HWP,CO_2,r)}}")}} credibility interval.
-This means that it is improbable,
-based on the model, and the data, that
-either {{latex("\\mu_{\\mathrm{(HWP,CO_2,BC)}}")}} or
-{{latex("\\mu_{\\mathrm{(HWP,CO_2,QC)}}")}} is really the data
-mean for each of those provinces.
-I chose Harvested Wood Products' {{CO2|safe}} emissions
-because there were a number of years where the regional and national totals
-are thousands of kt{{CO2|safe}} apart.
-Unsurprisingly,
-inference in this model reveals
-that a discrepancy also exists terms of sample means-since-1990.
-Remember,
-the regional latent random variables {{latex("\\mu_{s,g,r}")}}
-in the model were required to add up to a national total,
-whereas actual regional and national totals in NIR-2025 do not always add up this way. The inference algorithm
-has estimated a sample of values for {{latex("\\mu_{s,g,r}")}} that
-balances (a) fitting the regional emissions data, (b) fitting the national total emissions, and (c) respecting the prior distributions in the model.
-</p>
-
-
-<p>
-This figure doesn't show {{latex("\\mu")|safe}} specifically because it's a
-standard style of figure for any of probabilistic model of that sector.
-But it does show the posterior samples of
-{{latex("\\mu")|safe}}
-{{latex("\\sigma")|safe}}
-relate to the set of plausible emissions values.
-</p>
-
-
-<p>
-That concludes the introduction of PlanZero's "Static Normals" model.
-It is a probabilistic model, but the modelling assumption that each NIR emission
-sector total is actually unchanging throughout history and into the future is
-a very untrue assumption for many sectors.
-There has been consistent significant reduction in emissions from e.g. public
-electricity production over the past two decades as coal generators have
-been phased out.
-On the other hand, the emissions from oil and gas extraction have risen
-enormously over that same period due to changes in the scale and methods of
-oil extraction operations.
-The Static Normals model is designed for simplicity, and it cannot model such effects.
-The next section introduces a different model based on auto-regressive
-random processes, which has the property that inference
-can be described as learning trends in data
-(this is why machine <i>learning</i> in the field of computer
-science has that name). The predictions of the AR2 model are more aligned with at least
-my own, if not most people's intuitions, for how emissions rates change over time.
+Based on a visual, qualitative analysis, I would say the static normals model is typically a poor fit to the data.
+Other models that recognize trends in this data over time could do a lot better.
+This will be investigated in future work using e.g. autoregressive models.
+Still, it's worth noting that the static normals model is not always a poor fit.
+The static normals model offers a qualitatively good fit in many sectors:
+<ul>
+	<li><b>Enteric Fermentation</b>: emissions appear to be roughly constant for the most recent decade, and the static normals model lines up with that data pretty well.</li>
+	<li><b>Municipal Solid Waste Landfills</b>: emissions appear to be roughly constant for the entire history of NIR-2025 data from 1990 to 2023.</li>
+	<li><b>Manure Management</b>: manure management emissions appear to be highly correlated with enteric emissions, and also approximately a static normal for the last decade.</li>
+	<li><b>Transport emissions from Railways</b>: there's some fluctuation from year to year, but with relatively large uncertainty and no apparent trend, the static normals model is a good fit.</li>
+	<li><b>Indirect emissions from Agricultural Soils</b>: the NIR-2025 estimates a gradual upward trend since 1990, but with the large estimation uncertainty in the NIR, the constant normal model is a reasonably good fit.</li>
+	<li><b>Municipal Wastewater Treatment and Discharge</b>: as was the case with indirect emissions from agricultural soils, the NIR-2025 estimates a gradual upward trend since 1990, but with the large estimation uncertainty in the NIR, the constant normal model is a reasonably good fit.</li>
+	<li><b>Industrial Wood Waste Landfills</b>: there is probably a downward trend, but with the NIR estimation uncertainty, a static normal model isn't a bad fit here.</li>
+</ul>
+This post provides a quantitative analysis in addition to this qualitative one,
+in <a href="#appendix-prenir">Appendix 5: Pre-NIR-2005-m06, a NIR Prediction Challenge</a>.
 </p>
 
 
@@ -458,7 +428,7 @@ my own, if not most people's intuitions, for how emissions rates change over tim
 
 <p>
 Surprisingly, at least to me, regional total emissions in NIR-2025 do not always sum up to the corresponding national total.
-If we define the sum of regions vs. national total discrepancy as the maximum difference over years and provinces,
+If we define the sum of regions vs. national total discrepancy as the maximum difference over years,
 there are 11/486 with a discrepancy over 1Mt{{CO2e|safe}} (there are 486 sector and GHG combinations).
 At the level of 100kt{{CO2e}} discrepancy, there are about twice as many combinations over the threshold, and 
 at the level of 10kt{{CO2e}} discrepancy, twice as many again.
@@ -484,15 +454,15 @@ as a way to relate discrepancies to the scale of numbers in their sectors.
 </table>
 For several modest-to-minor sectors, the size of the
 discrepancy is sometimes at the same order of magnitude as the national total,
-and even for large sectors such as harvested wood products and [static combustion in] commercial and institutional environments,
+and even for large sectors such as harvested wood products and static combustion in commercial/institutional environments,
 there are numerically significant discrepancies.
 </p>
 
 <p>
-As a consequence for sectors with discrepancies, there is greater uncertainty in the posterior distribution after inference.
-For sector-gas combinations with discrepancies, the Bayesian inference procedure will rove more widely over possible values for {{latex("\\mu")}}
+The consequence of such discrepancies is greater uncertainty in the posterior distribution when conditioning on data.
+For sector-gas combinations with larger discrepancies, the Bayesian inference procedure will rove more widely over possible values for {{latex("\\mu")}}
 and {{latex("\\sigma")}} as there are multiple ways to sort-of-satisfy the objective of making the regional totals likely
-and sort-of-satisfy the objective of making the national total likely, but no single best way to make all of them likely when
+and sort-of-satisfy the objective of making the national total likely, but no single best way to make both objectives likely when
 the totals simply don't add up.
 </p>
 
@@ -511,10 +481,10 @@ The modelled national total is <i>constrained</i> to be the sum of regional tota
 is larger uncertainty in the inference of what's going on with HWP {{CO2}} emissions.
 </p>
 
-<h2 id="appendix-prenir">Pre-NIR-2025-06: a NIR Prediction Challenge</h2>
+<h2 id="appendix-prenir">Appendix 5: Pre-NIR-2025-06, a NIR Prediction Challenge</h2>
 
 
-<h2 id="appendix-architecture">Supporting Update to PlanZero's Build System</h2>
+<h2 id="appendix-architecture">Update to PlanZero's Build System</h2>
 
 <p>
 The Static Normals model is the first in PlanZero to create build artifacts of a significant size.
