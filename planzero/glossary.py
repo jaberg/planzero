@@ -909,6 +909,10 @@ class Git_Commit(GlossaryTerm):
             'Git_Branch': "a named graph of commits corresponding to a single version of set of files",
         }
 
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Commit']
+
 class Git_Graph(GlossaryTerm):
     """A set of commits and merges that build on one another form a graph
     representing all of the development on a project.

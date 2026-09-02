@@ -59,6 +59,12 @@ undergraduate and graduate levels, to:
 <li>participate in distributed open-source projects</li>
 </ul>
 </p>
+<!--
+	Other themes for the site:
+	content quality: possibly quantiative and qualitative dimensions, but site content should be good
+	engineering: site build should be automated, tests run, build system and hosting should use appropriate tools, run quickly, not cost too much
+	ease of use: authors, reviewers, readers, etc. should be able to benefit from the value that's theoretically available to them
+-->
 
 <!-- mission -->
 <p>
@@ -255,17 +261,17 @@ app_cache .-> gh_deploy_pr
 </pre>
 
 <p>
-Model inference can be computationally expensive, and the results don't change with every commit to the project.
+Model inference can be computationally expensive, and the results don't change with every {{siteref("Git_Commit", "commit")}} to the project.
 PlanZero uses an explicit and ad-hoc versioning system for models, in order to leverage GitHub's <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching">Dependency Cache</a> capability
 in a controlled way.
-The design for the Static Normals model is that the entire model is cached on the basis of a version number in the source code, the name of the class,
+The cache design for the Static Normals model is that the entire model is cached on the basis of a version number in the source code, the name of the class,
 and the cutoff date for data available for inference. Whenever the model code, or any dependency, or data assumption changes, the version number must be
-explicitly changed (raised), which will change the cache key, which will cause GitHub to recompute the inference of the model and save the results.
+explicitly changed (raised), in order to change the cache key, which will cause GitHub to recompute the inference of the model and save the results.
 Free-tier jobs are limited to 6 hours for open-source projects,
 so there's some incentive to ensure that the PlanZero site can be built from scratch in that amount of time.
 </p>
 <p>
-The Build and Test phase sometimes includes inference, but always runs unit tests, including a sweep through all of the pages hosted on the planzero website.
+The Build and Test job (see diagram above) sometimes includes inference, but always runs unit tests, including a sweep through all of the pages hosted on the planzero website.
 In the process of rendering them as part of the unit test suite, these pages are cached to disk,
 and that whole cache of pages is stored as a <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts">Workflow Artifact</a>.
 The set of pages isn't a large amount of data, and it's important to test frequently, so the tests run on every commit and the app cache is built every time the main branch

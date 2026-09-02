@@ -27,7 +27,7 @@ class StaticNormals(BlogPost):
                   #'Static_Normals',
                   BlogTag.About,
                  },
-            status=BlogStatus.Planned,
+            status=BlogStatus.Draft,
             )
 
     def figure_normal(self,):

@@ -434,7 +434,7 @@ At the level of 100kt{{CO2e}} discrepancy, there are about twice as many combina
 at the level of 10kt{{CO2e}} discrepancy, twice as many again.
 I defined "Relative Discrepancy" as the discrepancy divided by the greater of itself and the root mean square of national totals,
 as a way to relate discrepancies to the scale of numbers in their sectors.
-<table id="gemini-sort-data-table">
+<table>
     <thead>
         <tr><th>IPCC Sector</th><th>GHG</th><th>Max Discrepancy (kt{{CO2e}})</th><th>Relative Discrepancy</th></tr>
     </thead>
@@ -483,60 +483,177 @@ is larger uncertainty in the inference of what's going on with HWP {{CO2}} emiss
 
 <h2 id="appendix-prenir">Appendix 5: Pre-NIR-2025-06, a NIR Prediction Challenge</h2>
 
+<p>
+Since the Static Normals model shown here was only conditioned on data up to 2022,
+inference in the model induces a posterior distribution over unknown variables {{latex("X")}} and {{latex("Y")}} in the model,
+which can be interpreted as predictions of 2023 emissions.
+The table below lists the KL divergences between the NIR-2025 distributions for emissions year 2023
+(as developed in in the <a href="/blog/2026-05-20-prob-nir#appendix-models">Probabilistic NIR-2025 post</a>)
+and the posterior distribution in the static normals model (which is the same for all years).
+Weighting these divergences proportionally to the absolute value of the 2023 per-sector-gas emissions
+is the "weighted KL-divergence" model evaluation metric developed in that post.
+The static normals model developed in this post scores a weighted KL-divergence of 3.35.
+Perfect prediction of all of the emission distributions would have scored 0.0.
+The table can be sorted by each column to see the best-predicted and worst-predicted sector-gas combinations.
 
-<h2 id="appendix-architecture">Update to PlanZero's Build System</h2>
+</p>
+
+<table id="gemini-sort-data-table">
+    <thead>
+        <tr><th>Sector</th>
+		{% for ghg in planzero.enums.GHG %}
+		<th>{{ghg.value}}</th>
+		{% endfor %}
+	</tr>
+    </thead>
+    <tbody>
+	    {% for sector, ghg_KLs in planzero.prob.registry["Static_Normals_2024_12_31"].prediction_scores_prenir_2025_m06()['scores_ca'].items() %}
+	    <tr>
+		    <td><a href="/models/prob/Static_Normals_2024_12_31/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
+		    {% for ghg in planzero.enums.GHG %}
+		    <td>{% if ghg_KLs[ghg] > 0 %}{{ "%.2f"|format(ghg_KLs[ghg]) }}{% else %}0{% endif %}</td>
+		    {% endfor %}
+	    </tr>
+	    {% endfor %}
+    </tbody>
+</table>
 
 <p>
-The Static Normals model is the first in PlanZero to create build artifacts of a significant size.
-The samples from the MCMC chains are not huge, but they are tens or hundreds of megabytes,
-depending on how long they're configured to be.
-PlanZero's build and deployment implementation was modified not to save these MCMC chains in git,
-or upload them to fly.io.
+Qualitative assessment in Appendix 4 noted seven sectors that seemed well-fit by the static normals model.
+Quantitatively, their per-gas KL-divergence scores are listed below. They are all relatively low.
+The best qualitative fit was municipal solid waste landfills, and that one scored the best quantitative match as well.
+These results provide evidence, I think, that the KL-divergence score measures approximately what the eye beholds,
+that these sectors (or sector-gas results) are the ones that are best-fit.
+<table>
+	<thead>
+	<tr><th>Sector</th><th>KL-Divergence</th></tr>
+	</thead>
+	<tbody>
+	<tr><td>Enteric Fermentation</td><td>0.55 ({{CH4}})</td></tr>
+	<tr><td>Municipal Solid Waste Landfills</td><td>0.02 ({{CH4}})</td></tr>
+	<tr><td>Manure Management</td><td>0.26 ({{CH4}}), 0.21 ({{N2O}})</td></tr>
+	<tr><td>Railways</td><td>1.31 ({{CO2}}), 0.33 ({{CH4}}), 0.25 ({{N2O}})</td></tr>
+	<tr><td>Indirect from Agricultural Soils</td><td>0.16 ({{N2O}})</td></tr>
+	<tr><td>Municipal Waste Water Treatment and Discharge</td><td>0.89 ({{N2O}})</td></tr>
+	<tr><td>Industrial Wood Waste Landfills</td><td>0.66 ({{CH4}})</td></tr>
+	</tbody>
+</table>
 </p>
 
 <p>
-PlanZero's Dockerfile was modified to use a multi-stage build to
-produce a small docker image for fly.io
-that does not contain large data files or raw model samples.
-The following flow-chart illustrates the dependencies between docker images
-defined in the Dockerfile.
-It has been added to the <a href="/about/#build-data-flow">About page</a> in a new section about Architecture.
+The converse is also true: sector-gas combinations with scores less than about 1 appear to be the ones that are well-predicted.
+For example, emissions from settlements have risen and fallen, but the KL-divergence of the 2023 {{CO2}} emission is a very-low 0.11 and
+indeed the 2023 emissions line up nearly perfectly with the historical mean and variance of the sector.
+Another example is emissions from "Non-Energy Products from Fuels and Solvent Use";
+the KL-divergence score is a low 0.55
+and again the static normals model appears to get lucky and make a prediction that lines up very well with the 2023 reported emissions.
+Other sector-gas combinations, which aren't listed above, typically don't look like the prediction of the static normals model for 2023,
+and have higher KL-divergence scores.
+</p>
+
+<h2 id="appendix-architecture">Engineering Update Regarding PlanZero's Build System</h2>
+
+<p>
+The software system for producing the PlanZero website was upgraded for this post, to achieve several engineering objectives:
+<ul>
+	<li>compute capacity: perform model inference on bigger, faster computers than my laptop</li>
+	<li>build quality: upload a web server image to fly.io with pre-rendered pages so that the site loads faster</li>
+	<li>reproducibility: an external build process ensures PlanZero's site builds are reproducible beyond my laptop</li>
+	<li>author productivity: I can edit PlanZero code with the benefit of static analysis in a valid Dockerized test environment</li>
+	<li>code quality: PlanZero's unit tests run automatically (and must pass) before pushing any changes to the website</li>
+	<li>site quality: Reviewers can provide feedback on site previews before merging pull-requests, so the standard for what's shown on the main site can be higher.</li>
+</ul>
+</p>
+
+<h3>Build, Test, and Deploy WorkFlow on GitHub</h3>
+
+<p>
+Inference in probabilistic models can be computationally expensive.
+Drawing 500 samples of {{latex("\\mu")}} and {{latex("\\sigma")}} for each sector-gas combination can take several hours.
+I suspect this runtime can be reduced, but more advanced future models will require additional computation as well.
+It's not realistic to expect all of these posterior distributions to be computed near-instantly.
+The figure below outlines how <a href="TODO">GitHub Actions</a>
+are now used to build PlanZero's site in a reproducible, automated manner.
+This content has been added to the PlanZero <a href="/about/#github-build-data-flow">About page</a> in a new section about
+software architecture.
 </p>
 
 <pre class="mermaid">
 
 flowchart TB
 
-python_arm["Python:3.11-slim [ARM64]"]
+gh_build_and_test["Build and Test\n(Job)"]
 
-base["base"]
+gh_deploy_main["Deploy Main\n(Job)"]
 
-testing["testing"]
+gh_deploy_pr["Deploy Pull-Request\n(Job)"]
 
-build_cache["build_cache"]
+app_cache[("App Cache\n(Workflow Artifact)")]
 
-production_server["production_server"]
+inference_cache[("Model Inference Results\n(Cache Object)")]
 
-production_server_amd64["production_server_amd64"]
+inference_cache <-. "Per-model-version samples" .-> gh_build_and_test
 
-python_arm --> base
-base --> testing
-testing --> build_cache
+gh_build_and_test --> gh_deploy_main
+gh_build_and_test --> gh_deploy_pr
 
-base --> production_server
+gh_build_and_test -. "Pre-rendered pages" .-> app_cache
 
-build_cache -. copy pre-rendered pages .-> production_server
-
-python_amd["Python:3.11-slim [AMD64]"]
-
-
-build_cache -. copy pre-rendered pages .-> production_server_amd64
-
-python_amd --> production_server_amd64
+app_cache .-> gh_deploy_main
+app_cache .-> gh_deploy_pr
 
 
 </pre>
 
+<p>
+Model inference is computationally expensive, and the results don't change with every {{siteref("Git_Commit", "commit")}} to the project.
+PlanZero uses an explicit and ad-hoc versioning system for models, in order to leverage GitHub's <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching">Dependency Cache</a> capability
+in a controlled way.
+The cache design for the Static Normals model is that the entire model is cached on the basis of (a) a version number in the source code, (b) the name of the class,
+and (c) the cutoff date for data available for inference. Whenever the model code, or any dependency, or data assumption changes, the version number must be
+explicitly changed (raised), in order to change the cache key, which will then cause GitHub's workflow engine to recompute the inference of the model and save the results.
+Free-tier jobs are limited to 6 hours for open-source projects,
+so there's some incentive to ensure that the PlanZero site can be built from scratch, including all model inferences and tests, in that amount of time.
+</p>
+<p>
+The Build and Test job (see diagram above) sometimes includes inference, but always runs unit tests, including a sweep through all of the pages hosted on the planzero website.
+In the process of rendering them as part of the unit test suite, these pages are cached to disk,
+and that whole cache of pages is stored as a <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts">Workflow Artifact</a>.
+The set of pages isn't a large amount of data, and it's important to test frequently, so the tests run on every commit and the app cache is built every time the main branch
+or a pull-request branch changes.
+</p>
+
+<p>
+The last jobs in the workflow download the pre-rendered pages and deploy the webserver and pre-built pages.
+PlanZero sites are hosted by Fly.io, which hosts the main <a href="https://planzero.ca">planzero.ca</a> site,
+as well as per-pull-request preview sites for work in progress.
+The set of active pull-requests is available on the project page <a href="https://github.com/jaberg/planzero/pulls">on GitHub</a>.
+PlanZero is not currently a purely static site, but I can imagine committing to making it purely static in future in order to e.g. improve initial page-load performance
+and lower hosting costs.
+</p>
+
+<h3>Neovim, TMux and Dockerized Editing</h3>
+
+<p>
+The <a href="https://github.com/jaberg/planzero/blob/7f051167d082855fd5414e8c7075fa6168406c49/Dockerfile#L18">Dockerfile</a> and
+<a href="https://github.com/jaberg/planzero/blob/7f051167d082855fd5414e8c7075fa6168406c49/Makefile#L1">Makefile</a>
+in PlanZero's root directory have been updated to describe a "development" image that
+enables host command <code><a href="https://github.com/jaberg/planzero/blob/7f051167d082855fd5414e8c7075fa6168406c49/Makefile#L26">make tmux</a></code> to launch a
+<a href="https://github.com/tmux/tmux/wiki">tmux session</a>
+that can run various development activities in a similar environment to the one created on GitHub by
+the <code><a href="https://github.com/jaberg/planzero/blob/7f051167d082855fd5414e8c7075fa6168406c49/.github/workflows/test.yaml#L26">build_and_test</a></code> workflow.
+<a href="https://neovim.io/">Neovim</a> is installed in this image as an editor, as well as
+<a href="https://jupyter.org/">Jupyter</a>.
+Commands such as <code>make jupyter</code> and <code>make local</code> are meant to be run within this tmux environment, to run a jupyter server and local site respectively
+on the ports described in the Makefile.
+I hope, later, to introduce code acceptance tests in the build and test job that enforce style guidelines,
+and to encourage those same style guidelines via neovim plugin configuration.
+So far, neovim has simply been configured to edit Python files with default settings of
+<a href="https://github.com/microsoft/pyright">Pyright</a> and
+<a href="https://github.com/astral-sh/ruff">Ruff</a>.
+These tools find a lot of code quality issues! I intend to fix issues manually for a while, and build up a set of style-guide exceptions before e.g. running automatic
+fixes, or requiring code quality checks to pass on the main branch (<a href="https://github.com/jaberg/planzero/issues/90">GH#90</a>).
+</p>
 
 <ul class="actions special">
     {% if prev_url_filename %}
