@@ -16,32 +16,93 @@
 
 <h2 id="overview">Overview</h2>
 
+<p>
+The <a href="/about/#overview">long-term vision for PlanZero</a> is that it will 
+<blockquote>
+	quantify the opportunities
+associated with strategies &mdash;
+such as public and private research and product development efforts, and public policies &mdash;
+and situate them in comprehensive scenarios based on
+projections of Canada's possible future
+<a href="https://climate-scenarios.canada.ca/?page=main">climate</a>,
+<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1710005702">population</a>,
+<a href="https://www.cerdialogue.ca/canada-s-energy-future">energy supply</a>,
+and other macro trends that might influence future emissions. 
+</blockquote>
+In order to do this, PlanZero needs models that make credible predictions for emissions,
+both with and without various strategies.
+This post introduces PlanZero's first predictive probabilistic model: a simple baseline that assumes
+<ol>
+	<li>that provincial and territorial emissions per-sector and per-gas add up to national totals</li>
+	<li>that provincial and territorial emissions are <i>static</i> and don't actually change over time; they have been constant historically, and will remain constant in the future</li>
+</ol>
+The model is described as a hierarchical
+probabilistic model, and
+Bayesian inference is used to condition predictions on
+historical estimates.
+The historical estimates are drawn from the probabilistic interpretation of
+NIR-2025.
+The PlanZero site now includes a visualization of this predictive model,
+reproduced below:
+</p>
+
 {% include "blog/2026-06-28-static-normals-Static_Normals_2024_12_31-all_sectors_B.html" %}
 
 <p>
-That concludes the introduction of PlanZero's "Static Normals" model.
-It is a probabilistic model, but the modelling assumption that each NIR emission
-sector total is actually unchanging throughout history and into the future is
-a very untrue assumption for many sectors.
-There has been consistent significant reduction in emissions from e.g. public
-electricity production over the past two decades as coal generators have
-been phased out.
-On the other hand, the emissions from oil and gas extraction have risen
-enormously over that same period due to changes in the scale and methods of
-oil extraction operations.
-The Static Normals model is designed for simplicity, and it cannot model such effects.
-The next section introduces a different model based on auto-regressive
-random processes, which has the property that inference
-can be described as learning trends in data
-(this is why machine <i>learning</i> in the field of computer
-science has that name). The predictions of the AR2 model are more aligned with at least
-my own, if not most people's intuitions, for how emissions rates change over time.
+The visualization follows the style used in the previous post, which introduced
+the probabilistic NIR-2025. The visualization has been updated to show both
+a predictive model (the static normals model, conditioned on NIR-2025 data up to 2022)
+and the emissions that it should predict (the probabilistic NIR-2025's 2023 data,
+shown in terms of upper and lower credible interval and mean, thin solid and dotted black lines respectively).
 </p>
-
 
 <p>
-Until next time,
+This post also introduces <i>predictions</i> to the PlanZero site, in two ways.
+The first way is that visualizations of predictive probabilistic models show ranges of
+95% credible emissions as the coloured regions above future years in visualizations
+such as the one reproduced above from PlanZero's pages about predictive models.
+The second way that PlanZero introduces predictions is via the Predictions page,
+which provides an overview of <i>kinds</i> of predictions, and a ranking of models
+in terms of how good they are at making those predictions.
+The previous post on the probabilistic NIR-2025 introduced a model evaluation metric
+for scoring predictions in terms of KL-divergence from the probabilistic interpretation of measured emissions. This post uses the metric to score the static normals model
+both in predicting in emissions on individual sector-gas combinations, as well
+as an overall weighted average across all sectors and gases.
+The static normals model scores an overall average divergence of 3.35,
+establishing a baseline for future models to improve by scoring closer to zero.
 </p>
+
+<p>
+Despite the simplicity of the static normals model,
+the predictions are quite accurate both qualitatively and quantitatively
+for several sectors.
+The good fit for emissions sectors such as e.g. Enteric Fermentation, Municipal Solid Waste Landfills, Manure Management, and Railways
+is a signal that little progress has been made in these areas, at least by 2023.
+Conversely, the poorness of fit overall is a sign that there have been significant changes in most sectors.
+This is good news because typically those changes have been for the better.
+</p>
+
+<p>
+Still overall, the predictions of the static normals model are poor.
+There is a lot of temporal correlation in annual emissions from many sectors,
+especially where emissions are caused by capital such as equipment and
+facilities with multi-year working lifespans.
+Ultimately, PlanZero aims to model the impacts, costs and benefits, of
+changing the composition of this capital.
+The next post will introduce an alternative model,
+based on the continuation of trends,
+which makes more accurate predictions.
+Perhaps ultimately, the main value of this static normals model is
+provide a point of reference to be able to say how much better the other model is.
+Although the static normals model itself may not be useful in the long-term,
+this post introduced notation, visualization, and metrics, and evaluation
+methodology that will likely be foundational to many future PlanZero updates.
+</p>
+
+<p>
+Until next that next post,
+</p>
+
 <p>
 - James Bergstra
 </p>
