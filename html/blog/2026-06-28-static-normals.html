@@ -17,21 +17,21 @@
 <h2 id="overview">Overview</h2>
 
 <p>
-The <a href="/about/#overview">long-term vision for PlanZero</a> is that it will 
-<blockquote>
-	quantify the opportunities
-associated with strategies &mdash;
-such as public and private research and product development efforts, and public policies &mdash;
-and situate them in comprehensive scenarios based on
-projections of Canada's possible future
-<a href="https://climate-scenarios.canada.ca/?page=main">climate</a>,
-<a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1710005702">population</a>,
-<a href="https://www.cerdialogue.ca/canada-s-energy-future">energy supply</a>,
-and other macro trends that might influence future emissions. 
-</blockquote>
-In order to do this, PlanZero needs models that make credible predictions for emissions,
-both with and without various strategies.
-This post introduces PlanZero's first predictive probabilistic model: a simple baseline that assumes
+The <a href="/about/#overview">long-term aim for PlanZero</a> is to quantify
+the impact of strategies that may affect Canada's emissions.
+The impact of a strategy is the difference between what will probably happen
+if the strategy is implemented, versus what will probably happen if it isn't.
+Both of these are predictions.
+To estimate the impact of strategies,
+PlanZero needs research and models models that make credible predictions for emissions,
+both with and without various strategies,
+with usefully tight credible intervals,
+on various time horizons.
+</p>
+
+<p>
+This post introduces PlanZero's first predictive probabilistic model.
+It is a simple baseline that assumes
 <ol>
 	<li>that provincial and territorial emissions per-sector and per-gas add up to national totals</li>
 	<li>that provincial and territorial emissions are <i>static</i> and don't actually change over time; they have been constant historically, and will remain constant in the future</li>
@@ -59,17 +59,39 @@ shown in terms of upper and lower credible interval and mean, thin solid and dot
 <p>
 This post also introduces <i>predictions</i> to the PlanZero site, in two ways.
 The first way is that visualizations of predictive probabilistic models show ranges of
-95% credible emissions as the coloured regions above future years in visualizations
-such as the one reproduced above from PlanZero's pages about predictive models.
-The second way that PlanZero introduces predictions is via the Predictions page,
-which provides an overview of <i>kinds</i> of predictions, and a ranking of models
-in terms of how good they are at making those predictions.
+95% credible emissions for future years.
+The second way is via the <a href="/predictions/">Predictions</a> page,
+a new one on PlanZero.
+The predictions page provides an overview of <i>kinds</i> of prediction,
+and a ranking of models in terms of metrics that formalize how good they are at making
+those predictions.
 The previous post on the probabilistic NIR-2025 introduced a model evaluation metric
-for scoring predictions in terms of KL-divergence from the probabilistic interpretation of measured emissions. This post uses the metric to score the static normals model
-both in predicting in emissions on individual sector-gas combinations, as well
+for scoring predictions in terms of KL-divergence from the probabilistic interpretation of measured emissions.
+This post uses that metric to score the static normals model.
+The metric is used for both individual sector-gas combinations, as well
 as an overall weighted average across all sectors and gases.
-The static normals model scores an overall average divergence of 3.35,
-establishing a baseline for future models to improve by scoring closer to zero.
+The static normals model scores an overall average divergence of 3.35.
+Future models might rank better by scoring closer to zero.
+</p>
+
+<p>
+I believe this is the first step in an important research loop that can lead
+PlanZero to making the best possible predictions.
+The machine learning community has made great progress over recent
+decades by combining two incremental, mutually supportive research programs.
+The first one is a relatively slow accumulation of benchmark prediction challenges.
+The second one is a relatively faster exploration of the space of models, algorithms, and data to find ways of improving the state of the art in those challenges.
+(Of course, researchers also had the luxury of pursuing these two research programs
+on the basis of exponential improvements in the amounts of computing power and data available, as well as any number of other helpful factors, but I don't think these
+are as relevant to PlanZero.)
+At the same time, the more accurately PlanZero can predict emissions impacts,
+the more helpful PlanZero can be in evaluating the many strategies that have
+helpful but not enormous emissions impacts.
+This is why the PlanZero site is now structured to feature <a href="/predictions/">predictions</a>
+and <a href="/models/">models</a> that can reflect two mutually reinforcing
+research programs. I hope they will lead to as solid a foundation as possible for model-based
+planning of emission-reduction strategies.
+This rationale has been added to the <a href="/about/#incremental-iteration-on-prediction-metrics">About page</a>.
 </p>
 
 <p>
@@ -77,26 +99,12 @@ Despite the simplicity of the static normals model,
 the predictions are quite accurate both qualitatively and quantitatively
 for several sectors.
 The good fit for emissions sectors such as e.g. Enteric Fermentation, Municipal Solid Waste Landfills, Manure Management, and Railways
-is a signal that little progress has been made in these areas, at least by 2023.
-Conversely, the poorness of fit overall is a sign that there have been significant changes in most sectors.
-This is good news because typically those changes have been for the better.
-</p>
-
-<p>
-Still overall, the predictions of the static normals model are poor.
-There is a lot of temporal correlation in annual emissions from many sectors,
-especially where emissions are caused by capital such as equipment and
-facilities with multi-year working lifespans.
-Ultimately, PlanZero aims to model the impacts, costs and benefits, of
-changing the composition of this capital.
-The next post will introduce an alternative model,
-based on the continuation of trends,
-which makes more accurate predictions.
-Perhaps ultimately, the main value of this static normals model is
-provide a point of reference to be able to say how much better the other model is.
-Although the static normals model itself may not be useful in the long-term,
-this post introduced notation, visualization, and metrics, and evaluation
-methodology that will likely be foundational to many future PlanZero updates.
+suggests that little progress has been made in these areas, at least by 2023.
+Conversely, the poorness of fit in other sectors suggests that have been
+significant changes either for better or worse.
+We'll look at trends in the next post, on a a different (non-static) statistical
+model called an autoregressive model.
+Happily, most changes have been toward reductions in emissions.
 </p>
 
 <p>

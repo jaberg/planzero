@@ -5,6 +5,7 @@ Analog to sim.py for Simulation-based models.
 """
 
 from typing import ClassVar
+
 from pydantic import BaseModel, computed_field
 
 from .singleton_registry import SingletonRegistry
@@ -87,6 +88,14 @@ class SiteInference(BaseModel):
     @computed_field
     def show_prediction_quality(self) -> bool:
         return False
+
+    @computed_field
+    def pretty_name(self) -> str:
+        return self.__class__.__name__.replace(' ', '_')
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return []
 
 
 from . import nir2025_site

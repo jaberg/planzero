@@ -4,7 +4,7 @@
 
 <section class="post">
     <header class="major">
-        <h1>Model: {{printcname(ident)}}</h1>
+        <h1>Model: {{ site_inference.pretty_name }}</h1>
         <p>{{site_inference.short_description}}</p>
     </header>
 
@@ -92,8 +92,8 @@ at the bottom of this page.
 
 <h2 id="posts">Posts developing this page</h2>
 <ul>
-{% for blog in blogs_by_tag(ident) %}
-<li><a href="/post/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% for ident in site_inference.posts_developing_this_page %}
+<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 

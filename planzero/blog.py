@@ -33,7 +33,7 @@ class BlogStatus(str, enum.Enum):
 
 class BlogPost(BaseModel):
 
-    date: datetime.datetime
+    date: datetime.date
     title: str
     about: str
     url_filename: str
@@ -122,7 +122,7 @@ class AR2(BlogPost):
 
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 10, 28),
+            date=datetime.date(2026, 10, 28),
             title='Autoregressive Process Modelling of NIR-2025',
             url_filename="2026-05-26-probabilistic-modelling",
             author="James Bergstra",
@@ -464,7 +464,7 @@ class Glossary(BlogPost):
     modelling."""
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 9, 15),
+            date=datetime.date(2026, 9, 15),
             title='New: the PlanZero glossary',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
@@ -490,7 +490,7 @@ class ProbabilisticBovaer(BlogPost):
 
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 8, 30),
+            date=datetime.date(2026, 8, 30),
             title='Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer',
             url_filename="2026-07-22-prob-bovaer",
             author="James Bergstra",
@@ -520,7 +520,7 @@ class PreNIR(BlogPost):
 
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 7, 22),
+            date=datetime.date(2026, 7, 22),
             title='Prediction of National Inventory Reports',
             url_filename="2026-06-19-yoly-2025",
             author="James Bergstra",
@@ -533,7 +533,7 @@ class PreNIR(BlogPost):
             def build_figure_plt(_, plt):
                 import matplotlib.pyplot as plt
                 import numpy as np
-                from datetime import datetime
+                dt = datetime.datetime
 
                 sources = {
                     "NIR-2024": {
@@ -564,7 +564,7 @@ class PreNIR(BlogPost):
 
                 for ii, (dset_name, dset_info) in enumerate(sources.items()):
                     for key, val in list(dset_info.items()):
-                        dset_info[key] = datetime.strptime(val, "%Y-%m-%d")
+                        dset_info[key] = dt.strptime(val, "%Y-%m-%d")
                     y = -ii
 
                     # Solid bar: fully available data
@@ -585,9 +585,9 @@ class PreNIR(BlogPost):
                             hatch='..', edgecolor='tomato',
                             label="Publication delay" if ii == 0 else None)
 
-                prediction_time = datetime.strptime("2024-05-16", "%Y-%m-%d")
+                prediction_time = dt.strptime("2024-05-16", "%Y-%m-%d")
                 ax.axvline(prediction_time, color='crimson', linestyle='--', lw=1.5, label='Prediction time')
-                ax.axvline(datetime.now(), color='black', linestyle='--', lw=1.5, label='Today')
+                ax.axvline(dt.now(), color='black', linestyle='--', lw=1.5, label='Today')
 
                 ax.set_yticks([-ii for ii in range(len(sources))])
                 ax.set_yticklabels([src for src in sources])
@@ -761,13 +761,13 @@ class ProbabilisticNIR2025(BlogPost):
     with a section for probabilistic models, which represent and visualize
     emissions uncertainty. This treatment of uncertainty is a fundamental
     aspect of PlanZero's future modelling work.
-    This post also introduces "Planned" status for posts as a mechanism for communicating
-    roadmap and organizing ongoing work.
+    This post also introduces "Planned" status for posts as a mechanism for
+    communicating roadmap and organizing ongoing work.
     """
 
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 5, 20),
+            date=datetime.date(2026, 5, 20),
             title='A Probabilistic NIR-2025',
             url_filename="2026-05-20-prob-nir",
             author="James Bergstra",
@@ -781,7 +781,7 @@ class ProbabilisticNIR2025(BlogPost):
     @staticmethod
     def generate_asset_annex2_rows(path):
         from . import nir2025
-        from .enums import IPCC_Sector, GHG
+        from .enums import GHG, IPCC_Sector
         from .html import html_by_ghg
         table = dict(nir2025.annex2_source_category_by_sector())
         assert (IPCC_Sector.Cropland, GHG.CH4) not in table
@@ -790,18 +790,18 @@ class ProbabilisticNIR2025(BlogPost):
         table[IPCC_Sector.Settlements, GHG.N2O] = 'Blend: Conversion of Forest Land and Grass Land'
         with open(path, 'w') as ofile:
             for sector in IPCC_Sector:
-                sources = set(
-                    [table[sector, ghg] for ghg in GHG
-                     if (sector, ghg) in table])
+                sources = {
+                    table[sector, ghg] for ghg in GHG
+                     if (sector, ghg) in table}
                 if len(sources) == 0:
                     raise NotImplementedError() # doesn't happen
                     ofile.write(f'<tr><td>{sector.catpath_with_whitespace}</td>')
-                    ofile.write(f'<td></td>')
-                    ofile.write(f'<td>undefined</td></tr>\n')
+                    ofile.write('<td></td>')
+                    ofile.write('<td>undefined</td></tr>\n')
                 elif len(sources) == 1:
                     source_cat, = sources
                     ofile.write(f'<tr><td>{sector.catpath_with_whitespace}</td>')
-                    ofile.write(f'<td>All</td>')
+                    ofile.write('<td>All</td>')
                     ofile.write(f'<td>{source_cat}</td></tr>\n')
                 else:
                     for ghg in GHG:
@@ -813,7 +813,7 @@ class ProbabilisticNIR2025(BlogPost):
     @classmethod
     def generate_assets(cls):
         from . import prob
-        from .enums import IPCC_Sector, GHG
+        from .enums import GHG, IPCC_Sector
 
         base = 'html/blog/2026-05-20-prob-nir'
         model_name = 'NIR2025'
@@ -1018,7 +1018,7 @@ class About(BlogPost):
     """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 23),
+            date=datetime.date(2026, 4, 23),
             title='About this project: rewriting and expanding planzero.ca/about',
             url_filename="2026-04-12-about",
             status=BlogStatus.Done,
@@ -1039,7 +1039,7 @@ class ModellingBovaer(BlogPost):
     """
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 9),
+            date=datetime.date(2026, 4, 9),
             title='Modelling a Bovaer Strategy',
             url_filename="2026-04-03-bovaer",
             author="James Bergstra",
@@ -1071,7 +1071,7 @@ class IPCC_HeavyDutyDieselVehicles(BlogPost):
     terms: dict[str, str]
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 4, 1),
+            date=datetime.date(2026, 4, 1),
             title='Heavy-Duty Diesel Vehicles: Emissions Calculations',
             url_filename="2026-04-01-heavy-duty-diesel",
             author="James Bergstra",
@@ -1080,7 +1080,7 @@ class IPCC_HeavyDutyDieselVehicles(BlogPost):
                   enums.IPCC_Sector.Transport__Road__Heavy_Duty_Diesel_Vehicles,
                  },
             est_nir=est_nir,
-            terms=dict(),
+            terms={},
             )
 
 
@@ -1093,7 +1093,7 @@ class IPCC_EntericFermentation(BlogPost):
     terms: dict[str, str]
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 3, 31),
+            date=datetime.date(2026, 3, 31),
             title='Enteric Fermentation: Emissions Calculations',
             url_filename="2026-03-31-enteric",
             author="James Bergstra",
@@ -1102,7 +1102,7 @@ class IPCC_EntericFermentation(BlogPost):
                   enums.IPCC_Sector.Enteric_Fermentation,
                  },
             est_nir=est_nir,
-            terms=dict(),
+            terms={},
             )
 
 class IPCC_MCS_LightGasolineCarsAndTrucks(BlogPost):
@@ -1114,7 +1114,7 @@ class IPCC_MCS_LightGasolineCarsAndTrucks(BlogPost):
     terms: dict[str, str]
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 3, 30),
+            date=datetime.date(2026, 3, 30),
             title='Cars and Trucks: Emissions Calculations',
             url_filename="2026-03-30-light-duty-gasoline-trucks",
             author="James Bergstra",
@@ -1143,7 +1143,7 @@ class IPCC_SCS_Residential(BlogPost):
     est_nir: object
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 3, 26),
+            date=datetime.date(2026, 3, 26),
             title='Residential Stationary Combustion Sources: Emissions Calculations',
             url_filename="2026-03-26-scs-residential",
             author="James Bergstra",
@@ -1165,7 +1165,7 @@ class IPCC_SCS_OilAndGas_Exploration(BlogPost):
     est_nir:object
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 3, 11),
+            date=datetime.date(2026, 3, 11),
             title='Stationary Combustion to Extract Oil and Gas: Emissions Calculations',
             url_filename="2026-03-11-og-extraction",
             author="James Bergstra",
@@ -1186,7 +1186,7 @@ class IPCC_VentingNaturalGas(BlogPost):
     est_nir:object
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 3, 2),
+            date=datetime.date(2026, 3, 2),
             title='Oil and Natural Gas Venting: Emissions Calculations',
             url_filename="2026-03-02-venting",
             author="James Bergstra",
@@ -1207,7 +1207,7 @@ class IPCC_ForestAndHWP(BlogPost):
     est_nir:object
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 2, 22),
+            date=datetime.date(2026, 2, 22),
             title='Emissions calculations for Harvested Wood Products and Forest Land',
             url_filename="2026-02-22-forest-hwp",
             author="James Bergstra",
@@ -1229,7 +1229,7 @@ class IPCC_PublicElectricity(BlogPost):
     est_nir:object
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 2, 12),
+            date=datetime.date(2026, 2, 12),
             title='Emission calculations for Public Electricity and Heat',
             url_filename="2026-02-12-public-electricity",
             author="James Bergstra",
@@ -1251,7 +1251,7 @@ class CNZEAA(BlogPost):
     net_emissions_total:list[float]
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 2, 2),
+            date=datetime.date(2026, 2, 2),
             title="The Paris Agreement and the CNZEAA",
             url_filename="2026-02-02-cnzeaa",
             author="James Bergstra",
@@ -1338,7 +1338,7 @@ class GHG_Emissions(BlogPost):
             )
 
         super().__init__(
-            date=datetime.datetime(2026, 1, 21),
+            date=datetime.date(2026, 1, 21),
             title="A Model of Greenhouse Gas Emissions",
             url_filename="2026-01-21-unfccc",
             author="James Bergstra",
@@ -1376,7 +1376,7 @@ class Contributing(BlogPost):
     partly to encourage collaboration."""
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2026, 1, 6),
+            date=datetime.date(2026, 1, 6),
             title="Contributing (even for myself)",
             url_filename="2026-01-06-contributing",
             status=BlogStatus.Done,
@@ -1389,7 +1389,7 @@ class HowMightWe(BlogPost):
     understanding how Canada might achieve net-zero emissions."""
     def __init__(self):
         super().__init__(
-            date=datetime.datetime(2025, 12, 5),
+            date=datetime.date(2025, 12, 5),
             title='How might Canada achieve Net-Zero?',
             url_filename="2025-12-05-first-post",
             status=BlogStatus.Done,

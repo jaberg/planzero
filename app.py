@@ -530,6 +530,7 @@ default_context = {
     'fade_in_intro': False,
     'printcname': (lambda cname: cname.replace('_', ' ')),
     'blogs_by_tag': planzero.blog.blogs_by_tag,
+    'blog_registry': planzero.blog.registry,
     'latex': planzero.blog.latex,
     'BlogStatus': planzero.blog.BlogStatus,
     'HOME_SHOW_UNPUBLISHED_POSTS': HOME_SHOW_UNPUBLISHED_POSTS,

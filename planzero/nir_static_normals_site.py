@@ -324,3 +324,14 @@ class Static_Normals_2024_12_31(SiteInference):
             return f'/models/prob/{self.model_id}/#{challenge_name}'
         else:
             return ''
+
+    @computed_field
+    def pretty_name(self) -> str:
+        return 'Static Normals (data-cutoff: 2024-12-31)'
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return [
+                'StaticNormals', # 2026-06-28
+                'ProbabilisticNIR2025', # 2026-05-20
+                ]
