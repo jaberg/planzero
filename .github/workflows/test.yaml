@@ -93,7 +93,7 @@ jobs:
       # Run test and populate app cache (diskcache)
 
       - name: Run all tests
-        run: pytest -W error --maxfail=10 .
+        run: pytest -n 4 -W error --maxfail=10 .
 
       - name: Save app cache for deploy
         if: github.repository == 'jaberg/planzero'
