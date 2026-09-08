@@ -35,6 +35,92 @@ Until next time,
 </p>
 
 
+<h2>Appendix: Removing "Simulation-based" Models</h2>
+
+<p>
+PlanZero's <a href="/about/#overview">mission</a> calls for
+both short-, medium-, and long-term prediction capabilities suitable for the evaluation
+of strategies.
+The credibility and usefulness of model predictions depends on three things:
+<ol>
+    <li>The structure and elements of the model are reasonable.</li>
+    <li>The predictions refine people's prior beliefs, rather than contradicting them.</li>
+    <li>The predictions agree with data, where data is available, while also being precise.</li>
+</ol>
+</p>
+
+<p>
+Non-probabilistic modelling is not generally great across all three areas.
+The kind of modelling
+employed in the previous post on
+<a href="/blog/2026-04-03-bovaer">Bovaer</a>,
+was an example of non-probabilistic modelling.
+
+
+
+from a computational perspective, the modelling
+proceeds from data and initial numerical assumptions, through arithmetic and
+statistical summaries, forward in time, and with one pass through the modelled
+time period of the model, it arrives at a result.
+
+Simulation-based modelling is good with regards to criterion (1) in that predictions can be
+reasonably explained directly in terms of the computation of the model.
+Simulation-based modelling is only so-so with regards to criterion (2) because simulation-based
+modelling does not naturally express <i>how [un]likely</i> a person's current beliefs are,
+the simulation just emits its own prediction.
+Critically,
+simulation-based modelling offers very little support for matching data.
+Data matching is entirely at the discretion of the modeller,
+and the result of simulation does not inherently characterize
+whether data was either used appropriately or fit well.
+</p>
+
+<p>
+Probabilistic modelling is a generalization of simulation-based modelling that
+can produce models that are more credible.
+Probabilistic modelling (particularly so-called directed graphical modelling)
+starts with random variables instead of numbers.
+So for example, instead of starting with
+e.g. the NIR data, a probabilistic model
+starts with the idea that there are emission amounts
+in such-and-such sectors of such-and-such gases (random variables), 
+and that there are emissions for all years
+we care to include in our model.
+While we're at it, we make up broad
+<i>a-priori</i> guesses at how much emissions there were in all these areas and for each year.
+These initial beliefs have a name in probabilistic modelling, they are our <i>priors</i>.
+For example, we might express a prior that {{CO2}} emissions from national electricity generation
+are relatively big, but still smaller than e.g. global emissions.
+As a contrasting example, we might express that the {{NF3}} emissions from a sector that
+isn't known for producing that gas, in a province that isn't known for activity in that sector,
+is probably zero, at least for most years.
+Priors should be broad, inclusive probability distributions
+that include most (if not all) people's beliefs about what the random variables represent.
+</p>
+
+<p>
+The relationship between this probabilistic modelling and simulation-based modelling
+is that if we combine the random variables with arithmetic and statistical expressions
+(like we would do in a simulation-based model),
+then drawing a sample from all the random variables in our prior looks a lot like running
+a simulation-based model.
+This computation has a name in probabilistic modelling:
+<i>sampling from the prior</i>.
+It's kind of fun, to see your prior beliefs transformed into
+sets of numbers that look like hypothetical NIRs because they are our own predictions of the future!
+Looking back at our list of criteria
+for making credible predictions,
+a probabilistic model is similar to a simulation-based one in terms of model structure (criterion 1),
+and it's better than a single scenario from a simulation-based model
+at refining rather than contradicting beliefs (criterion 2)
+because it's natural to draw lots of scenarios from a probabilistic model,
+and the spread of scenarios will include people's beliefs and can reflect the degree of [dis]agreement among people.
+Where probabilistic models really excel though,
+is in their ability to make precise and accurate predictions (criterion 3),
+which I'll explain in the next section.
+</p>
+
+
 <ul class="actions special">
     {% if prev_url_filename %}
     <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
