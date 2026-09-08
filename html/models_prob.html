@@ -54,9 +54,9 @@ at the bottom of this page.
 
 <h2>Prediction Quality</h2>
 
-<h3 id="PreNIR_2025_m06">Prediction Task: {{ planzero.challenge.registry["PreNIR_2025_m06"].pretty_name }}</h3>
+<h3 id="PreNIR_2025_m04">Prediction Task: {{ planzero.challenge.registry["PreNIR_2025_m04"].pretty_name }}</h3>
 <p>
-{{ planzero.challenge.registry["PreNIR_2025_m06"].short_description | safe }}
+{{ planzero.challenge.registry["PreNIR_2025_m04"].short_description | safe }}
 </p>
 <p>
 The predictions themselves are shown above.
@@ -68,7 +68,7 @@ see post <a href="/posts/2026-06-28-static-normals/#appendix-prenir">Static Norm
 <p>
 Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
 {{ "%.3f"|format(
-	site_inference.prediction_scores_prenir_2025_m06()['weighted_divergence'])
+	site_inference.prediction_scores_prenir_2025_m04()['weighted_divergence'])
 }}.
 </p>
 <h4>KL Divergence of predictions from reference national emissions (lower is better)</h4>
@@ -81,7 +81,7 @@ Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
 	</tr>
     </thead>
     <tbody>
-	    {% for sector, ghg_KLs in site_inference.prediction_scores_prenir_2025_m06()['scores_ca'].items() %}
+	    {% for sector, ghg_KLs in site_inference.prediction_scores_prenir_2025_m04()['scores_ca'].items() %}
 	    <tr>
 		    <td><a href="/models/prob/{{ident}}/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
 		    {% for ghg in planzero.enums.GHG %}

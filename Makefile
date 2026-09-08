@@ -178,4 +178,4 @@ build_and_test:
 	python -m planzero.model_db init
 	python -m planzero inference_prep --model=Static_Normals_2024_12_31
 	python -m planzero inference_work --model=Static_Normals_2024_12_31
-	pytest -W error --maxfail=10 .
+	pytest -n 4 -W error --maxfail=10 .
