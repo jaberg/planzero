@@ -51,6 +51,9 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements_dev.txt
 
+      - name: Show what versions are installed
+        run: pip freeze
+
       - name: Initialize model database
         run: python -m planzero.model_db init
 
