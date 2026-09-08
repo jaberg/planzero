@@ -1792,8 +1792,37 @@ class Pending_Prediction_Challenge_Results(GlossaryTerm):
     @computed_field
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.PreNIR(), '#', "prediction time vs. evaluation time"),
+            (blog.registry['StaticNormals'], '#prenir', "prediction time vs. evaluation time"),
         ]
+
+class Prediction_Challenge(GlossaryTerm):
+    """
+    A Prediction Challenge in PlanZero is a machine learning problem statement
+    about predicting emissions before they are published by an NIR.
+    A challenge will specify what emissions to predict,
+    for what regions, for what years, and how the predictions will be evaluated.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'NIR_Prediction': 'NIR prediction is the only type of prediction challenge in PlanZero so far',
+            'Prediction_Date': 'The deadline after which new information cannot be used for prediction',
+        }
+
+
+
+class Prediction_Date(GlossaryTerm):
+    """
+    A Prediction Date is a point in time at which a prediction must be made,
+    in the context of e.g. a prediction challenge. Information published
+    after the prediction date cannot be used for prediction.
+    """
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Prediction_Challenge': 'Prediction challenges have prediction dates',
+        }
 
 class NIR_Prediction(GlossaryTerm):
     """
@@ -1820,6 +1849,7 @@ class NIR_Prediction(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Weighted_KL_Divergence': 'The scoring method for model predictions',
+            'Prediction_Challenge': 'NIR prediction is the only type of prediction challenge in PlanZero so far',
         }
 
 class Weighted_KL_Divergence(GlossaryTerm):

@@ -131,7 +131,7 @@ Until next time,
     <li><a href="#appendix-model">Appendix 2: Model Description</a></li>
     <li><a href="#appendix-bayesian-inference">Appendix 3: Background in Bayesian Inference</a></li>
     <li><a href="#appendix-inference">Appendix 4: Inference in the Standard Normals Model</a></li>
-    <li><a href="#appendix-prenir">Appendix 5: Pre-NIR-2025-m06, a NIR Prediction Challenge</a></li>
+    <li><a href="#appendix-prenir">Appendix 5: Pre-NIR-2025-m04, a NIR Prediction Challenge</a></li>
     <li><a href="#appendix-architecture">Appendix 6: Update to PlanZero's Build System</a></li>
 </ul>
 </p>
@@ -359,7 +359,7 @@ If only <i>some</i> of the observable data is used for conditioning, then the re
 For example, if we only condition on emissions data up to 2022,
 then variables related to year 2023 will be latent ones and inference will assign them posterior distributions.
 These posterior distributions can be interpreted as the model's <i>predictions</i> for 2023.
-<a href="#appendix-prenir">Appendix 4: Pre-NIR-2026-m06, a NIR Prediction Challenge</a> evaluates such predictions from the Static Normals model,
+<a href="#appendix-prenir">Appendix 4: Pre-NIR-2026-m04, a NIR Prediction Challenge</a> evaluates such predictions from the Static Normals model,
 using the method of inference discussed here in this Appendix.
 </p>
 
@@ -497,7 +497,7 @@ The static normals model offers a qualitatively good fit in many sectors:
 	<li><b>Industrial Wood Waste Landfills</b>: there is probably a downward trend, but with the NIR estimation uncertainty, a static normal model isn't a bad fit here.</li>
 </ul>
 This post provides a quantitative analysis in addition to this qualitative one,
-in <a href="#appendix-prenir">Appendix 5: Pre-NIR-2005-m06, a NIR Prediction Challenge</a>.
+in <a href="#appendix-prenir">Appendix 5: Pre-NIR-2005-m04, a NIR Prediction Challenge</a>.
 </p>
 
 
@@ -558,12 +558,50 @@ The modelled national total is <i>constrained</i> to be the sum of regional tota
 is larger uncertainty in the inference of what's going on with HWP {{CO2}} emissions.
 </p>
 
-<h2 id="appendix-prenir">Appendix 5: Pre-NIR-2025-06, a NIR Prediction Challenge</h2>
+<h2 id="appendix-prenir">Appendix 5: Pre-NIR-2025-m04, a NIR Prediction Challenge</h2>
 
 <p>
-Since the Static Normals model shown here was only conditioned on data up to 2022,
+PlanZero aims to make credible predictions of the future out to year 2050 and beyond,
+because national emissions reductions will take at least that long.
+The mechanisms for establishing credibility are limited.
+One is intuitive appeal &mdash;
+a description of a predictive model will lend it some degree of credibility.
+Another is its track record &mdash;
+bearing in mind the structure of a model, and the nature of what it's predicting,
+its history of accuracy when informed by information available at the time,
+may lend it some degree of credibility as well.
+This appendix is about using the history of NIR emissions publications
+to produce a statistic that characterizes how well the static normals model predicts
+an aspect of future emissions.
+</p>
+
+<p>
+The figure below illustrates the prediction of the latest year's data (year 2023)
+in NIR-2025, 4 months prior to publication.
+National Inventory Reports are typically published in mid-to-late April or early May.
+Dec 31 of the prior year is comfortably 4 months prior to publication,
+so the "Pre-NIR-2025-m04" prediction challenge uses 2024-12-31 as its
+{{ siteref("Prediction Date", "prediction date") }} (red dashed line in figure).
+NIR-2024 was available prior to the prediction date.
+It included emissions from years 1990-2022 (dark blue region),
+and was published about 16 months after the emissions period
+(publication delay shown in light-red region),
+which was earlier than (left of) the prediction date.
+The goal of the "Pre-NIR-2025-m04" prediction challenge is to anticipate
+the 2023 emissions (shown light blue) from NIR-2025 prior to its publication
+(publication delay shown in light-red region extends to the right of the prediction date).
+For this post,
+I cheat a little, and use the data from 1990-2022 from NIR-2025 as if it had
+come from NIR-2024.
+In future, looking at Pre-NIR-2026-m04 and beyond (<a href="https://github.com/jaberg/planzero/issues/61">GitHub Issue #61</a>), this cheat won't be repeated.
+</p>
+
+{{ blog.figure_YOLY_2025() | safe }}
+
+<p>
+Since the Static Normals model developed in this post was only conditioned on data up to 2022,
 inference in the model induces a posterior distribution over unknown variables {{latex("X")}} and {{latex("Y")}} in the model,
-which can be interpreted as predictions of 2023 emissions.
+which can be interpreted as predictions of 2023 emissions (as well as every year beyond 2023, because the model is static).
 The table below lists the KL divergences between the NIR-2025 distributions for emissions year 2023
 (as developed in in the <a href="/blog/2026-05-20-prob-nir#appendix-models">Probabilistic NIR-2025 post</a>)
 and the posterior distribution in the static normals model (which is the same for all years).
@@ -584,7 +622,7 @@ The table can be sorted by each column to see the best-predicted and worst-predi
 	</tr>
     </thead>
     <tbody>
-	    {% for sector, ghg_KLs in planzero.prob.registry["Static_Normals_2024_12_31"].prediction_scores_prenir_2025_m06()['scores_ca'].items() %}
+	    {% for sector, ghg_KLs in planzero.prob.registry["Static_Normals_2024_12_31"].prediction_scores_prenir_2025_m04()['scores_ca'].items() %}
 	    <tr>
 		    <td><a href="/models/prob/Static_Normals_2024_12_31/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
 		    {% for ghg in planzero.enums.GHG %}

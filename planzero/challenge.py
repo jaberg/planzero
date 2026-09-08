@@ -59,15 +59,15 @@ class PreNIR(Challenge):
         months ahead of publication."""
 
 
-class PreNIR_2025_m06(PreNIR):
+class PreNIR_2025_m04(PreNIR):
     include_in_registry: ClassVar[bool] = True
 
     nir_year:int = 2025
-    months_ahead:int = 6
+    months_ahead:int = 4
     results_available:bool = True
 
     def overall_loss(self, model) -> float:
-        return model.prediction_scores_prenir_2025_m06()['weighted_divergence']
+        return model.prediction_scores_prenir_2025_m04()['weighted_divergence']
 
 
 class PreNIR_2026_m06(PreNIR):
