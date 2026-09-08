@@ -49,7 +49,7 @@ for the NIR published in year YYYY, at a point MM months prior to publication.
 	   %}
           <tr>
               <td>
-                  <a href="/models/{{ident}}/">{{ident.replace('_', ' ')}}</a>
+                  <a href="/models/{{ident}}/">{{ site_inf.pretty_name }}</a>
               </td>
               <td>{{site_inf.one_line_description() }}</td>
               <td>
@@ -64,5 +64,13 @@ for the NIR published in year YYYY, at a point MM months prior to publication.
     </tbody>
 </table>
 {% endfor %}
+
+<h2 id="posts">Posts developing this page</h2>
+<ul>
+{% for ident in ["StaticNormals"] %}
+<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
 
 {% include "post-main.html" %}

@@ -49,7 +49,7 @@ class PreNIR(Challenge):
 
     @computed_field
     def overall_loss_column_title(self) -> str:
-        return 'weighted KL-divergence (lower is better)'
+        return 'weighted KL-divergence (lower is better, zero is perfect)'
 
     @computed_field
     def short_description(self) -> str:
