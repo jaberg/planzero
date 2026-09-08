@@ -11,7 +11,7 @@ import numpy as np
 
 from .enums import GHG, IPCC_Sector
 
-MODEL_CACHE_ROOT = os.environ['PLANZERO_MODEL_CACHE_ROOT']
+MODEL_CACHE_ROOT = os.environ.get('PLANZERO_MODEL_CACHE_ROOT')
 assert MODEL_CACHE_ROOT
 
 def adapt_date_iso(val):
