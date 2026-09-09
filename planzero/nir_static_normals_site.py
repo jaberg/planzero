@@ -1,19 +1,22 @@
 import datetime
-import enum
 
 import numpy as np
 
-from . import model_db, nir2025, nir2025_site
+from . import model_db, nir2025_site
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
-from .nir_static_normals import (
-    BNs_by_sector_ghg,
-    inference_work_loop,
-    model_id_from_data_cutoff,
-    normals_by_sector_ghg,
-    touch_components,
-    touch_model,
-    weighted_KL_score,
-)
+
+try:
+    from .nir_static_normals import (
+        BNs_by_sector_ghg,
+        inference_work_loop,
+        model_id_from_data_cutoff,
+        normals_by_sector_ghg,
+        touch_components,
+        touch_model,
+        weighted_KL_score,
+    )
+except ImportError:
+    pass
 from .prob import ClassVar, SiteInference, computed_field
 from .sparkline_echart_helper import (
     PseudoRegion,

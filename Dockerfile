@@ -145,6 +145,7 @@ COPY _planzero_app_cache /content/_planzero_app_cache
 COPY ./planzero /content/planzero
 COPY ./html /content/html
 COPY ./app.py /content/app.py
+COPY ./warmup.py /content/warmup.py
 COPY ./data/EN_GHG_IPCC_Can_Prov_Terr.csv /content/data/EN_GHG_IPCC_Can_Prov_Terr.csv
 WORKDIR /content
 
@@ -154,4 +155,5 @@ ENV PLANZERO_CACHE_DIR="/content/_planzero_cache"
 ENV PLANZERO_APP_CACHE_DIR="/content/_planzero_app_cache"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
+RUN python warmup.py  # final test of imports and cache availability
 CMD ["fastapi", "run"]
