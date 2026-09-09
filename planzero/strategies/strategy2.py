@@ -41,7 +41,7 @@ class Scale_Bovaer(Strategy2):
 
     @computed_field
     def short_description(self) -> str:
-        return f"Model that farmers who are open to using Bovaer are subsidized to start administering it."
+        return "Subsidize farmers to administer Bovaer."
 
     def see_also_html(self, context_vars) -> list[str]:
         sources = [

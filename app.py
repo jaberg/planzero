@@ -344,29 +344,21 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 
 @app_cache
 def get_strategies_html():
-    sims_by_dynelems = {}
-    sectors_by_dynelems = {}
-    for sitesim_name, sitesim in planzero.sim.site_simulations.items():
-        if not sitesim.show_on_simulations_page:
-            continue
-        sim_result = planzero.sim.simulation_result(sitesim_name)
-        sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
-        for dynelem in sitesim.dynamic_elements():
-            sims_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
-                    .add(sitesim_name)
-            sectors_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
-                    .update(sectors_by_de[dynelem.identifier])
-            sectors_by_dynelems[dynelem.__class__.__name__].update(
-                dynelem.extra_ipcc_sectors)
+    models_by_strategy = {}
+    sectors_by_strategy = {}
+    for model_id, site_inf in sorted(planzero.prob.registry.items()):
+        for strategy_id in site_inf.strategy_ids:
+            models_by_strategy.setdefault(strategy_id, []).append(model_id)
+            sectors_by_strategy.setdefault(strategy_id, set()).update(
+                    site_inf.affected_sectors_by_strategy[strategy_id])
+
     template = templates.get_template("strategies.html")
     rval =  template.render(
         dict(
             default_context,
             active_tab='strategies',
-            npv_unit='MCAD',
-            nph_unit='exajoule',
-            sims_by_dynelems=sims_by_dynelems,
-            sectors_by_dynelems=sectors_by_dynelems,
+            models_by_strategy=models_by_strategy,
+            sectors_by_strategy=sectors_by_strategy,
             ))
     return rval
 

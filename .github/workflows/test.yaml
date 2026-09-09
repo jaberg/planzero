@@ -51,7 +51,7 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements_dev.txt
 
-      - name: Show what versions are installed
+      - name: Python package versions
         run: pip freeze
 
       - name: Initialize model database

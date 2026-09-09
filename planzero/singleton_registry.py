@@ -1,4 +1,4 @@
-class SingletonRegistry(object):
+class SingletonRegistry:
     """
     Register classes at class-definition time,
     and create singletons at element-access time.
@@ -22,6 +22,14 @@ class SingletonRegistry(object):
             self.instances[key] = self.classes[key]()
             return self.instances[key]
 
+    def __setitem__(self, key, val):
+        assert key not in self.classes
+        if key in self.instances:
+            raise NotImplementedError()
+        self.instances[key] = val
+
     def items(self):
-        for key in self.classes:
+        keys = set(self.classes)
+        keys.update(self.instances)
+        for key in keys:
             yield (key, self[key])

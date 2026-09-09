@@ -1,7 +1,5 @@
 """
 BaseModels for Probabilistic Models
-
-Analog to sim.py for Simulation-based models.
 """
 
 from typing import ClassVar
@@ -9,6 +7,7 @@ from typing import ClassVar
 from pydantic import BaseModel, computed_field
 
 from .singleton_registry import SingletonRegistry
+from . import ablation
 
 registry = SingletonRegistry()
 
@@ -96,6 +95,40 @@ class SiteInference(BaseModel):
     @property
     def posts_developing_this_page(self) -> list[str]:
         return []
+
+    @computed_field
+    def strategy_ids(self) -> list[str]:
+        as_id = self.ablation_study_id
+        if as_id is None:
+            return []
+        else:
+            return ablation.registry[as_id].strategy_ids
+
+    @property
+    def affected_sectors_by_strategy(self) -> dict:
+        rval = {strategy_id: set() for strategy_id in self.strategy_ids}
+        print(rval)
+        return rval
+
+    @property
+    def strategies(self) -> dict:
+        return {}
+
+    @property
+    def barriers(self) -> dict:
+        return {}
+
+    @computed_field
+    def ablation_study_id(self) -> str|None:
+        return None
+
+    @property
+    def ablation_study(self) -> ablation.AblationStudy:
+        as_id = self.ablation_study_id
+        if as_id is None:
+            return None
+        else:
+            return ablation.registry[as_id]
 
 
 from . import nir2025_site

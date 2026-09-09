@@ -1513,6 +1513,10 @@ class Ablative_Analysis(GlossaryTerm):
     of those elements on the behaviour of the whole model.
     """
 
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Ablation Study']
+
     @property
     def see_also(self) -> dict[str, str]:
         return {
