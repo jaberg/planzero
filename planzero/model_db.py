@@ -26,24 +26,23 @@ def convert_date(val):
 sqlite3.register_adapter(datetime.date, adapt_date_iso)
 sqlite3.register_converter("date", convert_date)
 
-db_filename = "my_database.db"
+_db_filename = "my_database.db"
 
 
-def connect(timeout=5.0):
+def connect(timeout=25.0):
     conn = sqlite3.connect(
-        db_filename,
+        _db_filename,
         detect_types=sqlite3.PARSE_DECLTYPES, # use register_converter calls above
         timeout=timeout)
     conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA busy_timeout = 15000;") # 10_000 milliseconds = 10 seconds
     return conn
 
 
 def init_db():
 
     # Connect to a local file (or use ':memory:' for a temporary in-RAM database)
-    conn = sqlite3.connect(db_filename)
-
-    conn.execute("PRAGMA journal_mode = WAL;")
+    conn = connect()
 
     # Samples
     # Indexes the npy data files representing the results of MCMC
@@ -205,6 +204,18 @@ def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
     os.makedirs(os.path.join(MODEL_CACHE_ROOT, model_id), exist_ok=True)
     saved_paths = []
     try:
+        for key, val in ndarray_d.items():
+            file_name = f'{component_id}-{key}.npy'
+            path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
+            fp = np.lib.format.open_memmap(
+                path,
+                mode='w+',
+                dtype='float32', # save space
+                shape=val.shape)
+            fp[:] = val
+            fp.flush()
+            saved_paths.append(path)
+
         with connect() as conn:
             for key, val in ndarray_d.items():
                 file_name = f'{component_id}-{key}.npy'
@@ -213,15 +224,6 @@ def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
                     (component_id, group_id, key, file_name)
                     VALUES (?, ?, ?, ?);""",
                     (component_id, group_id, key, file_name))
-                path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
-                fp = np.lib.format.open_memmap(
-                    path,
-                    mode='w+',
-                    dtype='float32', # save space
-                    shape=val.shape)
-                fp[:] = val
-                fp.flush()
-                saved_paths.append(path)
     except:
         for path in saved_paths:
             os.remove(path)
