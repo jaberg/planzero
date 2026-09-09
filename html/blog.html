@@ -3,22 +3,27 @@
 				<!-- Main -->
 					<div id="main">
 
-						<!-- Featured Post -->
-							<article class="post featured">
-								<header class="major">
-									<span class="date">Dec 5, 2025</span>
-									<h2><a href="/blog/2025-12-05-first-post">How might Canada achieve net-zero?</a></h2>
-									<p>Plan Zero is an independent research project
-                                    to model how Canada might achieve net-zero emissions.
-									</p>
-								</header>
-								<a href="/blog/2025-12-05-first-post" class="image main">
-                                    <img src="/images/2025-12-05-tracking-to-emissions-targets.png"/>
-                                </a>
-								<ul class="actions special">
-									<li><a href="/blog/2025-12-05-first-post" class="button large">Full Post</a></li>
-								</ul>
-							</article>
+	{% if 0 %}
+	<!-- Featured Post -->
+	<!-- TODO: parameterize the featured post
+		from app.py -->
+	<article class="post featured">
+		<header class="major">
+			<span class="date">Dec 5, 2025</span>
+			<h2><a href="/blog/2025-12-05-first-post">How might Canada achieve net-zero?</a></h2>
+			<p>Plan Zero is an independent research project
+to model how Canada might achieve net-zero emissions.
+			</p>
+		</header>
+		<a href="/blog/2025-12-05-first-post" class="image main">
+<img src="/images/2025-12-05-tracking-to-emissions-targets.png"/>
+</a>
+		<ul class="actions special">
+			<li><a href="/blog/2025-12-05-first-post" class="button large">Full Post</a></li>
+		</ul>
+	</article>
+	<!-- featured posts -->
+	{% endif %}
 
                             {% if not planned %}
 							<article>
