@@ -3,12 +3,15 @@ import datetime
 import hashlib
 import json
 import os
+import sqlite3
 import uuid
+from collections.abc import Iterator
 
 import numpy as np
-import sqlite3
 
 from .enums import GHG, IPCC_Sector
+
+MODEL_CACHE_ROOT = os.environ.get('PLANZERO_MODEL_CACHE_ROOT')
 
 def adapt_date_iso(val):
     """Adapt datetime.date to ISO 8601 date."""
@@ -23,13 +26,14 @@ def convert_date(val):
 sqlite3.register_adapter(datetime.date, adapt_date_iso)
 sqlite3.register_converter("date", convert_date)
 
-
 db_filename = "my_database.db"
-root_ndarray = 'cache/Ndarray'
 
 
 def connect(timeout=5.0):
-    conn = sqlite3.connect(db_filename, timeout=timeout)
+    conn = sqlite3.connect(
+        db_filename,
+        detect_types=sqlite3.PARSE_DECLTYPES, # use register_converter calls above
+        timeout=timeout)
     conn.execute("PRAGMA journal_mode = WAL;")
     return conn
 
@@ -146,40 +150,70 @@ def init_db():
     conn.close()
 
 
-def GHGs_by_component_id(component_id):
+def component_scopes_by_model_id(model_id):
     with connect() as conn:
         cursor = conn.execute(
-        """SELECT DISTINCT ghg FROM ComponentMapping
+        """SELECT NIR_sector, ghg, region, component_id FROM ComponentMapping
+        WHERE model_id = ?;""",
+        (model_id,))
+        for row in cursor:
+            yield {
+                    'sector': IPCC_Sector(row[0]),
+                    'ghg': GHG(row[1]),
+                    'region': row[2],
+                    'component_id': row[3],
+                    }
+
+
+def component_scope_by_id(component_id):
+    with connect() as conn:
+        cursor = conn.execute(
+        """SELECT NIR_sector, ghg, region FROM ComponentMapping
         WHERE component_id = ?;""",
         (component_id,))
         for row in cursor:
-            yield GHG(row[0])
+            yield {
+                    'sector': IPCC_Sector(row[0]),
+                    'ghg': GHG(row[1]),
+                    'region': row[2],
+                    'component_id': component_id,
+                    }
 
 
-def sectors_by_component_id(component_id):
+def index_ndarray_group(model_id, component_id, group_id, ndarray_d_keys) -> dict:
+    """Create an ndarray group by loading corresponding values from disk
+    where they have been cached.
+
+    It's an operation that combines elements of loading and saving. It does
+    not modify files on disk.
+    """
+    rval = {}
     with connect() as conn:
-        cursor = conn.execute(
-            """SELECT DISTINCT NIR_sector FROM ComponentMapping
-            WHERE component_id = ?;""",
-            (component_id,))
-        for row in cursor:
-            yield IPCC_Sector(row[0])
+        for key in ndarray_d_keys:
+            file_name = f'{component_id}-{key}.npy'
+            conn.execute(
+                """INSERT INTO Ndarray
+                (component_id, group_id, key, file_name)
+                VALUES (?, ?, ?, ?);""",
+                (component_id, group_id, key, file_name))
+            path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
+            rval[key] = np.load(path, mmap_mode='r')
+    return rval
 
 
-def save_ndarray_group(component_id, group_id, ndarray_d):
-
-    os.makedirs(root_ndarray, exist_ok=True)
+def save_ndarray_group(model_id, component_id, group_id, ndarray_d):
+    os.makedirs(os.path.join(MODEL_CACHE_ROOT, model_id), exist_ok=True)
     saved_paths = []
     try:
         with connect() as conn:
             for key, val in ndarray_d.items():
-                file_name = f'{component_id}-{key}'
-                path = f'{root_ndarray}/{file_name}.npy'
-                cursor = conn.execute(
+                file_name = f'{component_id}-{key}.npy'
+                conn.execute(
                     """INSERT INTO Ndarray
                     (component_id, group_id, key, file_name)
                     VALUES (?, ?, ?, ?);""",
                     (component_id, group_id, key, file_name))
+                path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
                 fp = np.lib.format.open_memmap(
                     path,
                     mode='w+',
@@ -194,7 +228,7 @@ def save_ndarray_group(component_id, group_id, ndarray_d):
         raise
 
 
-def load_ndarray_group(component_id, group_id):
+def load_ndarray_group(model_id, component_id, group_id):
     rval = {}
     with connect() as conn:
         cursor = conn.execute(
@@ -205,7 +239,7 @@ def load_ndarray_group(component_id, group_id):
             ;""",
             (component_id, group_id,))
         for key, file_name in cursor:
-            path = f'{root_ndarray}/{file_name}.npy'
+            path = os.path.join(MODEL_CACHE_ROOT, model_id, file_name)
             rval[key] = np.load(path, mmap_mode='r')
     return rval
 
@@ -225,14 +259,14 @@ def params_Normal(component_id):
         n_yielded = 0
         for row in cursor:
             n_yielded += 1
-            yield dict(
-                location=row[0],
-                scale=row[1],
-                v_unit=row[2],
-                data_cutoff=row[3],
-                ghg=GHG(row[4]),
-                sector=IPCC_Sector(row[5]),
-                )
+            yield {
+                    'location': row[0],
+                    'scale': row[1],
+                    'v_unit': row[2],
+                    'data_cutoff': row[3],
+                    'ghg': GHG(row[4]),
+                    'sector': IPCC_Sector(row[5]),
+                }
         if n_yielded == 0:
             raise NoRecord(component_id)
 
@@ -240,35 +274,36 @@ def params_Normal(component_id):
 def params_BayesianNormal(component_id):
     with connect() as conn:
         cursor = conn.execute(
-        """SELECT num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector
+        """SELECT num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector, Model.model_id
         FROM Component_BayesianNormal
         JOIN ComponentMapping ON Component_BayesianNormal.component_id = ComponentMapping.component_id
         JOIN Model on ComponentMapping.model_id = Model.model_id
         WHERE Component_BayesianNormal.component_id = ?
         GROUP BY 
-        num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector
+                  num_samples, num_warmup, thinning, seed, scale, data_cutoff, ghg, NIR_sector, Model.model_id
             ;""",
         (component_id,))
         n_yielded = 0
         for row in cursor:
             n_yielded += 1
-            yield dict(
-                num_samples=row[0],
-                num_warmup=row[1],
-                thinning=row[2],
-                seed=row[3],
-                scale=row[4],
-                data_cutoff=row[5],
-                ghg=GHG(row[6]),
-                sector=IPCC_Sector(row[7]),
-                )
+            yield {
+                    'num_samples': row[0],
+                    'num_warmup': row[1],
+                    'thinning': row[2],
+                    'seed': row[3],
+                    'scale': row[4],
+                    'data_cutoff': row[5],
+                    'ghg': GHG(row[6]),
+                    'sector': IPCC_Sector(row[7]),
+                    'model_id': row[8],
+                  }
         if n_yielded == 0:
             raise NoRecord(component_id)
 
 
 def insert_model(cursor, model_id, family, version, data_cutoff,
                  version_description=''):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     Model (model_id, family, version, version_description, data_cutoff)
     VALUES (?, ?, ?, ?, ?);"""
     cursor.execute(
@@ -284,7 +319,7 @@ def insert_component_mapping(
     region,
     component_id,
     ):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     ComponentMapping (
         model_id, ghg, NIR_sector, region, component_id)
     VALUES (?, ?, ?, ?, ?);"""
@@ -300,7 +335,7 @@ def insert_component_type(
     model_id,
     ):
     assert component_type in ('Normal', 'BayesianNormal')
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     ComponentType (component_id, component_type, model_id)
     VALUES (?, ?, ?);"""
     cursor.execute(
@@ -315,7 +350,7 @@ def insert_component_normal(
     scale,
     v_unit,
     ):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     Component_Normal (
         component_id, location, scale, v_unit)
     VALUES (?, ?, ?, ?);"""
@@ -333,7 +368,7 @@ def insert_component_bayesian_normal(
     seed,
     scale=1,
     ):
-    query = f"""INSERT INTO
+    query = """INSERT INTO
     Component_BayesianNormal (
         component_id, num_samples, num_warmup, thinning, seed, scale)
     VALUES (?, ?, ?, ?, ?, ?);"""
@@ -365,11 +400,12 @@ def model_latest_version(family, data_cutoff):
         if row is None:
             raise NoRecord()
         model_version, model_id = row
-        return dict(
-            family=family,
-            data_cutoff=data_cutoff,
-            version=model_version,
-            model_id=model_id)
+        return {
+                'family': family,
+                'data_cutoff': data_cutoff,
+                'version': model_version,
+                'model_id': model_id,
+            }
 
 
 def components_by_model(model_id):
@@ -381,9 +417,48 @@ def components_by_model(model_id):
             ;""",
             (model_id,))
         for row in cursor:
-            yield dict(
-                component_id=row[0],
-                component_type=row[1])
+            yield {
+                    'component_id': row[0],
+                    'component_type': row[1],
+                    }
+
+
+def normal_components_by_model(model_id):
+    with connect() as conn:
+        cursor = conn.execute(
+            """SELECT ComponentType.component_id, location, scale, v_unit
+            FROM ComponentType
+            JOIN Component_Normal on ComponentType.component_id = Component_Normal.component_id
+            WHERE model_id = ?
+            ;""",
+            (model_id,))
+        for row in cursor:
+            yield {
+                'component_id': row[0],
+                'location': row[1],
+                'scale': row[2],
+                'v_unit': row[3],
+                }
+
+
+def BayesianNormal_components_by_model(model_id):
+    with connect() as conn:
+        cursor = conn.execute(
+            """SELECT ComponentType.component_id, num_samples, num_warmup, thinning, seed, scale
+            FROM ComponentType
+            JOIN Component_BayesianNormal on ComponentType.component_id = Component_BayesianNormal.component_id
+            WHERE model_id = ?
+            ;""",
+            (model_id,))
+        for row in cursor:
+            yield {
+                'component_id': row[0],
+                'num_samples': row[1],
+                'num_warmup': row[2],
+                'thinning': row[3],
+                'seed': row[4],
+                'scale': row[5],
+                }
 
 
 def delete_model(model_id):
@@ -466,7 +541,7 @@ def complete_task(*, task_id: int, worker_id: str):
     """Worker explicitly acknowledges the task is done."""
     with connect() as conn:
         cursor = conn.execute(
-            f"""UPDATE Task
+            """UPDATE Task
             SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP
             WHERE id = ? and worker_id = ?
             RETURNING id
@@ -481,7 +556,7 @@ def complete_task(*, task_id: int, worker_id: str):
 def main_task_complete(args):
     with connect() as conn:
         cursor = conn.execute(
-            f"""UPDATE Task
+            """UPDATE Task
             SET status = 'COMPLETED', completed_at = CURRENT_TIMESTAMP
             WHERE id = ?
             RETURNING id
@@ -498,7 +573,7 @@ def main_task_reset(args):
     with connect() as conn:
         assert args.task_id == 'all'
         cursor = conn.execute(
-            f"""UPDATE Task
+            """UPDATE Task
             SET status = 'PENDING',
                 completed_at = NULL,
                 claimed_at = NULL,
@@ -528,33 +603,26 @@ def recover_crashed_tasks(timeout_seconds: int = 300):
         if recovered:
             print(f"[Reaper] Recovered {len(recovered)} abandoned tasks.")
 
-entrypoints = {}
 
+def task_completion_iter(
+    worker_id=None,
+    crashed_task_timeout_seconds=300,
+    raise_on_failure=True,
+    ) -> Iterator[dict]:
+    if worker_id is None:
+        worker_id = f'worker_{uuid.uuid4()!s}'
 
-def init_entrypoints():
-    from . import nir_static_normals
-    entrypoints['static_normals_inference'] \
-            = nir_static_normals.entrypoint_static_normals_inference
-
-
-def main_worker(args):
-    if not args.worker_id:
-        args.worker_id = f'worker_{str(uuid.uuid4())}'
-    crashed_task_timeout_seconds = 300
-    init_entrypoints()
 
     recover_crashed_tasks(timeout_seconds=crashed_task_timeout_seconds)
-    print("Worker starting...")
     deadline_buffer = 10 # seconds
     while True:
-        task_id, payload = claim_task(worker_id=args.worker_id)
+        task_id, payload = claim_task(worker_id=worker_id)
 
         if task_id:
             print(f"Claimed Task {task_id}: {payload}")
             try:
-                fn = entrypoints[payload['entrypoint']]
-                fn(payload)
-                complete_task(task_id=task_id, worker_id=args.worker_id)
+                yield payload
+                complete_task(task_id=task_id, worker_id=worker_id)
                 print(f"Successfully completed Task {task_id}")
 
             except Exception as e:
@@ -562,7 +630,7 @@ def main_worker(args):
                 print(f"Task {task_id} failed: {e}")
                 with connect() as conn:
                     conn.execute("UPDATE Task SET status = 'FAILED' WHERE id = ?", (task_id,))
-                if args.raise_on_failure:
+                if raise_on_failure:
                     raise e
         else:
             break
@@ -585,8 +653,7 @@ def by_id(table, conn=None, **kwargs):
             raise Exception(query) from  err
         for row in cursor:
             return row
-        else:
-            raise NoRecord()
+        raise NoRecord()
 
 
 def stable_hash(data: str, n_chars=8) -> str:
@@ -603,7 +670,6 @@ parser = argparse.ArgumentParser(prog='planzero')
 subparsers = parser.add_subparsers(help='subcommand help')
 
 subparser = subparsers.add_parser('init')
-#subparser.add_argument('--year', type=int, default=2005, help='year')
 subparser.set_defaults(func=main_init_db)
 
 subparser = subparsers.add_parser('task_list')
@@ -625,13 +691,6 @@ subparser.set_defaults(func=main_component_type_list)
 subparser = subparsers.add_parser('model_delete')
 subparser.add_argument('ids', nargs='+')
 subparser.set_defaults(func=main_model_delete)
-
-subparser = subparsers.add_parser('worker')
-subparser.add_argument('--raise-on-failure', action="store_true")
-subparser.add_argument('--worker-id', default='')
-subparser.add_argument('--reaper-timeout-s', type=float, default=300)
-subparser.add_argument('--on-complete', type=str, default='exit') # exit, wait
-subparser.set_defaults(func=main_worker)
 
 subparser = subparsers.add_parser('task_reset')
 subparser.add_argument('--task-id', type=str, default='all')

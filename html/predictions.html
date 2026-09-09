@@ -12,8 +12,9 @@
 <h2>Pre-NIR</h2>
 
 <p>
-Pre-NIR-YYYY-MM challenges are about predicting National Inventory Report numbers
-(for the NIR published in year YYYY) before they are pubished (MM months prior to publication).
+{{siteref("NIR_Prediction", "Pre-NIR-YYYY-MM")|safe}}
+prediction challenges are about predicting National Inventory Report numbers
+for the NIR published in year YYYY, at a point MM months prior to publication.
 </p>
 
 
@@ -23,7 +24,7 @@ Pre-NIR-YYYY-MM challenges are about predicting National Inventory Report number
 <h3>{{challenge_obj.pretty_name}}</h3>
 
 <p>
-{{ challenge_obj.short_description }}
+{{ challenge_obj.short_description | safe}}
 </p>
 
 <!-- NEEDS TO BE SORTABLE CLASS NOT ID -->
@@ -37,20 +38,23 @@ Pre-NIR-YYYY-MM challenges are about predicting National Inventory Report number
                   Short Description
               </th>
               <th>
-                  Total Log-Probability
+		      {{challenge_obj.overall_loss_column_title}}}
               </th>
           </tr>
     </thead>
     <tbody>
-        {% for ident, obj in planzero.prob.site_inferences.items() if obj.show_on_models_page %}
+        {% for ident, site_inf in planzero.prob.site_inferences.items()
+           if site_inf.show_on_models_page
+	   and site_inf.challenge_result_url(challenge_name)
+	   %}
           <tr>
               <td>
-                  <a href="/models/{{ident}}/">{{ident.replace('_', ' ')}}</a>
+                  <a href="/models/{{ident}}/">{{ site_inf.pretty_name }}</a>
               </td>
-              <td>{{obj.one_line_description() }}</td>
+              <td>{{site_inf.one_line_description() }}</td>
               <td>
                   {% if challenge_obj.results_available %}
-                  {{"{:.1f}".format(obj.challenge_scores(challenge_name)["total"])}}
+		  <a href="/models/prob/{{ident}}/#{{challenge_name}}">{{ "%.3f"|format(challenge_obj.overall_loss(site_inf)) }}</a>
                   {% else %}
                   {{siteref("Pending Prediction Challenge Results", "Pending")|safe}}
                   {% endif %}
@@ -60,5 +64,13 @@ Pre-NIR-YYYY-MM challenges are about predicting National Inventory Report number
     </tbody>
 </table>
 {% endfor %}
+
+<h2 id="posts">Posts developing this page</h2>
+<ul>
+{% for ident in ["StaticNormals"] %}
+<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
 
 {% include "post-main.html" %}

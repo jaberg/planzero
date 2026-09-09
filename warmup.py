@@ -1,32 +1,20 @@
-import os
-import shutil
-import sys
 import time
-
-# Ensure the planzero package can be imported
-sys.path.append(os.getcwd())
-
-# Enable disk caching
-os.environ['PLANZERO_USE_DISK_CACHE'] = '1'
-
-CACHE_DIR = '.planzero_cache'
-os.environ['PLANZERO_CACHE_DIR'] = CACHE_DIR
-
-if os.path.exists(CACHE_DIR):
-    shutil.rmtree(CACHE_DIR)
 
 from fastapi.testclient import TestClient
 
 import app
 import planzero
 
+populate_cache = 0
+
 def warmup():
     client = TestClient(app.app)
-    # populate the disk cache
-    for endpoint in planzero.endpoints.endpoints():
-        response = client.get(endpoint)
-        assert response.status_code == 200
-        print(response.status_code, endpoint)
+    if populate_cache:
+        # populate the disk cache
+        for endpoint in planzero.endpoints.endpoints():
+            response = client.get(endpoint)
+            assert response.status_code == 200
+            print(response.status_code, endpoint)
 
     # time the accesses, they should be quick
     times = []

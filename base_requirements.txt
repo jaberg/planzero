@@ -10,3 +10,6 @@ diskcache
 pathlib
 pandas
 stats-can
+
+# 2026-09-08: fastapi installs starlette, starlette doesn't work with 4.15 yet
+anyio==4.14.2

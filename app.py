@@ -1,15 +1,13 @@
 import datetime
-import functools
 import json
 import os
 
+import jinja2
 import numpy as np
-
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import jinja2
 
 app = FastAPI()
 
@@ -26,9 +24,11 @@ templates = Jinja2Templates(
 
 import planzero
 import planzero.blog
-import planzero.ipcc_home
-import planzero.est_nir
 import planzero.enums
+import planzero.est_nir
+import planzero.html
+import planzero.ipcc_canada
+import planzero.ipcc_home
 
 u = planzero.ureg
 
@@ -416,6 +416,7 @@ async def get_blog(request: Request, post_name:str):
         html = get_blog_html(post_name)
         return HTMLResponse(content=html)
     except IOError as err:
+        print(err)
         raise HTTPException(status_code=404, detail="url not recognized")
     except CannotRenderUnPublishedPost:
         raise HTTPException(status_code=404, detail="cannot render unpublished post")
@@ -499,38 +500,39 @@ async def get_index(
             ),
     )
 
-default_context = dict(
-    int=int,
-    float=float,
-    min=min,
-    max=max,
-    sorted=sorted,
-    enumerate=enumerate,
-    isinstance=isinstance,
-    u=u,
-    have_page_for_catpath=have_page_for_catpath,
-    url_for_catpath=url_for_catpath,
-    json=json,
-    datetime=datetime,
-    ipcc_canada=planzero.ipcc_canada,
-    stakeholders=planzero.strategies.stakeholders,
-    discount_rate=.02,
-    planzero=planzero,
-    CO2=planzero.blog.latex(r'\mathrm{CO}_2'),
-    CH4=planzero.blog.latex(r'\mathrm{CH}_4'),
-    NF3=planzero.blog.latex(r'\mathrm{NF}_3'),
-    SF6=planzero.blog.latex(r'\mathrm{SF}_6'),
-    N2O=planzero.blog.latex(r"\mathrm N_2 \mathrm O"),
-    CO2e=planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
-    degrees=planzero.blog.latex(r'^\circ'),
-    siteref=planzero.glossary.siteref,
-    coderef_url=planzero.html.coderef_url,
-    coderef_filepath=planzero.html.coderef_filepath,
-    fade_in_intro=False,
-    printcname=(lambda cname: cname.replace('_', ' ')),
-    blogs_by_tag=planzero.blog.blogs_by_tag,
-    latex=planzero.blog.latex,
-    BlogStatus=planzero.blog.BlogStatus,
-    HOME_SHOW_UNPUBLISHED_POSTS=HOME_SHOW_UNPUBLISHED_POSTS,
-    )
+default_context = {
+    'int': int,
+    'float': float,
+    'min': min,
+    'max': max,
+    'sorted': sorted,
+    'enumerate': enumerate,
+    'isinstance': isinstance,
+    'u': u,
+    'have_page_for_catpath': have_page_for_catpath,
+    'url_for_catpath': url_for_catpath,
+    'json': json,
+    'datetime': datetime,
+    'ipcc_canada': planzero.ipcc_canada,
+    'stakeholders': planzero.strategies.stakeholders,
+    'discount_rate': .02,
+    'planzero': planzero,
+    'CO2': planzero.blog.latex(r'\mathrm{CO}_2'),
+    'CH4': planzero.blog.latex(r'\mathrm{CH}_4'),
+    'NF3': planzero.blog.latex(r'\mathrm{NF}_3'),
+    'SF6': planzero.blog.latex(r'\mathrm{SF}_6'),
+    'N2O': planzero.blog.latex(r"\mathrm N_2 \mathrm O"),
+    'CO2e': planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
+    'degrees': planzero.blog.latex(r'^\circ'),
+    'siteref': planzero.glossary.siteref,
+    'coderef_url': planzero.html.coderef_url,
+    'coderef_filepath': planzero.html.coderef_filepath,
+    'fade_in_intro': False,
+    'printcname': (lambda cname: cname.replace('_', ' ')),
+    'blogs_by_tag': planzero.blog.blogs_by_tag,
+    'blog_registry': planzero.blog.registry,
+    'latex': planzero.blog.latex,
+    'BlogStatus': planzero.blog.BlogStatus,
+    'HOME_SHOW_UNPUBLISHED_POSTS': HOME_SHOW_UNPUBLISHED_POSTS,
+    }
 

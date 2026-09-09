@@ -1,9 +1,27 @@
 name: Test Suite
 
-on: push
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    types: [opened, reopened, synchronize]
+    # closed event type triggers close_pr.yaml workflow
 
 env:
+  GITHUB_WORKSPACE: "${{ github.workspace }}"  # used for glossary code lookup
+  JAX_ENABLE_X64: "1"
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
+  PLANZERO_CACHE_DIR: "${{ github.workspace }}/_planzero_cache"
+  PLANZERO_DATA: "${{ github.workspace }}/data"
+  PLANZERO_MODEL_CACHE_ROOT: "_model_cache"
+  PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
+  PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
+  PLANZERO_USE_DISK_CACHE: "1"
+  XLA_FLAGS: "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 inter_op_parallelism_threads=1"
 
 jobs:
   build_and_test:
@@ -14,7 +32,7 @@ jobs:
         with:
           lfs: true
 
-      - name: Setup Tmate Session
+      - name: Setup Tmate session
         uses: mxschmitt/action-tmate@v3
         if: false
 
@@ -33,29 +51,59 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements_dev.txt
 
-      - name: Pytest
-        env:
-          PLANZERO_DATA: "${{ github.workspace }}/data"
-          PLANZERO_USE_DISK_CACHE: "1"
-          PLANZERO_CACHE_DIR: "${{ github.workspace }}/_planzero_cache"
-          PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
-          PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
-          GITHUB_WORKSPACE: "${{github.workspace}}"
-        run: pytest -W error --maxfail=10 .
+      - name: Show what versions are installed
+        run: pip freeze
 
-      - name: Save App Cache for Deploy
-        if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
+      - name: Initialize model database
+        run: python -m planzero.model_db init
+
+      # Static Normals 2024-12-31
+
+      - name: Cache key for Static_Normals_2024_12_31
+        id: cache_key_static_normals_2024_12_31
+        run: echo "model_id=$(python -m planzero model_id --model=Static_Normals_2024_12_31)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore inference cache for Static_Normals_2024_12_31
+        uses: actions/cache/restore@v6
+        id: cache_restore_static_normals_2024_12_31
+        with:
+          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
+          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
+
+      - name: Prepare for Static Normals inference
+        run: python -m planzero inference_prep --model=Static_Normals_2024_12_31
+
+      - parallel:
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+
+      - name: Save inference cache for Static_Normals_2024_12_31
+        if: steps.cache_restore_static_normals_2024_12_31.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
+          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
+
+      # Run test and populate app cache (diskcache)
+
+      - name: Run all tests
+        run: pytest -n 4 -W error --maxfail=10 .
+
+      - name: Save app cache for deploy
+        if: github.repository == 'jaberg/planzero'
         uses: actions/upload-artifact@v7
         with:
+          name: App Cache
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
           if-no-files-found: error
 
-      - name: Setup Tmate Session
-        uses: mxschmitt/action-tmate@v3
-        if: false
-
-
-  deploy:
+  deploy_main:
     needs: build_and_test
     if: (github.repository == 'jaberg/planzero') && (github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
@@ -72,11 +120,50 @@ jobs:
       - name: Load App cache
         uses: actions/download-artifact@v8
         with:
+          name: App Cache
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
 
       - run: flyctl deploy --remote-only --config fly_gh.toml
         env:
           FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
+
+
+  deploy_PR:
+    needs: build_and_test
+    if: (github.repository == 'jaberg/planzero') && (github.ref != 'refs/heads/main')
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+
+    # Only run one deployment at a time per PR.
+    concurrency:
+      group: pr-${{ github.event.number }}
+
+    # Deploying apps with this "review" environment allows the URL for the app to be displayed in the PR UI.
+    # Feel free to change the name of this environment.
+    environment:
+      name: Fly Review
+      # The script in the `deploy` sets the URL output for each review app.
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Load App cache
+        uses: actions/download-artifact@v8
+        with:
+          name: App Cache
+          path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
+
+      - name: Deploy PR app to Fly.io
+        id: deploy
+        uses: superfly/fly-pr-review-apps@1.2.1
+        env:
+          FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
+        with:
+          config: fly_gh.toml
 
 # https://github.com/tespkg/actions-cache
 # https://github.com/itchyny/s3-cache-action

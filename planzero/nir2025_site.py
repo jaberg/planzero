@@ -5,21 +5,26 @@ except ImportError:
 import numpy as np
 from pydantic import computed_field
 
-from .enums import LULUCF_Sectors, PT, IPCC_Sector, GHG
 from . import nir2025  # as the model being rendered by this code
-from . import nir2025 as site_nir # as the reference model for the site
-
-from .nir_ar2_site import SparklineEChartHelper # TODO: rename e.g. TimeVaryingSparklineEChartHelper
-from .nir_ar2_site import RegionalSparklineEChartHelper # TODO: rename e.g. TimeVaryingSparklineEChartHelper
-from .prob import SiteInference
-
+from . import nir2025 as site_nir  # as the reference model for the site
+from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
+from .nir_ar2_site import (
+    RegionalSparklineEChartHelper,  # TODO: rename e.g. TimeVaryingSparklineEChartHelper
+)
+from .prob import ClassVar, SiteInference
+from .sparkline_echart_helper import (
+    PseudoRegion,
+    PseudoSectors,
+    RegionalSparklineEChartHelperBase,
+    SparklineEChartHelperBase,
+)
 
 n_samples = 250 # enough to do the job, not too slowly
 n_years = 34
 n_regions = 13
 
 
-class NIR2025_SparklineEChartHelper(SparklineEChartHelper):
+class NIR2025_SparklineEChartHelper(SparklineEChartHelperBase):
 
     def load_data(self):
         self.years = np.arange(1990, 2023 + 1)
@@ -121,6 +126,8 @@ class NIR2025(SiteInference):
     and per greenhouse gas, are taken from the 2025 National Inventory Report data,
     incorporating uncertainty estimates from Annex 2 of the report.
     """
+
+    include_in_registry: ClassVar[bool] = True
 
     def one_line_description(self):
         return "Data with uncertainty from NIR-2025"

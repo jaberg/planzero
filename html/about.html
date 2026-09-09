@@ -12,7 +12,7 @@ Table of Contents:
 <ul>
     <li><a href="#overview">About this Project</a></li>
     <li><a href="#contributors">Contributors</a></li>
-    <li><a href="#posting-policy">Guidance Re: Posts</a>
+    <li><a href="#posting-policy">Guiding Principles Re: Posts</a>
         <ul>
             <li><a href="#post-purpose">The Purpose of Posts</a></li>
             <li><a href="#draft-status">Draft Status</a></li>
@@ -20,6 +20,11 @@ Table of Contents:
             <li><a href="#post-dates">Post Dates</a></li>
             <li><a href="#post-authorship">Post Authorship and Acknowledgements</a></li>
         </ul>
+    </li>
+    <li><a href="#modelling-policy">Guiding Principles Re: Modelling</a>
+	    <ul>
+		    <li><a href="#incremental-iteration-on-prediction-metrics">Incremental Iteration on Prediction Metrics</a></li>
+	    </ul>
     </li>
     <li><a href="#architecture">Architecture</a></li>
     <li><a href="#manifesto">Manifesto (Dec 5, 2025)</a></li>
@@ -59,6 +64,12 @@ undergraduate and graduate levels, to:
 <li>participate in distributed open-source projects</li>
 </ul>
 </p>
+<!--
+	Other themes for the site:
+	content quality: possibly quantiative and qualitative dimensions, but site content should be good
+	engineering: site build should be automated, tests run, build system and hosting should use appropriate tools, run quickly, not cost too much
+	ease of use: authors, reviewers, readers, etc. should be able to benefit from the value that's theoretically available to them
+-->
 
 <!-- mission -->
 <p>
@@ -85,7 +96,7 @@ inform public discourse, shape public policy, and guide capital investment into 
         emissions reduction in Canada.</li>
 </ul>
 
-<h2 id="posting-policy">Guidance Re: Posts</h2>
+<h2 id="posting-policy">Guiding Principles Re: Posts</h2>
 <p>
 I think of the PlanZero project in terms of the following facets:
 <ol>
@@ -213,60 +224,96 @@ Please do get in touch as mentioned above though, I looking forward
 to hearing from you.
 </p>
 
+<h2 id="modelling-policy">Guiding Principles Re: Modelling</h2>
+
+<h3 id="incremental-iteration-on-prediction-metrics">Incremental Iteration on Prediction Metrics</h3>
+
+<p>
+I believe that the machine learning community has made great progress over
+recent decades by combining two incremental, mutually supportive research programs:
+<ol>
+	<li>a slower accumulation of benchmark prediction challenges</li>
+	<li>a faster exploration of the space of models, algorithms, and data
+		to discover solutions to those prediction challenges</li>
+</ol>
+I also believe that from a signal-to-noise perspective,
+the more accurately PlanZero can predict emissions impacts,
+the more helpful it can be in evaluating the long tail of strategies that have
+helpful but not enormous emissions impacts.
+So therefore: PlanZero is structured to feature <a href="/predictions/">predictions</a>
+and <a href="/models/">models</a> that can reflect progress in two mutually reinforcing
+research programs that will lead to as clear a picture as possible for model-based
+planning of emission-reduction strategies.
+</p>
+
 <h2 id="architecture">Architecture</h2>
 
 <p>
-PlanZero is rooted in a project on GitHub.
-The modelling described by its source code can entail significant of
-computation, the data sets informing those models can be large,
-users needs of the project aren't yet well understood,
+PlanZero, as a software project, is <a href="https://github.com/jaberg/planzero">hosted on GitHub</a>.
+Its modelling can require significant computation,
+the data sets informing those models can be large,
 and the operating budget is small.
-Over time, as the project bumps up against various limits the strategies for
-overcoming them will be documented here.
+For now, the PlanZero site is built on GitHub using <a href="https://docs.github.com/en/actions">GitHub Actions</a>,
+a product feature of GitHub's project hosting that provides a limited (currently ample) amount of computation and storage
+for free to open-source projects, including PlanZero.
 </p>
 
-<h3 id="build-data-flow">Build Data Flow</h3>
+<h3 id="github-build-data-flow">GitHub Build Workflow</h3>
 
-<p>
-PlanZero's Dockerfile uses a multi-stage build to
-produce a small docker image for fly.io
-that does not contain large data files or raw model samples.
-Deployment is currently only possible from my laptop.
-</p>
 
 <pre class="mermaid">
 
 flowchart TB
 
-python_arm["Python:3.11-slim [ARM64]"]
+gh_build_and_test["Build and Test\n(Job)"]
 
-base["base"]
+gh_deploy_main["Deploy Main\n(Job)"]
 
-testing["testing"]
+gh_deploy_pr["Deploy Pull-Request\n(Job)"]
 
-build_cache["build_cache"]
+app_cache[("App Cache\n(Workflow Artifact)")]
 
-production_server["production_server"]
+inference_cache[("Model Inference Results\n(Cache Object)")]
 
-production_server_amd64["production_server_amd64"]
+inference_cache <-. "Per-model-version samples" .-> gh_build_and_test
 
-python_arm --> base
-base --> testing
-testing --> build_cache
+gh_build_and_test --> gh_deploy_main
+gh_build_and_test --> gh_deploy_pr
 
-base --> production_server
+gh_build_and_test -. "Pre-rendered pages" .-> app_cache
 
-build_cache -. copy pre-rendered pages .-> production_server
-
-python_amd["Python:3.11-slim [AMD64]"]
-
-
-build_cache -. copy pre-rendered pages .-> production_server_amd64
-
-python_amd --> production_server_amd64
-
+app_cache .-> gh_deploy_main
+app_cache .-> gh_deploy_pr
 
 </pre>
+
+<p>
+Model inference can be computationally expensive, and the results don't change with every {{siteref("Git_Commit", "commit")}} to the project.
+PlanZero uses an explicit and ad-hoc versioning system for models, in order to leverage GitHub's <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching">Dependency Cache</a> capability
+in a controlled way.
+The cache design for the Static Normals model is that the entire model is cached on the basis of a version number in the source code, the name of the class,
+and the cutoff date for data available for inference. Whenever the model code, or any dependency, or data assumption changes, the version number must be
+explicitly changed (raised), in order to change the cache key, which will cause GitHub to recompute the inference of the model and save the results.
+Free-tier jobs are limited to 6 hours for open-source projects,
+so there's some incentive to ensure that the PlanZero site can be built from scratch in that amount of time.
+</p>
+<p>
+The Build and Test job (see diagram above) sometimes includes inference, but always runs unit tests, including a sweep through all of the pages hosted on the planzero website.
+In the process of rendering them as part of the unit test suite, these pages are cached to disk,
+and that whole cache of pages is stored as a <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts">Workflow Artifact</a>.
+The set of pages isn't a large amount of data, and it's important to test frequently, so the tests run on every commit and the app cache is built every time the main branch
+or a pull-request branch changes.
+</p>
+
+<p>
+The last jobs in the workflow download the pre-rendered pages and deploy the webserver and pre-built pages.
+PlanZero sites are hosted by Fly.io, which hosts the main <a href="https://planzero.ca">planzero.ca</a> site,
+as well as per-pull-request preview sites for work in progress.
+The set of active pull-requests is available on the project page <a href="https://github.com/jaberg/planzero/pulls">on GitHub</a>.
+PlanZero is not currently a purely static site, but I can imagine committing to making it purely static in future in order to e.g. improve initial page-load performance
+and lower hosting costs.
+</p>
+
 
 <h2 id="manifesto">Manifesto (Dec 5, 2025)</h2>
 

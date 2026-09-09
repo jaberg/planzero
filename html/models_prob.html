@@ -16,7 +16,7 @@
 
 <section class="post">
     <header class="major">
-        <h1>Model: {{printcname(ident)}}</h1>
+        <h1>Model: {{ site_inference.pretty_name }}</h1>
         <p>{{site_inference.short_description}}</p>
     </header>
 
@@ -24,8 +24,13 @@
 <p>
 Emissions are summarized by year, and in terms of total Mt{{CO2e|safe}}
 per non-aggregate {{siteref("NIR")|safe}} sector.
-Each dotted line is the model-estimated mean.
-Each coloured region is the model-estimated 95% {{siteref("Credible Interval", "credible interval")|safe}} for national emissions per sector.
+The black lines reflect reported historical emissions
+(the dotted line is the reported mean, the two thin solid lines
+are upper and lower 95% {{siteref("Credible Interval", "credible interval")|safe}}
+for the mean).
+The coloured elements reflect modelled emissions
+(the dotted line is the modelled mean,
+the shaded region is the model-estimated 95% {{siteref("Credible Interval", "credible interval")|safe}} for national emissions per sector).
 Colours correspond to high-level emissions categories:
 <ul>
     <li>dark blue for energy used in stationary combustion (e.g. for public electricity, oil and gas extraction, etc.)</li>
@@ -45,6 +50,49 @@ at the bottom of this page.
 {{site_inference.uncertain_sparkline_matrix_echart("banner_chart", v_unit="Mt_CO2e")|safe}}
 
 
+{% if site_inference.show_prediction_quality %}
+
+<h2>Prediction Quality</h2>
+
+<h3 id="PreNIR_2025_m04">Prediction Task: {{ planzero.challenge.registry["PreNIR_2025_m04"].pretty_name }}</h3>
+<p>
+{{ planzero.challenge.registry["PreNIR_2025_m04"].short_description | safe }}
+</p>
+<p>
+The predictions themselves are shown above.
+The table below lists KL divergences between the reference
+and predicted emissions at the level of national totals.
+For more detail,
+see post <a href="/posts/2026-06-28-static-normals/#appendix-prenir">Static Normals: a baseline predictive model, appendix on NIR-Prediction</a>.
+</p>
+<p>
+Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
+{{ "%.3f"|format(
+	site_inference.prediction_scores_prenir_2025_m04()['weighted_divergence'])
+}}.
+</p>
+<h4>KL Divergence of predictions from reference national emissions (lower is better)</h4>
+<table id="gemini-sort-data-table">
+    <thead>
+        <tr><th>Sector</th>
+		{% for ghg in planzero.enums.GHG %}
+		<th>{{ghg.value}}</th>
+		{% endfor %}
+	</tr>
+    </thead>
+    <tbody>
+	    {% for sector, ghg_KLs in site_inference.prediction_scores_prenir_2025_m04()['scores_ca'].items() %}
+	    <tr>
+		    <td><a href="/models/prob/{{ident}}/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
+		    {% for ghg in planzero.enums.GHG %}
+		    <td>{% if ghg_KLs[ghg] > 0 %}{{ "%.2f"|format(ghg_KLs[ghg]) }}{% endif %}</td>
+		    {% endfor %}
+	    </tr>
+	    {% endfor %}
+    </tbody>
+</table>
+
+{% endif %}
 
 <!--
 <h2>Model Elements</h2>
@@ -97,8 +145,8 @@ at the bottom of this page.
 -->
 <h2 id="posts">Posts developing this page</h2>
 <ul>
-{% for blog in blogs_by_tag(ident) %}
-<li><a href="/post/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% for ident in site_inference.posts_developing_this_page %}
+<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 

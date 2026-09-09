@@ -4,7 +4,7 @@
 
 <section class="post">
     <header class="major">
-        <h1>Model: {{printcname(ident)}}</h1>
+        <h1>Model: {{ site_inference.pretty_name }}</h1>
         <p>{{site_inference.short_description}}</p>
     </header>
 
@@ -16,11 +16,14 @@
 
 <p>
 Emissions are summarized by year, and in terms of total Mt{{CO2e|safe}}
-per non-aggregate {{siteref("NIR")|safe}} sector.
-The black line is the reported historical emissions,
-the dotted line is the model-estimated mean,
-the shaded region is the model-estimated 95% {{siteref("Credible Interval", "credible interval")|safe}}.
-They are ordered by decreasing maximum upper bound on the credible interval.
+per province and territory, for a single sector.
+The black lines reflect reported historical emissions
+(the dotted line is the reported mean, the two thin solid lines
+are upper and lower 95% {{siteref("Credible Interval", "credible interval")|safe}}
+for the mean).
+The coloured elements reflect modelled emissions
+(the dotted line is the modelled mean,
+the shaded region is the model-estimated 95% {{siteref("Credible Interval", "credible interval")|safe}} for the emissions).
 Adjust the slider below each grid of figures to see the active date range and focus on specific periods.
 For information about the model itself, refer to
 <a href="#posts">posts developing this page</a>
@@ -89,8 +92,8 @@ at the bottom of this page.
 
 <h2 id="posts">Posts developing this page</h2>
 <ul>
-{% for blog in blogs_by_tag(ident) %}
-<li><a href="/post/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+{% for ident in site_inference.posts_developing_this_page %}
+<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 

@@ -1,75 +1,17 @@
-from .nir_ar2 import *
-
 from pydantic import computed_field
 
-from .prob  import SiteInference
-from . import nir_constant_predictor
-from .enums import LULUCF_Sectors, PT
-from .nir_constant_predictor import PseudoSectors, PseudoRegion
+from .enums import PT, LULUCF_Sectors
+from .nir_ar2 import *
+from .prob import SiteInference
+from .sparkline_echart_helper import (
+    PseudoRegion,
+    PseudoSectors,
+    RegionalSparklineEChartHelperBase,
+    SparklineEChartHelperBase,
+)
 
 
-class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
-    # TODO: consider renaming this to reflect its ability to handle
-    # time-varying bounds and means?
-
-    def add_data_for_sector(self, sector, sector_means, lbounds, ubounds):
-        assert sector not in self.data_by_sector
-        assert np.all(ubounds >= lbounds)
-        self.data_by_sector[sector] = dict(
-            ubound=np.max(ubounds),
-            lbound=np.min(lbounds),
-            means=sector_means,
-            ubounds=ubounds,
-            lbounds=lbounds,
-            CIs=ubounds - lbounds,
-            neg_shift=np.minimum(ubounds, 0),
-            neg_shade=np.minimum(lbounds, 0) - np.minimum(ubounds, 0),
-            pos_shift=np.maximum(lbounds, 0),
-            pos_shade=np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
-            )
-
-    def compute_stats_and_add_data_for_sector(self, sector, sample):
-        lbounds, ubounds = np.quantile(
-            sample,
-            q=self.credibility_interval_95,
-            axis=0)
-
-        mean_sector_total = np.mean(sample, axis=0)
-        self.add_data_for_sector(
-            sector,
-            mean_sector_total,
-            lbounds=lbounds,
-            ubounds=ubounds)
-        return mean_sector_total
-
-    def add_data_for_LULUCF_totals(
-        self,
-        estimates_with_lulucf,
-        mean_with_lulucf,
-        estimates_without_lulucf,
-        mean_without_lulucf,
-        ):
-        lbounds_with_lulucf, ubounds_with_lulucf = np.quantile(
-            estimates_with_lulucf,
-            q=self.credibility_interval_95,
-            axis=0)
-
-        self.add_data_for_sector(
-            PseudoSectors.Total_with_LULUCF,
-            mean_with_lulucf,
-            lbounds=lbounds_with_lulucf,
-            ubounds=ubounds_with_lulucf)
-
-        lbounds_without_lulucf, ubounds_without_lulucf = np.quantile(
-            estimates_without_lulucf,
-            q=self.credibility_interval_95,
-            axis=0)
-
-        self.add_data_for_sector(
-            PseudoSectors.Total_without_LULUCF,
-            mean_without_lulucf,
-            lbounds=lbounds_without_lulucf,
-            ubounds=ubounds_without_lulucf)
+class SparklineEChartHelper(SparklineEChartHelperBase):
 
     def load_data(self):
         self.years = np.arange(1990, 2050+1)
@@ -160,42 +102,7 @@ class SparklineEChartHelper(nir_constant_predictor.SparklineEChartHelper):
             mean_without_lulucf)
 
 
-class RegionalSparklineEChartHelper(nir_constant_predictor.RegionalSparklineEChartHelper):
-
-    def add_data_for_region(self, region, means, lbounds, ubounds):
-        assert region not in self.data_by_region
-        assert np.all(ubounds >= lbounds)
-        self.data_by_region[region] = dict(
-            ubound=np.max(ubounds),
-            lbound=np.min(lbounds),
-            means=means,
-            ubounds=ubounds,
-            lbounds=lbounds,
-            CIs=ubounds - lbounds,
-            neg_shift=np.minimum(ubounds, 0),
-            neg_shade=np.minimum(lbounds, 0) - np.minimum(ubounds, 0),
-            pos_shift=np.maximum(lbounds, 0),
-            pos_shade=np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
-            )
-
-    def add_data_from_estimates(self, estimates_pt, estimates_ca):
-        for ii, pt in enumerate(PT):
-            if pt == PT.XX:
-                continue
-            pt_mean = np.mean(estimates_pt[:, :, ii], axis=0)
-            pt_lbound, pt_ubound = np.quantile(
-                estimates_pt[:, :, ii],
-                self.credibility_interval_95,
-                axis=0)
-            self.add_data_for_region(pt, pt_mean, pt_lbound, pt_ubound)
-
-        ca_mean = np.mean(estimates_ca, axis=0)
-        ca_lbound, ca_ubound = np.quantile(
-            estimates_ca,
-            self.credibility_interval_95,
-            axis=0)
-        self.add_data_for_region(PseudoRegion.NationalTotal,
-                                 ca_mean, ca_lbound, ca_ubound)
+class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
 
     def load_data(self):
         self.years = np.arange(1990, 2050+1)

@@ -70,7 +70,7 @@ They are visualized in terms of the mean, and upper and lower bounds on probable
         {% for ident, obj in planzero.prob.site_inferences.items() if obj.show_on_models_page %}
           <tr>
               <td>
-                  <a href="/models/prob/{{ident}}/">{{ident.replace('_', ' ')}}</a>
+                  <a href="/models/prob/{{ident}}/">{{obj.pretty_name}}</a>
               </td>
               <td>{{obj.short_description}}</td>
               <td>{{"{:.1f} - {:.1f}".format(*obj.predicted_emissions_2050_MtCO2e_bounds_ul)}}

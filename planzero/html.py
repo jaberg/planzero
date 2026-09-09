@@ -1,7 +1,10 @@
 import os
+from io import StringIO
 
 from pydantic import BaseModel, ConfigDict
+
 from .enums import GHG
+
 
 class StrictBaseModel(BaseModel):
 
@@ -65,6 +68,24 @@ html_by_ghg = {
     GHG.SF6:HTML_Math_Latex(latex=r'\mathrm{SF}_6').as_html(),
     GHG.NF3:HTML_Math_Latex(latex=r'\mathrm{NF}_3').as_html(),
 }
+
+class HTML_Matplotlib_Figure(HTML_element):
+
+    def build_figure(self):
+        raise NotImplementedError()
+
+    def build_figure_plt(self, plt):
+        return self.build_figure()
+
+    def as_html(self):
+        import matplotlib.pyplot as plt
+        self.build_figure_plt(plt)
+        svg_buffer = StringIO()
+        plt.savefig(svg_buffer, format="svg")
+        plt.close()
+        svg_string = svg_buffer.getvalue()
+        return svg_string
+
 
 class EChartTitle(StrictBaseModel):
     text:str
