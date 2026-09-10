@@ -90,12 +90,16 @@ jobs:
           path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
           key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
 
+      # TODO: cache this when it stabilizes
+      - name: Infer cattle population and emission factors for scaling ablation study
+        run: python -m planzero inference_work --model=ScalingStudy_All_Strategies
+
       # Run test and populate app cache (diskcache)
 
       - name: Run all tests
         run: pytest -n 4 -W error --maxfail=10 .
 
-      - name: Save app cache for deploy
+      - name: Save app cache (artifact) for deploy
         if: github.repository == 'jaberg/planzero'
         uses: actions/upload-artifact@v7
         with:
