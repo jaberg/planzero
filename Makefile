@@ -41,7 +41,7 @@ tmux: .build.dev
 local:
 	fastapi dev --port=8012 --host=0.0.0.0
 
-jupyter: .build.test
+jupyter:
 	jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
 
 
@@ -178,4 +178,5 @@ build_and_test:
 	python -m planzero.model_db init
 	python -m planzero inference_prep --model=Static_Normals_2024_12_31
 	python -m planzero inference_work --model=Static_Normals_2024_12_31
+	python -m planzero inference_work --model=ScalingStudy_All_Strategies
 	pytest -n 4 -W error --maxfail=10 .

@@ -23,7 +23,7 @@ from .my_functools import cache as _cache
 
 from . import ablation_study_scaling
 from . import ablation
-ablation.registry['Scaling'].install_site_inferences()
+ablation.registry['ScalingStudy'].install_site_inferences()
 
 from . import planet_model
 from . import endpoints # next-to-last b/c it uses class registries

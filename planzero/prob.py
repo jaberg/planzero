@@ -36,11 +36,6 @@ class SiteInference(BaseModel):
         print()
         return 1
 
-    def main_inference_cache_key(self):
-        # called via e.g. __main__.py
-        # e.g. GH Actions will be used to cache a directory based on this key
-        pass
-
     def main_inference_prep(self):
         # called via e.g. __main__.py
         # The required samples files may be cached, but the model_db is

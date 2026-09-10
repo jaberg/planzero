@@ -208,21 +208,16 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
     # the first column of samples with the actual data means.
     NIR_emission_sample_size = 100
 
-    weights = jnp.array([1.0 / NIR_emission_sample_size] * NIR_emission_sample_size)
-
-    ca_sample = np.empty((NIR_emission_sample_size, n_training_years))
-    pt_sample = np.empty((NIR_emission_sample_size, n_training_years, 13,))
     real_PTs = [pt for pt in PT if pt != PT.XX]
-    for ii, year in enumerate(range(1990, 1990 + n_training_years)):
-        ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
+    nir_rng_key, pt_sample, ca_sample = nir2025.sample_pt_ca(
+            nir_rng_key,
+            NIR_emission_sample_size,
+            years=range(1990, 1990 + n_training_years),
+            PTs=real_PTs,
             sector=params['sector'],
-            ghg=params['ghg'],
-            year=year)
-        nir_rng_key, rng_key_ = jrandom.split(nir_rng_key)
-        ca_sample[:, ii] = ca_dist.sample(rng_key_, (NIR_emission_sample_size,))
-        for jj, pt in enumerate(real_PTs):
-            nir_rng_key, rng_key_ = jrandom.split(nir_rng_key)
-            pt_sample[:, ii, jj,] = pt_dists[jj].sample(rng_key_, (NIR_emission_sample_size,))
+            ghg=params['ghg'])
+
+    weights = jnp.array([1.0 / NIR_emission_sample_size] * NIR_emission_sample_size)
 
     scaled_ca = jnp.array(ca_sample / params['scale'])
     scaled_pt = jnp.array(pt_sample / params['scale'])
