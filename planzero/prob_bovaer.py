@@ -88,11 +88,34 @@ def jnp_emission_factors(farm_type):
     return jnp.array(rval)
 
 
+@memcache
+def enteric_ch4_ktCO2e_scale():
+    sector = IPCC_Sector.Enteric_Fermentation
+    ghg = GHG.CH4
+
+    arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
+    jnp_pt = jnp.array(
+        arr_pt[nir2025.idx_of_sector[sector],
+               nir2025.idx_of_ghg[ghg]],
+        dtype='float64')
+    jnp_ca = jnp.array(
+        arr_ca[nir2025.idx_of_sector[sector],
+               nir2025.idx_of_ghg[ghg]],
+        dtype='float64')
+    scale = max([
+        np.sqrt(np.mean(jnp_ca ** 2)),
+        np.sqrt(np.nanmean(np.nansum(jnp_pt ** 2, axis=0))),
+        1.0,
+    ])
+    return scale
+
+
 inference_keys = [
         #'PT_emissions_ktCO2e',
         'latent_emission_factors',
-        'latent_livestock_counts',
         'latent_scaled_livestock_counts',
+        'latent_scaled_livestock_counts_sigma',
+        'latent_livestock_counts',
         'sigma_ca',
         'sigma_pt']
 
@@ -118,11 +141,15 @@ def weighted_constant_model(
                 "latent_scaled_livestock_counts",
                 dist.LogNormal(-1, 2).expand((num_livestock_types, num_PTs,)))
 
+        latent_scaled_livestock_counts_sigma = numpyro.sample(
+                "latent_scaled_livestock_counts_sigma",
+                dist.LogNormal(-1, 1).expand((num_livestock_types, num_PTs,)))
+
         # explain head counts
         numpyro.sample(
                 "obs_scaled_headcounts",
                 dist.Normal(latent_scaled_livestock_counts,
-                            0.01,
+                            latent_scaled_livestock_counts_sigma, #0.01,
                             ).mask(valid_year_mask[:, None, None]),
                 obs=jnp.where(
                     valid_year_mask[:, None, None],
@@ -142,7 +169,7 @@ def weighted_constant_model(
         # explain emission factors
         numpyro.sample(
                 "obs_emission_factors",
-                dist.Normal(latent_emission_factors, 1)\
+                dist.Normal(latent_emission_factors, 20)\
                         .expand((len(data_years), num_livestock_types))\
                         .mask(valid_year_mask[:, None]),
                 obs=jnp.where(valid_year_mask[:, None], nir_emission_factors, 0))
@@ -195,25 +222,12 @@ def inference():
     heads = jnp_data(farm_type)
     nir_emission_factors = jnp_emission_factors(farm_type)
     jnp_sorted_years = jnp.array(sorted_years(farm_type))
-    arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
 
     sector = IPCC_Sector.Enteric_Fermentation
     ghg = GHG.CH4
     rng_key = jrandom.key(1234)
 
-    jnp_pt = jnp.array(
-        arr_pt[nir2025.idx_of_sector[sector],
-               nir2025.idx_of_ghg[ghg]],
-        dtype='float64')
-    jnp_ca = jnp.array(
-        arr_ca[nir2025.idx_of_sector[sector],
-               nir2025.idx_of_ghg[ghg]],
-        dtype='float64')
-    scale = max([
-        np.sqrt(np.mean(jnp_ca ** 2)),
-        np.sqrt(np.nanmean(np.nansum(jnp_pt ** 2, axis=0))),
-        1.0,
-    ])
+    scale = enteric_ch4_ktCO2e_scale()
     NIR_emission_sample_size = 100
     real_PTs = [pt for pt in PT if pt != PT.XX]
     rng_key, pt_sample, ca_sample = nir2025.sample_pt_ca(
@@ -319,39 +333,17 @@ class Cattle_Population_Static_Normal(Barrier):
     def short_description(self) -> str:
         return "Static model of cattle population"
 
-    def annual_scan_init(self, initial_carry, xs, years):
-        grouped_samples = cached_inference(recompute=False)
+    def annual_scan_init(self, initial_carry, xs, years, constants):
+        grouped_samples = cached_inference()
         samples = samples_from_grouped_samples(grouped_samples)
-        xs['cattle_heads'] = (
-                jnp.zeros_like(years)[:,
-                                      None, # sample idx
-                                      None, # cattle type
-                                      None] # PT (14)
-                + samples['latent_livestock_counts'])
+        # (num_samples, cattle_types, PT 14)
+        constants['latent_livestock_counts'] = samples['latent_livestock_counts']
+        constants['latent_emission_factors'] = samples['latent_emission_factors']
+        constants['sigma_ca'] = samples['sigma_ca']
+        constants['sigma_pt'] = samples['sigma_pt']
+        constants['enteric_ch4_ktCO2e_scale'] = enteric_ch4_ktCO2e_scale()
 
-    def annual_scan_step(self, new_carry, y, x, year, carry):
-        pass
-
-
-class Default_Bovine_Emission_Factors_Static_Normal(Barrier):
-    """Static normals estimate of methane emissions for
-    cattle who aren't on Bovaer.
-    """
-
-    @computed_field
-    def short_description(self) -> str:
-        return "Static model of baseline enteric fermentation emission factors"
-
-    def annual_scan_init(self, initial_carry, xs, years):
-        grouped_samples = cached_inference(recompute=False)
-        samples = samples_from_grouped_samples(grouped_samples)
-        xs['emission_factors'] = (
-                jnp.zeros_like(years)[:,
-                                      None, # sample idx
-                                      None] # cattle type
-                + samples['latent_emission_factors'])
-
-    def annual_scan_step(self, new_carry, y, x, year, carry):
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants):
         pass
 
 
@@ -361,7 +353,6 @@ def batch_rollout_barriers():
 
     barriers = [
             Cattle_Population_Static_Normal(),
-            Default_Bovine_Emission_Factors_Static_Normal(),
             cattle.Bovaer_Adoption_Limit(),
             #cattle.Bovaer_Production_Emission_Factors(),
             cattle.Bovaer_Farm_Subsidy(),
@@ -375,28 +366,36 @@ def batch_rollout_barriers():
 
     initial_carry = {}
     xs = {}
+    constants = {}
 
     years = jnp.arange(1990, 2050 + 1)
 
     for elem in barriers + strategies:
-        elem.annual_scan_init(initial_carry, xs, years)
+        elem.annual_scan_init(initial_carry, xs, years, constants)
 
     def scan_step(carry, x_curtime):
         x, curtime = x_curtime
         y = {}
         new_carry = {}
         for elem in barriers + strategies:
-            elem.annual_scan_step(new_carry, y, x, curtime, carry)
+            elem.annual_scan_step(new_carry, y, x, curtime, carry, constants)
         return new_carry, y
 
     final_carry, ys = scan(scan_step, initial_carry, (xs, years))
     print(final_carry)
     for key, val in ys.items():
         print(key, val.shape, val.dtype, val.min(), val.max())
+    return {
+            'ys': ys,
+            'xs': xs,
+            'final_carry': final_carry,
+            'years': years,
+            }
 
 
 def main_debug():
-    batch_rollout_barriers()
+    cached_inference(recompute=True)
+    #batch_rollout_barriers()
 
 
 if __name__ == '__main__':

@@ -106,9 +106,9 @@ class Scale_Bovaer(Strategy2):
         current.bovine_population_fraction_on_bovaer = max_fraction
         return state.t_now + 1 * u.years
 
-    def annual_scan_init(self, new_carry, xs, years):
+    def annual_scan_init(self, new_carry, xs, years, constants):
         new_carry['tax_funded_budget_for_bovaer'] = 0.0
 
-    def annual_scan_step(self, new_carry, y, x, year, carry):
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants):
         import jax.numpy as jnp
         new_carry['tax_funded_budget_for_bovaer'] = jnp.where(year >= 2030, float('inf'), 0.0)

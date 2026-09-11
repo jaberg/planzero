@@ -9,6 +9,7 @@ try:
     from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
     import jax.numpy as jnp
+    import jax.random as jrandom
 except ImportError:
     pass
 
@@ -438,11 +439,11 @@ class Bovaer_Adoption_Limit(Barrier):
         # Apparently Bovaer is not allowed as part of organic production.
         return state.t_now + 1 * u.years
 
-    def annual_scan_init(self, initial_carry, xs, years):
+    def annual_scan_init(self, initial_carry, xs, years, stash):
         initial_carry.setdefault('bovine_population_fraction_on_bovaer', 0.0)
         initial_carry['max_fraction_of_cattle_on_bovaer'] = 0.0
 
-    def annual_scan_step(self, new_carry, y, x, year, carry):
+    def annual_scan_step(self, new_carry, y, x, year, carry, stash):
         new_carry.setdefault('bovine_population_fraction_on_bovaer',
                 carry['bovine_population_fraction_on_bovaer'])
         new_carry['max_fraction_of_cattle_on_bovaer'] = jnp.minimum(
@@ -586,12 +587,24 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 ))
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years):
-        pass
+    def annual_scan_init(self, new_carry, xs, years, constants):
+        num_samples, num_regions = constants['sigma_pt'].shape
+        jrkey = jrandom.key(1234)
+        jrkey, jrkey_ = jrandom.split(jrkey)
+        constants['shift_pt'] = (
+                jrandom.normal(jrkey_, (num_samples, num_regions))
+                * constants['sigma_pt']
+                * constants['enteric_ch4_ktCO2e_scale']
+                )
+        constants['shift_ca'] = (
+                jrandom.normal(jrkey_, (num_samples,))
+                * constants['sigma_ca']
+                * constants['enteric_ch4_ktCO2e_scale']
+                )
 
-    def annual_scan_step(self, new_carry, y, x, year, carry):
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants):
         bovaer_fraction = new_carry['bovine_population_fraction_on_bovaer']
-        ef_kg_CH4_per_head = x['emission_factors']
+        ef_kg_CH4_per_head = constants['latent_emission_factors']
         from .ghgvalues import GWP_100
 
         ef_kt_CO2e = ef_kg_CH4_per_head * GWP_100[GHG.CH4].magnitude / 1_000_000
@@ -603,7 +616,7 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
             (1 - bovaer_fraction) * 1 # full rate
             + bovaer_fraction * (1 - methane_reduction_potential * actual))
 
-        heads = x['cattle_heads']
+        heads = constants['latent_livestock_counts']
         # broadcast over PTs
         emissions_by_cattle_type = (
                 heads
@@ -616,6 +629,11 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         # into the headcounts during inference
         y['enteric_fermentation_ktCO2e_pt'] = emissions_by_cattle_type.sum(axis=1)[:, :13]
         y['enteric_fermentation_ktCO2e_ca'] = emissions_by_cattle_type.sum(axis=(1,2))
+
+        y['enteric_fermentation_ktCO2e_pt_sample'] \
+                = y['enteric_fermentation_ktCO2e_pt'] + constants['shift_pt']
+        y['enteric_fermentation_ktCO2e_ca_sample'] \
+                = y['enteric_fermentation_ktCO2e_ca'] + constants['shift_ca']
 
 
 class Bovaer_Monitoring(Barrier):
@@ -725,10 +743,10 @@ class Bovaer_Farm_Subsidy(Barrier):
             * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years):
+    def annual_scan_init(self, new_carry, xs, years, stash):
         new_carry['bovine_population_fraction_on_bovaer'] = 0.0
 
-    def annual_scan_step(self, new_carry, y, x, year, carry):
+    def annual_scan_step(self, new_carry, y, x, year, carry, stash):
         have_money = carry['tax_funded_budget_for_bovaer'] > 0
         new_carry['bovine_population_fraction_on_bovaer'] = jnp.where(
                 have_money,

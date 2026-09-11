@@ -79,86 +79,82 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
 
     def load_data(self):
 
+        self.years = np.arange(1990, 2050+1)
+
+        #n_mu_timesteps_to_2022 = 31 # for NIR-2025
+        #n_mu_timesteps_to_2050 = n_mu_timesteps_to_2022 + 27
+        n_regions = 13
+
+        n_samples = 500
+
+        mean_with_lulucf = 0
+        estimates_with_lulucf = np.zeros(
+            (n_samples, len(self.years)))
+
+        mean_without_lulucf = 0
+        estimates_without_lulucf = np.zeros(
+            (n_samples, len(self.years)))
+
+        np_rng = np.random.default_rng(12345)
+
         static_normals_model_id = model_id_from_data_cutoff(
                 datetime.date(year=2024, month=12, day=31))
 
         self.normals_by_sector_ghg = normals_by_sector_ghg(static_normals_model_id)
         self.BNs_by_sector_ghg = BNs_by_sector_ghg(static_normals_model_id)
 
-
         for BN_d in self.BNs_by_sector_ghg.values():
-            n_samples = BN_d['num_samples']
-            break
-        else:
-            assert 0, 'no BayesianNormal components found'
-        n_new_draws = 125
-
-        mean_with_lulucf = 0
-        estimates_with_lulucf = np.zeros((n_new_draws, n_samples))
-
-        mean_without_lulucf = 0
-        estimates_without_lulucf = np.zeros((n_new_draws, n_samples))
-
-        rng = np.random.default_rng(seed=123)
+            n_samples_ = BN_d['num_samples']
+            assert n_samples_ == n_samples
 
         for sector in IPCC_Sector:
-            sector_mean = 0
 
-            estimates = rng.standard_normal((n_new_draws, n_samples, len(GHG)))
+            estimated_sector_total_ca = np.zeros(
+                (n_samples, len(self.years)))
+
 
             for ii, ghg in enumerate(GHG):
                 if (sector, ghg) in self.normals_by_sector_ghg:
-                    estimates[:, :, ii] = 0
+                    continue
+                elif (sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
+                    from .prob_bovaer import batch_rollout_barriers
+                    results = batch_rollout_barriers()
+                    #estimated_sector_total_ca += results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T  * self.v_unit_scale
+                    estimated_sector_total_ca += results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T  * self.v_unit_scale
                 else:
                     BN_d = self.BNs_by_sector_ghg[sector, ghg]
-                    samples = model_db.load_ndarray_group(
+                    grouped_samples = model_db.load_ndarray_group(
                             model_id=static_normals_model_id,
                             component_id=BN_d['component_id'],
                             group_id='grouped_samples')
-                    n_chains, n_samples_, n_regions = samples['mu'].shape
+                    n_chains, n_samples_, n_regions_ = grouped_samples['mu'].shape
+                    assert n_chains == 1
+                    assert n_regions == n_regions
                     assert n_samples_ == n_samples
-                    sector_mean_ghg = float(
-                        samples['mu']
-                        .reshape((n_chains * n_samples, n_regions))
-                        .mean(axis=0) # across samples and chains
-                        .sum(axis=0)) # over regions
-                    sector_mean += sector_mean_ghg * BN_d['scale'] * self.v_unit_scale
+                    samples_mu_ca = grouped_samples['mu'][0].sum(axis=1)
+                    ca_sample = np_rng.standard_normal(n_samples)
+                    ca_sample *= grouped_samples['sigma_ca'][0]
+                    ca_sample += samples_mu_ca
+                    ca_sample *= BN_d['scale'] * self.v_unit_scale
 
-                    estimates[:, :, ii] *= samples['sigma_ca']
-                    estimates[:, :, ii] += samples['mu'].sum(axis=2)
-                    estimates[:, :, ii] *= BN_d['scale'] * self.v_unit_scale
+                    # broadcast out over timesteps
+                    estimated_sector_total_ca += ca_sample[:, None]
 
-            sector_estimates = np.sum(estimates, axis=2)
-
-            lbound, ubound = np.quantile(
-                sector_estimates.flatten(),
-                self.credibility_interval_95)
-
-            self.add_static_data_for_sector(sector, sector_mean, lbound, ubound)
+            mean_sector_total = self.compute_stats_and_add_data_for_sector(
+                sector,
+                estimated_sector_total_ca)
 
             if sector not in LULUCF_Sectors:
-                estimates_without_lulucf += sector_estimates
-                mean_without_lulucf += sector_mean
-            estimates_with_lulucf += sector_estimates
-            mean_with_lulucf += sector_mean
+                estimates_without_lulucf += estimated_sector_total_ca
+                mean_without_lulucf += mean_sector_total
+            estimates_with_lulucf += estimated_sector_total_ca
+            mean_with_lulucf += mean_sector_total
 
-        lbound_with_lulucf, ubound_with_lulucf = np.quantile(
-            estimates_with_lulucf.flatten(),
-            self.credibility_interval_95)
-        self.add_static_data_for_sector(
-            PseudoSectors.Total_with_LULUCF,
+        self.add_data_for_LULUCF_totals(
+            estimates_with_lulucf,
             mean_with_lulucf,
-            lbound_with_lulucf,
-            ubound_with_lulucf)
-
-        lbound_without_lulucf, ubound_without_lulucf = np.quantile(
-            estimates_without_lulucf.flatten(),
-            self.credibility_interval_95)
-        self.add_static_data_for_sector(
-            PseudoSectors.Total_without_LULUCF,
-            mean_without_lulucf,
-            lbound_without_lulucf,
-            ubound_without_lulucf)
+            estimates_without_lulucf,
+            mean_without_lulucf)
 
         # for drawing the reference values
         # this should be updated to e.g. 2026, 2027 etc. as available
