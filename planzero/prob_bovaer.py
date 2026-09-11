@@ -1,4 +1,5 @@
 from functools import cache as memcache
+from pydantic import computed_field
 
 from . import sts
 from .ureg import u
@@ -11,11 +12,15 @@ from .sc_3210013001 import (
 from . import model_db, my_functools, nir2025
 
 import numpy as np
-import jax.numpy as jnp
-import jax.random as jrandom
-import numpyro
-import numpyro.distributions as dist
-from numpyro.infer import MCMC, NUTS
+try:
+    import jax.numpy as jnp
+    import jax.random as jrandom
+    import numpyro
+    import numpyro.distributions as dist
+    from numpyro.infer import MCMC, NUTS
+    from jax.lax import scan
+except ImportError:
+    pass
 
 
 feature_mask_by_farmtype = {
@@ -86,7 +91,7 @@ def jnp_emission_factors(farm_type):
 inference_keys = [
         #'PT_emissions_ktCO2e',
         'latent_emission_factors',
-        #'latent_livestock_counts',
+        'latent_livestock_counts',
         'latent_scaled_livestock_counts',
         'sigma_ca',
         'sigma_pt']
@@ -123,9 +128,9 @@ def weighted_constant_model(
                     valid_year_mask[:, None, None],
                     livestock_counts / livestock_scale, 0))
 
-        #numpyro.deterministic(
-                #"latent_livestock_counts",
-                #latent_scaled_livestock_counts * livestock_scale)
+        numpyro.deterministic(
+                "latent_livestock_counts",
+                latent_scaled_livestock_counts * livestock_scale)
 
     if 1:
         latent_emission_factors = numpyro.sample(
@@ -247,32 +252,42 @@ def inference():
     return mcmc
 
 
-def cached_inference():
+def cached_inference(recompute=False):
     model_id = model_db.stable_hash(
             str(('prob_bovaer', 1)))
     component_id = model_db.stable_hash(
             str(('enteric_fermentation', model_id)))
 
-    grouped_samples = model_db.load_ndarray_group(
-        model_id=model_id,
-        component_id=component_id,
-        group_id='grouped_samples')
-    if len(grouped_samples) == len(inference_keys):
-        return grouped_samples
-
-    try:
-        # re-populate the db registry from files on disk
-        grouped_samples = model_db.index_ndarray_group(
+    if not recompute:
+        grouped_samples = model_db.load_ndarray_group(
             model_id=model_id,
             component_id=component_id,
-            group_id='grouped_samples',
-            ndarray_d_keys=inference_keys)
-        return grouped_samples
-    except OSError:
-        pass # at least one file is missing, probably all of them
+            group_id='grouped_samples')
+        if len(grouped_samples) == len(inference_keys):
+            return grouped_samples
+
+        try:
+            # re-populate the db registry from files on disk
+            model_db.delete_ndarray_group(
+                component_id=component_id,
+                group_id='grouped_samples',
+                )
+            grouped_samples = model_db.index_ndarray_group(
+                model_id=model_id,
+                component_id=component_id,
+                group_id='grouped_samples',
+                ndarray_d_keys=inference_keys)
+            return grouped_samples
+        except OSError:
+            pass # at least one file is missing, probably all of them
 
     mcmc = inference()
     grouped_samples = mcmc.get_samples(group_by_chain=True)
+    assert len(grouped_samples) == len(inference_keys)
+    model_db.delete_ndarray_group(
+        component_id=component_id,
+        group_id='grouped_samples',
+        )
     model_db.save_ndarray_group(
         model_id=model_id,
         component_id=component_id,
@@ -281,8 +296,108 @@ def cached_inference():
     return grouped_samples
 
 
+def samples_from_grouped_samples(grouped_samples):
+    sample_size = None
+    for gs in grouped_samples.values():
+        assert gs.shape[0] == 1
+        if sample_size is None:
+            sample_size = gs.shape[1]
+        else:
+            assert sample_size == gs.shape[1]
+    samples = {key: gs[0] for key, gs in grouped_samples.items()}
+    return samples
+
+
+from .barriers import Barrier
+
+class Cattle_Population_Static_Normal(Barrier):
+    """Simple static-normals estimate of Cattle populations
+    for each cattle type, and each province and territory.
+    """
+
+    @computed_field
+    def short_description(self) -> str:
+        return "Static model of cattle population"
+
+    def annual_scan_init(self, initial_carry, xs, years):
+        grouped_samples = cached_inference(recompute=False)
+        samples = samples_from_grouped_samples(grouped_samples)
+        xs['cattle_heads'] = (
+                jnp.zeros_like(years)[:,
+                                      None, # sample idx
+                                      None, # cattle type
+                                      None] # PT (14)
+                + samples['latent_livestock_counts'])
+
+    def annual_scan_step(self, new_carry, y, x, year, carry):
+        pass
+
+
+class Default_Bovine_Emission_Factors_Static_Normal(Barrier):
+    """Static normals estimate of methane emissions for
+    cattle who aren't on Bovaer.
+    """
+
+    @computed_field
+    def short_description(self) -> str:
+        return "Static model of baseline enteric fermentation emission factors"
+
+    def annual_scan_init(self, initial_carry, xs, years):
+        grouped_samples = cached_inference(recompute=False)
+        samples = samples_from_grouped_samples(grouped_samples)
+        xs['emission_factors'] = (
+                jnp.zeros_like(years)[:,
+                                      None, # sample idx
+                                      None] # cattle type
+                + samples['latent_emission_factors'])
+
+    def annual_scan_step(self, new_carry, y, x, year, carry):
+        pass
+
+
+def batch_rollout_barriers():
+    from . import cattle
+    from .strategies.strategy2 import Scale_Bovaer
+
+    barriers = [
+            Cattle_Population_Static_Normal(),
+            Default_Bovine_Emission_Factors_Static_Normal(),
+            cattle.Bovaer_Adoption_Limit(),
+            #cattle.Bovaer_Production_Emission_Factors(),
+            cattle.Bovaer_Farm_Subsidy(),
+            cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
+            #cattle.Bovaer_Purchase_Cost(),
+            #cattle.Bovaer_Monitoring(),
+            ]
+    strategies = [
+            Scale_Bovaer(),
+            ]
+
+    initial_carry = {}
+    xs = {}
+
+    years = jnp.arange(1990, 2050 + 1)
+
+    for elem in barriers + strategies:
+        elem.annual_scan_init(initial_carry, xs, years)
+
+    def scan_step(carry, x_curtime):
+        x, curtime = x_curtime
+        y = {}
+        new_carry = {}
+        for elem in barriers + strategies:
+            elem.annual_scan_step(new_carry, y, x, curtime, carry)
+        return new_carry, y
+
+    final_carry, ys = scan(scan_step, initial_carry, (xs, years))
+    print(final_carry)
+    for key, val in ys.items():
+        print(key, val.shape, val.dtype, val.min(), val.max())
+
+
 def main_debug():
-    inference()
+    batch_rollout_barriers()
+
 
 if __name__ == '__main__':
     main_debug()
