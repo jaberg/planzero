@@ -98,7 +98,7 @@ class Scale_Bovaer(Strategy2):
             ctx.bovine_population_fraction_on_bovaer = obj
         # XXX wait until after Cattle_Population nearcasting until there's support
         # for temporally overlapping initialization
-        return 2030 * u.years
+        return 2027 * u.years
 
     def step(self, state, current):
         # The strategy here, is to use as much Bovaer as farmers will take
@@ -111,4 +111,4 @@ class Scale_Bovaer(Strategy2):
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants):
         import jax.numpy as jnp
-        new_carry['tax_funded_budget_for_bovaer'] = jnp.where(year >= 2030, float('inf'), 0.0)
+        new_carry['tax_funded_budget_for_bovaer'] = jnp.where(year >= 2027, float('inf'), 0.0)

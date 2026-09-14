@@ -115,6 +115,7 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
 
             for ii, ghg in enumerate(GHG):
                 if (sector, ghg) in self.normals_by_sector_ghg:
+                    # This is assumed to be essentially 0
                     continue
                 elif (sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
                     from .prob_bovaer import batch_rollout_barriers
@@ -167,7 +168,71 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
 
 
 class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
-    pass
+
+    def load_data(self):
+        static_normals_model_id = model_id_from_data_cutoff(
+                datetime.date(year=2024, month=12, day=31))
+
+        self.normals_by_sector_ghg = normals_by_sector_ghg(static_normals_model_id)
+        self.BNs_by_sector_ghg = BNs_by_sector_ghg(static_normals_model_id)
+
+        self.years = np.arange(1990, 2050+1)
+        #n_mu_timesteps_to_2022 = 31 # for NIR-2025
+        #n_mu_timesteps_to_2050 = n_mu_timesteps_to_2022 + 27
+        n_regions = 13
+
+        n_samples = 500
+
+        np_rng = np.random.default_rng(12345)
+
+        estimates_ghg_pt = np.zeros(
+            (n_samples, len(GHG), len(self.years), n_regions))
+
+        estimates_ghg_ca = np.zeros(
+            (n_samples, len(GHG), len(self.years)))
+
+        for ii, ghg in enumerate(GHG):
+            if (self.sector, ghg) in self.normals_by_sector_ghg:
+                # This is assumed to be essentially 0,
+                pass
+            elif (self.sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
+                from .prob_bovaer import batch_rollout_barriers
+                results = batch_rollout_barriers()
+                estimates_ghg_pt[:, ii, :, :] = (
+                        results['ys']['enteric_fermentation_ktCO2e_pt_sample'].transpose((1, 0, 2))
+                        * self.v_unit_scale)
+                estimates_ghg_ca[:, ii, :] = (
+                        results['ys']['enteric_fermentation_ktCO2e_ca_sample'].transpose()
+                        * self.v_unit_scale)
+            else:
+                BN_d = self.BNs_by_sector_ghg[self.sector, ghg]
+                samples = model_db.load_ndarray_group(
+                        model_id=static_normals_model_id,
+                        component_id=BN_d['component_id'],
+                        group_id='grouped_samples')
+                _, n_samples_, _ = samples['mu'].shape
+                assert n_samples_ == n_samples
+                samples_mu =  grouped_samples['mu'][0]
+                pt_sample = np_rng.standard_normal(n_samples)
+                pt_sample *= grouped_samples['sigma_pt'][0]
+                pt_sample += samples_mu
+                pt_sample *= BN_d['scale'] * self.v_unit_scale
+                estimates_ghg_pt[:, ii, :, :] = pt_sample[:, None, :]
+
+                samples_mu_ca = grouped_samples['mu'][0].sum(axis=1)
+                ca_sample = np_rng.standard_normal(n_samples)
+                ca_sample *= grouped_samples['sigma_ca'][0]
+                ca_sample += samples_mu_ca
+                ca_sample *= BN_d['scale'] * self.v_unit_scale
+                estimates_ghg_ca[:, ii, :] = ca_sample[:, None]
+
+
+        estimates_pt = estimates_ghg_pt.sum(axis=1)
+        estimates_ca = estimates_ghg_ca.sum(axis=1)
+
+        self.add_data_from_estimates(
+            estimates_pt=estimates_pt,
+            estimates_ca=estimates_ca)
 
 
 class ScalingSiteInference(prob.SiteInference):
@@ -212,13 +277,36 @@ class ScalingSiteInference(prob.SiteInference):
         helper = SparklineEChartHelper(
                 div_id,
                 v_unit,
-                model_name=self.identifier)
+                model_name=self.name)
         helper.load_data()
         helper.order_sectors()
         helper.add_total_cells()
         helper.add_non_lulucf_cells()
         helper.add_lulucf_cells()
         return helper.make_echart()
+
+    def sector_echart(self, sector, ghg, v_unit):
+        helper = RegionalSparklineEChartHelper(
+            sector=sector,
+            ghg=ghg,
+            div_id=f'regional_sparkline_echart_{ghg.value if ghg else "all"}',
+            v_unit=v_unit)
+        helper.load_data()
+        helper.order_regions()
+        helper.add_regional_cells()
+        return helper.make_echart()
+
+    def GHGs_for_sector(self, sector):
+        static_normals_model_id = model_id_from_data_cutoff(
+                datetime.date(year=2024, month=12, day=31))
+        normals = normals_by_sector_ghg(static_normals_model_id)
+        rval = []
+        for ghg in GHG:
+            if (sector, ghg) in normals:
+                continue
+            rval.append(ghg)
+        return rval
+
 
     def main_model_id(self) -> int:
         # if model corresponds to a model in model_db, print model_id to
