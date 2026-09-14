@@ -101,9 +101,7 @@ class SiteInference(BaseModel):
 
     @property
     def affected_sectors_by_strategy(self) -> dict:
-        rval = {strategy_id: set() for strategy_id in self.strategy_ids}
-        print(rval)
-        return rval
+        raise NotImplementedError()
 
     @property
     def strategies(self) -> dict:

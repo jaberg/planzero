@@ -35,8 +35,8 @@
           {% for strategy_id, strat in planzero.strategies.strategies.items()
              if strategy_id in models_by_strategy %}
           <tr>
-              <td>{{printcname(strategy_id)}}</td>
-              <td>{{strat.short_description}}</td>
+              <td>{{ printcname(strategy_id) }}</td>
+              <td>{{ strat.short_description }}</td>
               <td>{% for model_id in models_by_strategy[strategy_id] %}
                   <a href="/models/prob/{{model_id}}/strategies/{{strategy_id}}/">{{ planzero.prob.registry[model_id].pretty_name }}</a>
                   {% endfor %}</td>

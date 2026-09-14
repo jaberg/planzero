@@ -243,7 +243,7 @@ class ScalingSiteInference(prob.SiteInference):
 
     @computed_field
     def ablation_study_id(self) -> str|None:
-        return 'Scaling'
+        return 'ScalingStudy'
 
     @property
     def name(self) -> str:
@@ -262,12 +262,6 @@ class ScalingSiteInference(prob.SiteInference):
     @property
     def identifier(self) -> str:
         return scaling_model_id(self.data_cutoff)
-
-    def main_inference_prep(self):
-        #touch_model(self.data_cutoff)
-        #touch_components(self.data_cutoff)
-        pass
-
 
     @computed_field
     def show_on_models_page(self) -> bool:
@@ -307,6 +301,11 @@ class ScalingSiteInference(prob.SiteInference):
             rval.append(ghg)
         return rval
 
+    @property
+    def affected_sectors_by_strategy(self) -> dict:
+        return {'Scale_Bovaer': {IPCC_Sector.Enteric_Fermentation,
+                                 IPCC_Sector.Other_Product_Manufacture_and_Use,},
+                }
 
     def main_model_id(self) -> int:
         # if model corresponds to a model in model_db, print model_id to
