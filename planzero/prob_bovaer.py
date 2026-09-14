@@ -126,14 +126,16 @@ def weighted_constant_model(
         data_years,
         start_year_inclusive,
         end_year_exclusive,
-        jnp_pt,
-        jnp_ca,
-        jnp_ca_scale,
+        scaled_ktCO2e_pt,
+        scaled_ktCO2e_ca,
+        scaled_ktCO2e_ca_scale,
         weights,
         ):
     num_PTs = len(PT) # 14, including PT.XX
     num_livestock_types = len(Livestock_nonsums)
     valid_year_mask = (start_year_inclusive <= data_years) & (data_years < end_year_exclusive)
+
+    debug = False
 
     if 1:
         livestock_scale = jnp.nanmax(livestock_counts)
@@ -194,18 +196,19 @@ def weighted_constant_model(
         n_regions = 13
         # trim out the PT.XX region (could a better approach be implemented?)
 
-        #numpyro.deterministic("PT_emissions_ktCO2e", PT_emissions_ktCO2e)
-        mu = PT_emissions_ktCO2e[:n_regions] / jnp_ca_scale
+        if debug:
+            numpyro.deterministic("PT_emissions_ktCO2e", PT_emissions_ktCO2e)
+        mu = PT_emissions_ktCO2e[:n_regions] / scaled_ktCO2e_ca_scale
 
         sigma_pt = numpyro.sample("sigma_pt",
                                   dist.LogNormal(-1.0, 0.7).expand((n_regions,)))
         sigma_ca = numpyro.sample("sigma_ca",
                                   dist.LogNormal(-1.0, 0.7))
 
-        valid_pt = jnp.isfinite(jnp_pt)
+        valid_pt = jnp.isfinite(scaled_ktCO2e_pt)
         dist_pt = dist.Normal(mu, sigma_pt).mask(valid_pt)
-        obs_pt = jnp.where(valid_pt, jnp_pt / jnp_ca_scale, 0)
-        obs_ca = jnp_ca / jnp_ca_scale
+        obs_pt = jnp.where(valid_pt, scaled_ktCO2e_pt, 0)
+        obs_ca = scaled_ktCO2e_ca
 
         # explain provincial and territorial methane emissions
         with numpyro.handlers.scale(scale=jnp.array(weights).reshape(-1, 1, 1)):
@@ -216,6 +219,9 @@ def weighted_constant_model(
             numpyro.sample("obs_ca",
                            dist.Normal(jnp.sum(mu), sigma_ca),
                            obs=obs_ca)
+        if debug:
+            numpyro.deterministic("debug_est_ca", jnp.sum(mu))
+            numpyro.deterministic("debug_obs_ca", obs_ca)
 
 def inference():
     farm_type = FarmType.AllCattle
@@ -257,9 +263,9 @@ def inference():
              data_years=jnp_sorted_years,
              start_year_inclusive=1990,
              end_year_exclusive=2023,
-             jnp_pt=scaled_pt,
-             jnp_ca=scaled_ca,
-             jnp_ca_scale=scale,
+             scaled_ktCO2e_pt=scaled_pt,
+             scaled_ktCO2e_ca=scaled_ca,
+             scaled_ktCO2e_ca_scale=scale,
              weights=weights,
             )
     mcmc.print_summary()
