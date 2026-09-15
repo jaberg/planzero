@@ -349,8 +349,66 @@ class Cattle_Population_Static_Normal(Barrier):
         constants['sigma_pt'] = samples['sigma_pt']
         constants['enteric_ch4_ktCO2e_scale'] = enteric_ch4_ktCO2e_scale()
 
-    def annual_scan_step(self, new_carry, y, x, year, carry, constants):
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         pass
+
+
+class InitialCarry:
+    def __init__(self, elem=None, _dict=None, _setdefaults=None, _setitems=None):
+        self._dict = {} if _dict is None else _dict
+        self._setdefaults = {} if _setdefaults is None else _setdefaults
+        self._setitems = {} if _setitems is None else _setitems
+        self.elem = elem
+
+    def check_compatibility(self, item, value):
+        if item in self._dict:
+            ref = self._dict[item]
+            if isinstance(ref, (int, float, bool)):
+                assert type(ref) == type(value), (ref, value)
+            else:
+                assert value.shape == ref.shape, (item, ref.shape, value.shape)
+                assert value.dtype == ref.dtype, (item, ref.dtype, value.dtype)
+        else:
+            return True
+
+    def __setitem__(self, item, value):
+        # it's an error to set the same item from multiple places
+        # because there can only be one definition of an item.
+        assert item not in self._setitems, (item,)
+        self.check_compatibility(item, value)
+
+        # once an item has been set, its setdefaults are all forgotten
+        # and subsequent setdefaults won't change item ownership
+        self._setitems[item] = self.elem
+        if item in self._setdefaults:
+            del self._setdefaults[item]
+        self._dict[item] = value
+
+    def setdefault(self, item, value):
+        # it's an error to change assign multiple incompatible values
+        # it's okay to setdefault multiple times, because this
+        # class will track the *first* set-default call, and use
+        # that one (arbitrarily) as the working definition of the item.
+        self.check_compatibility(item, value)
+        if item not in self._setitems:
+            self._setdefaults.setdefault(item, self.elem)
+            self._dict.setdefault(item, value)
+
+    def view(self, elem):
+        assert self.elem is None
+        return InitialCarry(
+                elem=elem,
+                _dict=self._dict,
+                _setdefaults=self._setdefaults,
+                _setitems=self._setitems,
+                )
+
+    def outputs(self, elem):
+        rval = {key: owner for key, owner in self._setitems.items()
+                if owner == elem}
+        rval.update({key: owner for key, owner in self._setdefaults.items()
+                     if owner == elem})
+        return rval
 
 
 def batch_rollout_barriers():
@@ -360,8 +418,8 @@ def batch_rollout_barriers():
     barriers = [
             Cattle_Population_Static_Normal(),
             cattle.Bovaer_Adoption_Limit(),
-            #cattle.Bovaer_Production_Emission_Factors(),
             cattle.Bovaer_Farm_Subsidy(),
+            #cattle.Bovaer_Production_Emission_Factors(),
             cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
             #cattle.Bovaer_Purchase_Cost(),
             #cattle.Bovaer_Monitoring(),
@@ -370,24 +428,25 @@ def batch_rollout_barriers():
             Scale_Bovaer(),
             ]
 
-    initial_carry = {}
+    initial_carry = InitialCarry()
     xs = {}
     constants = {}
 
     years = jnp.arange(1990, 2050 + 1)
 
     for elem in barriers + strategies:
-        elem.annual_scan_init(initial_carry, xs, years, constants)
+        elem.annual_scan_init(initial_carry.view(elem), xs, years, constants)
 
     def scan_step(carry, x_curtime):
         x, curtime = x_curtime
         y = {}
         new_carry = {}
         for elem in barriers + strategies:
-            elem.annual_scan_step(new_carry, y, x, curtime, carry, constants)
+            elem.annual_scan_step(new_carry, y, x, curtime, carry, constants,
+                                  outputs=initial_carry.outputs(elem))
         return new_carry, y
 
-    final_carry, ys = scan(scan_step, initial_carry, (xs, years))
+    final_carry, ys = scan(scan_step, initial_carry._dict, (xs, years))
     print(final_carry)
     for key, val in ys.items():
         print(key, val.shape, val.dtype, val.min(), val.max())

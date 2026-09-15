@@ -57,18 +57,17 @@ gas emissions (in units of Mt {{CO2e}})
 between the standard <b>{{ site_inference.pretty_name }}</b> model,
 and an ablated variant in which
 the <b>{{ printcname(strategy_name) }}</b> strategy is not employed.
-There's a panel for each affected sector.
-The dotted line indicates the mean impact of
-the {{ printcname(strategy_name) }} strategy over sampled scenarios:
-a values above zero mean the strategy <i>raised</i> a sector's emissions,
-a values below zero mean the strategy <i>lowered</i> emissions.
-Mouse-over the slider below the panels to see and change the years shown.
 </p>
 
 {{impact_chart.as_html()|safe}}
 
 <p>
-Positive values represent emissions avoided (saved) by implementing this strategy.
+The figure above features a panel for each affected sector.
+The dotted line indicates the mean impact of
+the {{ printcname(strategy_name) }} strategy over sampled scenarios:
+a values above zero mean the strategy <i>raised</i> a sector's emissions,
+a values below zero mean the strategy <i>lowered</i> emissions.
+Mouse-over the slider below the panels to see and change the years shown.
 </p>
 
 {% if subsidies_chart %}

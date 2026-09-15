@@ -439,16 +439,25 @@ class Bovaer_Adoption_Limit(Barrier):
         # Apparently Bovaer is not allowed as part of organic production.
         return state.t_now + 1 * u.years
 
-    def annual_scan_init(self, initial_carry, xs, years, stash):
-        initial_carry.setdefault('bovine_population_fraction_on_bovaer', 0.0)
-        initial_carry['max_fraction_of_cattle_on_bovaer'] = 0.0
+    def annual_scan_init(self, initial_carry, xs, years, constants):
+        n_samples = constants['sigma_ca'].shape[0]
+        initial_carry.setdefault('bovine_population_fraction_on_bovaer', jnp.zeros(n_samples))
+        initial_carry['max_fraction_of_cattle_on_bovaer'] = jnp.zeros(n_samples)
+        initial_carry['BAL_key'] = jrandom.key(934)
 
-    def annual_scan_step(self, new_carry, y, x, year, carry, stash):
-        new_carry.setdefault('bovine_population_fraction_on_bovaer',
-                carry['bovine_population_fraction_on_bovaer'])
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        n_samples = constants['sigma_ca'].shape[0]
+        new_carry['BAL_key'], key = jrandom.split(carry['BAL_key'])
+        max_increase_fraction = jrandom.uniform(
+                key, (n_samples,), 'float64',
+                self.max_increase_rate.magnitude / 100 / 2,
+                self.max_increase_rate.magnitude / 100 * 2)
+        if 'bovine_population_fraction_on_bovaer' in outputs:
+            new_carry['bovine_population_fraction_on_bovaer'] \
+                    = carry['bovine_population_fraction_on_bovaer']
         new_carry['max_fraction_of_cattle_on_bovaer'] = jnp.minimum(
                 (carry['bovine_population_fraction_on_bovaer']
-                 + self.max_increase_rate.magnitude / 100),
+                 + max_increase_fraction),
                 (1 - self.organic_fraction))
 
 
@@ -602,7 +611,8 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 * constants['enteric_ch4_ktCO2e_scale']
                 )
 
-    def annual_scan_step(self, new_carry, y, x, year, carry, constants):
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        # (n_samples,)
         bovaer_fraction = new_carry['bovine_population_fraction_on_bovaer']
         ef_kg_CH4_per_head = constants['latent_emission_factors']
         from .ghgvalues import GWP_100
@@ -612,16 +622,18 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         methane_reduction_potential = jnp.array([self.bovaer_methane_reduction[lt] for lt in Livestock_nonsums])
 
         actual = self.bovaer_actual_vs_nominal
+        # (n_samples, n_livestock_types)
         factor_per_livestock_type = (
-            (1 - bovaer_fraction) * 1 # full rate
-            + bovaer_fraction * (1 - methane_reduction_potential * actual))
+                (1 - bovaer_fraction[:, None]) * 1 # full rate
+                + (bovaer_fraction[:, None]
+                   * (1 - methane_reduction_potential * actual)))
 
         heads = constants['latent_livestock_counts']
         # broadcast over PTs
         emissions_by_cattle_type = (
                 heads
-                * factor_per_livestock_type[None, :, None]
-                * ef_kt_CO2e[:, :, None]
+                * (factor_per_livestock_type[:, :, None]
+                   * ef_kt_CO2e[:, :, None])
                 )
 
         # sum over cattle type to get shape (sample_size, PT)
@@ -743,10 +755,11 @@ class Bovaer_Farm_Subsidy(Barrier):
             * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years, stash):
-        new_carry['bovine_population_fraction_on_bovaer'] = 0.0
+    def annual_scan_init(self, new_carry, xs, years, constants):
+        n_samples = constants['sigma_ca'].shape[0]
+        new_carry['bovine_population_fraction_on_bovaer'] = jnp.zeros(n_samples)
 
-    def annual_scan_step(self, new_carry, y, x, year, carry, stash):
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         have_money = carry['tax_funded_budget_for_bovaer'] > 0
         new_carry['bovine_population_fraction_on_bovaer'] = jnp.where(
                 have_money,
