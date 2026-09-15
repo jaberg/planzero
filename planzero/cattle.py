@@ -461,16 +461,6 @@ class Bovaer_Adoption_Limit(Barrier):
                 (1 - self.organic_fraction))
 
 
-# TODO: there will be a cost for monitoring
-# https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
-# It can apparently be done pretty well with drones
-# There are approximately 70_000 cattle operations in Canada
-# Monitoring might cost 10-20 million / year?
-
-# TODO: Market mechanism in simulation to determine prices based on supply and demand
-
-# TODO: Output-based carbon pricing model for agriculture
-
 class Bovaer_Production_Emission_Factors(Barrier):
 
     @computed_field
@@ -518,6 +508,18 @@ class Bovaer_Production_Emission_Factors(Barrier):
             current.bovine_population_fraction_on_bovaer
             * self.rate)
         return state.t_now + 1 * u.year
+
+    def annual_scan_init(self, new_carry, xs, years, constants):
+        n_samples = constants['sigma_ca'].shape[0]
+        key = jrandom.key(934)
+        new_carry['bovaer_production_emission_factor'] = jrandom.uniform(
+                key, (n_samples,), 'float64',
+                20,
+                50)
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        new_carry['bovaer_production_emission_factor'] = (
+                carry['bovaer_production_emission_factor'])
 
 
 class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
@@ -628,6 +630,10 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 + (bovaer_fraction[:, None]
                    * (1 - methane_reduction_potential * actual)))
 
+        bovaer_factor_per_livestock_type = (
+                bovaer_fraction[:, None]
+                * (1 - methane_reduction_potential * actual))
+
         heads = constants['latent_livestock_counts']
         # broadcast over PTs
         emissions_by_cattle_type = (
@@ -635,6 +641,11 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 * (factor_per_livestock_type[:, :, None]
                    * ef_kt_CO2e[:, :, None])
                 )
+
+        emissions_by_cattle_type_on_bovaer = (
+                heads
+                * (bovaer_factor_per_livestock_type[:, :, None]
+                   * ef_kt_CO2e[:, :, None]))
 
         # sum over cattle type to get shape (sample_size, PT)
         # and trim off the PT.XX category because it should have been factored
@@ -646,6 +657,27 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 = y['enteric_fermentation_ktCO2e_pt'] + constants['shift_pt']
         y['enteric_fermentation_ktCO2e_ca_sample'] \
                 = y['enteric_fermentation_ktCO2e_ca'] + constants['shift_ca']
+
+        # We're ignoring the variance from sigma_pt and sigma_ca here
+        # I'm not really sure if that's correct or not.
+        emissions_by_cattle_type_on_bovaer_pt \
+                = emissions_by_cattle_type_on_bovaer.sum(axis=1)[:, :13]
+        emissions_by_cattle_type_on_bovaer_ca \
+                = emissions_by_cattle_type_on_bovaer.sum(axis=(1, 2))
+
+        y['bovaer_production_emissions_ktCO2e_ca_sample'] = (
+                emissions_by_cattle_type_on_bovaer_ca
+                / new_carry['bovaer_production_emission_factor'])
+        y['bovaer_production_emissions_ktCO2e_pt_sample'] = (
+                emissions_by_cattle_type_on_bovaer_pt
+                / new_carry['bovaer_production_emission_factor'][:, None])
+
+
+# TODO: there will be a cost for monitoring
+# https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
+# It can apparently be done pretty well with drones
+# There are approximately 70_000 cattle operations in Canada
+# Monitoring might cost 10-20 million / year?
 
 
 class Bovaer_Monitoring(Barrier):

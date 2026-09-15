@@ -419,7 +419,7 @@ def batch_rollout_barriers():
             Cattle_Population_Static_Normal(),
             cattle.Bovaer_Adoption_Limit(),
             cattle.Bovaer_Farm_Subsidy(),
-            #cattle.Bovaer_Production_Emission_Factors(),
+            cattle.Bovaer_Production_Emission_Factors(),
             cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
             #cattle.Bovaer_Purchase_Cost(),
             #cattle.Bovaer_Monitoring(),
@@ -447,7 +447,12 @@ def batch_rollout_barriers():
         return new_carry, y
 
     final_carry, ys = scan(scan_step, initial_carry._dict, (xs, years))
-    print(final_carry)
+    for key, val in final_carry.items():
+        if 'float' in str(val.dtype) or 'int' in str(val.dtype):
+            print(key, val.shape, val.dtype, val.min(), val.max())
+        else:
+            # might be jrandom key
+            print(key, val.shape, val.dtype)
     for key, val in ys.items():
         print(key, val.shape, val.dtype, val.min(), val.max())
     return {

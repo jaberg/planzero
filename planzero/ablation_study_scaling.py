@@ -416,20 +416,31 @@ class ScalingStudy(AblationStudy):
         #baseline = prob.registry[self.site_inference_names[None]]
         #ablation = prob.registry[self.site_inference_names[strategy_name]]
         assert strategy_name == 'Scale_Bovaer'
+
+        ktCO2e_sample = {}
+
         from .prob_bovaer import batch_rollout_barriers
         results = batch_rollout_barriers()
+
+        # Enteric Fermentation
         sample_w_strategy = results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T
         n_samples, n_years = sample_w_strategy.shape
         years = list(range(1990, 1990 + n_years))
 
         sample_wo_strategy = np.zeros_like(sample_w_strategy)
-        sample_wo_strategy = sample_w_strategy[:, 0][:, None]
-
-        ktCO2e_sample = {}
+        sample_wo_strategy[:] = sample_w_strategy[:, 0][:, None]
         ktCO2e_sample[
                 IPCC_Sector.Enteric_Fermentation,
                 GHG.CH4,
                 Activity.Farming_Cattle] = sample_w_strategy - sample_wo_strategy
+
+        # Production Emissions delta
+        ktCO2e_sample[
+                IPCC_Sector.Other_Product_Manufacture_and_Use,
+                GHG.CO2,
+                Activity.Farming_Cattle] \
+                        = results['ys']['bovaer_production_emissions_ktCO2e_ca_sample'].T
+
 
         return AnnualEmissionResults(
                 ktCO2e_sample=ktCO2e_sample,
