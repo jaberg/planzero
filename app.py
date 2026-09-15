@@ -343,6 +343,56 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 
 
 @app_cache
+def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name: str):
+    try:
+        site_inference = planzero.prob.registry[site_inference_name]
+    except KeyError:
+        raise HTTPException(
+                status_code=404,
+                detail=f"No such model: '{site_inference_name}'")
+
+    ablation_study = site_inference.ablation_study
+    if not ablation_study:
+        raise HTTPException(
+                status_code=404,
+                detail=f"No ablation study for: '{site_inference_name}'")
+
+    impact_chart = ablation_study.impact_chart(strategy_name)
+
+    cost_per_tCO2e = float('nan') * u.CAD / u.tonne_CO2e
+
+    # TODO: this should maybe be a diagnostic / warning?
+    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
+
+    from planzero.html import HTML_raw
+
+    context = dict(
+        default_context,
+        active_tab='strategies',
+        site_inference_name=site_inference_name,
+        site_inference=site_inference,
+        strategy_name=strategy_name,
+        description_html="TODO", #baseline_state.projects[strategy_name].description_html,
+        impact_chart=impact_chart,
+        subsidies_chart=HTML_raw(raw="Subsidies chart"), #subsidies_chart,
+        cost_per_tCO2e=cost_per_tCO2e,
+        )
+    #strategy_obj = baseline_state.projects[strategy_name]
+    context['see_also'] = ["TODO"] #strategy_obj.see_also_html(context)
+    return templates.get_template('strategy_impact_prob.html').render(context)
+
+
+@app.get("/models/prob/{site_inference_name}/strategies/{strategy_name}/",
+         response_class=HTMLResponse)
+async def get_models_prob_strategy_impact(
+        request: Request,
+        site_inference_name: str,
+        strategy_name: str):
+    html = get_models_prob_strategy_impact_html(site_inference_name, strategy_name)
+    return HTMLResponse(content=html)
+
+
+@app_cache
 def get_strategies_html():
     models_by_strategy = {}
     sectors_by_strategy = {}

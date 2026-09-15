@@ -4,25 +4,21 @@ from typing import ClassVar
 import numpy as np
 from pydantic import computed_field
 
-from . import cattle, model_db, nir2025_site, prob
+from . import cattle, model_db, nir2025_site, prob, prob_bovaer
 from .ablation import AblationStudy
-from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
-from . import prob_bovaer
-
-try:
-    from .nir_static_normals import (
-        BNs_by_sector_ghg,
-        model_id_from_data_cutoff,
-        normals_by_sector_ghg,
-        # weighted_KL_score,
-    )
-except ImportError:
-    pass
+from .annual_emission_results import AnnualEmissionResults
+from .enums import GHG, Activity, IPCC_Sector, LULUCF_Sectors
+from .nir_static_normals import (
+    BNs_by_sector_ghg,
+    model_id_from_data_cutoff,
+    normals_by_sector_ghg,
+    # weighted_KL_score,
+)
 from .sparkline_echart_helper import (
-        #PseudoRegion,
-        PseudoSectors,
-        RegionalSparklineEChartHelperBase,
-        SparklineEChartHelperBase,
+    PseudoRegion,
+    PseudoSectors,
+    RegionalSparklineEChartHelperBase,
+    SparklineEChartHelperBase,
 )
 
 model_family = 'Scaling'
@@ -235,6 +231,76 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
             estimates_ca=estimates_ca)
 
 
+class EmissionImpactChartHelper(SparklineEChartHelperBase):
+    """
+    Show the emission impact of a strategy, in the context of an ablation study.
+    """
+
+    cells_include_actuals = False
+
+    def load_data(self, aer:AnnualEmissionResults):
+        self.years = aer.years
+
+        n_samples = aer.n_samples
+
+        mean_with_lulucf = 0
+        estimates_with_lulucf = np.zeros(
+            (n_samples, len(self.years)))
+
+        mean_without_lulucf = 0
+        estimates_without_lulucf = np.zeros(
+            (n_samples, len(self.years)))
+
+        from .results_ops import aer_sectors
+
+        self.sectors = aer_sectors(aer)
+        assert self.sectors
+        # TODO: verify that the set of sectors calculated here
+        # matches the set of sectors that was declared symbolically
+        #affected_sectors = baseline.affected_sectors_by_strategy[strategy_name]
+
+        self.n_non_lulucf_rows = 0
+        while self.n_cols * self.n_non_lulucf_rows < len(self.sectors):
+            self.n_non_lulucf_rows += 1
+        self.n_total_rows = self.n_non_lulucf_rows
+
+        for sector in self.sectors:
+            if sector in LULUCF_Sectors:
+                raise NotImplementedError()
+            estimated_sector_total_ca = (
+                    sum(aer[sector].values())
+                    * self.v_unit_scale)
+            mean_sector_total = self.compute_stats_and_add_data_for_sector(
+                sector,
+                estimated_sector_total_ca)
+
+            if sector not in LULUCF_Sectors:
+                estimates_without_lulucf += estimated_sector_total_ca
+                mean_without_lulucf += mean_sector_total
+            estimates_with_lulucf += estimated_sector_total_ca
+            mean_with_lulucf += mean_sector_total
+
+        print(estimates_without_lulucf)
+        print(mean_without_lulucf)
+
+        self.add_data_for_LULUCF_totals(
+            estimates_with_lulucf,
+            mean_with_lulucf,
+            estimates_without_lulucf,
+            mean_without_lulucf)
+
+    def order_sectors(self):
+
+        # order sectors by decreasing last-year uncertainty
+        non_lulucf_scores = [
+            (-self.data_by_sector[sector]['ubound'], sector)
+            for sector in self.sectors
+            if sector not in LULUCF_Sectors]
+        non_lulucf_scores.sort()
+        self.sorted_non_lulucf = [sector for _, sector in non_lulucf_scores]
+        self.sorted_lulucf = []
+
+
 class ScalingSiteInference(prob.SiteInference):
     """Maximal deployment of existing products"""
 
@@ -301,11 +367,18 @@ class ScalingSiteInference(prob.SiteInference):
             rval.append(ghg)
         return rval
 
+    def impact_chart(self):
+        return self.ablation_study.impact_chart(self.name)
+
     @property
     def affected_sectors_by_strategy(self) -> dict:
-        return {'Scale_Bovaer': {IPCC_Sector.Enteric_Fermentation,
+        baseline_rval = {
+                'Scale_Bovaer': {IPCC_Sector.Enteric_Fermentation,
                                  IPCC_Sector.Other_Product_Manufacture_and_Use,},
                 }
+        if self.strategy_id is not None:
+            del baseline_rval[self.strategy_id]
+        return baseline_rval
 
     def main_model_id(self) -> int:
         # if model corresponds to a model in model_db, print model_id to
@@ -326,6 +399,7 @@ class ScalingSiteInference(prob.SiteInference):
 class ScalingStudy(AblationStudy):
 
     include_in_registry: ClassVar[bool] = True
+    site_inference_names: dict[str|None, str]|None = None
 
     def barriers(self) -> list:
         return [
@@ -338,13 +412,63 @@ class ScalingStudy(AblationStudy):
             cattle.Bovaer_Monitoring(),
         ]
 
+    def emission_results(self, strategy_name):
+        #baseline = prob.registry[self.site_inference_names[None]]
+        #ablation = prob.registry[self.site_inference_names[strategy_name]]
+        assert strategy_name == 'Scale_Bovaer'
+        from .prob_bovaer import batch_rollout_barriers
+        results = batch_rollout_barriers()
+        sample_w_strategy = results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T
+        n_samples, n_years = sample_w_strategy.shape
+        years = list(range(1990, 1990 + n_years))
+
+        sample_wo_strategy = np.zeros_like(sample_w_strategy)
+        sample_wo_strategy = sample_w_strategy[:, 0][:, None]
+
+        ktCO2e_sample = {}
+        ktCO2e_sample[
+                IPCC_Sector.Enteric_Fermentation,
+                GHG.CH4,
+                Activity.Farming_Cattle] = sample_w_strategy - sample_wo_strategy
+
+        return AnnualEmissionResults(
+                ktCO2e_sample=ktCO2e_sample,
+                years=years,
+                n_samples=n_samples)
+
+    @property
+    def basename(self) -> str:
+        return prob.registry[self.site_inference_names[None]].name
+
     @property
     def strategy_ids(self) -> list[str]:
         return ['Scale_Bovaer']
 
+    def impact_chart(self, strategy_name:str):
+        # TODO: move this to base class
+        annual_emission_diffs = self.emission_results(strategy_name)
+        helper = EmissionImpactChartHelper(
+                div_id=f'emission_impact_echart_{self.basename}_{strategy_name}',
+                v_unit='Mt_CO2e',
+                model_name=self.basename)
+        helper.load_data(annual_emission_diffs)
+        helper.order_sectors()
+        helper.add_total_cells(ymin_without_lulucf=None)
+        helper.add_non_lulucf_cells()
+        helper.add_lulucf_cells()
+        return helper.make_echart()
+
     def install_site_inferences(self):
+        assert self.site_inference_names == None
+        site_inference_names = {}
+
         site_inf = ScalingSiteInference(strategy_id=None)
         prob.registry[site_inf.name] = site_inf
+        site_inference_names[None] = site_inf.name
 
         for strategy_id in self.strategy_ids:
             site_inf = ScalingSiteInference(strategy_id=strategy_id)
+            prob.registry[site_inf.name] = site_inf
+            site_inference_names[strategy_id] = site_inf.name
+
+        self.site_inference_names = site_inference_names

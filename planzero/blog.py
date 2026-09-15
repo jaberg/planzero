@@ -146,10 +146,11 @@ class ProbabilisticBovaer(BlogPost):
             title='Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer',
             url_filename="2026-07-22-prob-bovaer",
             author="James Bergstra",
-            #tags={
+            tags={
+                  'Scale_Bovaer',
                   ## TODO: the probabilistic models?
                   #enums.IPCC_Sector.Enteric_Fermentation,
-                 #},
+                 },
             status=BlogStatus.Planned,
             )
 

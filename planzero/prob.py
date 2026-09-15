@@ -6,22 +6,12 @@ from typing import ClassVar
 
 from pydantic import BaseModel, computed_field
 
-from .singleton_registry import SingletonRegistry
 from . import ablation
+from .annual_emission_results import AnnualEmissionResults
+from .singleton_registry import SingletonRegistry
 
 registry = SingletonRegistry()
 
-
-# TODO Is this class used?
-class InferenceResult(BaseModel):
-
-    inference_name: str
-
-    # these can be large, should be str->memory-mapped file
-    post_samples: dict[str, object]
-
-
-site_inferences = registry # TODO: deprecate alais
 
 class SiteInference(BaseModel):
     """A specific simulation (no caller configuration, all pre-loaded)
@@ -123,7 +113,12 @@ class SiteInference(BaseModel):
         else:
             return ablation.registry[as_id]
 
+    def emission_results(self) -> AnnualEmissionResults:
+        raise NotImplementedError()
 
+
+# TODO: move to registry-building file
+# TODO: rename these site files to make decl/impl pairs of files
 from . import nir2025_site
 from . import nir_static_normals_site
 from . import nir_ar2_site

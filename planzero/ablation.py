@@ -4,8 +4,9 @@ BaseModels for Ablation Studies
 
 from typing import ClassVar
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
+from .annual_emission_results import AnnualEmissionResults
 from .singleton_registry import SingletonRegistry
 
 registry = SingletonRegistry()
@@ -47,4 +48,7 @@ class AblationStudy(BaseModel):
     def ablation(self) -> dict[str|None, str]:
         # [None] looks up the reference site_inference id
         # [strategy_id] looks up the site_inference id for the ablation of that strategy
+        raise NotImplementedError()
+
+    def emission_results(self) -> AnnualEmissionResults:
         raise NotImplementedError()

@@ -15,6 +15,9 @@ class SingletonRegistry:
         assert cls.__name__ not in self.classes
         self.classes[cls.__name__] = cls
 
+    def __contains__(self, key):
+        return key in self.instances or key in self.classes
+
     def __getitem__(self, key):
         try:
             return self.instances[key]
