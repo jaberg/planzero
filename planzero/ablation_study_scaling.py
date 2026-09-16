@@ -202,14 +202,14 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
                         * self.v_unit_scale)
             else:
                 BN_d = self.BNs_by_sector_ghg[self.sector, ghg]
-                samples = model_db.load_ndarray_group(
+                grouped_samples = model_db.load_ndarray_group(
                         model_id=static_normals_model_id,
                         component_id=BN_d['component_id'],
                         group_id='grouped_samples')
-                _, n_samples_, _ = samples['mu'].shape
+                _, n_samples_, _ = grouped_samples['mu'].shape
                 assert n_samples_ == n_samples
                 samples_mu =  grouped_samples['mu'][0]
-                pt_sample = np_rng.standard_normal(n_samples)
+                pt_sample = np_rng.standard_normal((n_samples, 13))
                 pt_sample *= grouped_samples['sigma_pt'][0]
                 pt_sample += samples_mu
                 pt_sample *= BN_d['scale'] * self.v_unit_scale

@@ -36,6 +36,8 @@ class PseudoRegion(str, enum.Enum):
 
 class BaseBase:
 
+    n_cols = 7
+
     credibility_interval_95 = (.025, .975)
 
     def __init__(self, div_id, v_unit, model_name):
@@ -47,12 +49,13 @@ class BaseBase:
         self.series_list = []
         self.grid_links = []
         self.v_unit = v_unit
+        self.stats_d = {} # key -> stats e.g. lbounds, ubounds, etc.
+        self.sorted_keys = [] # list of keys in raster order of panels
+        self.color_by_key = {}
 
         # has to be every year or else scaling doesn't work properly
         # when combined with historic actuals
         self.years = np.arange(1990, 2050 + 1)
-
-        self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
     @property
     def v_unit_scale(self) -> float:
@@ -63,6 +66,262 @@ class BaseBase:
         else:
             raise NotImplementedError(self.v_unit)
 
+    def update_stats_from_means_bounds(self, key, means, lbounds, ubounds):
+        assert np.all(ubounds >= lbounds)
+        self.stats_d[key] = {
+            'ubound': np.max(ubounds),
+            'lbound': np.min(lbounds),
+            'means': means,
+            'ubounds': ubounds,
+            'lbounds': lbounds,
+            'CIs': ubounds - lbounds,
+            'neg_shift': np.minimum(ubounds, 0),
+            'neg_shade': np.minimum(lbounds, 0) - np.minimum(ubounds, 0),
+            'pos_shift': np.maximum(lbounds, 0),
+            'pos_shade': np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
+        }
+        self.stats_d[key]['spread'] = (
+                self.stats_d[key]['ubound']
+                - self.stats_d[key]['lbound'])
+
+    def update_stats_from_sample(self, key, sample):
+        lbounds, ubounds = np.quantile(
+            sample,
+            q=self.credibility_interval_95,
+            axis=0)
+        return self.update_stats_from_means_bounds(
+                key,
+                means=np.mean(sample, axis=0),
+                lbounds=lbounds,
+                ubounds=ubounds)
+
+    def determine_n_total_rows(self):
+        n_panels = len(self.sorted_keys)
+        n_rows = 0
+        while n_rows * self.n_cols < n_panels:
+            n_rows += 1
+        self.n_total_rows = n_rows
+
+    def row_minmax(self, keys):
+        row_ymax = -float('inf')
+        row_ymin = float('inf')
+        for key in keys:
+            stats = self.stats_d[key]
+            row_ymax = max(row_ymax, max(stats['ubounds']))
+            row_ymin = min(row_ymin, min(stats['lbounds']))
+
+        # round up to nearest 2-significant-digit number
+        row_ymax = max(0, float(f'{row_ymax * 1.06:.2g}'))
+        row_ymin = min(0, float(f'{row_ymin * 1.06:.2g}'))
+        return row_ymin, row_ymax
+
+    def append_cell_grid_and_axes(self, row, col, ymin, ymax):
+        yAxis_customValues = None # TODO: still need this?
+        self.grid_list.append(
+            EChartGrid(
+                id=f'grid_{col}|{row}',
+                coordinateSystem='matrix',
+                coord=[col, row],
+                top=25,
+                bottom=10,
+                left='center',
+                width='90%',
+                containLabel=True,
+                ))
+
+        xaxis_id = f'xAxis_{col}|{row}'
+        self.xAxis_list.append(
+            EChartMatrixXAxis(
+                type='category',
+                id=xaxis_id,
+                gridId=f'grid_{col}|{row}',
+                scale=True,
+                axisTick={'show': False},
+                axisLabel={'show': False},
+                axisLine={'show': False},
+                splitLine={'show': False},
+                boundaryGap=False,
+                ))
+
+        yaxis_id = f'yAxis_{col}|{row}'
+        self.yAxis_list.append(
+            EChartMatrixYAxis(
+                id=yaxis_id,
+                gridId=f'grid_{col}|{row}',
+                interval=1_000_000_000_000, # ensure just two ticks per axis
+                scale=True,
+                max=ymax,
+                min=ymin,
+                axisLabel={
+                    'showMaxLabel': True,
+                    'fontSize': 9,
+                    'customValues': yAxis_customValues,
+                    },
+                axisLine={'show': False},
+                axisTick={'show': False},
+                ))
+        return xaxis_id, yaxis_id
+
+    def assign_default_colors(self):
+        from .enums import echarts_warm_earth
+        for ii, key in enumerate(self.sorted_keys):
+            default_color = echarts_warm_earth[ii % len(echarts_warm_earth)]
+            self.color_by_key.setdefault(key, default_color)
+
+    def append_cell_data(self, key, xaxis_id, yaxis_id):
+        data = self.stats_d[key]
+        color = self.color_by_key[key]
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{key} mean',
+                xAxisId=xaxis_id,
+                yAxisId=yaxis_id,
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=2,
+                    type='dotted',
+                    color=color),
+                data=list(zip(self.years, data['means'])),
+                ))
+        if data['lbound'] < 0:
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{key} CI lower bound',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0, color=color),
+                    data=list(zip(self.years, data['neg_shift'])),
+                    stack=f'stack_{key!s}'
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{key} CI',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0),
+                    areaStyle=dict(opacity=.25),
+                    itemStyle=EChartItemStyle(color=color),
+                    data=list(zip(self.years, data['neg_shade'])),
+                    stack=f'stack_{key!s}'
+                    ))
+        if data['ubound'] >= 0:
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{key} CI lower bound',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0, color=color),
+                    data=list(zip(self.years, data['pos_shift'])),
+                    stack=f'stack_{key!s}'
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{key} CI',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(opacity=0),
+                    areaStyle=dict(opacity=.25),
+                    itemStyle=EChartItemStyle(color=color),
+                    data=list(zip(self.years, data['pos_shade'])),
+                    stack=f'stack_{key!s}'
+                    ))
+
+    def append_cell(self, row, col, key, row_ymin, row_ymax):
+        xaxis_id, yaxis_id = self.append_cell_grid_and_axes(
+                row, col, row_ymin, row_ymax)
+        self.append_cell_data(key, xaxis_id, yaxis_id)
+
+    def append_all_cells(self):
+        for row in range(self.n_total_rows):
+            row_keys = self.sorted_keys[
+                row * self.n_cols:
+                (row + 1) * self.n_cols]
+            assert 0 < len(row_keys) <= self.n_cols
+            row_ymin, row_ymax = self.row_minmax(row_keys)
+            for col, key in enumerate(row_keys):
+                self.append_cell(row, col, key, row_ymin, row_ymax)
+
+    def body_data(self):
+        fontSize = 9
+        rval = []
+        for row in range(self.n_total_rows):
+            for col in range(self.n_cols):
+                try:
+                    key = self.sorted_keys[row * self.n_cols + col]
+                except IndexError:
+                    break
+                rval.append(
+                    EChartMatrixBodyDataElem(
+                        coord=[col, row],
+                        value=key.value,
+                        label={
+                            'color': '#999',
+                            'fontSize': fontSize,
+                            'position': 'insideTop'},
+                        )
+                    )
+        return rval
+
+    def make_echart(self):
+        height = {
+                1: 225,
+                2: 400,
+                }[self.n_total_rows]
+        rval = UncertainSparklineMatrixEChart(
+            div_id=self.div_id,
+            matrix=EChartMatrix(
+                x=EChartMatrixXY(
+                    length=self.n_cols,
+                    levelSize=40,
+                    show=False,
+                    ),
+                y=EChartMatrixXY(
+                    length=self.n_total_rows,
+                    levelSize=80,
+                    show=False,
+                    ),
+                corner=EChartMatrixCorner(data=[], label={}),
+                body=EChartMatrixBody(
+                    data=self.body_data()),
+                top=30,
+                bottom=80,
+                width='95%',
+                left='center',
+                ),
+            tooltip=EChartToolTip(trigger='axis'),
+            dataZoom=[
+                EChartDataZoomElem(
+                    type='slider',
+                    xAxisIndex='all',
+                    left='10%',
+                    right='10%',
+                    bottom=30,
+                    height=30,
+                    throttle=120,
+                    ),
+                EChartDataZoomElem(
+                    type='inside',
+                    xAxisIndex='all',
+                    throttle=120,
+                    ),
+                ],
+            grid=self.grid_list,
+            xAxis=self.xAxis_list,
+            yAxis=self.yAxis_list,
+            series=self.series_list,
+            width='100%',
+            height=f'{height}px',
+            )
+        return rval
 
 
 class SparklineEChartHelperBase(BaseBase):
@@ -76,42 +335,23 @@ class SparklineEChartHelperBase(BaseBase):
 
     n_non_lulucf_rows = 10
     n_total_rows = n_non_lulucf_rows + 2
-    n_cols = 7
     cells_include_actuals = True
 
     def __init__(self, div_id, v_unit, model_name):
         super().__init__(div_id=div_id, v_unit=v_unit, model_name=model_name)
         self.data_by_sector = {}
+        self.data_by_sector = self.stats_d
+
+        self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
     def add_data_for_sector(self, sector, sector_means, lbounds, ubounds):
         assert sector not in self.data_by_sector
-        assert np.all(ubounds >= lbounds)
-        self.data_by_sector[sector] = {
-            'ubound': np.max(ubounds),
-            'lbound': np.min(lbounds),
-            'means': sector_means,
-            'ubounds': ubounds,
-            'lbounds': lbounds,
-            'CIs': ubounds - lbounds,
-            'neg_shift': np.minimum(ubounds, 0),
-            'neg_shade': np.minimum(lbounds, 0) - np.minimum(ubounds, 0),
-            'pos_shift': np.maximum(lbounds, 0),
-            'pos_shade': np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
-            }
+        return self.update_stats_from_means_bounds(
+                sector, sector_means, lbounds, ubounds)
 
     def compute_stats_and_add_data_for_sector(self, sector, sample):
-        lbounds, ubounds = np.quantile(
-            sample,
-            q=self.credibility_interval_95,
-            axis=0)
-
-        mean_sector_total = np.mean(sample, axis=0)
-        self.add_data_for_sector(
-            sector,
-            mean_sector_total,
-            lbounds=lbounds,
-            ubounds=ubounds)
-        return mean_sector_total
+        self.update_stats_from_sample(sector, sample)
+        return self.stats_d[sector]['means']
 
     def add_data_for_LULUCF_totals(
         self,
@@ -571,23 +811,15 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         super().__init__(div_id=div_id, v_unit=v_unit, model_name=None)
         self.sector = sector
         self.ghg = ghg
-        self.data_by_region = {} # real PT and pseudo-sector
+        self.data_by_region = self.stats_d
+
+        self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
+        self.color_by_key[PseudoRegion.NationalTotal] = col_ca
+        self.color_by_key.update(col_by_pt)
 
     def add_data_for_region(self, region, means, lbounds, ubounds):
         assert region not in self.data_by_region
-        assert np.all(ubounds >= lbounds)
-        self.data_by_region[region] = {
-            'ubound': np.max(ubounds),
-            'lbound': np.min(lbounds),
-            'means': means,
-            'ubounds': ubounds,
-            'lbounds': lbounds,
-            'CIs': ubounds - lbounds,
-            'neg_shift': np.minimum(ubounds, 0),
-            'neg_shade': np.minimum(lbounds, 0) - np.minimum(ubounds, 0),
-            'pos_shift': np.maximum(lbounds, 0),
-            'pos_shade': np.maximum(ubounds, 0) - np.maximum(lbounds, 0),
-            }
+        self.update_stats_from_means_bounds(region, means, lbounds, ubounds)
 
     def add_data_from_estimates(self, estimates_pt, estimates_ca):
         for ii, pt in enumerate(PT):
@@ -608,7 +840,6 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         self.add_data_for_region(PseudoRegion.NationalTotal,
                                  ca_mean, ca_lbound, ca_ubound)
 
-
     def order_regions(self):
 
         # order sectors by decreasing last-year uncertainty
@@ -617,34 +848,8 @@ class RegionalSparklineEChartHelperBase(BaseBase):
             for region in PT
             if region != PT.XX]
         scores.sort()
-        _, self.sorted_regions = zip(*scores)
-        self.sorted_regions = [PseudoRegion.NationalTotal] + list(self.sorted_regions)
-
-    def body_data(self):
-        fontSize = 9
-        rval = []
-        #rval.append(EChartMatrixBodyDataElem(
-        #    coord=[0, 0],
-        #    value='National Total',
-        #    label=dict(color='#999', fontSize=fontSize, position='insideTop'),
-        #    ))
-        for row in range(self.n_rows):
-            for col in range(self.n_cols):
-                try:
-                    region = self.sorted_regions[row * self.n_cols + col]
-                except IndexError:
-                    break
-                rval.append(
-                    EChartMatrixBodyDataElem(
-                        coord=[col, row],
-                        value=(region.value),
-                        label={
-                            'color': '#999',
-                            'fontSize': fontSize,
-                            'position': 'insideTop'},
-                        )
-                    )
-        return rval
+        _, self.sorted_keys = zip(*scores)
+        self.sorted_keys = [PseudoRegion.NationalTotal] + list(self.sorted_keys)
 
     def actuals_in_v_unit_scale(self, region):
         if 'National' in region:
@@ -693,55 +898,9 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         row_ymin = min(0, float(f'{row_ymin * 1.06:.2g}'))
         return row_ymin, row_ymax
 
-    def color_of_region(self, region):
-        if region == PseudoRegion.NationalTotal:
-            color = col_ca
-        else:
-            color = col_by_pt[region]
-        return color
-
-    def append_cell(self, row, col, region, ymin, ymax, yAxis_customValues=None):
-        color = self.color_of_region(region)
-
-        self.grid_list.append(
-            EChartGrid(
-                id=f'grid_{col}|{row}',
-                coordinateSystem='matrix',
-                coord=[col, row],
-                top=25,
-                bottom=10,
-                left='center',
-                width='90%',
-                containLabel=True,
-                ))
-        self.xAxis_list.append(
-            EChartMatrixXAxis(
-                type='category',
-                id=f'xAxis_{col}|{row}',
-                gridId=f'grid_{col}|{row}',
-                scale=True,
-                axisTick={'show': False},
-                axisLabel={'show': False},
-                axisLine={'show': False},
-                splitLine={'show': False},
-                boundaryGap=False,
-                ))
-        self.yAxis_list.append(
-            EChartMatrixYAxis(
-                id=f'yAxis_{col}|{row}',
-                gridId=f'grid_{col}|{row}',
-                interval=1_000_000_000_000, # ensure just two ticks per axis
-                scale=True,
-                max=ymax,
-                min=ymin,
-                axisLabel={
-                    'showMaxLabel': True,
-                    'fontSize': 9,
-                    'customValues': yAxis_customValues,
-                    },
-                axisLine={'show': False},
-                axisTick={'show': False},
-                ))
+    def append_cell(self, row, col, region, row_ymin, row_ymax):
+        xaxis_id, yaxis_id = self.append_cell_grid_and_axes(
+                row, col, row_ymin, row_ymax)
 
         if hasattr(self, 'nir2025_regional_sparkline_echart_helper'):
             nir2025_means = self.nir2025_regional_sparkline_echart_helper.data_by_region[region]['means']
@@ -750,8 +909,8 @@ class RegionalSparklineEChartHelperBase(BaseBase):
             self.series_list.append(
                 EChartSeriesBase(
                     name=f'{region} NIR2025',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(
@@ -763,8 +922,8 @@ class RegionalSparklineEChartHelperBase(BaseBase):
             self.series_list.append(
                 EChartSeriesBase(
                     name=f'{region} NIR2025',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(
@@ -776,8 +935,8 @@ class RegionalSparklineEChartHelperBase(BaseBase):
             self.series_list.append(
                 EChartSeriesBase(
                     name=f'{region} NIR2025',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(
@@ -792,8 +951,8 @@ class RegionalSparklineEChartHelperBase(BaseBase):
             self.series_list.append(
                 EChartSeriesBase(
                     name=f'{region} NIR2025',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
+                    xAxisId=xaxis_id,
+                    yAxisId=yaxis_id,
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(
@@ -801,129 +960,42 @@ class RegionalSparklineEChartHelperBase(BaseBase):
                         color='#000'),
                     data=list(zip(nir2025.nir2025_year_ints, actuals)),
                     ))
+        self.append_cell_data(region, xaxis_id, yaxis_id)
 
-        data = self.data_by_region[region]
-        self.series_list.append(
-            EChartSeriesBase(
-                name=f'{region} mean',
-                xAxisId=f'xAxis_{col}|{row}',
-                yAxisId=f'yAxis_{col}|{row}',
-                type='line',
-                symbol='none',
-                lineStyle=EChartLineStyle(
-                    width=2,
-                    type='dotted',
-                    color=color),
-                data=list(zip(self.years, data['means'])),
-                ))
-        if data['lbound'] < 0:
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} CI lower bound',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(opacity=0, color=color),
-                    data=list(zip(self.years, data['neg_shift'])),
-                    stack=f'stack_{region!s}'
-                    ))
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} CI',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
-                    itemStyle=EChartItemStyle(color=color),
-                    data=list(zip(self.years, data['neg_shade'])),
-                    stack=f'stack_{region!s}'
-                    ))
-        if data['ubound'] >= 0:
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} CI lower bound',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(opacity=0, color=color),
-                    data=list(zip(self.years, data['pos_shift'])),
-                    stack=f'stack_{region!s}'
-                    ))
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} CI',
-                    xAxisId=f'xAxis_{col}|{row}',
-                    yAxisId=f'yAxis_{col}|{row}',
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
-                    itemStyle=EChartItemStyle(color=color),
-                    data=list(zip(self.years, data['pos_shade'])),
-                    stack=f'stack_{region!s}'
-                    ))
 
     def add_regional_cells(self):
-        for row in range(self.n_rows):
-            row_regions = self.sorted_regions[
-                row * self.n_cols:
-                (row + 1) * self.n_cols]
-            row_ymin, row_ymax = self.row_minmax(row_regions)
-            for col in range(self.n_cols):
-                try:
-                    region = row_regions[col]
-                except IndexError:
-                    break
-                self.append_cell(row, col, region, row_ymin, row_ymax)
+        self.n_total_rows = self.n_rows
+        self.append_all_cells()
 
-    def make_echart(self):
-        rval = UncertainSparklineMatrixEChart(
-            div_id=self.div_id,
-            matrix=EChartMatrix(
-                x=EChartMatrixXY(
-                    length=self.n_cols,
-                    levelSize=40,
-                    show=False,
-                    ),
-                y=EChartMatrixXY(
-                    length=self.n_rows,
-                    levelSize=80,
-                    show=False,
-                    ),
-                corner=EChartMatrixCorner(data=[], label={}),
-                body=EChartMatrixBody(
-                    data=self.body_data()),
-                top=30,
-                bottom=80,
-                width='95%',
-                left='center',
-                ),
-            tooltip=EChartToolTip(trigger='axis'),
-            dataZoom=[
-                EChartDataZoomElem(
-                    type='slider',
-                    xAxisIndex='all',
-                    left='10%',
-                    right='10%',
-                    bottom=30,
-                    height=30,
-                    throttle=120,
-                    ),
-                EChartDataZoomElem(
-                    type='inside',
-                    xAxisIndex='all',
-                    throttle=120,
-                    ),
-                ],
-            grid=self.grid_list,
-            xAxis=self.xAxis_list,
-            yAxis=self.yAxis_list,
-            series=self.series_list,
-            width='100%',
-            height='400px',
+
+from .annual_subsidy_results import NationalAnnualProgramBalances
+from .enums import GovernmentProgram
+
+
+def echart_from_napb(
+        napb:NationalAnnualProgramBalances,
+        div_id:str,
+        v_unit:str,
+        model_name:str, # for linking charts to /models/prob/{model_name}/
+        ):
+    helper = BaseBase(
+            div_id=div_id,
+            v_unit=v_unit,
+            model_name=model_name,
             )
-        return rval
+    assert GovernmentProgram.Net in napb.CAD_sample
+    for program, balance_sample in napb.CAD_sample:
+        helper.update_stats_from_sample(program, balance_sample)
+    non_net_programs = [
+            prog for prog in napb.CAD_sample
+            if prog != GovernmentProgram.Net]
+    non_net_programs.sort(key=lambda prog: helper.stats_d[prog]['spread'])
+    helper.sorted_keys.append(GovernmentProgram.Net)
+    helper.sorted_keys.extend(non_net_programs)
+    helper.determine_n_total_rows()
+    helper.color_by_key = {
+        GovernmentProgram.Net: col_ca,
+    }
+    helper.assign_default_colors()
+    helper.append_all_cells()
+    return helper.make_echart()

@@ -385,12 +385,15 @@ class InitialCarry:
         self._dict[item] = value
 
     def setdefault(self, item, value):
-        # it's an error to change assign multiple incompatible values
-        # it's okay to setdefault multiple times, because this
-        # class will track the *first* set-default call, and use
-        # that one (arbitrarily) as the working definition of the item.
         self.check_compatibility(item, value)
-        if item not in self._setitems:
+        if item in self._setitems:
+            # if another dynamic element has already called setitem
+            # then let it be.
+            pass
+        else:
+            # it's okay to setdefault multiple times, because this
+            # class will track the *first* set-default call, and use
+            # that one (arbitrarily) as the working definition of the item.
             self._setdefaults.setdefault(item, self.elem)
             self._dict.setdefault(item, value)
 
@@ -409,6 +412,71 @@ class InitialCarry:
         rval.update({key: owner for key, owner in self._setdefaults.items()
                      if owner == elem})
         return rval
+
+    def owner(self, item):
+        setitem_owner = self.initial_carry._setitems.get(item) == self.elem
+        setdefault_owner = self.initial_carry._setdefaults.get(item) == self.elem
+        assert setitem_owner is None or setdefault_owner is None
+        rval = setitem_owner or setdefault_owner
+        assert rval is not None
+        return rval
+
+    def get(self, item, default_value):
+        # this function will depend on the order of dynamic element initialization
+        # so think carefully about how to handle it.
+        raise NotImplementedError(item)
+
+    def __getitem__(self, item):
+        # TODO: record that this access was attempted,
+        # maybe only if it was successful?
+        # See also get()
+        try:
+            return self._dict[item]
+        except KeyError:
+            raise NotImplementedError(item)
+
+
+class NewCarry:
+    def __init__(self, initial_carry: InitialCarry, new_carry:dict, elem:str, carry:dict):
+        self.initial_carry = initial_carry
+        self.new_carry = new_carry
+        self.carry = carry
+        self.elem = elem
+
+    def __setitem__(self, item, value):
+        owner = self.initial_carry.owner(item)
+        if owner == self.elem:
+            self.new_carry[item] = value
+        else:
+            assert 0, f"element {self.elem} doesn't have write access to {item}, which is owned by {owner}"
+
+        # TODO: verify that if a dynelem is writing
+
+    def setdefault(self, item, default_value):
+        raise RuntimeError("avoid using setdefault on new_carry dictionary,"
+                           f" use `if '{item}' in outputs:` instead")
+
+    def get(self, item, default_value):
+        # this function will depend on the order of dynamic element initialization
+        # so think carefully about how to handle it.
+        raise NotImplementedError(item)
+
+    def __getitem__(self, item):
+        # TODO: record that this access was attempted,
+        # maybe only if it was successful?
+        # See also get()
+        try:
+            return self._dict[item]
+        except KeyError:
+            raise NotImplementedError(item)
+
+
+class Carry:
+    def __init__(self, initial_carry: InitialCarry, carry:dict, elem:str):
+        self.initial_carry = initial_carry
+        self.new_carry = new_carry
+        self.elem = elem
+
 
 
 def batch_rollout_barriers():
@@ -447,14 +515,15 @@ def batch_rollout_barriers():
         return new_carry, y
 
     final_carry, ys = scan(scan_step, initial_carry._dict, (xs, years))
-    for key, val in final_carry.items():
-        if 'float' in str(val.dtype) or 'int' in str(val.dtype):
+    if 0:
+        for key, val in final_carry.items():
+            if 'float' in str(val.dtype) or 'int' in str(val.dtype):
+                print(key, val.shape, val.dtype, val.min(), val.max())
+            else:
+                # might be jrandom key
+                print(key, val.shape, val.dtype)
+        for key, val in ys.items():
             print(key, val.shape, val.dtype, val.min(), val.max())
-        else:
-            # might be jrandom key
-            print(key, val.shape, val.dtype)
-    for key, val in ys.items():
-        print(key, val.shape, val.dtype, val.min(), val.max())
     return {
             'ys': ys,
             'xs': xs,
