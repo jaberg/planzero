@@ -358,8 +358,8 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
                 detail=f"No ablation study for: '{site_inference_name}'")
 
     impact_chart = ablation_study.impact_chart(strategy_name)
-
-    cost_per_tCO2e = float('nan') * u.CAD / u.tonne_CO2e
+    subsidies_chart = ablation_study.government_impact_chart(strategy_name)
+    cost_per_tCO2e = ablation_study.cost_per_tCO2e(strategy_name)
 
     # TODO: this should maybe be a diagnostic / warning?
     assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
@@ -374,7 +374,7 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
         strategy_name=strategy_name,
         description_html="TODO", #baseline_state.projects[strategy_name].description_html,
         impact_chart=impact_chart,
-        subsidies_chart=HTML_raw(raw="Subsidies chart"), #subsidies_chart,
+        subsidies_chart=subsidies_chart,
         cost_per_tCO2e=cost_per_tCO2e,
         )
     #strategy_obj = baseline_state.projects[strategy_name]

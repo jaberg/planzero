@@ -40,7 +40,7 @@ class BaseBase:
 
     credibility_interval_95 = (.025, .975)
 
-    def __init__(self, div_id, v_unit, model_name):
+    def __init__(self, div_id, model_name):
         self.div_id = div_id
         self.model_name = model_name
         self.grid_list = []
@@ -48,7 +48,6 @@ class BaseBase:
         self.yAxis_list = []
         self.series_list = []
         self.grid_links = []
-        self.v_unit = v_unit
         self.stats_d = {} # key -> stats e.g. lbounds, ubounds, etc.
         self.sorted_keys = [] # list of keys in raster order of panels
         self.color_by_key = {}
@@ -56,15 +55,6 @@ class BaseBase:
         # has to be every year or else scaling doesn't work properly
         # when combined with historic actuals
         self.years = np.arange(1990, 2050 + 1)
-
-    @property
-    def v_unit_scale(self) -> float:
-        if self.v_unit == 'Mt_CO2e':
-            return 0.001
-        elif self.v_unit == 'kt_CO2e':
-            return 1
-        else:
-            raise NotImplementedError(self.v_unit)
 
     def update_stats_from_means_bounds(self, key, means, lbounds, ubounds):
         assert np.all(ubounds >= lbounds)
@@ -116,7 +106,6 @@ class BaseBase:
         return row_ymin, row_ymax
 
     def append_cell_grid_and_axes(self, row, col, ymin, ymax):
-        yAxis_customValues = None # TODO: still need this?
         self.grid_list.append(
             EChartGrid(
                 id=f'grid_{col}|{row}',
@@ -155,7 +144,7 @@ class BaseBase:
                 axisLabel={
                     'showMaxLabel': True,
                     'fontSize': 9,
-                    'customValues': yAxis_customValues,
+                    'customValues': None,
                     },
                 axisLine={'show': False},
                 axisTick={'show': False},
@@ -337,10 +326,20 @@ class SparklineEChartHelperBase(BaseBase):
     n_total_rows = n_non_lulucf_rows + 2
     cells_include_actuals = True
 
+    @property
+    def v_unit_scale(self) -> float:
+        if self.v_unit == 'Mt_CO2e':
+            return 0.001
+        elif self.v_unit == 'kt_CO2e':
+            return 1
+        else:
+            raise NotImplementedError(self.v_unit)
+
     def __init__(self, div_id, v_unit, model_name):
-        super().__init__(div_id=div_id, v_unit=v_unit, model_name=model_name)
+        super().__init__(div_id=div_id, model_name=model_name)
         self.data_by_sector = {}
         self.data_by_sector = self.stats_d
+        self.v_unit = v_unit
 
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
@@ -487,7 +486,7 @@ class SparklineEChartHelperBase(BaseBase):
         row_ymin = min(0, float(f'{row_ymin * 1.06:.2g}'))
         return row_ymin, row_ymax
 
-    def append_cell(self, row, col, sector, ymin, ymax, yAxis_customValues=None):
+    def append_cell(self, row, col, sector, ymin, ymax):
         #color = self.palette[(row * self.n_cols + col - 1) % len(self.palette)]
         if sector in LULUCF_Sectors:
             color = self.palette[9]
@@ -565,7 +564,7 @@ class SparklineEChartHelperBase(BaseBase):
                 min=ymin,
                 axisLabel={'showMaxLabel': True,
                                'fontSize': 9,
-                               'customValues': yAxis_customValues,
+                               'customValues': None,
                               },
                 axisLine={'show': False},
                 axisTick={'show': False},
@@ -807,11 +806,22 @@ class RegionalSparklineEChartHelperBase(BaseBase):
     n_rows = 2
     n_cols = 7
 
+    @property
+    def v_unit_scale(self) -> float:
+        if self.v_unit == 'Mt_CO2e':
+            return 0.001
+        elif self.v_unit == 'kt_CO2e':
+            return 1
+        else:
+            raise NotImplementedError(self.v_unit)
+
+
     def __init__(self, sector, ghg:GHG|None, div_id, v_unit):
-        super().__init__(div_id=div_id, v_unit=v_unit, model_name=None)
+        super().__init__(div_id=div_id, model_name=None)
         self.sector = sector
         self.ghg = ghg
         self.data_by_region = self.stats_d
+        self.v_unit = v_unit
 
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
         self.color_by_key[PseudoRegion.NationalTotal] = col_ca
@@ -975,16 +985,14 @@ from .enums import GovernmentProgram
 def echart_from_napb(
         napb:NationalAnnualProgramBalances,
         div_id:str,
-        v_unit:str,
         model_name:str, # for linking charts to /models/prob/{model_name}/
         ):
     helper = BaseBase(
             div_id=div_id,
-            v_unit=v_unit,
             model_name=model_name,
             )
     assert GovernmentProgram.Net in napb.CAD_sample
-    for program, balance_sample in napb.CAD_sample:
+    for program, balance_sample in napb.CAD_sample.items():
         helper.update_stats_from_sample(program, balance_sample)
     non_net_programs = [
             prog for prog in napb.CAD_sample

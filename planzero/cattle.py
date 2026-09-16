@@ -745,6 +745,27 @@ class Bovaer_Monitoring(Barrier):
             * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
+    def annual_scan_init(self, new_carry, xs, years, constants):
+        pass
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        # num_samples, cattle_types, PT 14
+        heads = constants['latent_livestock_counts']
+        farms_on_bovaer = (
+                heads / 160
+                * new_carry['bovine_population_fraction_on_bovaer'][:, None, None])
+
+        farms_on_bovaer_ca = farms_on_bovaer.sum(axis=(1,2))
+        y['bovaer_monitoring_admin_ca'] = (
+                farms_on_bovaer_ca * self.paperwork_monitoring.magnitude)
+        y['bovaer_monitoring_onsite_ca'] = (
+                farms_on_bovaer_ca * self.onsite_monitoring.magnitude)
+
+        y['bovaer_monitoring_admin_ca_tax'] = (
+                y['bovaer_monitoring_admin_ca'] * .25)
+        y['bovaer_monitoring_onsite_ca_tax'] = (
+                y['bovaer_monitoring_onsite_ca'] * .25)
+
 
 class Bovaer_Farm_Subsidy(Barrier):
 
@@ -798,6 +819,20 @@ class Bovaer_Farm_Subsidy(Barrier):
                 new_carry['max_fraction_of_cattle_on_bovaer'],
                 carry['bovine_population_fraction_on_bovaer'])
 
+        # num_samples, cattle_types, PT 14
+        heads = constants['latent_livestock_counts']
+        cattle_per_farm = 160 # look this up somewhere
+        subsidy_per_head = self.subsidy_rate.magnitude / cattle_per_farm
+
+        bovaer_heads_pt = (
+                heads.sum(axis=1)
+                * new_carry['bovine_population_fraction_on_bovaer'][:, None])
+
+        y['bovaer_farm_subsidy_pt'] = subsidy_per_head * bovaer_heads_pt[:, :13]
+        y['bovaer_farm_subsidy_ca'] = subsidy_per_head * bovaer_heads_pt.sum(axis=1)
+
+        y['bovaer_farm_subsidy_pt_tax'] = y['bovaer_farm_subsidy_pt'] * .2
+        y['bovaer_farm_subsidy_ca_tax'] = y['bovaer_farm_subsidy_ca'] * .2
 
 class Bovaer_Purchase_Cost(Barrier):
     """
@@ -851,6 +886,23 @@ class Bovaer_Purchase_Cost(Barrier):
             sts_key = f'bovaer_cost_{livestock.value}'
             setattr(current, sts_key, cost * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
+
+    def annual_scan_init(self, new_carry, xs, years, constants):
+        pass
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        # num_samples, cattle_types, PT 14
+        heads = constants['latent_livestock_counts']
+
+        daily_bovaer_cost = [self.bovaer_cost[lt].magnitude for lt in Livestock_nonsums]
+        annual_bovaer_cost = jnp.array(daily_bovaer_cost) * 365
+
+        bovaer_costs_pt = (
+                (heads * annual_bovaer_cost[:, None]).sum(axis=1)
+                * new_carry['bovine_population_fraction_on_bovaer'][:, None])
+
+        y['bovaer_cost_pt'] = bovaer_costs_pt[:, :13]
+        y['bovaer_cost_ca'] = bovaer_costs_pt.sum(axis=1)
 
 
 from .strategies.strategy2 import Scale_Bovaer

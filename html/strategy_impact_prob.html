@@ -27,12 +27,14 @@
 <table>
     <thead>
         <tr><th>Metric</th>
-            <th>Value</th>
+            <th>95% Credible Interval</th>
         </tr>
     </thead>
     <tbody>
         <tr><td>Cost per tonne {{CO2e|safe}} abated over modelled period</td>
-            <td>{{'{:.2f}'.format(cost_per_tCO2e.magnitude)}} CAD / t{{CO2e}}</td></tr>
+            <td>{{'{:.2f}'.format(cost_per_tCO2e[0])}}
+		    - {{'{:.2f}'.format(cost_per_tCO2e[1])}}
+		    CAD / t{{CO2e}}</td></tr>
     </tbody>
 </table>
 </p>
@@ -71,7 +73,14 @@ Mouse-over the slider below the panels to see and change the years shown.
 </p>
 
 {% if subsidies_chart %}
-<h2 id="subsidies">Subsidies Impact</h2>
+<h2 id="subsidies">Government Budget Impact</h2>
+
+<p>
+Financial impact to aggregated levels of government
+(in billions CAD).
+Values above zero represent government revenue.
+Values below zero represent government spending.
+</p>
 
 {{subsidies_chart.as_html()|safe}}
 {% endif %}
@@ -88,7 +97,7 @@ Mouse-over the slider below the panels to see and change the years shown.
 -->
 
 <ul class="actions special">
-    <li><a href="/models/prob/{{ site_inference_name }}/" class="button">Back to Simulation Overview</a></li>
+    <li><a href="/models/prob/{{ site_inference_name }}/" class="button">Back to Model Overview</a></li>
 </ul>
 
 </section>

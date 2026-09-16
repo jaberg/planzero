@@ -390,8 +390,10 @@ IPCC_Sector_from_catpath_with_whitespace = {
 
 class GovernmentProgram(str, enum.Enum):
     Net = 'Net'
-    IncomeTax = 'Income Tax'
-    BovineFeedMethaneReduction = 'Bovine Feed Methane Reduction'
+    Income_Tax = 'Income Tax'
+    Bovine_Feed_Farm_Subsidy = 'Bovine Feed Farm Subsidy'
+    Bovine_Feed_Cost = 'Bovine Feed Cost'
+    Bovine_Feed_Monitoring = 'Bovine Feed Monitoring'
 
 # TODO: remove this in favour of GovernmentProgram
 class SubsidyPrograms(str, enum.Enum):

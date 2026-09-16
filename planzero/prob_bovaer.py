@@ -489,8 +489,8 @@ def batch_rollout_barriers():
             cattle.Bovaer_Farm_Subsidy(),
             cattle.Bovaer_Production_Emission_Factors(),
             cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
-            #cattle.Bovaer_Purchase_Cost(),
-            #cattle.Bovaer_Monitoring(),
+            cattle.Bovaer_Purchase_Cost(),
+            cattle.Bovaer_Monitoring(),
             ]
     strategies = [
             Scale_Bovaer(),

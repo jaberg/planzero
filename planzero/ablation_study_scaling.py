@@ -7,7 +7,8 @@ from pydantic import computed_field
 from . import cattle, model_db, nir2025_site, prob, prob_bovaer
 from .ablation import AblationStudy
 from .annual_emission_results import AnnualEmissionResults
-from .enums import GHG, Activity, IPCC_Sector, LULUCF_Sectors
+from .annual_subsidy_results import NationalAnnualProgramBalances
+from .enums import GHG, Activity, GovernmentProgram, IPCC_Sector, LULUCF_Sectors
 from .nir_static_normals import (
     BNs_by_sector_ghg,
     model_id_from_data_cutoff,
@@ -19,6 +20,7 @@ from .sparkline_echart_helper import (
     PseudoSectors,
     RegionalSparklineEChartHelperBase,
     SparklineEChartHelperBase,
+    echart_from_napb,
 )
 
 model_family = 'Scaling'
@@ -444,6 +446,41 @@ class ScalingStudy(AblationStudy):
                 years=years,
                 n_samples=n_samples)
 
+    def national_annual_program_balances(self, strategy_name):
+        assert strategy_name == 'Scale_Bovaer'
+
+        from .prob_bovaer import batch_rollout_barriers
+        results = batch_rollout_barriers()
+        CAD_sample = {}
+
+        sample_w_strategy = results['ys']['bovaer_farm_subsidy_ca'].T
+        n_samples, n_years = sample_w_strategy.shape
+        years = list(range(1990, 1990 + n_years))
+
+        CAD_sample[GovernmentProgram.Bovine_Feed_Farm_Subsidy] \
+                = -sample_w_strategy
+
+        CAD_sample[GovernmentProgram.Income_Tax] = (
+                   results['ys']['bovaer_farm_subsidy_ca_tax'].T
+                   + results['ys']['bovaer_monitoring_admin_ca'].T
+                   + results['ys']['bovaer_monitoring_onsite_ca'].T)
+
+        CAD_sample[GovernmentProgram.Bovine_Feed_Cost] \
+                = -results['ys']['bovaer_cost_ca'].T
+
+        CAD_sample[GovernmentProgram.Bovine_Feed_Monitoring] \
+                = -(results['ys']['bovaer_monitoring_admin_ca'].T
+                    + results['ys']['bovaer_monitoring_onsite_ca'].T)
+
+        napb_no_net = NationalAnnualProgramBalances(
+                CAD_sample=CAD_sample,
+                years=years,
+                n_samples=n_samples)
+        from .results_ops import napb_refresh_net
+        napb = napb_refresh_net(napb_no_net)
+
+        return napb
+
     @property
     def basename(self) -> str:
         return prob.registry[self.site_inference_names[None]].name
@@ -465,6 +502,23 @@ class ScalingStudy(AblationStudy):
         helper.add_non_lulucf_cells()
         helper.add_lulucf_cells()
         return helper.make_echart()
+
+    def government_impact_chart(self, strategy_name:str):
+        napb = self.national_annual_program_balances(strategy_name)
+        from .results_ops import napb_scale
+        rval = echart_from_napb(
+                napb=napb_scale(napb, 1 / 1_000_000_000),
+                div_id=f'government_impact_echart_{self.basename}_{strategy_name}',
+                model_name=self.basename)
+        return rval
+
+    def cost_per_tCO2e(self, strategy_name: str, q=(.025, .975)):
+        napb = self.national_annual_program_balances(strategy_name)
+        annual_emission_diffs = self.emission_results(strategy_name)
+        from . import results_ops
+        rval_sample = results_ops.cost_per_tCO2e(napb=napb, aer=annual_emission_diffs)
+        lower, upper = np.quantile(rval_sample, q=q)
+        return lower, upper
 
     def install_site_inferences(self):
         assert self.site_inference_names == None

@@ -7,13 +7,17 @@ class DetailedAnnualProgramBalances:
     # system is deliberate.
 
     CAD_sample: dict[tuple[GovernmentProgram,
-                           # ProgramComponent,
                            PT,
                            Activity],
                      object] # n_samples x n_years
 
     years: list[int]
     n_samples: int
+
+    def __init__(self, *, CAD_sample, years, n_samples):
+        self.CAD_sample = CAD_sample
+        self.years = years
+        self.n_samples = n_samples
 
 
 class NationalAnnualProgramBalances:
@@ -26,3 +30,8 @@ class NationalAnnualProgramBalances:
 
     years: list[int]
     n_samples: int
+
+    def __init__(self, *, CAD_sample, years, n_samples):
+        self.CAD_sample = CAD_sample
+        self.years = years
+        self.n_samples = n_samples
