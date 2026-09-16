@@ -1,14 +1,14 @@
 import os
 
 from . import (
-    ipcc_canada,
-    enums,
-    blog,
-    strategies,
     barriers,
-    sim,
+    blog,
+    enums,
+    ipcc_canada,
     prob,
-    )
+    sim,
+    strategies,
+)
 
 HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
@@ -34,7 +34,7 @@ def endpoints():
         for catpath in ipcc_canada.catpaths:
             rval.append(f"/models/sim/{sim_name}/ipcc-sectors/{catpath}/")
 
-    for model_name, site_inf in sorted(prob.site_inferences.items()):
+    for model_name, site_inf in sorted(prob.registry.items()):
         if not site_inf.show_on_models_page:
             continue
         rval.append(f"/models/prob/{model_name}/")
@@ -46,7 +46,7 @@ def endpoints():
         "/",
         "/ipcc-sectors/",
         "/models",
-        #"/predictions/",
+        "/predictions/",
         "/strategies/",
         "/glossary/",
         "/about/",

@@ -43,7 +43,7 @@ for the NIR published in year YYYY, at a point MM months prior to publication.
           </tr>
     </thead>
     <tbody>
-        {% for ident, site_inf in planzero.prob.site_inferences.items()
+        {% for ident, site_inf in planzero.prob.registry.items()
            if site_inf.show_on_models_page
 	   and site_inf.challenge_result_url(challenge_name)
 	   %}

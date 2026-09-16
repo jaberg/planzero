@@ -280,9 +280,6 @@ class EmissionImpactChartHelper(SparklineEChartHelperBase):
             estimates_with_lulucf += estimated_sector_total_ca
             mean_with_lulucf += mean_sector_total
 
-        print(estimates_without_lulucf)
-        print(mean_without_lulucf)
-
         self.add_data_for_LULUCF_totals(
             estimates_with_lulucf,
             mean_with_lulucf,

@@ -199,7 +199,7 @@ async def get_simulation_page(ident:str, request: Request):
 
 @app_cache
 def get_models_prob_page_html(ident:str):
-    site_inference = planzero.prob.site_inferences[ident]
+    site_inference = planzero.prob.registry[ident]
     if not site_inference.show_on_models_page:
         return None
     return templates.get_template("models_prob.html").render(
@@ -223,7 +223,7 @@ async def get_models_prob_page(ident:str, request: Request):
 
 @app_cache
 def get_models_prob_sector_page_html(ident:str, sector_path:str):
-    site_inference = planzero.prob.site_inferences[ident]
+    site_inference = planzero.prob.registry[ident]
     if not site_inference.show_on_models_page:
         return None
     return templates.get_template("models_prob_sector.html").render(
@@ -397,10 +397,16 @@ def get_strategies_html():
     models_by_strategy = {}
     sectors_by_strategy = {}
     for model_id, site_inf in sorted(planzero.prob.registry.items()):
+        if site_inf.ablation_study and site_inf.strategy_id:
+            # don't list ablated variants
+            continue
         for strategy_id in site_inf.strategy_ids:
             models_by_strategy.setdefault(strategy_id, []).append(model_id)
-            sectors_by_strategy.setdefault(strategy_id, set()).update(
-                    site_inf.affected_sectors_by_strategy[strategy_id])
+            try:
+                sectors_by_strategy.setdefault(strategy_id, set()).update(
+                        site_inf.affected_sectors_by_strategy[strategy_id])
+            except KeyError as err:
+                raise KeyError((model_id, strategy_id)) from err
 
     template = templates.get_template("strategies.html")
     rval =  template.render(
