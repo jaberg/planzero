@@ -3,12 +3,12 @@ import re
 from urllib.parse import urljoin
 from fastapi.testclient import TestClient
 import app
-import planzero
+import warmup
 
 client = TestClient(app.app)
 
 
-@pytest.mark.parametrize("endpoint", planzero.endpoints.endpoints())
+@pytest.mark.parametrize("endpoint", warmup.cached_endpoints())
 def test_endpoints(endpoint):
     response = client.get(endpoint)
     assert response.status_code == 200
@@ -17,7 +17,7 @@ def test_endpoints(endpoint):
 _checked_links = set()
 
 
-@pytest.mark.parametrize("endpoint", planzero.endpoints.endpoints())
+@pytest.mark.parametrize("endpoint", warmup.cached_endpoints())
 def test_internal_links(endpoint):
     response = client.get(endpoint)
     assert response.status_code == 200

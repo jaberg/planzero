@@ -3,6 +3,7 @@ import os
 from . import (
     blog,
     ipcc_canada,
+    my_functools,
     prob,
     sim,
     singleton_registry,
