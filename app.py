@@ -3,7 +3,6 @@ import json
 import os
 
 import jinja2
-import numpy as np
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -70,7 +69,7 @@ def app_cache(f):
 
 
 @app.get("/ipcc-sectors/", response_class=HTMLResponse)
-async def get_ipcc_sectors(request: Request, error_text:str=None):
+async def get_ipcc_sectors(request: Request, error_text:str|None=None):
     return templates.TemplateResponse(
         request=request,
         name="ipcc-sectors.html",
@@ -309,9 +308,6 @@ def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
     
     # Calculate impact (baseline - ablated)
     # This assumes we want to show emissions saved
-    sim_years_ints = np.arange(1990, 2090)
-    sim_years = [tt * u.years for tt in sim_years_ints]
-    
     impact_chart = sim.strategy_impact_echart(strategy_name)
     subsidies_chart = sim.strategy_subsidies_echart(strategy_name)
 
