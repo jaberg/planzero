@@ -304,7 +304,7 @@ class Strategy(GlossaryTerm):
     """<p>A Strategy is a {{lref("Dynamic Element", "dynamic element")|safe}}
     that is meant to represent an inititive that could be undertaken within
     a model.
-    Strategies are optional; they can be omitted without sacrificing the validity of
+    Strategies are optional; they can be omitted without compromising the validity of
     a model.
     Indeed, simulating models with and without a strategy is how
     strategies are evaluated in the Simulations on the PlanZero site.
@@ -344,24 +344,22 @@ class Strategy(GlossaryTerm):
 class Barrier(GlossaryTerm):
     """<p>A Barrier is a 
     {{lref("Dynamic Element", "dynamic element")|safe}}
-    that is not optional, that is, one whose omission would sacrifice the
-    validity of a model.</p>
-    <p>
-    PlanZero terminology may feel a bit cynical in this regard, but in
-    this terminology, all of the following would qualify as barriers:
+    that is not optional, that is, one whose omission would compromise the
+    validity of a model.
+    Barriers comprise most of what you might call "the modelling" in a PlanZero model.
+    The following would all qualify as barriers in PlanZero, to the reduction
+    of emissions:
     <ul>
     <li>regulations</li>
-    <li>the life cycle of assets</li>
-    <li>consumer behaviour</li>
-    <li>the length of research and development cycles</li>
-    <li>return on investment requirements</li>
+    <li>investor behaviour (e.g. to require certain rates of return)</li>
+    <li>consumer behaviour (especially habits and traditions that currently entail fossil fuel combustion)</li>
+    <li>the life cycle of assets (especially large, expensive, high-emission facilities)</li>
+    <li>the duration of research and development cycles</li>
     <li>the predictions of climate models</li>
     <li>the laws of physics</li>
     </ul>
     </p>
-    <p>I borrow the term from {{lref("EGFS")|safe}} but its
-    use in a computational modelling framework is, admittedly, a stretch.
-    </p>
+    <p>The term is adapted from {{lref("EGFS")|safe}}.</p>
     """ 
 
     @computed_field
@@ -383,9 +381,8 @@ class Barrier(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Strategy': 'a dynamic element designed to change the input to one or more barriers',
-            'Model': 'a set of dynamic elements, including barriers, that make a prediction',
+            'Model': 'a set of dynamic elements, including barriers, that supports inference and/or prediction',
             'NIR_Model': "a model of Canada's future emissions",
-            'Simulation': 'the computation of scenarios from models',
             'EGFS': "PlanZero adopts the Barrier term and definition from The Executive Guide to Facilitating Strategy.",
         }
 

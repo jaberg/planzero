@@ -301,7 +301,7 @@ class EmissionImpactChartHelper(SparklineEChartHelperBase):
 
 
 class ScalingSiteInference(prob.SiteInference):
-    """Maximal deployment of existing products"""
+    """Maximal deployment of available, modelled products"""
 
     strategy_id: str|None
     data_cutoff:datetime.date = datetime.date(year=2024, month=12, day=31)
@@ -320,7 +320,7 @@ class ScalingSiteInference(prob.SiteInference):
     @computed_field
     def pretty_name(self) -> str:
         if self.strategy_id is None:
-            return 'Scaling (All strategies)'
+            return 'Scaling'
         else:
             return f'Scaling (minus {self.strategy_id})'
 
