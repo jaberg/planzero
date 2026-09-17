@@ -163,7 +163,7 @@ jobs:
 
       - name: Setup Tmate session
         uses: mxschmitt/action-tmate@v3
-        if: true
+        if: false
 
       - name: Deploy PR app to Fly.io
         id: deploy

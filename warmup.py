@@ -8,7 +8,9 @@ import planzero.endpoints
 populate_cache = 0
 
 # called in dev environment by test_200.py test_endpoints
-@app.app_cache
+# name is specified so that the cache key is the same when this
+# file is __main__ and if it is a module.
+@app._app_cache.memoize(name='warmup.cached_endpoints')
 def cached_endpoints():
     return list(planzero.endpoints.endpoints())
 
