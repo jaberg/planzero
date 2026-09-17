@@ -2,7 +2,7 @@ target = ${PROJECTNAME}
 
 .build.base: Dockerfile
 	docker build --target base -t $(target):base .
-	touch .build.base
+	#touch .build.base
 
 .build.test: Dockerfile
 	docker build --target testing -t $(target):test .
@@ -15,12 +15,12 @@ target = ${PROJECTNAME}
 
 .build.cache: Dockerfile
 	docker build --target build_cache -t $(target):cache .
-	touch .build.cache
+	#touch .build.cache
 
 
 .build.prod: Dockerfile
 	docker build --target production_server -t $(target):prod .
-	touch .build.prod
+	#touch .build.prod
 
 
 tmux: .build.dev
@@ -45,35 +45,19 @@ jupyter:
 	jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
 
 
+bash_build_cache: .build.cache
+	docker run \
+		-v ${PWD}:/mnt/ \
+		-w /mnt/ \
+		-it --rm $(target):cache \
+		bash
+
 bash_prod: .build.prod
 	docker run \
 		-v ${PWD}:/mnt/ \
 		-w /mnt/ \
 		-it --rm $(target):prod \
 		bash
-
-test: .build.test
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-e PLANZERO_DATA=/mnt/data \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		pytest -W error --maxfail=2 .
-
-test_200_internal: .build.test
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		pytest -W error -vv -k internal test_200.py
-
-test_200: .build.test
-	docker run \
-		-v ${PWD}:/mnt/ \
-		-w /mnt/ \
-		-it --rm $(target):test \
-		pytest -W error --maxfail=1 -vv -k endpoints test_200.py
-
 
 prodlike: .build.prod
 	docker run \

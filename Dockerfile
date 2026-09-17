@@ -44,9 +44,9 @@ RUN echo 'export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallel
 # used for most dev activities in Makefile
 ENV PLANZERO_DATA="/mnt/data"
 ENV PLANZERO_USE_DISK_CACHE="0"
-ENV PLANZERO_APP_CACHE_DIR="/mnt/.planzero_app_cache"
-ENV PLANZERO_CACHE_DIR="/mnt/.planzero_cache"
-ENV PLANZERO_MODEL_CACHE_ROOT="/mnt/.planzero_model_cache_root"
+ENV PLANZERO_APP_CACHE_DIR="/mnt/_planzero_app_cache"
+ENV PLANZERO_CACHE_DIR="/mnt/_planzero_cache"
+ENV PLANZERO_MODEL_CACHE_ROOT="/mnt/_planzero_model_cache_root"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=1
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=1
 # TODO: pull in the source code, data etc. to run dockerized tests
@@ -59,11 +59,12 @@ FROM testing AS build_cache
 # run on dev machine
 ENV PLANZERO_DATA="/content/data"
 ENV PLANZERO_USE_DISK_CACHE="1"
-ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
-ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
-ENV PLANZERO_MODEL_CACHE_ROOT="/content/.planzero_model_cache_root"
+ENV PLANZERO_CACHE_DIR="/content/_planzero_cache"
+ENV PLANZERO_APP_CACHE_DIR="/content/_planzero_app_cache"
+ENV PLANZERO_MODEL_CACHE_ROOT="/content/_planzero_model_cache_root"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
+ENV JAX_ENABLE_X64=1
 
 # TODO: pull inference results from R2
 COPY ./planzero /content/planzero
@@ -73,62 +74,45 @@ COPY ./html /content/html
 # TODO: GH may require additional cache elements from R2
 COPY ./cache /content/cache
 COPY ./warmup.py /content/warmup.py
+COPY ./test_200.py /content/test_200.py
 COPY ./app.py /content/app.py
 WORKDIR /content
 
-# Build app cache
-RUN python warmup.py
+# Build app cache (and run unit tests)
+#RUN python -m planzero.model_db init
+#RUN python -m planzero inference_prep --model=Static_Normals_2024_12_31
+#RUN python -m planzero inference_work --model=Static_Normals_2024_12_31
+#RUN python -m planzero inference_work --model=ScalingStudy_All_Strategies
+COPY my_database.db /content/my_database.db
+COPY _planzero_model_cache_root /content/_planzero_model_cache_root
+
+# test_200.py in particular builds the _planzero_app_cache needed for next phase
+RUN pytest -n 4 -W error --maxfail=10 .
 
 
 FROM base AS production_server
 # built on dev machine
 # run on dev machine or fly.io
 # MAINTAIN: replicate changes in production_server_amd64
-COPY --from=build_cache /content/.planzero_app_cache /content/.planzero_app_cache
+COPY --from=build_cache /content/_planzero_app_cache /content/_planzero_app_cache
 COPY ./planzero /content/planzero
 COPY ./html /content/html
+COPY ./warmup.py /content/warmup.py
 COPY ./app.py /content/app.py
 COPY ./data/EN_GHG_IPCC_Can_Prov_Terr.csv /content/data/EN_GHG_IPCC_Can_Prov_Terr.csv
 WORKDIR /content
 
 ENV PLANZERO_DATA="/content/data"
 ENV PLANZERO_USE_DISK_CACHE="1"
-ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
-ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
+ENV PLANZERO_CACHE_DIR="/content/_planzero_cache"
+ENV PLANZERO_APP_CACHE_DIR="/content/_planzero_app_cache"
 ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
+RUN python warmup.py
 CMD ["fastapi", "run"]
 
 
-FROM --platform=linux/amd64 python:3.11-slim AS production_server_amd64
-
-# MAINTAIN: COPY-PASTE FROM base
-WORKDIR /app
-RUN pip install --no-cache-dir virtualenv
-RUN virtualenv venv
-ENV PATH="/app/venv/bin:$PATH"
-COPY ./base_requirements.txt base_requirements.txt
-RUN pip install --no-cache-dir -r base_requirements.txt
-
-# MAINTAIN COPY-PASTE FROM production_server
-COPY --from=build_cache /content/.planzero_app_cache /content/.planzero_app_cache
-COPY ./planzero /content/planzero
-COPY ./html /content/html
-COPY ./app.py /content/app.py
-COPY ./data/EN_GHG_IPCC_Can_Prov_Terr.csv /content/data/EN_GHG_IPCC_Can_Prov_Terr.csv
-WORKDIR /content
-
-ENV PLANZERO_DATA="/content/data"
-ENV PLANZERO_USE_DISK_CACHE="1"
-ENV PLANZERO_CACHE_DIR="/content/.planzero_cache"
-ENV PLANZERO_APP_CACHE_DIR="/content/.planzero_app_cache"
-ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=0
-ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=0
-CMD ["fastapi", "run"]
-
-
-
-FROM --platform=linux/amd64 python:3.11-slim AS gh_workflow
+FROM python:3.11-slim AS gh_workflow
 
 # MAINTAIN: COPY-PASTE FROM base
 WORKDIR /app
