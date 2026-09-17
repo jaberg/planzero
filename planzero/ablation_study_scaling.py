@@ -520,16 +520,20 @@ class ScalingStudy(AblationStudy):
         lower, upper = np.quantile(rval_sample, q=q)
         return lower, upper
 
-    def install_site_inferences(self):
+    def model_post_init(self, context):
+        # pydantic calls this after __init__() or model_construct()
         assert self.site_inference_names == None
         site_inference_names = {}
 
         site_inf = ScalingSiteInference(strategy_id=None)
+        # as long as this class is used as a singleton, the assertion should pass
+        assert site_inf.name not in prob.registry
         prob.registry[site_inf.name] = site_inf
         site_inference_names[None] = site_inf.name
 
         for strategy_id in self.strategy_ids:
             site_inf = ScalingSiteInference(strategy_id=strategy_id)
+            assert site_inf.name not in prob.registry
             prob.registry[site_inf.name] = site_inf
             site_inference_names[strategy_id] = site_inf.name
 

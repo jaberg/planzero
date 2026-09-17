@@ -3,7 +3,9 @@ import enum
 
 from pydantic import BaseModel
 
-from . import enums, est_nir, sim
+from . import enums, est_nir, ipcc_canada, sim
+from .html import HTML_Math_Latex, HTML_Matplotlib_Figure, latex
+from .ureg import u
 
 _classes = []
 _blogs_by_url_filename = {}
@@ -96,15 +98,8 @@ class BlogPost(BaseModel):
         pass
 
 
-from . import ipcc_canada
-from .html import HTML_Math_Latex, HTML_Matplotlib_Figure
-from .ureg import u
-
-
-def latex(latex, display='inline'): # display inline or block
-    return HTML_Math_Latex(latex=latex, display=display).as_html()
-
 from .nir_ar2_post import AR2
+
 
 class Glossary(BlogPost):
     """This post announces a new page:
@@ -247,6 +242,7 @@ class ProbabilisticNIR2025(BlogPost):
 
     def figure_uncertainty_hist(self,):
         import numpy as np
+
         from .nir2025 import load_uncertainty
         unc_df = load_uncertainty()
         def log_squash(x):
@@ -320,10 +316,9 @@ class ProbabilisticNIR2025(BlogPost):
     @staticmethod
     def figure_SBLN():
         import numpy as np
-        from .enums import IPCC_Sector, GHG, PT
-        from .nir2025 import (
-            ktCO2e_numpyro_dist_pt_ca,
-            idx_of_pt)
+
+        from .enums import GHG, PT, IPCC_Sector
+        from .nir2025 import idx_of_pt, ktCO2e_numpyro_dist_pt_ca
 
         def axtexts(ax, texts, left_offset=0.05):
             for ii, text_str in enumerate(texts):
@@ -740,6 +735,8 @@ class GHG_Emissions(BlogPost):
             SF6_df=latex(r"0.57 C"),
             NF3_df=latex(r"0.21 C"),
             )
+
+        from . import planet_model  # noqa: F401
 
         super().__init__(
             date=datetime.date(2026, 1, 21),

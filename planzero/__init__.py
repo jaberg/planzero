@@ -1,30 +1,6 @@
-from .base import DynamicElement
-from .base import BaseScenarioProject
-from .base import SparseTimeSeries
-from .base import ureg
+# don't readily import things here
 
-from . import base
-from . import battery_tech
-
-from .ipcc__transport__marine__domestic_navigation import (
-    IPCC_Transport_Marine_DomesticNavigation_Model,
-)
-
-from .ipcc_transport_road_heavydutydiesel import (
-    IPCC_Transport_RoadTransportation_HeavyDutyDieselVehicles,
-)
-
-from . import barriers
-from . import strategies
-from . import sim
-from . import prob
-from . import challenge
-from .my_functools import cache as _cache
-
-from . import ablation_study_scaling
-from . import ablation
-ablation.registry['ScalingStudy'].install_site_inferences()
-
-from . import planet_model
-from . import endpoints # next-to-last b/c it uses class registries
-from . import glossary # glossary imports many files, goes last
+# imports are controlled somewhat carefully by app.py
+# by only importing files that use e.g. jax and numpyro
+# and other packages in requirements_dev.txt
+# within functions with @app_cache decorators
