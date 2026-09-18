@@ -171,6 +171,34 @@ async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier
             request,
             error_text="Sorry, no such simulation and/or barrier")
 
+@app_cache
+def get_prob_barrier_impact_html(site_inf_name, barrier_name):
+    template = templates.get_template("model_barrier.html")
+    site_inference = prob_registry()[site_inf_name]
+    print(site_inference.barriers)
+    barrier_obj = site_inference.barriers[barrier_name]
+    rval = template.render(
+        dict(
+            default_context,
+            active_tab='simulations',
+            site_inf_name=site_inf_name,
+            barrier_name=barrier_name,
+            barrier_obj=barrier_obj,
+            site_inference=site_inference,
+            ))
+    return rval
+
+
+@app.get("/models/prob/{site_inf_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+async def get_prob_barrier_impact(request: Request, site_inf_name: str, barrier_name: str):
+    html = get_prob_barrier_impact_html(site_inf_name, barrier_name)
+    if html:
+        return HTMLResponse(content=html)
+    else:
+        raise HTTPException(status_code=404, detail="No such model / barrier")
+
+
+
 
 @app_cache
 def get_simulations_page_html(ident:str):

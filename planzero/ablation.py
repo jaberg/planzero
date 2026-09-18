@@ -7,6 +7,7 @@ from typing import ClassVar
 from pydantic import BaseModel
 
 from .annual_emission_results import AnnualEmissionResults
+from .annual_subsidy_results import NationalAnnualProgramBalances
 from .singleton_registry import SingletonRegistry
 
 registry = SingletonRegistry()
@@ -29,14 +30,6 @@ class AblationStudy(BaseModel):
             registry.add_class(cls)
 
     @property
-    def dynamic_elements(self) -> dict:
-        barriers = self.barriers
-        strategies = self.strategies
-        rval = dict(barriers, **strategies)
-        assert len(rval) == len(barriers) + len(strategies)
-        return rval
-
-    @property
     def strategies(self) -> dict:
         return {}
 
@@ -50,5 +43,14 @@ class AblationStudy(BaseModel):
         # [strategy_id] looks up the site_inference id for the ablation of that strategy
         raise NotImplementedError()
 
-    def emission_results(self) -> AnnualEmissionResults:
+    def emission_results(
+            self,
+            strategy_name:str,
+            ) -> AnnualEmissionResults:
+        raise NotImplementedError()
+
+    def national_annual_program_balances(
+            self,
+            strategy_name:str
+            ) -> NationalAnnualProgramBalances:
         raise NotImplementedError()

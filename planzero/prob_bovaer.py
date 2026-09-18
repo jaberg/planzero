@@ -1,27 +1,26 @@
 from functools import cache as memcache
+
+import jax.numpy as jnp
+import jax.random as jrandom
+import numpy as np
+import numpyro
+import numpyro.distributions as dist
+from jax.lax import scan
+from numpyro.infer import MCMC, NUTS
 from pydantic import computed_field
 
-from . import sts
-from .ureg import u
-from .enums import IPCC_Sector, PT, GHG
+from . import model_db, nir2025, sts
 from .eccc_nir_annex3p4 import table_A3p4_11
+from .enums import GHG, PT, IPCC_Sector
 from .ghgvalues import GWP_100
 from .sc_3210013001 import (
-    FarmType, Livestock, Livestock_nonsums, SurveyDate,
-    number_of_cattle_by_class_and_farm_type_combined_surveys)
-from . import model_db, my_functools, nir2025
-
-import numpy as np
-try:
-    import jax.numpy as jnp
-    import jax.random as jrandom
-    import numpyro
-    import numpyro.distributions as dist
-    from numpyro.infer import MCMC, NUTS
-    from jax.lax import scan
-except ImportError:
-    pass
-
+    FarmType,
+    Livestock,
+    Livestock_nonsums,
+    SurveyDate,
+    number_of_cattle_by_class_and_farm_type_combined_surveys,
+)
+from .ureg import u
 
 feature_mask_by_farmtype = {
     FarmType.Dairy: [lt not in [Livestock.BeefCows] for lt in Livestock_nonsums],
@@ -474,28 +473,11 @@ class NewCarry:
 class Carry:
     def __init__(self, initial_carry: InitialCarry, carry:dict, elem:str):
         self.initial_carry = initial_carry
-        self.new_carry = new_carry
+        self.carry = carry
         self.elem = elem
 
 
-
-def batch_rollout_barriers():
-    from . import cattle
-    from .strategies.strategy2 import Scale_Bovaer
-
-    barriers = [
-            Cattle_Population_Static_Normal(),
-            cattle.Bovaer_Adoption_Limit(),
-            cattle.Bovaer_Farm_Subsidy(),
-            cattle.Bovaer_Production_Emission_Factors(),
-            cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
-            cattle.Bovaer_Purchase_Cost(),
-            cattle.Bovaer_Monitoring(),
-            ]
-    strategies = [
-            Scale_Bovaer(),
-            ]
-
+def batch_rollout_barriers(barriers, strategies):
     initial_carry = InitialCarry()
     xs = {}
     constants = {}
@@ -529,6 +511,7 @@ def batch_rollout_barriers():
             'xs': xs,
             'final_carry': final_carry,
             'years': years,
+            'initial_carry': initial_carry,
             }
 
 

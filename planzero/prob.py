@@ -19,6 +19,7 @@ class SiteInference(BaseModel):
     """
 
     include_in_registry: ClassVar[bool] = False
+    strategy_id: str|None = None
 
     def main_model_id(self) -> int:
         # if model corresponds to a model in model_db, print model_id to
@@ -95,11 +96,23 @@ class SiteInference(BaseModel):
 
     @property
     def strategies(self) -> dict:
-        return {}
+        if self.ablation_study_id is None:
+            rval = {}
+        else:
+            assert None not in self.ablation_study.strategies
+            rval = {
+                    key: val
+                    for key, val in self.ablation_study.strategies.items()
+                    if key != self.strategy_id
+                    }
+        return rval
 
     @property
     def barriers(self) -> dict:
-        return {}
+        if self.ablation_study_id is None:
+            return {}
+        else:
+            return self.ablation_study.barriers
 
     @computed_field
     def ablation_study_id(self) -> str|None:

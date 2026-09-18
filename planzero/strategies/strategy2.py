@@ -76,6 +76,11 @@ class Scale_Bovaer(Strategy2):
             )
         return rval
 
+    # XXX what is this?
+    @computed_field
+    def ipcc_sectors(self) -> list:
+        return []
+
     @computed_field
     def extra_ipcc_sectors(self) -> list[object]:
         # TODO: https://github.com/jaberg/planzero/issues/72

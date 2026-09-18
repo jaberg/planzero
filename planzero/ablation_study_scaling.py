@@ -4,7 +4,7 @@ from typing import ClassVar
 import numpy as np
 from pydantic import computed_field
 
-from . import cattle, model_db, nir2025_site, prob, prob_bovaer
+from . import cattle, model_db, nir2025_site, prob
 from .ablation import AblationStudy
 from .annual_emission_results import AnnualEmissionResults
 from .annual_subsidy_results import NationalAnnualProgramBalances
@@ -15,6 +15,11 @@ from .nir_static_normals import (
     normals_by_sector_ghg,
     # weighted_KL_score,
 )
+from .prob_bovaer import (
+    Cattle_Population_Static_Normal,
+    batch_rollout_barriers,
+    cached_inference,
+)
 from .sparkline_echart_helper import (
     PseudoRegion,
     PseudoSectors,
@@ -22,10 +27,12 @@ from .sparkline_echart_helper import (
     SparklineEChartHelperBase,
     echart_from_napb,
 )
+from .strategies.strategy2 import Scale_Bovaer
 
 model_family = 'Scaling'
 model_version = 1
 model_version_description = "First draft"
+
 
 def scaling_model_id(data_cutoff:datetime.date):
     static_normals_model_id = model_id_from_data_cutoff(data_cutoff)
@@ -75,7 +82,7 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
             'pos_shade': [max(ubound, 0) - max(lbound, 0) for yr in self.years],
             }
 
-    def load_data(self):
+    def load_data(self, batch_rollout_barriers_results):
 
         self.years = np.arange(1990, 2050+1)
 
@@ -116,8 +123,7 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
                     # This is assumed to be essentially 0
                     continue
                 elif (sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
-                    from .prob_bovaer import batch_rollout_barriers
-                    results = batch_rollout_barriers()
+                    results = batch_rollout_barriers_results
                     #estimated_sector_total_ca += results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T  * self.v_unit_scale
                     estimated_sector_total_ca += results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T  * self.v_unit_scale
                 else:
@@ -167,7 +173,7 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
 
 class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
 
-    def load_data(self):
+    def load_data(self, batch_rollout_barriers_results):
         static_normals_model_id = model_id_from_data_cutoff(
                 datetime.date(year=2024, month=12, day=31))
 
@@ -194,8 +200,7 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
                 # This is assumed to be essentially 0,
                 pass
             elif (self.sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
-                from .prob_bovaer import batch_rollout_barriers
-                results = batch_rollout_barriers()
+                results = batch_rollout_barriers_results
                 estimates_ghg_pt[:, ii, :, :] = (
                         results['ys']['enteric_fermentation_ktCO2e_pt_sample'].transpose((1, 0, 2))
                         * self.v_unit_scale)
@@ -301,9 +306,9 @@ class EmissionImpactChartHelper(SparklineEChartHelperBase):
 
 
 class ScalingSiteInference(prob.SiteInference):
-    """Maximal deployment of available, modelled products"""
+    """Maximal deployment of available, modelled products,
+    based on a baseline assumption of static emissions amounts."""
 
-    strategy_id: str|None
     data_cutoff:datetime.date = datetime.date(year=2024, month=12, day=31)
 
     @computed_field
@@ -337,7 +342,8 @@ class ScalingSiteInference(prob.SiteInference):
                 div_id,
                 v_unit,
                 model_name=self.name)
-        helper.load_data()
+        helper.load_data(
+                batch_rollout_barriers_results=self.batch_rollout_barriers())
         helper.order_sectors()
         helper.add_total_cells()
         helper.add_non_lulucf_cells()
@@ -350,7 +356,8 @@ class ScalingSiteInference(prob.SiteInference):
             ghg=ghg,
             div_id=f'regional_sparkline_echart_{ghg.value if ghg else "all"}',
             v_unit=v_unit)
-        helper.load_data()
+        helper.load_data(
+                batch_rollout_barriers_results=self.batch_rollout_barriers())
         helper.order_regions()
         helper.add_regional_cells()
         return helper.make_echart()
@@ -392,7 +399,40 @@ class ScalingSiteInference(prob.SiteInference):
         #
         # The required files may be cached, workers should check for completed
         # files and assume they are correct if they are present.
-        prob_bovaer.cached_inference()
+        cached_inference()
+
+    def batch_rollout_barriers(self):
+        import time
+        t0 = time.time()
+        barriers = list(self.ablation_study.barriers.values())
+        strategies = [
+                obj
+                for name, obj in self.ablation_study.strategies.items()
+                if name != self.strategy_id]
+        if self.strategy_id is not None:
+            assert len(strategies) == len(self.ablation_study.strategies) - 1
+        results = batch_rollout_barriers(
+                barriers=barriers,
+                strategies=strategies)
+        print('batch rollout took', time.time() - t0)
+        return results
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return [
+                'ProbabilisticBovaer',
+                'StaticNormals',
+                'ModellingBovaer',
+                ]
+
+    def foo(self, elem_name):
+        results = self.batch_rollout_barriers()
+        elem = self.barriers[elem_name]
+        rval = results['initial_carry'].outputs(elem)
+        print(rval)
+        print(results['initial_carry']._setitems)
+        print('foo', rval)
+        return rval
 
 
 class ScalingStudy(AblationStudy):
@@ -400,26 +440,26 @@ class ScalingStudy(AblationStudy):
     include_in_registry: ClassVar[bool] = True
     site_inference_names: dict[str|None, str]|None = None
 
-    def barriers(self) -> list:
-        return [
-            cattle.Cattle_Population_AR(),
-            cattle.Bovaer_Adoption_Limit(),
-            cattle.Bovaer_Production_Emission_Factors(),
-            cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
-            cattle.Bovaer_Purchase_Cost(),
-            cattle.Bovaer_Farm_Subsidy(),
-            cattle.Bovaer_Monitoring(),
-        ]
+    @property
+    def _baseline_siteinf(self):
+        baseline = prob.registry[self.site_inference_names[None]]
+        return baseline
 
-    def emission_results(self, strategy_name):
-        #baseline = prob.registry[self.site_inference_names[None]]
+    @property
+    def barriers(self) -> dict:
+        return self._barriers
+
+    @property
+    def strategies(self) -> dict:
+        return self._strategies
+
+    def emission_results(self, strategy_name:str):
         #ablation = prob.registry[self.site_inference_names[strategy_name]]
         assert strategy_name == 'Scale_Bovaer'
 
         ktCO2e_sample = {}
 
-        from .prob_bovaer import batch_rollout_barriers
-        results = batch_rollout_barriers()
+        results = self._baseline_siteinf.batch_rollout_barriers()
 
         # Enteric Fermentation
         sample_w_strategy = results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T
@@ -440,17 +480,18 @@ class ScalingStudy(AblationStudy):
                 Activity.Farming_Cattle] \
                         = results['ys']['bovaer_production_emissions_ktCO2e_ca_sample'].T
 
-
         return AnnualEmissionResults(
                 ktCO2e_sample=ktCO2e_sample,
                 years=years,
                 n_samples=n_samples)
 
-    def national_annual_program_balances(self, strategy_name):
+    def national_annual_program_balances(
+            self,
+            strategy_name:str,
+            ) -> NationalAnnualProgramBalances:
         assert strategy_name == 'Scale_Bovaer'
 
-        from .prob_bovaer import batch_rollout_barriers
-        results = batch_rollout_barriers()
+        results = self._baseline_siteinf.batch_rollout_barriers()
         CAD_sample = {}
 
         sample_w_strategy = results['ys']['bovaer_farm_subsidy_ca'].T
@@ -538,3 +579,16 @@ class ScalingStudy(AblationStudy):
             site_inference_names[strategy_id] = site_inf.name
 
         self.site_inference_names = site_inference_names
+
+        self._barriers = {
+                'Cattle_Population_Static_Normal': Cattle_Population_Static_Normal(),
+                'Bovaer_Adoption_Limit': cattle.Bovaer_Adoption_Limit(),
+                "Bovaer_Farm_Subsidy": cattle.Bovaer_Farm_Subsidy(),
+                "Bovaer_Production_Emission_Factors": cattle.Bovaer_Production_Emission_Factors(),
+                "Cattle_Enteric_Emission_Rates_NIR2025_Bovaer": cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
+                "Bovaer_Purchase_Cost": cattle.Bovaer_Purchase_Cost(),
+                "Bovaer_Monitoring": cattle.Bovaer_Monitoring(),
+                }
+        self._strategies = {
+                "Scale_Bovaer": Scale_Bovaer(),
+                }
