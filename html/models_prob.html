@@ -21,6 +21,9 @@
     </header>
 
 <h2>Model Estimates of Past and Future Emissions</h2>
+
+{{site_inference.uncertain_sparkline_matrix_echart("banner_chart", v_unit="Mt_CO2e")|safe}}
+
 <p>
 Emissions are summarized by year, and in terms of total Mt{{CO2e|safe}}
 per non-aggregate {{siteref("NIR")|safe}} sector.
@@ -47,7 +50,56 @@ For information about the model itself, refer to
 at the bottom of this page.
 </p>
 
-{{site_inference.uncertain_sparkline_matrix_echart("banner_chart", v_unit="Mt_CO2e")|safe}}
+<h2 id="strategies">Strategies in this Model</h2>
+    {% if site_inference.ablation_study %}
+	<table>
+	    <thead>
+		<tr><th>Name</th><th>Description</th><th>Affected Sector(s)</th></tr>
+	    </thead>
+	    <tbody>
+    {% for strategy_name, strategy_obj in site_inference.ablation_study.strategies.items() %}
+		<tr>
+		    <td><a href="/models/prob/{{ ident }}/strategies/{{ strategy_name }}/">{{ strategy_obj.pretty_name }}</a></td>
+		    <td>{{ strategy_obj.short_description }}</td>
+		    <td>
+			{% for ipcc_sector in strategy_obj.extra_ipcc_sectors %}
+			<a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+			{% if not loop.last %},{% endif %}
+			{% endfor %}
+		    </td>
+		</tr>
+    {% endfor %}
+	    </tbody>
+    </table>
+    {% else %}
+    <p>This model does not include <a href="/glossary/#Strategy">strategy elements</a>.</p>
+    {% endif %}
+
+<h2 id="barriers">Barriers in this Model</h2>
+    {% if site_inference.ablation_study %}
+	<table>
+	    <thead>
+		<tr><th>Name</th><th>Description</th><th>Affected Sector(s)</th></tr>
+	    </thead>
+	    <tbody>
+    {% for barrier_name, barrier_obj in site_inference.ablation_study.barriers.items() %}
+		<tr>
+		    <td><a href="/models/prob/{{ ident }}/barriers/{{ barrier_name }}/">{{ barrier_obj.pretty_name }}</a></td>
+		    <td>{{ barrier_obj.short_description }}</td>
+		    <td>
+			{% for ipcc_sector in barrier_obj.extra_ipcc_sectors %}
+			<a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+			{% if not loop.last %},{% endif %}
+			{% endfor %}
+		    </td>
+		</tr>
+    {% endfor %}
+	    </tbody>
+    </table>
+    {% else %}
+    <p>This model does not include <a href="/glossary/#Barrier">barrier elements</a>.</p>
+    {% endif %}
+
 
 
 {% if site_inference.show_prediction_quality %}
@@ -94,55 +146,6 @@ Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
 
 {% endif %}
 
-<!--
-<h2>Model Elements</h2>
-
-<h3 id="strategies">Strategies</h3>
-<table>
-    <thead>
-        <tr><th>Name</th><th>Description</th><th>Sector</th></tr>
-    </thead>
-    <tbody>
-        {% for name, dyn_elem in {}.items() if 'strategy' in dyn_elem.tags %}
-        <tr>
-            <td><a href="/models/sim/{{ident}}/strategies/{{name}}/">{{printcname(name)}}</a></td>
-            <td>{{dyn_elem.short_description}}</td>
-            <td>
-                {% for ipcc_sector in dyn_elem.extra_ipcc_sectors %}
-                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
-                {% if not loop.last %},{% endif%}
-                {% endfor %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-
-<h3 id="barriers">Barriers</h3>
-<table>
-    <thead>
-        <tr><th>Name</th><th>Description</th><th>Direct Impact</th></tr>
-    </thead>
-    <tbody>
-        {% for name, dyn_elem in {}.items() if 'barrier' in dyn_elem.tags %}
-        <tr>
-            <td><a href="/models/sim/{{ident}}/barriers/{{name}}/">{{printcname(name)}}</a></td>
-            <td>{{dyn_elem.short_description}}</td>
-            <td>
-                {% for ipcc_sector in ipcc_sectors_from_dynelem(dyn_elem) %}
-                <a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
-                {% if not loop.last %},{% endif%}
-                {% endfor %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-
-</p>
--->
 <h2 id="posts">Posts developing this page</h2>
 <ul>
 {% for ident in site_inference.posts_developing_this_page %}

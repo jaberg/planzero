@@ -3,7 +3,6 @@ import json
 import os
 
 import jinja2
-import numpy as np
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,15 +21,18 @@ templates = Jinja2Templates(
         loader=jinja2.FileSystemLoader(htmlroot),
         ))
 
-import planzero
 import planzero.blog
 import planzero.enums
 import planzero.est_nir
+import planzero.glossary
 import planzero.html
 import planzero.ipcc_canada
 import planzero.ipcc_home
+import planzero.singleton_registry
+import planzero.ureg
+from planzero.endpoints import completed_prob_registry as prob_registry
 
-u = planzero.ureg
+u = planzero.ureg.ureg
 
 HOME_SHOW_PLANNED_POSTS = (os.environ['PLANZERO_HOME_SHOW_PLANNED_POSTS'] == '1')
 HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
@@ -67,7 +69,7 @@ def app_cache(f):
 
 
 @app.get("/ipcc-sectors/", response_class=HTMLResponse)
-async def get_ipcc_sectors(request: Request, error_text:str=None):
+async def get_ipcc_sectors(request: Request, error_text:str|None=None):
     return templates.TemplateResponse(
         request=request,
         name="ipcc-sectors.html",
@@ -99,7 +101,7 @@ def have_page_for_catpath(catpath):
         filepath = filepath_for_catpath(catpath)
         open(filepath).close()
         return True
-    except IOError:
+    except OSError:
         return False
 
 
@@ -107,6 +109,8 @@ def have_page_for_catpath(catpath):
 def get_ipcc_sector_html(catpath: str):
     if not have_page_for_catpath(catpath):
         return None
+    import planzero.est_nir
+    import planzero.strategies
     return templates.get_template(templatepath_for_catpath(catpath)).render(dict(
         default_context,
         active_tab='ipcc_sectors',
@@ -122,8 +126,8 @@ def get_ipcc_sector_html(catpath: str):
 async def get_ipcc_sectors_category(
     request: Request,
     category,
-    subcategory:str=None,
-    subsubcategory:str=None):
+    subcategory:str|None=None,
+    subsubcategory:str|None=None):
 
     if subsubcategory is not None:
         catpath=f'{category}/{subcategory}/{subsubcategory}'
@@ -143,6 +147,7 @@ async def get_ipcc_sectors_category(
 
 @app_cache
 def get_simulation_barrier_impact_html(sim_name, barrier_name):
+    import planzero.sim
     sim = planzero.sim.simulation_result(sim_name)
     template = templates.get_template("scenario_barrier.html")
     rval = template.render(
@@ -164,11 +169,40 @@ async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier
     else:
         return await get_ipcc_sectors(
             request,
-            error_text=f"Sorry, no such simulation and/or barrier")
+            error_text="Sorry, no such simulation and/or barrier")
+
+@app_cache
+def get_prob_barrier_impact_html(site_inf_name, barrier_name):
+    template = templates.get_template("model_barrier.html")
+    site_inference = prob_registry()[site_inf_name]
+    print(site_inference.barriers)
+    barrier_obj = site_inference.barriers[barrier_name]
+    rval = template.render(
+        dict(
+            default_context,
+            active_tab='simulations',
+            site_inf_name=site_inf_name,
+            barrier_name=barrier_name,
+            barrier_obj=barrier_obj,
+            site_inference=site_inference,
+            ))
+    return rval
+
+
+@app.get("/models/prob/{site_inf_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+async def get_prob_barrier_impact(request: Request, site_inf_name: str, barrier_name: str):
+    html = get_prob_barrier_impact_html(site_inf_name, barrier_name)
+    if html:
+        return HTMLResponse(content=html)
+    else:
+        raise HTTPException(status_code=404, detail="No such model / barrier")
+
+
 
 
 @app_cache
 def get_simulations_page_html(ident:str):
+    import planzero.sim
     site_sim = planzero.sim.site_simulations[ident]
     sim_result = planzero.sim.simulation_result(ident)
     sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
@@ -199,7 +233,7 @@ async def get_simulation_page(ident:str, request: Request):
 
 @app_cache
 def get_models_prob_page_html(ident:str):
-    site_inference = planzero.prob.site_inferences[ident]
+    site_inference = prob_registry()[ident]
     if not site_inference.show_on_models_page:
         return None
     return templates.get_template("models_prob.html").render(
@@ -223,7 +257,9 @@ async def get_models_prob_page(ident:str, request: Request):
 
 @app_cache
 def get_models_prob_sector_page_html(ident:str, sector_path:str):
-    site_inference = planzero.prob.site_inferences[ident]
+    import planzero.enums
+    registry = prob_registry()
+    site_inference = registry[ident]
     if not site_inference.show_on_models_page:
         return None
     return templates.get_template("models_prob_sector.html").render(
@@ -238,7 +274,7 @@ def get_models_prob_sector_page_html(ident:str, sector_path:str):
 
 
 @app.get("/models/prob/{ident}/sectors/{sector_path:path}", response_class=HTMLResponse)
-async def get_models_prob_page(ident:str, sector_path:str, request: Request):
+async def get_models_prob_sector_page(ident:str, sector_path:str, request: Request):
     while sector_path.endswith('/'):
         sector_path = sector_path[:-1]
     html = get_models_prob_sector_page_html(ident, sector_path=sector_path)
@@ -250,6 +286,8 @@ async def get_models_prob_page(ident:str, sector_path:str, request: Request):
 
 @app_cache
 def get_simulation_ipcc_sectors_category_html(sim_name, catpath):
+    import planzero.enums
+    import planzero.sim
     sim = planzero.sim.simulation_result(sim_name)
     chart = sim.echart_ipcc_sector(catpath)
     template = templates.get_template("scenario_ipcc_sector.html")
@@ -272,8 +310,8 @@ async def get_simulation_ipcc_sectors_category(
     request: Request,
     sim_name: str,
     category: str,
-    subcategory: str = None,
-    subsubcategory: str = None):
+    subcategory: str|None = None,
+    subsubcategory: str|None = None):
 
     if subsubcategory is not None:
         catpath=f'{category}/{subcategory}/{subsubcategory}'
@@ -288,6 +326,8 @@ async def get_simulation_ipcc_sectors_category(
 
 @app_cache
 def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
+    import planzero.sim
+
     sim = planzero.sim.simulation_result(sim_name)
     baseline_state = sim.state
     ablated_state = sim.ablations.get(strategy_name)
@@ -296,9 +336,6 @@ def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
     
     # Calculate impact (baseline - ablated)
     # This assumes we want to show emissions saved
-    sim_years_ints = np.arange(1990, 2090)
-    sim_years = [tt * u.years for tt in sim_years_ints]
-    
     impact_chart = sim.strategy_impact_echart(strategy_name)
     subsidies_chart = sim.strategy_subsidies_echart(strategy_name)
 
@@ -343,30 +380,79 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 
 
 @app_cache
+def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name: str):
+    import planzero.blog
+    try:
+        site_inference = prob_registry()[site_inference_name]
+    except KeyError:
+        raise HTTPException(
+                status_code=404,
+                detail=f"No such model: '{site_inference_name}'")
+
+    ablation_study = site_inference.ablation_study
+    if not ablation_study:
+        raise HTTPException(
+                status_code=404,
+                detail=f"No ablation study for: '{site_inference_name}'")
+
+    impact_chart = ablation_study.impact_chart(strategy_name)
+    subsidies_chart = ablation_study.government_impact_chart(strategy_name)
+    cost_per_tCO2e = ablation_study.cost_per_tCO2e(strategy_name)
+
+    # TODO: this should maybe be a diagnostic / warning?
+    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
+
+    context = dict(
+        default_context,
+        active_tab='strategies',
+        site_inference_name=site_inference_name,
+        site_inference=site_inference,
+        strategy_name=strategy_name,
+        description_html="TODO", #baseline_state.projects[strategy_name].description_html,
+        impact_chart=impact_chart,
+        subsidies_chart=subsidies_chart,
+        cost_per_tCO2e=cost_per_tCO2e,
+        )
+    #strategy_obj = baseline_state.projects[strategy_name]
+    context['see_also'] = ["TODO"] #strategy_obj.see_also_html(context)
+    return templates.get_template('strategy_impact_prob.html').render(context)
+
+
+@app.get("/models/prob/{site_inference_name}/strategies/{strategy_name}/",
+         response_class=HTMLResponse)
+async def get_models_prob_strategy_impact(
+        request: Request,
+        site_inference_name: str,
+        strategy_name: str):
+    html = get_models_prob_strategy_impact_html(site_inference_name, strategy_name)
+    return HTMLResponse(content=html)
+
+
+@app_cache
 def get_strategies_html():
-    sims_by_dynelems = {}
-    sectors_by_dynelems = {}
-    for sitesim_name, sitesim in planzero.sim.site_simulations.items():
-        if not sitesim.show_on_simulations_page:
+    registry = prob_registry()
+
+    models_by_strategy = {}
+    sectors_by_strategy = {}
+    for model_id, site_inf in sorted(registry.items()):
+        if site_inf.ablation_study and site_inf.strategy_id:
+            # don't list ablated variants
             continue
-        sim_result = planzero.sim.simulation_result(sitesim_name)
-        sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
-        for dynelem in sitesim.dynamic_elements():
-            sims_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
-                    .add(sitesim_name)
-            sectors_by_dynelems.setdefault(dynelem.__class__.__name__, set())\
-                    .update(sectors_by_de[dynelem.identifier])
-            sectors_by_dynelems[dynelem.__class__.__name__].update(
-                dynelem.extra_ipcc_sectors)
+        for strategy_id in site_inf.strategy_ids:
+            models_by_strategy.setdefault(strategy_id, []).append(model_id)
+            try:
+                sectors_by_strategy.setdefault(strategy_id, set()).update(
+                        site_inf.affected_sectors_by_strategy[strategy_id])
+            except KeyError as err:
+                raise KeyError((model_id, strategy_id)) from err
+
     template = templates.get_template("strategies.html")
     rval =  template.render(
         dict(
             default_context,
             active_tab='strategies',
-            npv_unit='MCAD',
-            nph_unit='exajoule',
-            sims_by_dynelems=sims_by_dynelems,
-            sectors_by_dynelems=sectors_by_dynelems,
+            models_by_strategy=models_by_strategy,
+            sectors_by_strategy=sectors_by_strategy,
             ))
     return rval
 
@@ -395,7 +481,7 @@ def get_blog_html(post_name: str):
             break
 
     if not blog:
-        raise IOError() # hack to trigger 404 below
+        raise OSError() # hack to trigger 404 below
 
     if blog.published or HOME_SHOW_UNPUBLISHED_POSTS:
         return templates.get_template(f"/blog/{post_name}.html").render(dict(
@@ -415,7 +501,7 @@ async def get_blog(request: Request, post_name:str):
     try:
         html = get_blog_html(post_name)
         return HTMLResponse(content=html)
-    except IOError as err:
+    except OSError as err:
         print(err)
         raise HTTPException(status_code=404, detail="url not recognized")
     except CannotRenderUnPublishedPost:
@@ -425,6 +511,7 @@ async def get_blog(request: Request, post_name:str):
 
 @app_cache
 def get_models_html():
+    prob_registry()
     return templates.get_template('models.html').render(dict(
         default_context,
         active_tab='models',
@@ -440,6 +527,7 @@ async def get_models(request: Request):
 
 @app_cache
 def get_predictions_html():
+    prob_registry()
     return templates.get_template('predictions.html').render(dict(
         default_context,
         active_tab='predictions',
@@ -514,16 +602,15 @@ default_context = {
     'json': json,
     'datetime': datetime,
     'ipcc_canada': planzero.ipcc_canada,
-    'stakeholders': planzero.strategies.stakeholders,
     'discount_rate': .02,
     'planzero': planzero,
-    'CO2': planzero.blog.latex(r'\mathrm{CO}_2'),
-    'CH4': planzero.blog.latex(r'\mathrm{CH}_4'),
-    'NF3': planzero.blog.latex(r'\mathrm{NF}_3'),
-    'SF6': planzero.blog.latex(r'\mathrm{SF}_6'),
-    'N2O': planzero.blog.latex(r"\mathrm N_2 \mathrm O"),
-    'CO2e': planzero.blog.latex(r'\mathrm{CO}_2\mathrm e '),
-    'degrees': planzero.blog.latex(r'^\circ'),
+    'CO2': planzero.html.latex(r'\mathrm{CO}_2'),
+    'CH4': planzero.html.latex(r'\mathrm{CH}_4'),
+    'NF3': planzero.html.latex(r'\mathrm{NF}_3'),
+    'SF6': planzero.html.latex(r'\mathrm{SF}_6'),
+    'N2O': planzero.html.latex(r"\mathrm N_2 \mathrm O"),
+    'CO2e': planzero.html.latex(r'\mathrm{CO}_2\mathrm e '),
+    'degrees': planzero.html.latex(r'^\circ'),
     'siteref': planzero.glossary.siteref,
     'coderef_url': planzero.html.coderef_url,
     'coderef_filepath': planzero.html.coderef_filepath,

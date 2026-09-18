@@ -46,6 +46,10 @@ class DynamicElement(BaseModel):
     tags: set = set() # eg. barrier, strategy
 
     @computed_field
+    def pretty_name(self) -> str:
+        return str(self.identifier).replace('_', ' ')
+
+    @computed_field
     def short_description(self) -> str | None:
         # The intent is for subclasses to over-ride this method.
         return self.__class__.__doc__

@@ -388,9 +388,16 @@ IPCC_Sector_from_catpath_with_whitespace = {
     for ipcc_sector in IPCC_Sector}
 
 
-class SubsidyPrograms(str, enum.Enum):
-    Bovaer_Subsidy = 'Bovaer Subsidy'
+class GovernmentProgram(str, enum.Enum):
+    Net = 'Net'
+    Income_Tax = 'Income Tax'
+    Bovine_Feed_Farm_Subsidy = 'Bovine Feed Farm Subsidy'
+    Bovine_Feed_Cost = 'Bovine Feed Cost'
+    Bovine_Feed_Monitoring = 'Bovine Feed Monitoring'
 
+# TODO: remove this in favour of GovernmentProgram
+class SubsidyPrograms(str, enum.Enum):
+    Bovaer = 'Bovaer Subsidy'
 
 # 1. New 14-color palette minimizing blue-green saturation
 echarts_warm_earth = [
@@ -400,3 +407,7 @@ echarts_warm_earth = [
 ]
 col_by_pt = {pt: col for pt, col in zip(PT, echarts_warm_earth)}
 col_ca = echarts_warm_earth[-1]
+
+
+class Activity(str, enum.Enum):
+    Farming_Cattle = 'Farming Cattle'

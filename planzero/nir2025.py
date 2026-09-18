@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 
 try:
+    import jax.numpy as jnp
+    import jax.random as jrandom
     import numpyro.distributions as dist
 except ImportError:
     pass
@@ -302,6 +304,24 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                 pt_dists.append(pt_dist)
 
     return ca_dist, pt_dists
+
+
+def sample_pt_ca(jrng_key, sample_size, years, PTs, sector, ghg):
+    n_years = len(years)
+    ca_sample = np.empty((sample_size, n_years))
+    pt_sample = np.empty((sample_size, n_years, len(PTs),))
+    for ii, year in enumerate(years):
+        ca_dist, pt_dists = ktCO2e_numpyro_dist_pt_ca(
+            sector=sector,
+            ghg=ghg,
+            year=year)
+        jrng_key, rng_key_ = jrandom.split(jrng_key)
+        ca_sample[:, ii] = ca_dist.sample(rng_key_, (sample_size,))
+        for jj, pt in enumerate(PTs):
+            jrng_key, rng_key_ = jrandom.split(jrng_key)
+            pt_sample[:, ii, jj,] = pt_dists[jj].sample(rng_key_, (sample_size,))
+
+    return jrng_key, jnp.array(pt_sample), jnp.array(ca_sample)
 
 
 @cache

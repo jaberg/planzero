@@ -1,18 +1,38 @@
 import os
 
 from . import (
-    ipcc_canada,
-    enums,
     blog,
-    strategies,
-    barriers,
-    sim,
+    ipcc_canada,
+    my_functools,
     prob,
-    )
+    sim,
+    singleton_registry,
+)
 
 HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
+def completed_prob_registry() -> singleton_registry.SingletonRegistry:
+    from . import (
+            ablation,
+            ablation_study_scaling,  # noqa: F401
+            challenge,  # noqa: F401
+    )
+
+    # creates obj, populates inference registries
+    ablation.registry['ScalingStudy']
+
+    rval = prob.registry
+
+    assert 'NIR2025' in rval
+    assert 'Static_Normals_2024_12_31' in rval
+    assert 'ScalingStudy_All_Strategies' in rval
+    return rval
+
+
 def endpoints():
+
+    prob_registry = completed_prob_registry()
+
     rval = []
 
     rval.extend([
@@ -34,7 +54,7 @@ def endpoints():
         for catpath in ipcc_canada.catpaths:
             rval.append(f"/models/sim/{sim_name}/ipcc-sectors/{catpath}/")
 
-    for model_name, site_inf in sorted(prob.site_inferences.items()):
+    for model_name, site_inf in sorted(prob_registry.items()):
         if not site_inf.show_on_models_page:
             continue
         rval.append(f"/models/prob/{model_name}/")
@@ -46,7 +66,7 @@ def endpoints():
         "/",
         "/ipcc-sectors/",
         "/models",
-        #"/predictions/",
+        "/predictions/",
         "/strategies/",
         "/glossary/",
         "/about/",

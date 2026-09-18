@@ -41,7 +41,7 @@ class Scale_Bovaer(Strategy2):
 
     @computed_field
     def short_description(self) -> str:
-        return f"Model that farmers who are open to using Bovaer are subsidized to start administering it."
+        return "Subsidize farmers to administer Bovaer."
 
     def see_also_html(self, context_vars) -> list[str]:
         sources = [
@@ -76,6 +76,11 @@ class Scale_Bovaer(Strategy2):
             )
         return rval
 
+    # XXX what is this?
+    @computed_field
+    def ipcc_sectors(self) -> list:
+        return []
+
     @computed_field
     def extra_ipcc_sectors(self) -> list[object]:
         # TODO: https://github.com/jaberg/planzero/issues/72
@@ -105,3 +110,22 @@ class Scale_Bovaer(Strategy2):
         max_fraction = state.latest.max_fraction_of_cattle_on_bovaer
         current.bovine_population_fraction_on_bovaer = max_fraction
         return state.t_now + 1 * u.years
+
+    def annual_scan_init(self, new_carry, xs, years, constants):
+        n_samples = constants['sigma_ca'].shape[0]
+        import jax.numpy as jnp
+        import jax.random as jrandom
+        new_carry['tax_funded_budget_for_bovaer'] = jnp.zeros(n_samples)
+        key = jrandom.key(9343)
+        new_carry['bovaer_start_year'] = jrandom.uniform(
+                key,
+                (n_samples,),
+                'float64',
+                2027, # min plausible year
+                2035) # max plausible year consistent with scaling scenario
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        import jax.numpy as jnp
+        new_carry['bovaer_start_year'] = carry['bovaer_start_year']
+        new_carry['tax_funded_budget_for_bovaer'] = jnp.where(
+                year >= carry['bovaer_start_year'], float('inf'), 0.0)
