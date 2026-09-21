@@ -12,7 +12,8 @@ from numpyro.infer import MCMC, NUTS
 from scipy.special import logsumexp
 
 from . import model_db, my_functools, nir2025
-from .enums import GHG, PT, IPCC_Sector
+from .annual_emission_results import aer_result_key
+from .enums import GHG, PT, Activity, IPCC_Sector
 
 model_family = 'StaticNormal'
 model_version = 2
@@ -68,6 +69,13 @@ def touch_model(data_cutoff):
                 )
 
 
+def component_id_fn(model_id, ghg, sector):
+    rval = 'comp_{}'.format(
+            model_db.stable_hash(str(
+                (model_id, GHG(ghg).value, IPCC_Sector(sector).value,))))
+    return rval
+
+
 def touch_components(data_cutoff):
     model_id = model_id_from_data_cutoff(data_cutoff)
     arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
@@ -76,8 +84,7 @@ def touch_components(data_cutoff):
         cursor = conn.cursor()
         for sector in IPCC_Sector:
             for ghg in GHG:
-                component_id='comp_{}'.format(model_db.stable_hash(str(
-                    (model_id, ghg.value, sector.value,))))
+                component_id=component_id_fn(model_id, ghg, sector)
                 try:
                     model_db.by_id('ComponentType', component_id=component_id)
                     print('Found component', component_id, model_id, ghg.value, sector.value, 'skipping')
@@ -494,3 +501,68 @@ def weighted_KL_score(year, model_id, seed_int=1234):
 
     weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
     return weighted_divergence, abs_ktCO2e, KL_values
+
+
+from .barriers import Barrier
+
+
+class NIR_Sector_Static_Normal_Barrier(Barrier):
+
+    sector: IPCC_Sector
+    ghg: GHG
+
+    data_cutoff: datetime.date
+
+    def annual_scan_init(self, initial_carry, xs, years, constants, jrkey=None):
+        model_id = model_id_from_data_cutoff(self.data_cutoff)
+        BN_components = {
+                comp_d['component_id']: comp_d
+                for comp_d in model_db.BayesianNormal_components_by_model(model_id)}
+        component_id = component_id_fn(model_id, sector=self.sector, ghg=self.ghg)
+        if component_id in BN_components:
+
+            grouped_samples = model_db.load_ndarray_group(
+                    model_id, component_id, 'grouped_samples')
+            post_samples = post_samples_from_grouped_samples(grouped_samples)
+            comp_d, = model_db.params_BayesianNormal(component_id)
+            assert model_id == comp_d['model_id']
+            assert self.sector == comp_d['sector']
+            assert self.ghg == comp_d['ghg']
+            assert self.data_cutoff == comp_d['data_cutoff']
+
+            if jrkey is None:
+                jrkey = jrandom.key(78324)
+
+            mu = post_samples['mu'] # (n_samples, 13)
+            n_samples, thirteen = mu.shape
+            assert thirteen == 13
+            mu_ca = mu.sum(axis=1) # (n_samples,)
+
+            eval_mu = np.zeros((n_samples, 14))
+            eval_mu[:, :13] = mu
+            eval_mu[:, 13] = mu_ca
+            eval_mu *= comp_d['scale']
+
+            eval_sigma = np.zeros((n_samples, 14))
+            eval_sigma[:, :13] = post_samples['sigma_pt'][0]
+            eval_sigma[:, 13] = post_samples['sigma_ca']
+            eval_sigma *= comp_d['scale']
+
+            if n_samples == constants['n_samples']:
+                # conveniently, we can draw one each from the posterior sample
+                jrkey, tmpkey = jrandom.split(jrkey)
+                constants[aer_result_key(self.sector, self.ghg, Activity.Other)] = (
+                        jrandom.normal(tmpkey, (n_samples, 1))
+                        * eval_sigma[:,13:]
+                        + eval_mu[:, 13:]
+                        ).T
+            else:
+                # some logic to e.g. loop over posterior samples drawing
+                # samples until we've drawn enough
+                raise NotImplementedError()
+        else:
+            constants[aer_result_key(self.sector, self.ghg, Activity.Other)] = (
+                    jnp.zeros((1, constants['n_samples'])))
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        pass

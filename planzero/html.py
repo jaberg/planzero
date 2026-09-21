@@ -430,9 +430,9 @@ class UncertainSparklineMatrixEChart(HTML_element):
         """
 
 
-
 import inspect
 GITHUB_WORKSPACE = os.environ.get('GITHUB_WORKSPACE')
+
 
 def coderef_filepath(obj):
     file_path = inspect.getsourcefile(obj)

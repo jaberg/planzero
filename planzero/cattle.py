@@ -1,28 +1,25 @@
 from functools import cache as memcache
 
-from pydantic import Field, computed_field
-
-import numpy as np
+import jax.numpy as jnp
+import jax.random as jrandom
 import matplotlib.pyplot as plt
-try:
-    from sklearn.linear_model import RidgeCV
-    from sklearn.metrics import mean_absolute_error, root_mean_squared_error
+import numpy as np
+from pydantic import computed_field
+from sklearn.linear_model import RidgeCV
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
-    import jax.numpy as jnp
-    import jax.random as jrandom
-except ImportError:
-    pass
-
-from .ureg import u
-from .enums import IPCC_Sector, PT, GHG
 from . import sts
+from .annual_emission_results import aer_result_key
 from .barriers import Barrier
-
 from .eccc_nir_annex3p4 import table_A3p4_11
+from .enums import GHG, PT, Activity, IPCC_Sector
 from .sc_3210013001 import (
-    FarmType, Livestock, Livestock_nonsums, SurveyDate,
-    number_of_cattle_by_class_and_farm_type_combined_surveys)
-
+    FarmType,
+    Livestock,
+    Livestock_nonsums,
+    number_of_cattle_by_class_and_farm_type_combined_surveys,
+)
+from .ureg import u
 
 feature_mask_by_farmtype = {
     FarmType.Dairy: [lt not in [Livestock.BeefCows] for lt in Livestock_nonsums],
@@ -394,17 +391,28 @@ class Bovaer_Adoption_Limit(Barrier):
     def max_increase_rate(self) -> object:
         return 5.0 * u.percent / u.year
 
+    @property
+    def prob_max_increase_rate(self) -> tuple[float, float]:
+        return (
+                self.max_increase_rate.magnitude / 2,
+                self.max_increase_rate.magnitude * 2)
+
     @computed_field
     def short_description(self) -> str:
         return f"Assume Bovaer will only be adopted by, at most, {self.max_increase_rate} of cattle operations, up to a maximum of {(1 - self.organic_fraction) * 100:.1f}%"
 
     @computed_field
     def description(self) -> str:
+        low, high = self.prob_max_increase_rate
         return f"""Assume that no more than {self.max_increase_rate} of
         farmers will switch to administering Bovaer
         in any given year, but that adoption
         can ultimately rise to {(1 - self.organic_fraction) * 100:.1f}%,
         the remainder of whom are organic farmers who won't adopt it.
+        </p>
+        When used in probabilistic models, assume instead that
+        {low}-{high}% of farmers will switch to Bovaer in any given year.
+        <p>
         """
 
     @computed_field
@@ -448,10 +456,9 @@ class Bovaer_Adoption_Limit(Barrier):
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         n_samples = constants['sigma_ca'].shape[0]
         new_carry['BAL_key'], key = jrandom.split(carry['BAL_key'])
+        low, high = self.prob_max_increase_rate
         max_increase_fraction = jrandom.uniform(
-                key, (n_samples,), 'float64',
-                self.max_increase_rate.magnitude / 100 / 2,
-                self.max_increase_rate.magnitude / 100 * 2)
+                key, (n_samples,), 'float64', low / 100, high / 100)
         if 'bovine_population_fraction_on_bovaer' in outputs:
             new_carry['bovine_population_fraction_on_bovaer'] \
                     = carry['bovine_population_fraction_on_bovaer']
@@ -459,6 +466,11 @@ class Bovaer_Adoption_Limit(Barrier):
                 (carry['bovine_population_fraction_on_bovaer']
                  + max_increase_fraction),
                 (1 - self.organic_fraction))
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']
 
 
 class Bovaer_Production_Emission_Factors(Barrier):
@@ -658,6 +670,13 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         y['enteric_fermentation_ktCO2e_ca_sample'] \
                 = y['enteric_fermentation_ktCO2e_ca'] + constants['shift_ca']
 
+        result_key = aer_result_key(
+                sector=IPCC_Sector.Enteric_Fermentation,
+                ghg=GHG.CH4,
+                activity=Activity.Farming_Cattle
+                )
+        y[result_key] = y['enteric_fermentation_ktCO2e_ca_sample']
+
         # We're ignoring the variance from sigma_pt and sigma_ca here
         # I'm not really sure if that's correct or not.
         emissions_by_cattle_type_on_bovaer_pt \
@@ -671,7 +690,6 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         y['bovaer_production_emissions_ktCO2e_pt_sample'] = (
                 emissions_by_cattle_type_on_bovaer_pt
                 / new_carry['bovaer_production_emission_factor'][:, None])
-
 
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html

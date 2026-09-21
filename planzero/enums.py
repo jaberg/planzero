@@ -411,3 +411,4 @@ col_ca = echarts_warm_earth[-1]
 
 class Activity(str, enum.Enum):
     Farming_Cattle = 'Farming Cattle'
+    Other = 'Other'

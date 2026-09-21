@@ -6,11 +6,17 @@ from pydantic import computed_field
 
 from . import cattle, model_db, nir2025_site, prob
 from .ablation import AblationStudy
-from .annual_emission_results import AnnualEmissionResults
+from .annual_emission_results import (
+        AnnualEmissionResults,
+        aer_sectors,
+        total_prediction_CI,
+        )
 from .annual_subsidy_results import NationalAnnualProgramBalances
 from .enums import GHG, Activity, GovernmentProgram, IPCC_Sector, LULUCF_Sectors
+from .model import compute_annual_emission_results
 from .nir_static_normals import (
     BNs_by_sector_ghg,
+    NIR_Sector_Static_Normal_Barrier,
     model_id_from_data_cutoff,
     normals_by_sector_ghg,
     # weighted_KL_score,
@@ -84,12 +90,10 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
 
     def load_data(self, batch_rollout_barriers_results):
 
-        self.years = np.arange(1990, 2050+1)
+        self.years = batch_rollout_barriers_results['years']
 
-        #n_mu_timesteps_to_2022 = 31 # for NIR-2025
-        #n_mu_timesteps_to_2050 = n_mu_timesteps_to_2022 + 27
+        # TODO: look these up from batch_rollout_barriers_results
         n_regions = 13
-
         n_samples = 500
 
         mean_with_lulucf = 0
@@ -124,7 +128,6 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
                     continue
                 elif (sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
                     results = batch_rollout_barriers_results
-                    #estimated_sector_total_ca += results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T  * self.v_unit_scale
                     estimated_sector_total_ca += results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T  * self.v_unit_scale
                 else:
                     BN_d = self.BNs_by_sector_ghg[sector, ghg]
@@ -252,13 +255,11 @@ class EmissionImpactChartHelper(SparklineEChartHelperBase):
 
         mean_with_lulucf = 0
         estimates_with_lulucf = np.zeros(
-            (n_samples, len(self.years)))
+            (len(self.years), n_samples,))
 
         mean_without_lulucf = 0
         estimates_without_lulucf = np.zeros(
-            (n_samples, len(self.years)))
-
-        from .results_ops import aer_sectors
+            (len(self.years), n_samples,))
 
         self.sectors = aer_sectors(aer)
         assert self.sectors
@@ -279,7 +280,7 @@ class EmissionImpactChartHelper(SparklineEChartHelperBase):
                     * self.v_unit_scale)
             mean_sector_total = self.compute_stats_and_add_data_for_sector(
                 sector,
-                estimated_sector_total_ca)
+                estimated_sector_total_ca.T)
 
             if sector not in LULUCF_Sectors:
                 estimates_without_lulucf += estimated_sector_total_ca
@@ -288,9 +289,9 @@ class EmissionImpactChartHelper(SparklineEChartHelperBase):
             mean_with_lulucf += mean_sector_total
 
         self.add_data_for_LULUCF_totals(
-            estimates_with_lulucf,
+            estimates_with_lulucf.T,
             mean_with_lulucf,
-            estimates_without_lulucf,
+            estimates_without_lulucf.T,
             mean_without_lulucf)
 
     def order_sectors(self):
@@ -404,11 +405,11 @@ class ScalingSiteInference(prob.SiteInference):
     def batch_rollout_barriers(self):
         import time
         t0 = time.time()
-        barriers = list(self.ablation_study.barriers.values())
-        strategies = [
-                obj
+        barriers = dict(self.ablation_study.barriers)
+        strategies = {
+                name: obj
                 for name, obj in self.ablation_study.strategies.items()
-                if name != self.strategy_id]
+                if name != self.strategy_id}
         if self.strategy_id is not None:
             assert len(strategies) == len(self.ablation_study.strategies) - 1
         results = batch_rollout_barriers(
@@ -425,14 +426,48 @@ class ScalingSiteInference(prob.SiteInference):
                 'ModellingBovaer',
                 ]
 
-    def foo(self, elem_name):
+    def constants(self, elem_name):
         results = self.batch_rollout_barriers()
-        elem = self.barriers[elem_name]
-        rval = results['initial_carry'].outputs(elem)
-        print(rval)
-        print(results['initial_carry']._setitems)
-        print('foo', rval)
+        var_names = results['constants'].outputs(elem_name)
+        rval = {var_name: results['constants'][var_name]
+                for var_name in var_names}
         return rval
+
+    def full_time_series(self, elem_name):
+        results = self.batch_rollout_barriers()
+        var_names = results['ys_ic'].outputs(elem_name)
+        rval = {var_name: results['ys'][var_name]
+                for var_name in var_names}
+        var_names_x = results['xs_ic'].outputs(elem_name)
+        rval.update(
+                {var_name: results['xs'][var_name]
+                 for var_name in var_names_x})
+        return rval
+
+    def running_time_series(self, elem_name, include_rngs=False):
+        results = self.batch_rollout_barriers()
+        var_names = results['nc_ic'].outputs(elem_name)
+        rval = {var_name: results['final_carry'][var_name]
+                for var_name in var_names
+                if include_rngs or 'key' not in str(results['final_carry'][var_name].dtype)
+                }
+        return rval
+
+    @property
+    def modelled_years(self):
+        results = self.batch_rollout_barriers()
+        return results['years']
+
+    @property
+    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
+        aer = self.compute_annual_emission_results()
+        low, high = total_prediction_CI(aer, year=2050)
+        return float(low) / 1000, float(high) / 1000
+
+    def compute_annual_emission_results(self) -> AnnualEmissionResults:
+        return compute_annual_emission_results(
+                strategies=self.strategies,
+                barriers=self.barriers)
 
 
 class ScalingStudy(AblationStudy):
@@ -453,7 +488,7 @@ class ScalingStudy(AblationStudy):
     def strategies(self) -> dict:
         return self._strategies
 
-    def emission_results(self, strategy_name:str):
+    def emission_results_delta(self, strategy_name:str):
         #ablation = prob.registry[self.site_inference_names[strategy_name]]
         assert strategy_name == 'Scale_Bovaer'
 
@@ -462,12 +497,15 @@ class ScalingStudy(AblationStudy):
         results = self._baseline_siteinf.batch_rollout_barriers()
 
         # Enteric Fermentation
-        sample_w_strategy = results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T
-        n_samples, n_years = sample_w_strategy.shape
+        sample_w_strategy = results['ys']['enteric_fermentation_ktCO2e_ca_sample']
+        n_years, n_samples = sample_w_strategy.shape
         years = list(range(1990, 1990 + n_years))
 
+        # hack: estimate the emissions from not using the strategy
+        # from the initial years of using the strategy, rather than the ablated
+        # site inference.
         sample_wo_strategy = np.zeros_like(sample_w_strategy)
-        sample_wo_strategy[:] = sample_w_strategy[:, 0][:, None]
+        sample_wo_strategy[:] = sample_w_strategy[0] # broadcast year 0
         ktCO2e_sample[
                 IPCC_Sector.Enteric_Fermentation,
                 GHG.CH4,
@@ -478,7 +516,7 @@ class ScalingStudy(AblationStudy):
                 IPCC_Sector.Other_Product_Manufacture_and_Use,
                 GHG.CO2,
                 Activity.Farming_Cattle] \
-                        = results['ys']['bovaer_production_emissions_ktCO2e_ca_sample'].T
+                        = results['ys']['bovaer_production_emissions_ktCO2e_ca_sample']
 
         return AnnualEmissionResults(
                 ktCO2e_sample=ktCO2e_sample,
@@ -532,7 +570,7 @@ class ScalingStudy(AblationStudy):
 
     def impact_chart(self, strategy_name:str):
         # TODO: move this to base class
-        annual_emission_diffs = self.emission_results(strategy_name)
+        annual_emission_diffs = self.emission_results_delta(strategy_name)
         helper = EmissionImpactChartHelper(
                 div_id=f'emission_impact_echart_{self.basename}_{strategy_name}',
                 v_unit='Mt_CO2e',
@@ -555,7 +593,7 @@ class ScalingStudy(AblationStudy):
 
     def cost_per_tCO2e(self, strategy_name: str, q=(.025, .975)):
         napb = self.national_annual_program_balances(strategy_name)
-        annual_emission_diffs = self.emission_results(strategy_name)
+        annual_emission_diffs = self.emission_results_delta(strategy_name)
         from . import results_ops
         rval_sample = results_ops.cost_per_tCO2e(napb=napb, aer=annual_emission_diffs)
         lower, upper = np.quantile(rval_sample, q=q)
@@ -592,3 +630,20 @@ class ScalingStudy(AblationStudy):
         self._strategies = {
                 "Scale_Bovaer": Scale_Bovaer(),
                 }
+
+        for sector in IPCC_Sector:
+            for ghg in GHG:
+                if sector == IPCC_Sector.Enteric_Fermentation and ghg == GHG.CH4:
+                    # provided above by Bovaer_Production_Emission_Factors
+                    pass
+                else:
+                    self._barriers[f'NIR_Sector_Static_Normal_{sector.value}_{ghg.value}'] \
+                            = NIR_Sector_Static_Normal_Barrier(
+                                    sector=sector,
+                                    ghg=ghg,
+                                    data_cutoff=datetime.date(year=2024, month=12, day=31))
+
+
+def scaling_study_singleton():
+    from . import ablation
+    return ablation.registry['ScalingStudy']

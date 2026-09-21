@@ -160,3 +160,7 @@ class NIR2025(SiteInference):
         helper.order_regions()
         helper.add_regional_cells()
         return helper.make_echart()
+
+    @property
+    def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
+        return "N/A"

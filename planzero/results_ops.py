@@ -5,15 +5,12 @@ imported by the webserver.
 
 import numpy as np
 
-from .annual_emission_results import AnnualEmissionResults
+from .annual_emission_results import AnnualEmissionResults, aer_total_with_LULUCF
 from .annual_subsidy_results import (
-        DetailedAnnualProgramBalances,
-        NationalAnnualProgramBalances)
-from .enums import GHG, PT, Activity, GovernmentProgram, IPCC_Sector
-
-
-def aer_sectors(aer:AnnualEmissionResults) -> set[IPCC_Sector]:
-    return {sector for (sector, _, _) in aer.ktCO2e_sample}
+    DetailedAnnualProgramBalances,
+    NationalAnnualProgramBalances,
+)
+from .enums import GovernmentProgram, IPCC_Sector
 
 
 def programs(program_balances:DetailedAnnualProgramBalances) -> set[GovernmentProgram]:
@@ -59,10 +56,6 @@ def napb_scale(
             n_samples=napb.n_samples)
     return rval
 
-def aer_total(
-        aer:AnnualEmissionResults,
-        ) -> np.ndarray: # (n_samples, n_years)
-    return sum(aer.ktCO2e_sample.values())
 
 def cost_per_tCO2e(
         napb:NationalAnnualProgramBalances,
@@ -70,5 +63,5 @@ def cost_per_tCO2e(
         ) -> np.ndarray: # (n_samples,)
     assert napb.n_samples == aer.n_samples
     total_cost = napb.CAD_sample[GovernmentProgram.Net].sum(axis=1)
-    total_tCO2e = aer_total(aer).sum(axis=1) * 1000 # b/c aer is ktCO2e
+    total_tCO2e = aer_total_with_LULUCF(aer).sum(axis=0) * 1000 # b/c aer is ktCO2e
     return total_cost / total_tCO2e

@@ -8,6 +8,8 @@ from pydantic import BaseModel, computed_field
 
 from . import ablation
 from .annual_emission_results import AnnualEmissionResults
+from .enums import GHG
+from .html import html_by_ghg
 from .singleton_registry import SingletonRegistry
 
 registry = SingletonRegistry()
@@ -60,9 +62,15 @@ class SiteInference(BaseModel):
         else:
             return rval
 
-    @computed_field
+    @property
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         return (float('nan'), float('nan'))
+
+    @property
+    def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
+        low, high = self.predicted_emissions_2050_MtCO2e_bounds_ul
+        rval = f"{low:.1f} - {high:.1f} Mt{html_by_ghg[GHG.CO2]}e"
+        return rval
 
     def prediction_scores_prenir_2025_06(self) -> dict:
         raise NotImplementedError()

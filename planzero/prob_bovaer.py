@@ -330,8 +330,16 @@ def samples_from_grouped_samples(grouped_samples):
 from .barriers import Barrier
 
 class Cattle_Population_Static_Normal(Barrier):
-    """Simple static-normals estimate of Cattle populations
-    for each cattle type, and each province and territory.
+    """Static Normal estimates of cattle populations
+    and enteric fermentation emission factors, to explain three
+    things:
+    (1) cattle counts,
+    (2) NIR2025 enteric fermentation emission factors,
+    (3) NIR2025 overall enteric fermentation emissions (including all livestock).
+    Estimates are made for each of 8 cattle populations (beef cows, dairy cows, beef heifers for replacement, beef heifers for slaughter, dairy heifers, calves, steers, and bulls),
+    and each province and territory.
+    </p>
+    <p>
     """
 
     @computed_field
@@ -351,13 +359,23 @@ class Cattle_Population_Static_Normal(Barrier):
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         pass
 
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer']
+
 
 class InitialCarry:
-    def __init__(self, elem=None, _dict=None, _setdefaults=None, _setitems=None):
+
+    _dict: dict[str, jnp.ndarray]  # variable name -> initial variable value
+    _setdefaults: dict[str, str]  # variable name -> responsible dynamic element name
+    _setitems: dict[str, str]  # variable name -> responsible dynamic element name
+    viewer_name: str|None  # name of dynamic element viewing this InitialCarry
+
+    def __init__(self, viewer_name=None, _dict=None, _setdefaults=None, _setitems=None):
         self._dict = {} if _dict is None else _dict
         self._setdefaults = {} if _setdefaults is None else _setdefaults
         self._setitems = {} if _setitems is None else _setitems
-        self.elem = elem
+        self.viewer_name = viewer_name
 
     def check_compatibility(self, item, value):
         if item in self._dict:
@@ -370,7 +388,7 @@ class InitialCarry:
         else:
             return True
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item:str, value:jnp.ndarray):
         # it's an error to set the same item from multiple places
         # because there can only be one definition of an item.
         assert item not in self._setitems, (item,)
@@ -378,13 +396,15 @@ class InitialCarry:
 
         # once an item has been set, its setdefaults are all forgotten
         # and subsequent setdefaults won't change item ownership
-        self._setitems[item] = self.elem
+        assert self.viewer_name is not None
+        self._setitems[item] = self.viewer_name
         if item in self._setdefaults:
             del self._setdefaults[item]
         self._dict[item] = value
 
     def setdefault(self, item, value):
         self.check_compatibility(item, value)
+        assert self.viewer_name is not None
         if item in self._setitems:
             # if another dynamic element has already called setitem
             # then let it be.
@@ -393,39 +413,42 @@ class InitialCarry:
             # it's okay to setdefault multiple times, because this
             # class will track the *first* set-default call, and use
             # that one (arbitrarily) as the working definition of the item.
-            self._setdefaults.setdefault(item, self.elem)
+            self._setdefaults.setdefault(item, self.viewer_name)
             self._dict.setdefault(item, value)
 
-    def view(self, elem):
-        assert self.elem is None
+    def view(self, viewer_name):
+        assert self.viewer_name is None
         return InitialCarry(
-                elem=elem,
+                viewer_name=viewer_name,
                 _dict=self._dict,
                 _setdefaults=self._setdefaults,
                 _setitems=self._setitems,
                 )
 
-    def outputs(self, elem):
+    def outputs(self, viewer_name):
         rval = {key: owner for key, owner in self._setitems.items()
-                if owner == elem}
+                if owner == viewer_name}
         rval.update({key: owner for key, owner in self._setdefaults.items()
-                     if owner == elem})
+                     if owner == viewer_name})
         return rval
 
     def owner(self, item):
-        setitem_owner = self.initial_carry._setitems.get(item) == self.elem
-        setdefault_owner = self.initial_carry._setdefaults.get(item) == self.elem
-        assert setitem_owner is None or setdefault_owner is None
+        setitem_owner = self._setitems.get(item) == self.viewer_name
+        setdefault_owner = self._setdefaults.get(item) == self.viewer_name
+        assert not (setitem_owner and setdefault_owner), (item, self.viewer_name)
         rval = setitem_owner or setdefault_owner
-        assert rval is not None
+        assert rval, item
         return rval
 
-    def get(self, item, default_value):
+    def items(self):
+        return self._dict.items()
+
+    def get(self, item, default_value:jnp.ndarray) -> jnp.ndarray:
         # this function will depend on the order of dynamic element initialization
         # so think carefully about how to handle it.
         raise NotImplementedError(item)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> jnp.ndarray:
         # TODO: record that this access was attempted,
         # maybe only if it was successful?
         # See also get()
@@ -440,14 +463,14 @@ class NewCarry:
         self.initial_carry = initial_carry
         self.new_carry = new_carry
         self.carry = carry
-        self.elem = elem
+        self.viewer_name = elem
 
     def __setitem__(self, item, value):
         owner = self.initial_carry.owner(item)
-        if owner == self.elem:
+        if owner == self.viewer_name:
             self.new_carry[item] = value
         else:
-            assert 0, f"element {self.elem} doesn't have write access to {item}, which is owned by {owner}"
+            assert 0, f"element {self.viewer_name} doesn't have write access to {item}, which is owned by {owner}"
 
         # TODO: verify that if a dynelem is writing
 
@@ -474,29 +497,50 @@ class Carry:
     def __init__(self, initial_carry: InitialCarry, carry:dict, elem:str):
         self.initial_carry = initial_carry
         self.carry = carry
-        self.elem = elem
+        self.viewer_name = elem
 
 
-def batch_rollout_barriers(barriers, strategies):
+def batch_rollout_elements(elements: dict[str, object], n_samples:int):
+    years = jnp.arange(1990, 2050 + 1) # TODO: param
+
     initial_carry = InitialCarry()
-    xs = {}
-    constants = {}
+    xs = InitialCarry()
+    constants = InitialCarry()
 
-    years = jnp.arange(1990, 2050 + 1)
+    constants._dict['n_samples'] = n_samples
 
-    for elem in barriers + strategies:
-        elem.annual_scan_init(initial_carry.view(elem), xs, years, constants)
+
+    for name, elem in elements.items():
+        elem.annual_scan_init(
+                initial_carry.view(name),
+                xs.view(name),
+                years,
+                constants.view(name))
+
+    ys_ics = []
+    nc_ics = []
 
     def scan_step(carry, x_curtime):
         x, curtime = x_curtime
-        y = {}
-        new_carry = {}
-        for elem in barriers + strategies:
-            elem.annual_scan_step(new_carry, y, x, curtime, carry, constants,
-                                  outputs=initial_carry.outputs(elem))
-        return new_carry, y
+        y = InitialCarry()
+        new_carry = InitialCarry()
+        ys_ics.append(y)
+        nc_ics.append(new_carry)
+        for name, elem in elements.items():
+            elem.annual_scan_step(
+                    new_carry.view(name),
+                    y.view(name),
+                    x,
+                    curtime,
+                    carry,
+                    constants._dict,
+                    outputs=initial_carry.outputs(name))
+        return new_carry._dict, y._dict
 
-    final_carry, ys = scan(scan_step, initial_carry._dict, (xs, years))
+    final_carry, ys = scan(
+            scan_step,
+            initial_carry._dict,
+            (xs._dict, years))
     if 0:
         for key, val in final_carry.items():
             if 'float' in str(val.dtype) or 'int' in str(val.dtype):
@@ -506,13 +550,32 @@ def batch_rollout_barriers(barriers, strategies):
                 print(key, val.shape, val.dtype)
         for key, val in ys.items():
             print(key, val.shape, val.dtype, val.min(), val.max())
+    assert len(ys_ics) == 1
     return {
             'ys': ys,
-            'xs': xs,
+            'xs': xs._dict,
             'final_carry': final_carry,
             'years': years,
             'initial_carry': initial_carry,
+            'constants': constants,
+            'xs_ic': xs,
+            'ys_ic': ys_ics[-1],
+            'nc_ic': nc_ics[-1],
             }
+
+
+def batch_rollout_barriers(barriers, strategies, elements=None, n_samples=500):
+    if elements is None:
+        elements = {}
+        # loop is preferred to update() in order to show the name in case of duplication
+        for d in (barriers, strategies):
+            for name, elem in d.items():
+                assert name not in elements, name
+                elements[name] = elem
+    return batch_rollout_elements(
+            elements,
+            n_samples=n_samples)
+
 
 
 def main_debug():

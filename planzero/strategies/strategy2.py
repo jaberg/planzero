@@ -112,7 +112,7 @@ class Scale_Bovaer(Strategy2):
         return state.t_now + 1 * u.years
 
     def annual_scan_init(self, new_carry, xs, years, constants):
-        n_samples = constants['sigma_ca'].shape[0]
+        n_samples = constants['n_samples']
         import jax.numpy as jnp
         import jax.random as jrandom
         new_carry['tax_funded_budget_for_bovaer'] = jnp.zeros(n_samples)

@@ -3,6 +3,7 @@ import json
 import os
 
 import jinja2
+import numpy as np
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -590,9 +591,11 @@ async def get_index(
 
 default_context = {
     'int': int,
+    'str': str,
     'float': float,
     'min': min,
     'max': max,
+    'np': np,
     'sorted': sorted,
     'enumerate': enumerate,
     'isinstance': isinstance,

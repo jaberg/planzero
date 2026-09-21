@@ -387,6 +387,16 @@ class Barrier(GlossaryTerm):
         }
 
 
+class Static_Variable(GlossaryTerm):
+    """A variable in a model simulation that is not indexed by time
+    is called Constant.
+    """
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Constant']
+
+
 class IPCC_Sector_Contribution(GlossaryTerm):
     """The emissions associated with an IPCC Sector are generally
     computed as coming from one or more sources, each of which
@@ -609,9 +619,15 @@ class NIR_Model(GlossaryTerm):
 
 
 class Model(GlossaryTerm):
-    """A model, in PlanZero, is a set of time series and dynamic elements that
-    can be simulated to generate one or more possible scenarios.
-    A model can be either deterministic or stochastic. 
+    """A model, in PlanZero, is a set of dynamic elements
+    (strategies and barriers).
+    Typically PlanZero models
+    define a probabilistic model of Canada's national emissions.
+    Sometimes a model also defines a probabilistic model of other
+    related quantities such as the factors that drive emissions calculations
+    (e.g. numbers of power plants, cars, trucks, livestock, landfills, etc.)
+    and the financial results (often costs)
+    of implementing emission reduction measures.
     """
 
     @computed_field
@@ -626,17 +642,16 @@ class Model(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'NIR_Model': """Model of Canada's national emissions in the style
-            of the National Inventory Reports submitted to UNFCCC""",
-            'Deterministic_Model': "A model that corresponds to a unique scenario",
-            'Stochastic_Model': "A model that corresponds to a distribution over possible scenarios",
+            #'Deterministic_Model': "A model that corresponds to a unique scenario",
+            "NIR_Model": "A model that generates emission results that are comparable to a National Inventory Report is called a NIR Model. The models features on the Models tab of the PlanZero site are NIR models.",
+            'Stochastic_Model': "A PlanZero model induces a probability distribution over possible scenarios",
             'Simulation': (
-                "Simulation is the building of a scenario with the"
-                " initialization and recurrence logic in a model's dynamic"
-                " elements"),
+                " Simulation is the computation of a set of scenarios according to the"
+                " initialization and recurrence logic of a model's dynamic"
+                " elements; the result is a sample from the model's implicit stochastic model"),
             'Scenario': (
-                'A scenario is the set of time series that results from'
-                ' simulating a model'),
+                "A scenario is single time series that is consistent with the"
+                " initialization and recurrence logic of a model's dynamic elements"),
         }
 
 
@@ -1720,8 +1735,13 @@ class Posterior_Distribution(GlossaryTerm):
                 'Latent_Variable': 'Unobserved unknown variables in a probabilistic model are called latent variables; a posterior distribution is over latent variables.',
                 }
 
+
 class Latent_Variable(GlossaryTerm):
-    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data. """
+    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data.
+    Each time step in a time series variable is a unique variable,
+    so earlier time steps might be observed and later time steps (especially future time steps)
+    may be latent.
+    """
     @property
     def see_also(self) -> dict[str, str]:
         return {

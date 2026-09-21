@@ -45,6 +45,8 @@ class DynamicElement(BaseModel):
 
     tags: set = set() # eg. barrier, strategy
 
+    simgroup: str|None = None # used in model.py
+
     @computed_field
     def pretty_name(self) -> str:
         return str(self.identifier).replace('_', ' ')
@@ -140,6 +142,10 @@ class DynamicElement(BaseModel):
         plt.close()
         svg_string = svg_buffer.getvalue()
         return svg_string
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return []
 
 
 BaseScenario_subclasses = []
