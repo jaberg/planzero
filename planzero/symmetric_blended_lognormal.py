@@ -2,7 +2,6 @@ try:
     import jax
     import jax.numpy as jnp
     import jax.random as jrandom
-    import numpyro
     import numpyro.distributions as dist
     from numpyro.distributions import Distribution, constraints
     from numpyro.distributions.util import promote_shapes
@@ -112,8 +111,13 @@ class SymmetricBlendedLogNormal(Distribution):
         
         # 1. Sample which component is active based on weights
         log_weights = self._get_log_weights()
-        comp = dist.Categorical(logits=log_weights).sample(
-            key_comp, sample_shape)
+        try:
+            comp = dist.Categorical(logits=log_weights).sample(
+                key_comp, sample_shape)
+        except ValueError as err:
+            err.add_note(f"logits={log_weights}")
+            err.add_note(f"max(logits)={log_weights.max()}")
+            raise
         
         log_loc = self._active_lognormal_mu()
         
