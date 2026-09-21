@@ -1,16 +1,10 @@
-try:
-    import jax
-    import jax.numpy as jnp
-    import jax.random as jrandom
-    import numpyro.distributions as dist
-    from numpyro.distributions import Distribution, constraints
-    from numpyro.distributions.util import promote_shapes
+import jax
+import jax.numpy as jnp
+import jax.random as jrandom
+import numpyro.distributions as dist
+from numpyro.distributions import Distribution, constraints
+from numpyro.distributions.util import promote_shapes
 
-except ImportError:
-    Distribution = object
-    class constraints:
-        real = None
-        positive = None
 
 class SymmetricBlendedLogNormal(Distribution):
     """A 3-element mixture model implementing a symmatric version of
@@ -107,12 +101,13 @@ class SymmetricBlendedLogNormal(Distribution):
 
     def sample(self, key, sample_shape=()):
         shape = sample_shape + self.batch_shape
+        assert shape == sample_shape
         key_comp, key_neg, key_norm, key_pos = jrandom.split(key, 4)
         
         # 1. Sample which component is active based on weights
         log_weights = self._get_log_weights()
         try:
-            comp = dist.Categorical(logits=log_weights).sample(
+            comp = dist.Categorical(logits=log_weights, validate_args=False).sample(
                 key_comp, sample_shape)
         except ValueError as err:
             err.add_note(f"logits={log_weights}")
