@@ -32,6 +32,8 @@ def test_internal_links(endpoint):
     html = response.text
     links = re.findall(r'href=["\']([^"\'#?]+)["\']', html)
     assert 'StrictUndefined' not in html
+    assert 'TODO' not in html
+    assert 'XXX' not in html
 
     for link in set(links):
         # Skip external protocols
