@@ -79,19 +79,25 @@ at the bottom of this page.
     {% if site_inference.ablation_study %}
 	<table>
 	    <thead>
-		<tr><th>Name</th><th>Description</th><th>Affected Sector(s)</th></tr>
+		<tr>
+			<th>Name</th>
+			<th>Description</th>
+			<!--<th>Affected Sector(s)</th>-->
+		</tr>
 	    </thead>
 	    <tbody>
     {% for barrier_name, barrier_obj in site_inference.ablation_study.barriers.items() %}
 		<tr>
 		    <td><a href="/models/prob/{{ ident }}/barriers/{{ barrier_name }}/">{{ barrier_obj.pretty_name }}</a></td>
 		    <td>{{ barrier_obj.short_description }}</td>
+		    <!--
 		    <td>
 			{% for ipcc_sector in barrier_obj.extra_ipcc_sectors %}
 			<a href="./sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
 			{% if not loop.last %},{% endif %}
 			{% endfor %}
 		    </td>
+		    -->
 		</tr>
     {% endfor %}
 	    </tbody>
