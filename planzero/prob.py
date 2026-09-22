@@ -137,9 +137,3 @@ class SiteInference(BaseModel):
     def emission_results(self) -> AnnualEmissionResults:
         raise NotImplementedError()
 
-
-# TODO: move to registry-building file
-# TODO: rename these site files to make decl/impl pairs of files
-from . import nir2025_site
-from . import nir_static_normals_site
-from . import nir_ar2_site

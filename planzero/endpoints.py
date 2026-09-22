@@ -1,13 +1,6 @@
 import os
 
-from . import (
-    blog,
-    ipcc_canada,
-    my_functools,
-    prob,
-    sim,
-    singleton_registry,
-)
+from . import singleton_registry
 
 HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
@@ -15,7 +8,10 @@ def completed_prob_registry() -> singleton_registry.SingletonRegistry:
     from . import (
             ablation,
             ablation_study_scaling,  # noqa: F401
-            challenge,  # noqa: F401
+            nir2025_site,  # noqa: F401
+            nir_ar2_site,  # noqa: F401
+            nir_static_normals_site,  # noqa: F401
+            prob,
     )
 
     # creates obj, populates inference registries
@@ -30,6 +26,13 @@ def completed_prob_registry() -> singleton_registry.SingletonRegistry:
 
 
 def endpoints():
+    from . import (
+            ablation_study_scaling,  # noqa: F401
+            blog,
+            challenge,  # noqa: F401
+            ipcc_canada,
+            sim,
+    )
 
     prob_registry = completed_prob_registry()
 

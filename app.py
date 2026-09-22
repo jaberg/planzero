@@ -30,7 +30,6 @@ import planzero.ipcc_canada
 import planzero.ipcc_home
 import planzero.singleton_registry
 import planzero.ureg
-from planzero.endpoints import completed_prob_registry as prob_registry
 
 u = planzero.ureg.ureg
 
@@ -171,6 +170,7 @@ async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier
 
 @app_cache
 def get_prob_barrier_impact_html(site_inf_name, barrier_name):
+    from planzero.endpoints import completed_prob_registry as prob_registry
     template = templates.get_template("model_barrier.html")
     site_inference = prob_registry()[site_inf_name]
     barrier_obj = site_inference.barriers[barrier_name]
@@ -228,6 +228,7 @@ async def get_simulation_page(ident:str, request: Request):
 
 @app_cache
 def get_models_prob_page_html(ident:str):
+    from planzero.endpoints import completed_prob_registry as prob_registry
     site_inference = prob_registry()[ident]
     if not site_inference.show_on_models_page:
         return None
@@ -251,6 +252,7 @@ async def get_models_prob_page(ident:str, request: Request):
 @app_cache
 def get_models_prob_sector_page_html(ident:str, sector_path:str):
     import planzero.enums
+    from planzero.endpoints import completed_prob_registry as prob_registry
     registry = prob_registry()
     site_inference = registry[ident]
     if not site_inference.show_on_models_page:
@@ -373,6 +375,7 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 @app_cache
 def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name: str):
     import planzero.blog
+    from planzero.endpoints import completed_prob_registry as prob_registry
     try:
         site_inference = prob_registry()[site_inference_name]
     except KeyError:
@@ -420,6 +423,7 @@ async def get_models_prob_strategy_impact(
 
 @app_cache
 def get_strategies_html():
+    from planzero.endpoints import completed_prob_registry as prob_registry
     registry = prob_registry()
 
     models_by_strategy = {}
@@ -501,7 +505,8 @@ async def get_blog(request: Request, post_name:str):
 
 @app_cache
 def get_models_html():
-    prob_registry()
+    from planzero.endpoints import completed_prob_registry as prob_registry
+    prob_registry()  # call it to ensure the registry is populated
     return templates.get_template('models.html').render(
             get_context(
                 active_tab='models',
@@ -517,7 +522,8 @@ async def get_models(request: Request):
 
 @app_cache
 def get_predictions_html():
-    prob_registry()
+    from planzero.endpoints import completed_prob_registry as prob_registry
+    prob_registry()  # call it to ensure the registry is populated
     return templates.get_template('predictions.html').render(
             get_context(
                 active_tab='predictions',
