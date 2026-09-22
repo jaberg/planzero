@@ -63,7 +63,7 @@ at the bottom of this page.
 		    <td>{{ strategy_obj.short_description }}</td>
 		    <td>
 			{% for ipcc_sector in strategy_obj.extra_ipcc_sectors %}
-			<a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+			<a href="./sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
 			{% if not loop.last %},{% endif %}
 			{% endfor %}
 		    </td>
@@ -88,7 +88,7 @@ at the bottom of this page.
 		    <td>{{ barrier_obj.short_description }}</td>
 		    <td>
 			{% for ipcc_sector in barrier_obj.extra_ipcc_sectors %}
-			<a href="./ipcc-sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
+			<a href="./sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
 			{% if not loop.last %},{% endif %}
 			{% endfor %}
 		    </td>
