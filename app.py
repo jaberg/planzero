@@ -229,6 +229,7 @@ async def get_simulation_page(ident:str, request: Request):
 @app_cache
 def get_models_prob_page_html(ident:str):
     from planzero.endpoints import completed_prob_registry as prob_registry
+
     site_inference = prob_registry()[ident]
     if not site_inference.show_on_models_page:
         return None

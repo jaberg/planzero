@@ -8,6 +8,7 @@ def completed_prob_registry() -> singleton_registry.SingletonRegistry:
     from . import (
             ablation,
             ablation_study_scaling,  # noqa: F401
+            challenge,  # noqa: F401   # HACK to ensure loaded
             nir2025_site,  # noqa: F401
             nir_ar2_site,  # noqa: F401
             nir_static_normals_site,  # noqa: F401
