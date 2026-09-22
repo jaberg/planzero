@@ -1,6 +1,5 @@
 import datetime
 
-from . import prob
 from .blog import BlogPost, BlogStatus
 from .enums import GHG, PT, IPCC_Sector, col_by_pt, col_ca
 from .html import HTML_Matplotlib_Figure
@@ -33,8 +32,9 @@ class AR2(BlogPost):
             )
 
     def generate_assets(self):
+        from . import prob
 
-        for model_name, site_inference in prob.site_inferences.items():
+        for model_name, site_inference in prob.registry.items():
             base = 'html/blog/2026-04-26-probabilistic-modelling'
             if model_name in ('Static_Normals', 'AR2'):
                 site_inference.uncertain_sparkline_matrix_echart(
@@ -63,11 +63,12 @@ class AR2(BlogPost):
         return model
 
     def const_sector_ghg(self, ax, sector, ghg):
-        from .nir_constant_predictor import NIR2025_Model
-        from . import nir2025
-        import numpy as np
         import jax.numpy as jnp
+        import numpy as np
         from numpyro.diagnostics import hpdi
+
+        from . import nir2025
+        from .nir_constant_predictor import NIR2025_Model
 
         model = NIR2025_Model.posterior_inference(
             sector=sector, ghg=ghg)
