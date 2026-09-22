@@ -176,18 +176,22 @@ class BaseBase:
         if data['lbound'] < 0:
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{key} CI lower bound',
+                    name=(f'{key} CI upper bound'
+                          if data['ubound'] < 0
+                          else None),
                     xAxisId=xaxis_id,
                     yAxisId=yaxis_id,
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
                     data=list(zip(self.years, data['neg_shift'])),
-                    stack=f'stack_{key!s}'
+                    stack=f'stack_{key!s}_neg'
                     ))
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{key} CI',
+                    name=(f'{key} CI width (negative region)'
+                          if data['ubound'] < 0
+                          else f'{key} CI lower bound'),
                     xAxisId=xaxis_id,
                     yAxisId=yaxis_id,
                     type='line',
@@ -196,23 +200,27 @@ class BaseBase:
                     areaStyle=dict(opacity=.25),
                     itemStyle=EChartItemStyle(color=color),
                     data=list(zip(self.years, data['neg_shade'])),
-                    stack=f'stack_{key!s}'
+                    stack=f'stack_{key!s}_neg'
                     ))
         if data['ubound'] >= 0:
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{key} CI lower bound',
+                    name=(f'{key} CI lower bound'
+                          if data['lbound'] >= 0
+                          else None),
                     xAxisId=xaxis_id,
                     yAxisId=yaxis_id,
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
                     data=list(zip(self.years, data['pos_shift'])),
-                    stack=f'stack_{key!s}'
+                    stack=f'stack_{key!s}_pos'
                     ))
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{key} CI',
+                    name=(f'{key} CI width'
+                          if data['lbound'] >= 0
+                          else f'{key} CI upper bound'),
                     xAxisId=xaxis_id,
                     yAxisId=yaxis_id,
                     type='line',
@@ -221,7 +229,7 @@ class BaseBase:
                     areaStyle=dict(opacity=.25),
                     itemStyle=EChartItemStyle(color=color),
                     data=list(zip(self.years, data['pos_shade'])),
-                    stack=f'stack_{key!s}'
+                    stack=f'stack_{key!s}_pos'
                     ))
 
     def append_cell(self, row, col, key, row_ymin, row_ymax):
@@ -653,10 +661,13 @@ class SparklineEChartHelperBase(BaseBase):
                     color=color),
                 data=list(zip(self.years, data['means'])),
                 ))
+        key = sector
         if data['lbound'] < 0:
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{sector} CI lower bound',
+                    name=(f'{key} CI upper bound'
+                          if data['ubound'] < 0
+                          else None),
                     xAxisId=f'xAxis_{col}|{row}',
                     yAxisId=f'yAxis_{col}|{row}',
                     type='line',
@@ -667,7 +678,9 @@ class SparklineEChartHelperBase(BaseBase):
                     ))
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{sector} CI',
+                    name=(f'{key} CI width (negative region)'
+                          if data['ubound'] < 0
+                          else f'{key} CI lower bound'),
                     xAxisId=f'xAxis_{col}|{row}',
                     yAxisId=f'yAxis_{col}|{row}',
                     type='line',
@@ -681,7 +694,9 @@ class SparklineEChartHelperBase(BaseBase):
         if data['ubound'] >= 0:
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{sector} CI lower bound',
+                    name=(f'{key} CI lower bound'
+                          if data['lbound'] >= 0
+                          else None),
                     xAxisId=f'xAxis_{col}|{row}',
                     yAxisId=f'yAxis_{col}|{row}',
                     type='line',
@@ -692,7 +707,9 @@ class SparklineEChartHelperBase(BaseBase):
                     ))
             self.series_list.append(
                 EChartSeriesBase(
-                    name=f'{sector} CI',
+                    name=(f'{key} CI width'
+                          if data['lbound'] >= 0
+                          else f'{key} CI upper bound'),
                     xAxisId=f'xAxis_{col}|{row}',
                     yAxisId=f'yAxis_{col}|{row}',
                     type='line',

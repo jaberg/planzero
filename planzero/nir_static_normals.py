@@ -512,6 +512,8 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
 
     data_cutoff: datetime.date
 
+    draws_per_posterior_sample: int = 32
+
     @computed_field
     def short_description(self) -> str | None:
         return f"""
@@ -589,17 +591,18 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
                     # conveniently, we can draw one each from the posterior sample
                     jrkey, tmpkey = jrandom.split(jrkey)
                     constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
-                            jrandom.normal(tmpkey, (n_samples, 1))
-                            * eval_sigma[:,13:]
-                            + eval_mu[:, 13:]
-                            ).T
+                            jrandom.normal(tmpkey, (
+                                self.draws_per_posterior_sample, n_samples))
+                            * eval_sigma[:,13]
+                            + eval_mu[:, 13]
+                            ).reshape(1, -1)
                 else:
                     # some logic to e.g. loop over posterior samples drawing
                     # samples until we've drawn enough
                     raise NotImplementedError()
             else:
                 constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
-                        jnp.zeros((1, constants['n_samples'])))
+                        jnp.zeros((1, 1)))
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         pass

@@ -128,7 +128,16 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
                     continue
                 elif (sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
                     results = batch_rollout_barriers_results
-                    estimated_sector_total_ca += results['ys']['enteric_fermentation_ktCO2e_ca_sample'].T  * self.v_unit_scale
+                    full_sample_ca = (
+                            results['ys']['enteric_fermentation_ktCO2e_ca_sample']
+                            * self.v_unit_scale)
+                    n_years, n_per_post, _n_samples = full_sample_ca.shape
+                    reshaped_sample_ca = full_sample_ca.reshape(
+                            n_years, n_per_post * _n_samples).T
+                    subsampled = np_rng.choice(reshaped_sample_ca,
+                                               size=n_samples,
+                                               replace=False)
+                    estimated_sector_total_ca += subsampled
                 else:
                     BN_d = self.BNs_by_sector_ghg[sector, ghg]
                     grouped_samples = model_db.load_ndarray_group(
@@ -137,7 +146,7 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
                             group_id='grouped_samples')
                     n_chains, n_samples_, n_regions_ = grouped_samples['mu'].shape
                     assert n_chains == 1
-                    assert n_regions == n_regions
+                    assert n_regions == n_regions_
                     assert n_samples_ == n_samples
                     samples_mu_ca = grouped_samples['mu'][0].sum(axis=1)
                     ca_sample = np_rng.standard_normal(n_samples)
@@ -204,12 +213,30 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
                 pass
             elif (self.sector, ghg) == (IPCC_Sector.Enteric_Fermentation, GHG.CH4):
                 results = batch_rollout_barriers_results
-                estimates_ghg_pt[:, ii, :, :] = (
-                        results['ys']['enteric_fermentation_ktCO2e_pt_sample'].transpose((1, 0, 2))
+                full_sample_pt = (
+                        results['ys']['enteric_fermentation_ktCO2e_pt_sample']
                         * self.v_unit_scale)
-                estimates_ghg_ca[:, ii, :] = (
-                        results['ys']['enteric_fermentation_ktCO2e_ca_sample'].transpose()
+                n_years, n_per_post, _n_samples, n_PTs = full_sample_pt.shape
+                reshaped = full_sample_pt.reshape(
+                        n_years, n_per_post * _n_samples, n_PTs)
+                # put samples first for sub-sampling
+                transposed = reshaped.transpose((1, 0, 2))
+                subsampled = np_rng.choice(transposed,
+                                           size=n_samples,
+                                           replace=False)
+                estimates_ghg_pt[:, ii, :, :] = subsampled
+
+                full_sample_ca = (
+                        results['ys']['enteric_fermentation_ktCO2e_ca_sample']
                         * self.v_unit_scale)
+                n_years, n_per_post, _n_samples = full_sample_ca.shape
+                reshaped_sample_ca = full_sample_ca.reshape(
+                        n_years, n_per_post * _n_samples).T
+                subsampled = np_rng.choice(reshaped_sample_ca,
+                                           size=n_samples,
+                                           replace=False)
+                estimates_ghg_ca[:, ii, :] = subsampled
+
             else:
                 BN_d = self.BNs_by_sector_ghg[self.sector, ghg]
                 grouped_samples = model_db.load_ndarray_group(
@@ -312,7 +339,7 @@ class ScalingSiteInference(prob.SiteInference):
 
     data_cutoff:datetime.date = datetime.date(year=2024, month=12, day=31)
 
-    rollout_nbytes_budget:int = 50_000_000
+    rollout_nbytes_budget:int = 200_000_000
 
     @computed_field
     def ablation_study_id(self) -> str|None:
@@ -503,7 +530,7 @@ class ScalingStudy(AblationStudy):
 
         # Enteric Fermentation
         sample_w_strategy = results['ys']['enteric_fermentation_ktCO2e_ca_sample']
-        n_years, n_samples = sample_w_strategy.shape
+        n_years, n_per_post, n_samples = sample_w_strategy.shape
         years = list(range(1990, 1990 + n_years))
 
         # hack: estimate the emissions from not using the strategy
@@ -514,19 +541,29 @@ class ScalingStudy(AblationStudy):
         ktCO2e_sample[
                 IPCC_Sector.Enteric_Fermentation,
                 GHG.CH4,
-                Activity.Farming_Cattle] = sample_w_strategy - sample_wo_strategy
+                Activity.Farming_Cattle] = (
+                        sample_w_strategy
+                        - sample_wo_strategy
+                        ).reshape(n_years, -1)
 
         # Production Emissions delta
+        sample_w_strategy_opmu = (
+                np.zeros_like(sample_w_strategy)
+                + results['ys']['bovaer_production_emissions_ktCO2e_ca_sample'][:, None, :])
+        sample_wo_strategy_opmu = np.zeros_like(sample_w_strategy_opmu)
+
         ktCO2e_sample[
                 IPCC_Sector.Other_Product_Manufacture_and_Use,
                 GHG.CO2,
-                Activity.Farming_Cattle] \
-                        = results['ys']['bovaer_production_emissions_ktCO2e_ca_sample']
+                Activity.Farming_Cattle] = (
+                        sample_w_strategy_opmu
+                        - sample_wo_strategy_opmu
+                        ).reshape(n_years, -1)
 
         return AnnualEmissionResults(
                 ktCO2e_sample=ktCO2e_sample,
                 years=years,
-                n_samples=n_samples)
+                n_samples=n_samples * n_per_post)
 
     def national_annual_program_balances(
             self,
@@ -556,10 +593,19 @@ class ScalingStudy(AblationStudy):
                 = -(results['ys']['bovaer_monitoring_admin_ca'].T
                     + results['ys']['bovaer_monitoring_onsite_ca'].T)
 
+        # upsample to match emission results
+        CAD_sample = {
+                key: (
+                    np.zeros((n_years, 32, n_samples))
+                    + (val.T)[:, None, :]
+                    ).reshape((n_years, -1)).T
+                for key, val in CAD_sample.items()
+                }
+
         napb_no_net = NationalAnnualProgramBalances(
                 CAD_sample=CAD_sample,
                 years=years,
-                n_samples=n_samples)
+                n_samples=n_samples * 32)
         from .results_ops import napb_refresh_net
         napb = napb_refresh_net(napb_no_net)
 

@@ -11,6 +11,7 @@ from numpyro.infer import MCMC, NUTS
 from pydantic import computed_field
 
 from . import model_db, nir2025, sts
+from .barriers import Barrier
 from .eccc_nir_annex3p4 import table_A3p4_11
 from .enums import GHG, PT, IPCC_Sector
 from .ghgvalues import GWP_100
@@ -18,7 +19,6 @@ from .sc_3210013001 import (
     FarmType,
     Livestock,
     Livestock_nonsums,
-    SurveyDate,
     number_of_cattle_by_class_and_farm_type_combined_surveys,
 )
 from .ureg import u
@@ -328,8 +328,6 @@ def samples_from_grouped_samples(grouped_samples):
     return samples
 
 
-from .barriers import Barrier
-
 class Cattle_Population_Static_Normal(Barrier):
     """Static Normal estimates of cattle populations
     and enteric fermentation emission factors, to explain three
@@ -347,7 +345,7 @@ class Cattle_Population_Static_Normal(Barrier):
     def short_description(self) -> str:
         return "Static model of cattle population"
 
-    def annual_scan_init(self, initial_carry, xs, years, constants):
+    def annual_scan_init(self, initial_carry, xs, years, constants, jrkey):
         grouped_samples = cached_inference()
         samples = samples_from_grouped_samples(grouped_samples)
         # (num_samples, cattle_types, PT 14)
@@ -539,6 +537,7 @@ class RolloutResult:
 def batch_rollout_elements(
         elements: dict[str, object],
         n_samples:int,
+        jrkey:object,
         ) -> RolloutResult:
     years = jnp.arange(1990, 2050 + 1) # TODO: param
 
@@ -550,11 +549,13 @@ def batch_rollout_elements(
 
 
     for name, elem in elements.items():
+        jrkey, tmpkey = jrandom.split(jrkey)
         elem.annual_scan_init(
                 initial_carry.view(name),
                 xs.view(name),
                 years,
-                constants.view(name))
+                constants.view(name),
+                jrkey=tmpkey)
 
     ys_ics = []
     nc_ics = []
@@ -603,7 +604,7 @@ def batch_rollout_elements(
             })
 
 
-def batch_rollout_barriers(barriers, strategies, elements=None, n_samples=500):
+def batch_rollout_barriers(barriers, strategies, elements=None, n_samples=500, seed=12345):
     if elements is None:
         elements = {}
         # loop is preferred to update() in order to show the name in case of duplication
@@ -611,9 +612,11 @@ def batch_rollout_barriers(barriers, strategies, elements=None, n_samples=500):
             for name, elem in d.items():
                 assert name not in elements, name
                 elements[name] = elem
+    jrkey = jrandom.key(seed)
     return batch_rollout_elements(
             elements,
-            n_samples=n_samples)
+            n_samples=n_samples,
+            jrkey=jrkey)
 
 
 

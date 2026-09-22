@@ -1,26 +1,27 @@
+import jax.random as jrandom
+
 from .annual_emission_results import (
     AER_NotResultKey,
     AnnualEmissionResults,
     aer_parse_result_key,
 )
 from .barriers import Barrier
-
-# TODO: move this here
-from .prob_bovaer import batch_rollout_barriers
+from .prob_bovaer import batch_rollout_elements
 from .strategies.strategy2 import Strategy2
 
 
 def compute_annual_emission_results(
         strategies: dict[str, Strategy2],
         barriers: dict[str, Barrier],
+        seed_int=12345,
         ) -> AnnualEmissionResults:
     """
     Build up a full NIR AnnualEmissionResults object from the contributions
     of different simulation groups.
     """
-    n_samples = 500  # TODO calculate this below
     ktCO2e_sample = {}
     years = None
+
     all_des = {}
     for name, de in strategies.items():
         all_des["Strategy", name] = de
@@ -32,12 +33,13 @@ def compute_annual_emission_results(
         #assert de.simgroup is not None, (key, de)
         des_by_simgroup.setdefault(de.simgroup, {})[key] = de
 
+    jrkey = jrandom.key(seed_int)
     for simgroup, des in des_by_simgroup.items():
-        results = batch_rollout_barriers(
-                strategies=None,
-                barriers=None,
+        jrkey, tmpkey = jrandom.split(jrkey)
+        results = batch_rollout_elements(
                 elements=des,
-                n_samples=n_samples)
+                n_samples=500,
+                jrkey=tmpkey)
         if years is None:
             years = results['years']
         for result_type in ['xs', 'ys', 'constants']:
@@ -52,5 +54,5 @@ def compute_annual_emission_results(
     rval = AnnualEmissionResults(
             ktCO2e_sample=ktCO2e_sample,
             years=years,
-            n_samples=n_samples)
+            n_samples=16000)
     return rval

@@ -111,7 +111,7 @@ class Scale_Bovaer(Strategy2):
         current.bovine_population_fraction_on_bovaer = max_fraction
         return state.t_now + 1 * u.years
 
-    def annual_scan_init(self, new_carry, xs, years, constants):
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
         n_samples = constants['n_samples']
         import jax.numpy as jnp
         import jax.random as jrandom

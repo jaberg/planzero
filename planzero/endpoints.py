@@ -13,6 +13,7 @@ def completed_prob_registry() -> singleton_registry.SingletonRegistry:
             nir_ar2_site,  # noqa: F401
             nir_static_normals_site,  # noqa: F401
             prob,
+            sim,  # noqa: F401   # HACK to ensure loaded
     )
 
     # creates obj, populates inference registries

@@ -447,7 +447,7 @@ class Bovaer_Adoption_Limit(Barrier):
         # Apparently Bovaer is not allowed as part of organic production.
         return state.t_now + 1 * u.years
 
-    def annual_scan_init(self, initial_carry, xs, years, constants):
+    def annual_scan_init(self, initial_carry, xs, years, constants, jrkey):
         n_samples = constants['sigma_ca'].shape[0]
         initial_carry.setdefault('bovine_population_fraction_on_bovaer', jnp.zeros(n_samples))
         initial_carry['max_fraction_of_cattle_on_bovaer'] = jnp.zeros(n_samples)
@@ -521,7 +521,7 @@ class Bovaer_Production_Emission_Factors(Barrier):
             * self.rate)
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years, constants):
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
         n_samples = constants['sigma_ca'].shape[0]
         key = jrandom.key(934)
         new_carry['bovaer_production_emission_factor'] = jrandom.uniform(
@@ -610,17 +610,18 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 ))
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years, constants):
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
         num_samples, num_regions = constants['sigma_pt'].shape
-        jrkey = jrandom.key(1234)
-        jrkey, jrkey_ = jrandom.split(jrkey)
+        jrkey, tmpkey = jrandom.split(jrkey)
+        draws_per_posterior_sample = 32
         constants['shift_pt'] = (
-                jrandom.normal(jrkey_, (num_samples, num_regions))
+                jrandom.normal(tmpkey, (draws_per_posterior_sample, num_samples, num_regions))
                 * constants['sigma_pt']
                 * constants['enteric_ch4_ktCO2e_scale']
                 )
+        jrkey, tmpkey = jrandom.split(jrkey)
         constants['shift_ca'] = (
-                jrandom.normal(jrkey_, (num_samples,))
+                jrandom.normal(tmpkey, (draws_per_posterior_sample, num_samples,))
                 * constants['sigma_ca']
                 * constants['enteric_ch4_ktCO2e_scale']
                 )
@@ -663,7 +664,7 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         # and trim off the PT.XX category because it should have been factored
         # into the headcounts during inference
         y['enteric_fermentation_ktCO2e_pt'] = emissions_by_cattle_type.sum(axis=1)[:, :13]
-        y['enteric_fermentation_ktCO2e_ca'] = emissions_by_cattle_type.sum(axis=(1,2))
+        y['enteric_fermentation_ktCO2e_ca'] = emissions_by_cattle_type.sum(axis=(1, 2))
 
         y['enteric_fermentation_ktCO2e_pt_sample'] \
                 = y['enteric_fermentation_ktCO2e_pt'] + constants['shift_pt']
@@ -677,7 +678,7 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                     activity=Activity.Farming_Cattle
                     )
             if ghg == GHG.CH4:
-                y[result_key] = y['enteric_fermentation_ktCO2e_ca_sample']
+                y[result_key] = y['enteric_fermentation_ktCO2e_ca_sample'].reshape(-1)
             else:
                 y[result_key] = jnp.zeros((1,))
 
@@ -767,7 +768,7 @@ class Bovaer_Monitoring(Barrier):
             * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years, constants):
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
         pass
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
@@ -830,7 +831,7 @@ class Bovaer_Farm_Subsidy(Barrier):
             * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years, constants):
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
         n_samples = constants['sigma_ca'].shape[0]
         new_carry['bovine_population_fraction_on_bovaer'] = jnp.zeros(n_samples)
 
@@ -909,7 +910,7 @@ class Bovaer_Purchase_Cost(Barrier):
             setattr(current, sts_key, cost * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
-    def annual_scan_init(self, new_carry, xs, years, constants):
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
         pass
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
