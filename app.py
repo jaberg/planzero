@@ -411,6 +411,7 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
             title=f"PlanZero Model {site_inference_name} - Strategy {strategy_name}",
             active_tab='strategies',
             site_inference_name=site_inference_name,
+            sim_name=None,
             site_inference=site_inference,
             strategy_name=strategy_name,
             description_html=ablation_study.strategies[strategy_name].description_html,

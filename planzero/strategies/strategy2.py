@@ -34,7 +34,7 @@ class Scale_Bovaer(Strategy2):
     (according to the assumptions in
      <a href="{{coderef_url(Bovaer_Adoption_Limit)}}">Bovaer Adoption Limit</a>)
     are subsized by public funds, and go for it. This adoption is modelled as a nation-wide
-    proportionality, not province-by-province.</p>
+    rate of adoption, not province-by-province.</p>
     """
     # TODO: add a see-also type mechanism, to look at the effects
     # on the various barriers affected by this strategy.
@@ -46,7 +46,11 @@ class Scale_Bovaer(Strategy2):
     def see_also_html(self, context_vars) -> list[str]:
         sources = [
             ('<a'
-             ' href="/models/prob/{{site_inference_name}}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' {% if sim_name %}'
+             ' href="/models/sim/{{ sim_name }}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' {% else %}'
+             ' href="/models/prob/{{ site_inference_name }}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' {% endif %}'
              ' Adoption Limit</a>, which is the model barrier that sets the rate'
              ' of adoption for this strategy'),
             ('<a'
