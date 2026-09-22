@@ -17,16 +17,10 @@ _checked_links = set()
 @pytest.mark.parametrize("endpoint", warmup.cached_endpoints())
 def test_endpoints(
         endpoint,
-        page_build_duration_limit=20.0, # seconds
         ):
-    t0 = time.time()
     response = client.get(endpoint)
     assert response.status_code == 200
     _checked_links.add(endpoint)
-    t1 = time.time()
-    duration = t1 - t0
-    if duration > page_build_duration_limit:
-        warnings.warn(f"endpoint {endpoint} took {duration} seconds to render")
 
 
 @pytest.mark.parametrize("endpoint", warmup.cached_endpoints())
