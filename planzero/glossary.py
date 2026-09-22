@@ -4,14 +4,20 @@ so that it can import objects throughout the library, and retrieve
 their line numbers for constructing github links.
 """
 import functools
+
 import jinja2
 from pydantic import BaseModel, computed_field
 
+from . import blog, strategies
+from .base import DynamicElement
+from .blog import latex
+from .html import coderef_url
 from .singleton_registry import SingletonRegistry
+from .sts import STS
 
 registry = SingletonRegistry()
 
-class AKA_Registry(object):
+class AKA_Registry:
     def __init__(self):
         self.aliases = {}
 
@@ -39,16 +45,6 @@ def siteref(term, text=None):
         return aka_registry[term].site_reference(text or term)
     except KeyError as exc:
         raise exc
-
-
-from .blog import latex
-from . import blog
-from . import barriers
-from . import cattle
-from . import strategies
-from .sts import STS
-from .base import DynamicElement
-from .html import coderef_url
 
 
 class GlossaryTerm(BaseModel):
@@ -372,6 +368,8 @@ class Barrier(GlossaryTerm):
 
     @property
     def code_refs(self) -> dict[str, object]:
+        from . import barriers, cattle
+
         return {
             'Barrier base class': barriers.Barrier,
             'Example Barrier class: Bovaer Adoption Limit': cattle.Bovaer_Adoption_Limit,

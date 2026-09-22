@@ -25,7 +25,6 @@ templates = Jinja2Templates(
 import planzero.blog
 import planzero.enums
 import planzero.est_nir
-import planzero.glossary
 import planzero.html
 import planzero.ipcc_canada
 import planzero.ipcc_home
@@ -74,8 +73,7 @@ async def get_ipcc_sectors(request: Request, error_text:str|None=None):
     return templates.TemplateResponse(
         request=request,
         name="ipcc-sectors.html",
-        context=dict(
-            default_context,
+        context=get_context(
             active_tab='ipcc_sectors',
             error_text=error_text,
             npv_unit='MCAD',
@@ -112,13 +110,13 @@ def get_ipcc_sector_html(catpath: str):
         return None
     import planzero.est_nir
     import planzero.strategies
-    return templates.get_template(templatepath_for_catpath(catpath)).render(dict(
-        default_context,
-        active_tab='ipcc_sectors',
-        stakeholders=planzero.strategies.stakeholders,
-        catpath=catpath,
-        est_nir=planzero.est_nir,
-        ))
+    return templates.get_template(templatepath_for_catpath(catpath)).render(
+            get_context(
+                active_tab='ipcc_sectors',
+                stakeholders=planzero.strategies.stakeholders,
+                catpath=catpath,
+                est_nir=planzero.est_nir,
+                ))
 
 
 @app.get("/ipcc-sectors/{category}/", response_class=HTMLResponse)
@@ -152,8 +150,7 @@ def get_simulation_barrier_impact_html(sim_name, barrier_name):
     sim = planzero.sim.simulation_result(sim_name)
     template = templates.get_template("scenario_barrier.html")
     rval = template.render(
-        dict(
-            default_context,
+        get_context(
             sim=sim,
             active_tab='simulations',
             sim_name=sim_name,
@@ -176,11 +173,9 @@ async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier
 def get_prob_barrier_impact_html(site_inf_name, barrier_name):
     template = templates.get_template("model_barrier.html")
     site_inference = prob_registry()[site_inf_name]
-    print(site_inference.barriers)
     barrier_obj = site_inference.barriers[barrier_name]
     rval = template.render(
-        dict(
-            default_context,
+        get_context(
             active_tab='simulations',
             site_inf_name=site_inf_name,
             barrier_name=barrier_name,
@@ -216,8 +211,7 @@ def get_simulations_page_html(ident:str):
             return [] # TODO: better version of "many"
 
     return templates.get_template("scenario_template.html").render(
-        dict(
-            default_context,
+        get_context(
             active_tab='models',
             ident=ident,
             ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
@@ -238,8 +232,7 @@ def get_models_prob_page_html(ident:str):
     if not site_inference.show_on_models_page:
         return None
     return templates.get_template("models_prob.html").render(
-        dict(
-            default_context,
+        get_context(
             active_tab='models',
             ident=ident,
             site_inference=site_inference,
@@ -263,8 +256,7 @@ def get_models_prob_sector_page_html(ident:str, sector_path:str):
     if not site_inference.show_on_models_page:
         return None
     return templates.get_template("models_prob_sector.html").render(
-        dict(
-            default_context,
+        get_context(
             active_tab='models',
             ident=ident,
             site_inference=site_inference,
@@ -292,8 +284,7 @@ def get_simulation_ipcc_sectors_category_html(sim_name, catpath):
     chart = sim.echart_ipcc_sector(catpath)
     template = templates.get_template("scenario_ipcc_sector.html")
     rval = template.render(
-        dict(
-            default_context,
+        get_context(
             active_tab='simulations',
             sim_name=sim_name,
             ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
@@ -326,6 +317,7 @@ async def get_simulation_ipcc_sectors_category(
 
 @app_cache
 def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
+    import planzero.blog
     import planzero.sim
 
     sim = planzero.sim.simulation_result(sim_name)
@@ -357,8 +349,7 @@ def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
 
     assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
 
-    context = dict(
-        default_context,
+    context = get_context(
         active_tab='simulations',
         sim_name=sim_name,
         strategy_name=strategy_name,
@@ -402,8 +393,7 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
     # TODO: this should maybe be a diagnostic / warning?
     assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
 
-    context = dict(
-        default_context,
+    context = get_context(
         active_tab='strategies',
         site_inference_name=site_inference_name,
         site_inference=site_inference,
@@ -448,8 +438,7 @@ def get_strategies_html():
 
     template = templates.get_template("strategies.html")
     rval =  template.render(
-        dict(
-            default_context,
+        get_context(
             active_tab='strategies',
             models_by_strategy=models_by_strategy,
             sectors_by_strategy=sectors_by_strategy,
@@ -469,6 +458,7 @@ class CannotRenderUnPublishedPost(Exception):
 
 @app_cache
 def get_blog_html(post_name: str):
+    import planzero.blog
     blog = planzero.blog._blogs_by_url_filename.get(post_name)
     prev_url_filename = None
     next_url_filename = None
@@ -484,13 +474,13 @@ def get_blog_html(post_name: str):
         raise OSError() # hack to trigger 404 below
 
     if blog.published or HOME_SHOW_UNPUBLISHED_POSTS:
-        return templates.get_template(f"/blog/{post_name}.html").render(dict(
-            default_context,
-            active_tab='blog',
-            blog=blog,
-            prev_url_filename=prev_url_filename,
-            next_url_filename=next_url_filename,
-            ))
+        return templates.get_template(f"/blog/{post_name}.html").render(
+                get_context(
+                    active_tab='blog',
+                    blog=blog,
+                    prev_url_filename=prev_url_filename,
+                    next_url_filename=next_url_filename,
+                    ))
     else:
         raise CannotRenderUnPublishedPost()
 
@@ -512,10 +502,10 @@ async def get_blog(request: Request, post_name:str):
 @app_cache
 def get_models_html():
     prob_registry()
-    return templates.get_template('models.html').render(dict(
-        default_context,
-        active_tab='models',
-        ))
+    return templates.get_template('models.html').render(
+            get_context(
+                active_tab='models',
+                ))
 
 @app.get("/models/", response_class=HTMLResponse)
 async def get_models(request: Request):
@@ -528,10 +518,10 @@ async def get_models(request: Request):
 @app_cache
 def get_predictions_html():
     prob_registry()
-    return templates.get_template('predictions.html').render(dict(
-        default_context,
-        active_tab='predictions',
-        ))
+    return templates.get_template('predictions.html').render(
+            get_context(
+                active_tab='predictions',
+                ))
 
 @app.get("/predictions/", response_class=HTMLResponse)
 async def get_predictions(request: Request):
@@ -543,10 +533,10 @@ async def get_predictions(request: Request):
 
 @app_cache
 def get_glossary_html():
-    return templates.get_template('glossary.html').render(dict(
-        default_context,
-        active_tab='glossary',
-        ))
+    return templates.get_template('glossary.html').render(
+            get_context(
+                active_tab='glossary',
+                ))
 
 @app.get("/glossary/", response_class=HTMLResponse)
 async def get_glossary(request: Request):
@@ -559,8 +549,7 @@ async def get_about(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="about.html",
-        context=dict(
-            default_context,
+        context=get_context(
             active_tab='about',
             ),
     )
@@ -578,8 +567,7 @@ async def get_index(
         request=request,
         name="blog.html",
         #name="index.html",
-        context=dict(
-            default_context,
+        context=get_context(
             fade_in_intro=True,
             blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
@@ -588,7 +576,14 @@ async def get_index(
             ),
     )
 
-default_context = {
+
+def get_context(**kwargs):
+    import planzero.blog
+    import planzero.glossary
+    import planzero.html
+    import planzero.ipcc_canada
+
+    rval = {
     'int': int,
     'str': str,
     'float': float,
@@ -624,4 +619,5 @@ default_context = {
     'BlogStatus': planzero.blog.BlogStatus,
     'HOME_SHOW_UNPUBLISHED_POSTS': HOME_SHOW_UNPUBLISHED_POSTS,
     }
-
+    rval.update(kwargs)
+    return rval
