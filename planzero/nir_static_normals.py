@@ -9,10 +9,12 @@ import numpy as np
 import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
+from pydantic import computed_field
 from scipy.special import logsumexp
 
 from . import model_db, my_functools, nir2025
 from .annual_emission_results import aer_result_key
+from .barriers import Barrier
 from .enums import GHG, PT, Activity, IPCC_Sector
 
 model_family = 'StaticNormal'
@@ -502,9 +504,6 @@ def weighted_KL_score(year, model_id, seed_int=1234):
     weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
     return weighted_divergence, abs_ktCO2e, KL_values
 
-
-from .barriers import Barrier
-from pydantic import computed_field
 
 
 class NIR_Sector_Static_Normal_Barrier(Barrier):

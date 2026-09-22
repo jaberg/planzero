@@ -286,7 +286,8 @@ class ProbabilisticNIR2025(BlogPost):
                 (fig, ax) = plt.subplots(1, 1, figsize=(8, 4))
 
                 ax.set_title('Probability Assessment Using a "Log-Normal" Probability Density Function')
-                x = np.linspace(0, 1.4, 100)
+                eps = 1e-6
+                x = np.linspace(0, 1.4, 100) + eps
                 ax.plot(x, np.exp(dist.LogNormal(-1, 0.7).log_prob(x)))
 
                 A = .5
@@ -301,7 +302,6 @@ class ProbabilisticNIR2025(BlogPost):
                 x2 = np.linspace(A, B, 50)
                 ax.fill_between(
                     x2,
-                    #np.exp(dist.LogNormal(-1, 0.7).log_prob(x2)),
                     lognorm.pdf(x2, s=.7, scale=np.exp(-1)),
                     color='skyblue',
                     alpha=0.4)
