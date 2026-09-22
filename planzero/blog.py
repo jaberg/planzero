@@ -736,8 +736,6 @@ class GHG_Emissions(BlogPost):
             NF3_df=latex(r"0.21 C"),
             )
 
-        from . import planet_model  # noqa: F401
-
         super().__init__(
             date=datetime.date(2026, 1, 21),
             title="A Model of Greenhouse Gas Emissions",
@@ -759,7 +757,12 @@ class GHG_Emissions(BlogPost):
 
     @property
     def figure_svgs(self):
-        from . import sim
+        # planet_model populates registry
+        from . import (
+            planet_model,  # noqa: F401
+            sim,
+        )
+
         return {
             "co2e_v_heat_remaining": GHG_Emissions_CO2e_v_Heat(
                 sim_result=sim.simulation_result('Planet_Model'),
