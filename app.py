@@ -73,6 +73,7 @@ async def get_ipcc_sectors(request: Request, error_text:str|None=None):
         request=request,
         name="ipcc-sectors.html",
         context=get_context(
+            title="PlanZero Sectors",
             active_tab='ipcc_sectors',
             error_text=error_text,
             npv_unit='MCAD',
@@ -109,8 +110,10 @@ def get_ipcc_sector_html(catpath: str):
         return None
     import planzero.est_nir
     import planzero.strategies
+    sector = planzero.enums.IPCC_Sector_from_catpath_no_whitespace[catpath]
     return templates.get_template(templatepath_for_catpath(catpath)).render(
             get_context(
+                title=f"PlanZero Sector {sector.value}",
                 active_tab='ipcc_sectors',
                 stakeholders=planzero.strategies.stakeholders,
                 catpath=catpath,
@@ -150,6 +153,7 @@ def get_simulation_barrier_impact_html(sim_name, barrier_name):
     template = templates.get_template("scenario_barrier.html")
     rval = template.render(
         get_context(
+            title=f"PlanZero - Simulation {sim_name} - Barrier {barrier_name}",
             sim=sim,
             active_tab='simulations',
             sim_name=sim_name,
@@ -176,6 +180,7 @@ def get_prob_barrier_impact_html(site_inf_name, barrier_name):
     barrier_obj = site_inference.barriers[barrier_name]
     rval = template.render(
         get_context(
+            title=f"PlanZero - Model {site_inf_name} - Barrier {barrier_name}",
             active_tab='simulations',
             site_inf_name=site_inf_name,
             barrier_name=barrier_name,
@@ -212,6 +217,7 @@ def get_simulations_page_html(ident:str):
 
     return templates.get_template("scenario_template.html").render(
         get_context(
+            title=f"PlanZero Simulation {ident}",
             active_tab='models',
             ident=ident,
             ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
@@ -235,6 +241,7 @@ def get_models_prob_page_html(ident:str):
         return None
     return templates.get_template("models_prob.html").render(
         get_context(
+            title=f"PlanZero Model {ident}",
             active_tab='models',
             ident=ident,
             site_inference=site_inference,
@@ -260,6 +267,7 @@ def get_models_prob_sector_page_html(ident:str, sector_path:str):
         return None
     return templates.get_template("models_prob_sector.html").render(
         get_context(
+            title=f"PlanZero Model {ident} - Sector {sector_path}",
             active_tab='models',
             ident=ident,
             site_inference=site_inference,
@@ -288,6 +296,7 @@ def get_simulation_ipcc_sectors_category_html(sim_name, catpath):
     template = templates.get_template("scenario_ipcc_sector.html")
     rval = template.render(
         get_context(
+            title=f"PlanZero Simulation {sim_name} - Sector {catpath}",
             active_tab='simulations',
             sim_name=sim_name,
             ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
@@ -353,15 +362,16 @@ def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
     assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
 
     context = get_context(
-        active_tab='simulations',
-        sim_name=sim_name,
-        strategy_name=strategy_name,
-        strategy_class=baseline_state.projects[strategy_name].__class__,
-        description_html=baseline_state.projects[strategy_name].description_html,
-        impact_chart=impact_chart,
-        subsidies_chart=subsidies_chart,
-        cost_per_tCO2e=cost_per_tCO2e,
-        )
+            title=f"PlanZero Simulation {sim_name} - Strategy {strategy_name}",
+            active_tab='simulations',
+            sim_name=sim_name,
+            strategy_name=strategy_name,
+            strategy_class=baseline_state.projects[strategy_name].__class__,
+            description_html=baseline_state.projects[strategy_name].description_html,
+            impact_chart=impact_chart,
+            subsidies_chart=subsidies_chart,
+            cost_per_tCO2e=cost_per_tCO2e,
+            )
     strategy_obj = baseline_state.projects[strategy_name]
     context['see_also'] = strategy_obj.see_also_html(context)
     return templates.get_template('strategy_impact.html').render(context)
@@ -398,15 +408,16 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
     assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
 
     context = get_context(
-        active_tab='strategies',
-        site_inference_name=site_inference_name,
-        site_inference=site_inference,
-        strategy_name=strategy_name,
-        description_html="TODO", #baseline_state.projects[strategy_name].description_html,
-        impact_chart=impact_chart,
-        subsidies_chart=subsidies_chart,
-        cost_per_tCO2e=cost_per_tCO2e,
-        )
+            title=f"PlanZero Model {site_inference_name} - Strategy {strategy_name}",
+            active_tab='strategies',
+            site_inference_name=site_inference_name,
+            site_inference=site_inference,
+            strategy_name=strategy_name,
+            description_html="TODO", #baseline_state.projects[strategy_name].description_html,
+            impact_chart=impact_chart,
+            subsidies_chart=subsidies_chart,
+            cost_per_tCO2e=cost_per_tCO2e,
+            )
     #strategy_obj = baseline_state.projects[strategy_name]
     context['see_also'] = ["TODO"] #strategy_obj.see_also_html(context)
     return templates.get_template('strategy_impact_prob.html').render(context)
@@ -444,6 +455,7 @@ def get_strategies_html():
     template = templates.get_template("strategies.html")
     rval =  template.render(
         get_context(
+            title="PlanZero Strategies",
             active_tab='strategies',
             models_by_strategy=models_by_strategy,
             sectors_by_strategy=sectors_by_strategy,
@@ -481,6 +493,7 @@ def get_blog_html(post_name: str):
     if blog.published or HOME_SHOW_UNPUBLISHED_POSTS:
         return templates.get_template(f"/blog/{post_name}.html").render(
                 get_context(
+                    title="PlanZero",
                     active_tab='blog',
                     blog=blog,
                     prev_url_filename=prev_url_filename,
@@ -510,6 +523,7 @@ def get_models_html():
     prob_registry()  # call it to ensure the registry is populated
     return templates.get_template('models.html').render(
             get_context(
+                title="PlanZero - Models",
                 active_tab='models',
                 ))
 
@@ -527,6 +541,7 @@ def get_predictions_html():
     prob_registry()  # call it to ensure the registry is populated
     return templates.get_template('predictions.html').render(
             get_context(
+                title="PlanZero - Predictions",
                 active_tab='predictions',
                 ))
 
@@ -542,8 +557,10 @@ async def get_predictions(request: Request):
 def get_glossary_html():
     return templates.get_template('glossary.html').render(
             get_context(
+                title="PlanZero - Glossary",
                 active_tab='glossary',
                 ))
+
 
 @app.get("/glossary/", response_class=HTMLResponse)
 async def get_glossary(request: Request):
@@ -557,6 +574,7 @@ async def get_about(request: Request):
         request=request,
         name="about.html",
         context=get_context(
+            title="PlanZero - About",
             active_tab='about',
             ),
     )
@@ -575,6 +593,7 @@ async def get_index(
         name="blog.html",
         #name="index.html",
         context=get_context(
+            title="PlanZero - Posts",
             fade_in_intro=True,
             blogs_sorted_by_date=planzero.blog._blogs_sorted_by_date,
             active_tab='blog',
@@ -584,47 +603,47 @@ async def get_index(
     )
 
 
-def get_context(**kwargs):
+def get_context(title:str, **kwargs):
     import planzero.blog
     import planzero.glossary
     import planzero.html
     import planzero.ipcc_canada
 
-    rval = {
-    'int': int,
-    'str': str,
-    'float': float,
-    'min': min,
-    'max': max,
-    'np': np,
-    'sorted': sorted,
-    'enumerate': enumerate,
-    'isinstance': isinstance,
-    'u': u,
-    'have_page_for_catpath': have_page_for_catpath,
-    'url_for_catpath': url_for_catpath,
-    'json': json,
-    'datetime': datetime,
-    'ipcc_canada': planzero.ipcc_canada,
-    'discount_rate': .02,
-    'planzero': planzero,
-    'CO2': planzero.html.latex(r'\mathrm{CO}_2'),
-    'CH4': planzero.html.latex(r'\mathrm{CH}_4'),
-    'NF3': planzero.html.latex(r'\mathrm{NF}_3'),
-    'SF6': planzero.html.latex(r'\mathrm{SF}_6'),
-    'N2O': planzero.html.latex(r"\mathrm N_2 \mathrm O"),
-    'CO2e': planzero.html.latex(r'\mathrm{CO}_2\mathrm e '),
-    'degrees': planzero.html.latex(r'^\circ'),
-    'siteref': planzero.glossary.siteref,
-    'coderef_url': planzero.html.coderef_url,
-    'coderef_filepath': planzero.html.coderef_filepath,
-    'fade_in_intro': False,
-    'printcname': (lambda cname: cname.replace('_', ' ')),
-    'blogs_by_tag': planzero.blog.blogs_by_tag,
-    'blog_registry': planzero.blog.registry,
-    'latex': planzero.blog.latex,
-    'BlogStatus': planzero.blog.BlogStatus,
-    'HOME_SHOW_UNPUBLISHED_POSTS': HOME_SHOW_UNPUBLISHED_POSTS,
+    rval = {'title': title,
+            'int': int,
+            'str': str,
+            'float': float,
+            'min': min,
+            'max': max,
+            'np': np,
+            'sorted': sorted,
+            'enumerate': enumerate,
+            'isinstance': isinstance,
+            'u': u,
+            'have_page_for_catpath': have_page_for_catpath,
+            'url_for_catpath': url_for_catpath,
+            'json': json,
+            'datetime': datetime,
+            'ipcc_canada': planzero.ipcc_canada,
+            'discount_rate': .02,
+            'planzero': planzero,
+            'CO2': planzero.html.latex(r'\mathrm{CO}_2'),
+            'CH4': planzero.html.latex(r'\mathrm{CH}_4'),
+            'NF3': planzero.html.latex(r'\mathrm{NF}_3'),
+            'SF6': planzero.html.latex(r'\mathrm{SF}_6'),
+            'N2O': planzero.html.latex(r"\mathrm N_2 \mathrm O"),
+            'CO2e': planzero.html.latex(r'\mathrm{CO}_2\mathrm e '),
+            'degrees': planzero.html.latex(r'^\circ'),
+            'siteref': planzero.glossary.siteref,
+            'coderef_url': planzero.html.coderef_url,
+            'coderef_filepath': planzero.html.coderef_filepath,
+            'fade_in_intro': False,
+            'printcname': (lambda cname: cname.replace('_', ' ')),
+            'blogs_by_tag': planzero.blog.blogs_by_tag,
+            'blog_registry': planzero.blog.registry,
+            'latex': planzero.blog.latex,
+            'BlogStatus': planzero.blog.BlogStatus,
+            'HOME_SHOW_UNPUBLISHED_POSTS': HOME_SHOW_UNPUBLISHED_POSTS,
     }
     rval.update(kwargs)
     return rval
