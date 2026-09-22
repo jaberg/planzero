@@ -245,6 +245,7 @@ def get_models_prob_page_html(ident:str):
             site_inference=site_inference,
             ))
 
+
 @app.get("/models/prob/{ident}/", response_class=HTMLResponse)
 async def get_models_prob_page(ident:str, request: Request):
     html = get_models_prob_page_html(ident)
@@ -253,8 +254,6 @@ async def get_models_prob_page(ident:str, request: Request):
     else:
         raise HTTPException(status_code=404, detail="No such model")
 
-
-# models/prob/{ident}/sector/{sector_value}
 
 @app_cache
 def get_models_prob_sector_page_html(ident:str, sector_path:str):

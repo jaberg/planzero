@@ -15,8 +15,10 @@ client = TestClient(app.app)
 _checked_links = set()
 
 @pytest.mark.parametrize("endpoint", warmup.cached_endpoints())
-def test_endpoints(endpoint):
-    page_build_duration_limit = 60.0 # seconds
+def test_endpoints(
+        endpoint,
+        page_build_duration_limit=20.0, # seconds
+        ):
     t0 = time.time()
     response = client.get(endpoint)
     assert response.status_code == 200

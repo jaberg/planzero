@@ -1,3 +1,4 @@
+import sys
 from functools import cache as memcache
 
 import jax.numpy as jnp
@@ -500,7 +501,45 @@ class Carry:
         self.viewer_name = elem
 
 
-def batch_rollout_elements(elements: dict[str, object], n_samples:int):
+class RolloutResult:
+
+    dct:dict
+
+    def __init__(self, dct:dict):
+        self.dct = dct
+
+    def __getitem__(self, key):
+        return self.dct[key]
+
+    def total_nbytes(self):
+        nbytes = 0
+        def size_fn(val):
+            if isinstance(val, (jnp.ndarray, np.ndarray)):
+                rval = val.nbytes
+            elif isinstance(val, (int, float, None)):
+                # this shouldn't add up to much, so we overestimate
+                # to be conservative
+                rval = sys.getsizeof(val)
+            else:
+                raise NotImplementedError(val)
+            return rval
+
+        for key in ['ys', 'xs', 'final_carry']:
+            try:
+                for val in self.dct[key].values():
+                    nbytes += size_fn(val)
+            except AttributeError as err:
+                err.add_note(key)
+                raise
+        for key in ['constants', 'initial_carry',]:
+            for val in self.dct[key]._dict.values():
+                nbytes += size_fn(val)
+        return nbytes
+
+def batch_rollout_elements(
+        elements: dict[str, object],
+        n_samples:int,
+        ) -> RolloutResult:
     years = jnp.arange(1990, 2050 + 1) # TODO: param
 
     initial_carry = InitialCarry()
@@ -551,7 +590,7 @@ def batch_rollout_elements(elements: dict[str, object], n_samples:int):
         for key, val in ys.items():
             print(key, val.shape, val.dtype, val.min(), val.max())
     assert len(ys_ics) == 1
-    return {
+    return RolloutResult({
             'ys': ys,
             'xs': xs._dict,
             'final_carry': final_carry,
@@ -561,7 +600,7 @@ def batch_rollout_elements(elements: dict[str, object], n_samples:int):
             'xs_ic': xs,
             'ys_ic': ys_ics[-1],
             'nc_ic': nc_ics[-1],
-            }
+            })
 
 
 def batch_rollout_barriers(barriers, strategies, elements=None, n_samples=500):

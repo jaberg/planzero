@@ -3,8 +3,8 @@ import enum
 
 from pydantic import BaseModel
 
-from . import enums, est_nir, ipcc_canada, sim
-from .html import HTML_Math_Latex, HTML_Matplotlib_Figure, latex
+from . import enums, est_nir, ipcc_canada
+from .html import HTML_Matplotlib_Figure, latex
 from .ureg import u
 
 _classes = []
@@ -452,6 +452,7 @@ class ModellingBovaer(BlogPost):
 
     @staticmethod
     def generate_assets():
+        from . import sim
         scaling = sim.simulation_result('Scaling')
         scaling.by_ipcc_sector.save_as(
             'html/blog/2026-04-03-bovaer_by-ipcc-sector.html')
@@ -709,7 +710,6 @@ class GHG_Emissions(BlogPost):
     """
     equations: dict[str, str]
     a: str
-    figure_svgs: dict[str, str]
 
     def __init__(self):
         equations = dict(
@@ -746,19 +746,6 @@ class GHG_Emissions(BlogPost):
             status=BlogStatus.Done,
             a="bar",
             equations=equations,
-            figure_svgs=dict(
-                co2e_v_heat_remaining=GHG_Emissions_CO2e_v_Heat(
-                    sim_result=sim.simulation_result('Planet_Model'),
-                    sts_key='Cumulative_Heat_Energy',
-                    title="Heat Remaining After 1-year CO2e-equivalent Emissions",
-                    legend_loc='upper right').as_html(),
-                co2e_v_heat_forcing=GHG_Emissions_CO2e_v_Heat(
-                    sim_result=sim.simulation_result('Planet_Model'),
-                    sts_key='Cumulative_Heat_Energy_forcing',
-                    title="Cumulative GHG-Trapped Heat",
-                    add_circle=True,
-                    legend_loc='upper left').as_html(),
-            ),
             tags=[
                 'EmissionsImpulseResponse_CO2',
                 'EmissionsImpulseResponse_CH4',
@@ -769,6 +756,23 @@ class GHG_Emissions(BlogPost):
                 'EmissionsImpulseResponse_NF3',
             ],
             )
+
+        @property
+        def figure_svgs(self):
+            from . import sim
+            return {
+                "co2e_v_heat_remaining": GHG_Emissions_CO2e_v_Heat(
+                    sim_result=sim.simulation_result('Planet_Model'),
+                    sts_key='Cumulative_Heat_Energy',
+                    title="Heat Remaining After 1-year CO2e-equivalent Emissions",
+                    legend_loc='upper right').as_html(),
+                "co2e_v_heat_forcing": GHG_Emissions_CO2e_v_Heat(
+                    sim_result=sim.simulation_result('Planet_Model'),
+                    sts_key='Cumulative_Heat_Energy_forcing',
+                    title="Cumulative GHG-Trapped Heat",
+                    add_circle=True,
+                    legend_loc='upper left').as_html(),
+            }
 
 
 class Contributing(BlogPost):

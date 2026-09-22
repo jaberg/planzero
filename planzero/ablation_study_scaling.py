@@ -1,4 +1,5 @@
 import datetime
+import warnings
 from typing import ClassVar
 
 import numpy as np
@@ -311,6 +312,8 @@ class ScalingSiteInference(prob.SiteInference):
 
     data_cutoff:datetime.date = datetime.date(year=2024, month=12, day=31)
 
+    rollout_nbytes_budget:int = 50_000_000
+
     @computed_field
     def ablation_study_id(self) -> str|None:
         return 'ScalingStudy'
@@ -403,17 +406,22 @@ class ScalingSiteInference(prob.SiteInference):
         cached_inference()
 
     def batch_rollout_barriers(self):
-        barriers = dict(self.ablation_study.barriers)
-        strategies = {
-                name: obj
-                for name, obj in self.ablation_study.strategies.items()
-                if name != self.strategy_id}
-        if self.strategy_id is not None:
-            assert len(strategies) == len(self.ablation_study.strategies) - 1
-        results = batch_rollout_barriers(
-                barriers=barriers,
-                strategies=strategies)
-        return results
+        if not hasattr(self, '_rollout'):
+            barriers = dict(self.ablation_study.barriers)
+            strategies = {
+                    name: obj
+                    for name, obj in self.ablation_study.strategies.items()
+                    if name != self.strategy_id}
+            if self.strategy_id is not None:
+                assert len(strategies) == len(self.ablation_study.strategies) - 1
+            results = batch_rollout_barriers(
+                    barriers=barriers,
+                    strategies=strategies)
+            nbytes = results.total_nbytes()
+            if nbytes > self.rollout_nbytes_budget:
+                warnings.warn(f'rollout exceeded bytes budget {nbytes} > {self.rollout_nbytes_budget}')
+            self._rollout = results
+        return self._rollout
 
     @property
     def posts_developing_this_page(self) -> list[str]:
