@@ -47,9 +47,9 @@ Parameterization of modelling element: {{ str(barrier_obj) }}
 <tr>
     <td>{{ var_name[:50] }}</td>
     <td style="text-align: right;"> {{ value.shape }} </td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.05) ) }}</td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.50) ) }}</td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.95) ) }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.05) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.50) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.95) ).replace("_", " ") }}</td>
     <td>{{ 'unit unkown' }}</td>
 </tr>
 {% endfor %}
@@ -79,9 +79,9 @@ Parameterization of modelling element: {{ str(barrier_obj) }}
 <tr>
     <td>{{ var_name[:50] }}</td>
     <td style="text-align: right;"> {{ value.shape }} </td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.05) ) }}</td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.50) ) }}</td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.95) ) }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.05) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.50) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.95) ).replace("_", " ") }}</td>
     <td>{{ 'unit unkown' }}</td>
 </tr>
 {% endfor %}
@@ -110,9 +110,9 @@ Parameterization of modelling element: {{ str(barrier_obj) }}
 <tr>
     <td>{{ var_name[:50] }}</td>
     <td style="text-align: right;"> {{ value.shape }} </td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.05) ) }}</td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.50) ) }}</td>
-    <td style="text-align: right;">{{"{:.1f}".format( np.quantile(value, 0.95) ) }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.05) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.50) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.1f}".format( np.quantile(value, 0.95) ).replace("_", " ") }}</td>
     <td>{{ 'unit unkown' }}</td>
 </tr>
 {% endfor %}

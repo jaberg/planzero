@@ -7,12 +7,23 @@ import planzero.endpoints
 
 populate_cache = 0
 
-# called in dev environment by test_200.py test_endpoints
-# name is specified so that the cache key is the same when this
-# file is __main__ and if it is a module.
-@app._app_cache.memoize(name='warmup.cached_endpoints')
-def cached_endpoints():
-    return list(planzero.endpoints.endpoints())
+if app._app_cache is None:
+    # yes, not actually cached, it's okay.
+    # We're probably in a development environment and calling
+    # the endpoints function is fine because all of the dependencies
+    # are installed.
+    def cached_endpoints():
+        return list(planzero.endpoints.endpoints())
+else:
+    # This cache prevents calling endpoints in production
+    # because endpoints loads files that won't work in prod.
+    #
+    # called in dev environment by test_200.py test_endpoints
+    # name is specified so that the cache key is the same when this
+    # file is __main__ and if it is a module.
+    @app._app_cache.memoize(name='warmup.cached_endpoints')
+    def cached_endpoints():
+        return list(planzero.endpoints.endpoints())
 
 def warmup():
     client = TestClient(app.app)

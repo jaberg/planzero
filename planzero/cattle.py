@@ -670,12 +670,16 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         y['enteric_fermentation_ktCO2e_ca_sample'] \
                 = y['enteric_fermentation_ktCO2e_ca'] + constants['shift_ca']
 
-        result_key = aer_result_key(
-                sector=IPCC_Sector.Enteric_Fermentation,
-                ghg=GHG.CH4,
-                activity=Activity.Farming_Cattle
-                )
-        y[result_key] = y['enteric_fermentation_ktCO2e_ca_sample']
+        for ghg in GHG:
+            result_key = aer_result_key(
+                    sector=IPCC_Sector.Enteric_Fermentation,
+                    ghg=ghg,
+                    activity=Activity.Farming_Cattle
+                    )
+            if ghg == GHG.CH4:
+                y[result_key] = y['enteric_fermentation_ktCO2e_ca_sample']
+            else:
+                y[result_key] = jnp.zeros((1,))
 
         # We're ignoring the variance from sigma_pt and sigma_ca here
         # I'm not really sure if that's correct or not.

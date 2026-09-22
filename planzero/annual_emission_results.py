@@ -44,7 +44,7 @@ class AnnualEmissionResults:
         for val in ktCO2e_sample.values():
             n_years, _n_samples = val.shape
             assert n_years in (1, len(years))
-            assert _n_samples == n_samples
+            assert _n_samples in (1, n_samples)
 
     def __getitem__(self, item):
         if isinstance(item, IPCC_Sector):

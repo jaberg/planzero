@@ -121,7 +121,6 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
             estimated_sector_total_ca = np.zeros(
                 (n_samples, len(self.years)))
 
-
             for ii, ghg in enumerate(GHG):
                 if (sector, ghg) in self.normals_by_sector_ghg:
                     # This is assumed to be essentially 0
@@ -349,7 +348,8 @@ class ScalingSiteInference(prob.SiteInference):
         helper.add_total_cells()
         helper.add_non_lulucf_cells()
         helper.add_lulucf_cells()
-        return helper.make_echart()
+        rval = helper.make_echart()
+        return rval
 
     def sector_echart(self, sector, ghg, v_unit):
         helper = RegionalSparklineEChartHelper(
@@ -403,8 +403,6 @@ class ScalingSiteInference(prob.SiteInference):
         cached_inference()
 
     def batch_rollout_barriers(self):
-        import time
-        t0 = time.time()
         barriers = dict(self.ablation_study.barriers)
         strategies = {
                 name: obj
@@ -415,7 +413,6 @@ class ScalingSiteInference(prob.SiteInference):
         results = batch_rollout_barriers(
                 barriers=barriers,
                 strategies=strategies)
-        print('batch rollout took', time.time() - t0)
         return results
 
     @property
@@ -632,16 +629,15 @@ class ScalingStudy(AblationStudy):
                 }
 
         for sector in IPCC_Sector:
-            for ghg in GHG:
-                if sector == IPCC_Sector.Enteric_Fermentation and ghg == GHG.CH4:
-                    # provided above by Bovaer_Production_Emission_Factors
-                    pass
-                else:
-                    self._barriers[f'NIR_Sector_Static_Normal_{sector.value}_{ghg.value}'] \
-                            = NIR_Sector_Static_Normal_Barrier(
-                                    sector=sector,
-                                    ghg=ghg,
-                                    data_cutoff=datetime.date(year=2024, month=12, day=31))
+            if sector == IPCC_Sector.Enteric_Fermentation:
+                # provided above by Bovaer_Production_Emission_Factors
+                pass
+            else:
+                barrier = NIR_Sector_Static_Normal_Barrier(
+                        sector=sector,
+                        data_cutoff=datetime.date(year=2024, month=12, day=31))
+                key = f'NIR_Sector_Static_Normal_{sector.value}'
+                self._barriers[key] = barrier
 
 
 def scaling_study_singleton():

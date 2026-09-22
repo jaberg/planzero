@@ -62,6 +62,12 @@ def endpoints():
         for catpath in ipcc_canada.catpaths:
             rval.append(f"/models/prob/{model_name}/sectors/{catpath}/")
 
+        for strategy_name in site_inf.strategies:
+            rval.append(f"/models/prob/{model_name}/strategies/{strategy_name}/")
+
+        for barrier_name in site_inf.barriers:
+            rval.append(f"/models/prob/{model_name}/barriers/{barrier_name}/")
+
     rval.extend([
         "/",
         "/ipcc-sectors/",

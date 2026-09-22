@@ -187,6 +187,7 @@ def near_zero_sector_ghgs():
     return rval
 
 
+@cache
 def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
     """Returns  ca_dist, pt_dists""" # XXX backward rel to fn name
     arr_pt, arr_ca = ktCO2e_dense_w_nan()
@@ -223,7 +224,6 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                 relerr=unc)
 
             pt_dists = []
-            pt_total_abs = np.nansum(abs(ktco2e_pt))
 
             for pt in PT:
                 if pt == PT.XX:
@@ -254,7 +254,6 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                 raise Exception(sector, ghg, ktco2e_ca, unc) from e
 
             pt_dists = []
-            pt_total = np.nansum(ktco2e_pt)
             assert np.nanmin(ktco2e_pt) >= 0, (sector, ghg, ktco2e_pt)
 
             def positive_nearzero_dist():

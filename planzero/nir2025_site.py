@@ -52,7 +52,7 @@ class NIR2025_SparklineEChartHelper(SparklineEChartHelperBase):
 
                 for jj, year in enumerate(self.years):
                     ca_dist, _ = nir2025.ktCO2e_numpyro_dist_pt_ca(
-                        sector, ghg, year)
+                            sector, ghg, year)
 
                     rng_key, rng_key_ = jrandom.split(rng_key)
                     estimated_sector_ghg_ca_year = ca_dist.sample(rng_key_, (n_samples,))

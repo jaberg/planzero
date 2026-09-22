@@ -504,65 +504,103 @@ def weighted_KL_score(year, model_id, seed_int=1234):
 
 
 from .barriers import Barrier
+from pydantic import computed_field
 
 
 class NIR_Sector_Static_Normal_Barrier(Barrier):
 
     sector: IPCC_Sector
-    ghg: GHG
 
     data_cutoff: datetime.date
 
-    def annual_scan_init(self, initial_carry, xs, years, constants, jrkey=None):
+    @computed_field
+    def short_description(self) -> str | None:
+        return f"""
+        A-priori, a static normal distribution to approximate
+        emissions in the "{self.sector.value}" NIR sector
+        during the period from 1990 - {self.data_cutoff.year}.
+        """
+        #The posterior distribution represented by this barrier element
+        #is not necessarily normal.
+
+    @computed_field
+    def description(self) -> str | None:
+        return f"""
+        A-priori, a static normal distribution to approximate
+        emissions in the "{self.sector.value}" NIR sector
+        during the period from 1990 - {self.data_cutoff.year}.
+        The posterior distribution represented by this barrier element
+        is not necessarily normal.
+        """
+
+    @computed_field
+    def pretty_name(self) -> str:
+        return f'Static Normal Sector Estimate for {self.sector.value})'
+
+    @property
+    def model_id(self) -> str:
         model_id = model_id_from_data_cutoff(self.data_cutoff)
-        BN_components = {
-                comp_d['component_id']: comp_d
-                for comp_d in model_db.BayesianNormal_components_by_model(model_id)}
-        component_id = component_id_fn(model_id, sector=self.sector, ghg=self.ghg)
-        if component_id in BN_components:
+        return model_id
 
-            grouped_samples = model_db.load_ndarray_group(
-                    model_id, component_id, 'grouped_samples')
-            post_samples = post_samples_from_grouped_samples(grouped_samples)
-            comp_d, = model_db.params_BayesianNormal(component_id)
-            assert model_id == comp_d['model_id']
-            assert self.sector == comp_d['sector']
-            assert self.ghg == comp_d['ghg']
-            assert self.data_cutoff == comp_d['data_cutoff']
+    def component_id(self, ghg) -> str:
+        component_id = component_id_fn(self.model_id, sector=self.sector, ghg=ghg)
+        return component_id
 
-            if jrkey is None:
-                jrkey = jrandom.key(78324)
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['StaticNormals']
 
-            mu = post_samples['mu'] # (n_samples, 13)
-            n_samples, thirteen = mu.shape
-            assert thirteen == 13
-            mu_ca = mu.sum(axis=1) # (n_samples,)
+    def annual_scan_init(self, initial_carry, xs, years, constants, jrkey=None):
+        model_id = self.model_id
+        for ghg in GHG:
+            component_id = self.component_id(ghg)
+            try:
+                comp_d, = model_db.params_BayesianNormal(component_id)
+            except model_db.NoRecord:
+                comp_d = None
 
-            eval_mu = np.zeros((n_samples, 14))
-            eval_mu[:, :13] = mu
-            eval_mu[:, 13] = mu_ca
-            eval_mu *= comp_d['scale']
+            if comp_d:
+                grouped_samples = model_db.load_ndarray_group(
+                        model_id, component_id, 'grouped_samples')
+                post_samples = post_samples_from_grouped_samples(grouped_samples)
+                assert model_id == comp_d['model_id']
+                assert self.sector == comp_d['sector']
+                assert ghg == comp_d['ghg']
+                assert self.data_cutoff == comp_d['data_cutoff']
 
-            eval_sigma = np.zeros((n_samples, 14))
-            eval_sigma[:, :13] = post_samples['sigma_pt'][0]
-            eval_sigma[:, 13] = post_samples['sigma_ca']
-            eval_sigma *= comp_d['scale']
+                if jrkey is None:
+                    jrkey = jrandom.key(78324)
 
-            if n_samples == constants['n_samples']:
-                # conveniently, we can draw one each from the posterior sample
-                jrkey, tmpkey = jrandom.split(jrkey)
-                constants[aer_result_key(self.sector, self.ghg, Activity.Other)] = (
-                        jrandom.normal(tmpkey, (n_samples, 1))
-                        * eval_sigma[:,13:]
-                        + eval_mu[:, 13:]
-                        ).T
+                mu = post_samples['mu'] # (n_samples, 13)
+                n_samples, thirteen = mu.shape
+                assert thirteen == 13
+                mu_ca = mu.sum(axis=1) # (n_samples,)
+
+                eval_mu = np.zeros((n_samples, 14))
+                eval_mu[:, :13] = mu
+                eval_mu[:, 13] = mu_ca
+                eval_mu *= comp_d['scale']
+
+                eval_sigma = np.zeros((n_samples, 14))
+                eval_sigma[:, :13] = post_samples['sigma_pt'][0]
+                eval_sigma[:, 13] = post_samples['sigma_ca']
+                eval_sigma *= comp_d['scale']
+
+                if n_samples == constants['n_samples']:
+                    # conveniently, we can draw one each from the posterior sample
+                    jrkey, tmpkey = jrandom.split(jrkey)
+                    constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
+                            jrandom.normal(tmpkey, (n_samples, 1))
+                            * eval_sigma[:,13:]
+                            + eval_mu[:, 13:]
+                            ).T
+                else:
+                    # some logic to e.g. loop over posterior samples drawing
+                    # samples until we've drawn enough
+                    raise NotImplementedError()
             else:
-                # some logic to e.g. loop over posterior samples drawing
-                # samples until we've drawn enough
-                raise NotImplementedError()
-        else:
-            constants[aer_result_key(self.sector, self.ghg, Activity.Other)] = (
-                    jnp.zeros((1, constants['n_samples'])))
+                constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
+                        jnp.zeros((1, constants['n_samples'])))
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         pass
