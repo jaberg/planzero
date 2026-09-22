@@ -413,13 +413,12 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
             site_inference_name=site_inference_name,
             site_inference=site_inference,
             strategy_name=strategy_name,
-            description_html="TODO", #baseline_state.projects[strategy_name].description_html,
+            description_html=ablation_study.strategies[strategy_name].description_html,
             impact_chart=impact_chart,
             subsidies_chart=subsidies_chart,
             cost_per_tCO2e=cost_per_tCO2e,
             )
-    #strategy_obj = baseline_state.projects[strategy_name]
-    context['see_also'] = ["TODO"] #strategy_obj.see_also_html(context)
+    context['see_also'] = ablation_study.strategies[strategy_name].see_also_html(context)
     return templates.get_template('strategy_impact_prob.html').render(context)
 
 
