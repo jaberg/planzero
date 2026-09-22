@@ -757,22 +757,22 @@ class GHG_Emissions(BlogPost):
             ],
             )
 
-        @property
-        def figure_svgs(self):
-            from . import sim
-            return {
-                "co2e_v_heat_remaining": GHG_Emissions_CO2e_v_Heat(
-                    sim_result=sim.simulation_result('Planet_Model'),
-                    sts_key='Cumulative_Heat_Energy',
-                    title="Heat Remaining After 1-year CO2e-equivalent Emissions",
-                    legend_loc='upper right').as_html(),
-                "co2e_v_heat_forcing": GHG_Emissions_CO2e_v_Heat(
-                    sim_result=sim.simulation_result('Planet_Model'),
-                    sts_key='Cumulative_Heat_Energy_forcing',
-                    title="Cumulative GHG-Trapped Heat",
-                    add_circle=True,
-                    legend_loc='upper left').as_html(),
-            }
+    @property
+    def figure_svgs(self):
+        from . import sim
+        return {
+            "co2e_v_heat_remaining": GHG_Emissions_CO2e_v_Heat(
+                sim_result=sim.simulation_result('Planet_Model'),
+                sts_key='Cumulative_Heat_Energy',
+                title="Heat Remaining After 1-year CO2e-equivalent Emissions",
+                legend_loc='upper right').as_html(),
+            "co2e_v_heat_forcing": GHG_Emissions_CO2e_v_Heat(
+                sim_result=sim.simulation_result('Planet_Model'),
+                sts_key='Cumulative_Heat_Energy_forcing',
+                title="Cumulative GHG-Trapped Heat",
+                add_circle=True,
+                legend_loc='upper left').as_html(),
+        }
 
 
 class Contributing(BlogPost):
