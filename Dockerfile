@@ -21,6 +21,7 @@ RUN apt-get install -y tmux ncurses-base
 RUN apt-get install -y git git-lfs
 RUN apt-get install -y curl
 RUN apt-get install -y nodejs npm # for pyright neovim plugin
+RUN apt-get install -y procps # for top
 
 # TODO: arg/logic to configure architecture here:
 ENV NVIM_ARCH="arm64"
@@ -51,7 +52,8 @@ ENV PLANZERO_HOME_SHOW_PLANNED_POSTS=1
 ENV PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS=1
 # TODO: pull in the source code, data etc. to run dockerized tests
 # Currently, Makefile runs tests in mount directory
-#CMD ["pytest"]
+
+RUN curl -fsSL https://opencode.ai/v2/install | bash
 
 
 FROM testing AS build_cache
