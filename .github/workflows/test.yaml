@@ -78,10 +78,6 @@ jobs:
           run: python -m planzero inference_work --model=Static_Normals_2024_12_31
         - name: Perform Static Normals inference
           run: python -m planzero inference_work --model=Static_Normals_2024_12_31
-        - name: Perform Static Normals inference
-          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
-        - name: Perform Static Normals inference
-          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
         if: steps.cache_restore_static_normals_2024_12_31.outputs.cache-hit != 'true'
@@ -97,7 +93,7 @@ jobs:
       # Run test and populate app cache (diskcache)
 
       - name: Run all tests
-        run: pytest -n 4 --maxfail=10 -W error --durations=10 .
+        run: pytest -n 2 --maxfail=10 -W error --durations=10 .
 
       - name: Save app cache (artifact) for deploy
         if: github.repository == 'jaberg/planzero'
