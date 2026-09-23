@@ -12,6 +12,7 @@ on:
 env:
   GITHUB_WORKSPACE: "${{ github.workspace }}"  # used for glossary code lookup
   JAX_ENABLE_X64: "1"
+  JAX_CHECK_STATIC_INDICES: "1"
   OMP_NUM_THREADS: "1"
   OPENBLAS_NUM_THREADS: "1"
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
