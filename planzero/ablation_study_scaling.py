@@ -3,6 +3,7 @@ import warnings
 from typing import ClassVar
 
 import numpy as np
+import jax.numpy as jnp
 from pydantic import computed_field
 
 from . import cattle, model_db, nir2025_site, prob
@@ -21,7 +22,6 @@ from .nir_static_normals import (
     NIR_Sector_Static_Normal_Barrier,
     model_id_from_data_cutoff,
     normals_by_sector_ghg,
-    # weighted_KL_score,
 )
 from .prob_bovaer import (
     Cattle_Population_Static_Normal,
@@ -462,11 +462,17 @@ class ScalingSiteInference(prob.SiteInference):
                 'ModellingBovaer',
                 ]
 
-    def constants(self, elem_name):
+    def constants(self, elem_name) -> dict[str, jnp.ndarray | np.ndarray]:
         results = self.batch_rollout_barriers()
         var_names = results['constants'].outputs(elem_name)
-        rval = {var_name: results['constants'][var_name]
-                for var_name in var_names}
+        rval = {}
+        for var_name in var_names:
+            if isinstance(var_name, str):
+                rval[var_name] = results['constants'][var_name]
+            elif isinstance(var_name, tuple):
+                rval[" - ".join(var_name)] = results['constants'][var_name]
+            else:
+                raise NotImplementedError(var_name)
         return rval
 
     def full_time_series(self, elem_name):
