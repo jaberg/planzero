@@ -298,7 +298,7 @@ class Static_Normals_2024_12_31(SiteInference):
         return helper.make_echart()
 
     def prediction_scores_prenir_2025_m04(self):
-        assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
+        assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
         weighted_div, _, KLs = weighted_KL_score(
                 year=2023, model_id=self.model_id)
         scores_ca = {}

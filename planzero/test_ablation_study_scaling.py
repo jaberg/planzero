@@ -22,3 +22,11 @@ def test_bovaer_cost_per_ton():
     scaling = reg['ScalingStudy_All_Strategies']
     ll, uu = scaling.ablation_study.cost_per_tCO2e('Scale_Bovaer')
     assert 185 < ll < uu < 205
+
+
+def test_prediction_scores_prenir_2025_m04():
+    reg = completed_prob_registry()
+    scaling = reg['ScalingStudy_All_Strategies']
+    prenir_results = scaling.prediction_scores_prenir_2025_m04()
+    weighted_divergence = prenir_results['weighted_divergence']
+    assert 3.3 < weighted_divergence < 3.4, weighted_divergence

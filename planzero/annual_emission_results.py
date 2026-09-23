@@ -23,7 +23,9 @@ def aer_parse_result_key(key: str):
         ghg = GHG(ghg)
         activity = Activity(activity)
         return sector, ghg, activity
-    except (AssertionError, ValueError, IndexError):
+    except (AssertionError, ValueError, IndexError,
+            AttributeError, # in case key is a tuple
+            ):
         raise AER_NotResultKey()
 
 

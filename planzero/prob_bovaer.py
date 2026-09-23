@@ -581,6 +581,19 @@ def batch_rollout_elements(
             scan_step,
             initial_carry._dict,
             (xs._dict, years))
+
+    post_vals = {}
+    for name, elem in elements.items():
+        jrkey, tmpkey = jrandom.split(jrkey)
+        elem.annual_scan_post(
+                jrkey=tmpkey,
+                post_vals=post_vals,
+                final_carry=final_carry,
+                ys=ys,
+                xs=xs,
+                years=years,
+                constants=constants.view(name))
+
     if 0:
         for key, val in final_carry.items():
             if 'float' in str(val.dtype) or 'int' in str(val.dtype):
@@ -601,6 +614,7 @@ def batch_rollout_elements(
             'xs_ic': xs,
             'ys_ic': ys_ics[-1],
             'nc_ic': nc_ics[-1],
+            'post_vals': post_vals,
             })
 
 

@@ -8,11 +8,13 @@ from pydantic import computed_field
 from sklearn.linear_model import RidgeCV
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
-from . import sts
+from . import nir2025, sts
 from .annual_emission_results import aer_result_key
 from .barriers import Barrier
+from .challenge import PreNIR_2025_m04
 from .eccc_nir_annex3p4 import table_A3p4_11
 from .enums import GHG, PT, Activity, IPCC_Sector
+from .nir_static_normals import uniform_normal_mixture_log_prob
 from .sc_3210013001 import (
     FarmType,
     Livestock,
@@ -540,6 +542,8 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
     Defines one emission factor time series per livestock type.
     """
 
+    calculate_KL_divergence_PreNIR_2025_m04: bool = False
+    draws_per_posterior_sample:int = 32
 
     @computed_field
     def bovaer_actual_vs_nominal(self) -> float:
@@ -611,17 +615,17 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         return state.t_now + 1 * u.year
 
     def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
+        # from prob_bovaer.py
         num_samples, num_regions = constants['sigma_pt'].shape
         jrkey, tmpkey = jrandom.split(jrkey)
-        draws_per_posterior_sample = 32
         constants['shift_pt'] = (
-                jrandom.normal(tmpkey, (draws_per_posterior_sample, num_samples, num_regions))
+                jrandom.normal(tmpkey, (self.draws_per_posterior_sample, num_samples, num_regions))
                 * constants['sigma_pt']
                 * constants['enteric_ch4_ktCO2e_scale']
                 )
         jrkey, tmpkey = jrandom.split(jrkey)
         constants['shift_ca'] = (
-                jrandom.normal(tmpkey, (draws_per_posterior_sample, num_samples,))
+                jrandom.normal(tmpkey, (self.draws_per_posterior_sample, num_samples,))
                 * constants['sigma_ca']
                 * constants['enteric_ch4_ktCO2e_scale']
                 )
@@ -671,9 +675,10 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         y['enteric_fermentation_ktCO2e_ca_sample'] \
                 = y['enteric_fermentation_ktCO2e_ca'] + constants['shift_ca']
 
+        sector = IPCC_Sector.Enteric_Fermentation
         for ghg in GHG:
             result_key = aer_result_key(
-                    sector=IPCC_Sector.Enteric_Fermentation,
+                    sector=sector,
                     ghg=ghg,
                     activity=Activity.Farming_Cattle
                     )
@@ -695,6 +700,60 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
         y['bovaer_production_emissions_ktCO2e_pt_sample'] = (
                 emissions_by_cattle_type_on_bovaer_pt
                 / new_carry['bovaer_production_emission_factor'][:, None])
+
+    def annual_scan_post(self, jrkey, post_vals, final_carry, ys, xs, years, constants):
+        sector = IPCC_Sector.Enteric_Fermentation
+        challenge = PreNIR_2025_m04()
+        for years_idx_of_2023, year in enumerate(years):
+            if year == 2023:
+                break
+        else:
+            raise ValueError('Year 2023 not modelled')
+        mu_pt = ys['enteric_fermentation_ktCO2e_pt'][years_idx_of_2023]
+        mu_ca = ys['enteric_fermentation_ktCO2e_ca'][years_idx_of_2023]
+
+        # from prob_bovaer.py
+        sigma_pt = constants['sigma_pt'] * constants['enteric_ch4_ktCO2e_scale']
+        sigma_ca = constants['sigma_ca'] * constants['enteric_ch4_ktCO2e_scale']
+
+        for ghg in GHG:
+            if ghg == GHG.CH4:
+                NIR_emission_sample_size = self.draws_per_posterior_sample
+
+                real_PTs = [pt for pt in PT if pt != PT.XX]
+
+                ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
+                    sector=sector,
+                    ghg=ghg,
+                    year=2023)
+
+                KL_PT = []
+
+                for jj, pt in enumerate(real_PTs):
+                    jrkey, tmp_key = jrandom.split(jrkey)
+                    pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
+                    log_p = pt_dists[jj].log_prob(pt_sample)
+                    #assert np.all(np.isfinite(log_p))
+                    log_q = uniform_normal_mixture_log_prob(mu_pt[:, jj], sigma_pt[:, jj], pt_sample)
+                    #assert np.all(np.isfinite(log_q))
+                    KL_PT.append(jnp.maximum((log_p - log_q).mean(), 0))
+
+                jrkey, tmp_key = jrandom.split(jrkey)
+                ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
+                log_p = ca_dist.log_prob(ca_sample)
+                #assert np.all(np.isfinite(log_p))
+                log_q = uniform_normal_mixture_log_prob(mu_ca, sigma_ca, ca_sample)
+                #assert np.all(np.isfinite(log_q))
+                KL_CA = jnp.maximum((log_p - log_q).mean(), 0)
+
+                challenge = PreNIR_2025_m04()
+                constants[challenge.key_sector_ghg_pt(sector, ghg)] = jnp.stack(KL_PT)
+                constants[challenge.key_sector_ghg_ca(sector, ghg)] = KL_CA
+            else:
+                post_vals[challenge.key_sector_ghg_ca(sector, ghg)] = (
+                        jnp.zeros(()))
+                post_vals[challenge.key_sector_ghg_pt(sector, ghg)] = (
+                        jnp.zeros((13,)))
 
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html

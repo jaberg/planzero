@@ -15,6 +15,7 @@ from scipy.special import logsumexp
 from . import model_db, my_functools, nir2025
 from .annual_emission_results import aer_result_key
 from .barriers import Barrier
+from .challenge import PreNIR_2025_m04
 from .enums import GHG, PT, Activity, IPCC_Sector
 
 model_family = 'StaticNormal'
@@ -392,10 +393,21 @@ def loglik_NIR_BayesianNormal(
 
     return logprob_X
 
-def _mixture_log_prob(q_mu, q_sigma, x):
-    """x: 1D, samples from P
-    q_mu: 1D, mixture component means
-    q_sigma: 1D, mixture component std devs
+
+# TODO: uncomment these type hints and use
+# jaxtyping
+# and maybe beartype
+# but check if they work with jax pint unit arrays because
+# that's more important... probably.
+def uniform_normal_mixture_log_prob(
+        q_mu, # Float[jnp.ndarray, "M"]
+        q_sigma, # Float[jnp.ndarray, "M"]
+        x, # Float[jnp.ndarray, "N"]
+        ) -> jnp.ndarray:  # Float[jnp.ndarray, "N"]
+    """
+    q_mu: mixture component normal means
+    q_sigma: mixture component normal scales
+    x: samples from reference distribution P
     """
     N, = x.shape
     chain_len, = q_mu.shape
@@ -458,7 +470,7 @@ def _KL_NIR_BayesianNormal(
         pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
         log_p = pt_dists[jj].log_prob(pt_sample)
         assert np.all(np.isfinite(log_p))
-        log_q = _mixture_log_prob(eval_mu[:, jj], eval_sigma[:, jj], pt_sample)
+        log_q = uniform_normal_mixture_log_prob(eval_mu[:, jj], eval_sigma[:, jj], pt_sample)
         assert np.all(np.isfinite(log_q))
         rval[jj] = max((log_p - log_q).mean(), 0)
 
@@ -466,7 +478,7 @@ def _KL_NIR_BayesianNormal(
     ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
     log_p = ca_dist.log_prob(ca_sample)
     assert np.all(np.isfinite(log_p))
-    log_q = _mixture_log_prob(eval_mu[:, 13], eval_sigma[:, 13], ca_sample)
+    log_q = uniform_normal_mixture_log_prob(eval_mu[:, 13], eval_sigma[:, 13], ca_sample)
     assert np.all(np.isfinite(log_q))
     rval[13] = max((log_p - log_q).mean(), 0)
     return rval
@@ -486,8 +498,7 @@ def weighted_KL_score(year, model_id, seed_int=1234):
     abs_ktCO2e[:] = abs_m_sgt[:, :, None]
 
     # zero-out the tiny sector-gas combinations
-    for ii in range(abs_ktCO2e.shape[2]):
-        abs_ktCO2e[ abs_ktCO2e < 1 ] = 0
+    abs_ktCO2e[ abs_ktCO2e < 1 ] = 0
 
     KL_values = np.zeros_like(abs_ktCO2e)
 
@@ -513,6 +524,8 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
     data_cutoff: datetime.date
 
     draws_per_posterior_sample: int = 32
+
+    calculate_KL_divergence_PreNIR_2025_m04: bool = False
 
     @computed_field
     def short_description(self) -> str | None:
@@ -600,9 +613,52 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
                     # some logic to e.g. loop over posterior samples drawing
                     # samples until we've drawn enough
                     raise NotImplementedError()
+
+                if self.calculate_KL_divergence_PreNIR_2025_m04:
+                    assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
+
+                    NIR_emission_sample_size = self.draws_per_posterior_sample
+
+                    real_PTs = [pt for pt in PT if pt != PT.XX]
+
+                    ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
+                        sector=self.sector,
+                        ghg=ghg,
+                        year=2023)
+
+                    KL_PT = []
+
+                    for jj, pt in enumerate(real_PTs):
+                        jrkey, tmp_key = jrandom.split(jrkey)
+                        pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
+                        log_p = pt_dists[jj].log_prob(pt_sample)
+                        #assert np.all(np.isfinite(log_p))
+                        log_q = uniform_normal_mixture_log_prob(eval_mu[:, jj], eval_sigma[:, jj], pt_sample)
+                        #assert np.all(np.isfinite(log_q))
+                        KL_PT.append(jnp.maximum((log_p - log_q).mean(), 0))
+
+                    jrkey, tmp_key = jrandom.split(jrkey)
+                    ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
+                    log_p = ca_dist.log_prob(ca_sample)
+                    #assert np.all(np.isfinite(log_p))
+                    log_q = uniform_normal_mixture_log_prob(eval_mu[:, 13], eval_sigma[:, 13], ca_sample)
+                    #assert np.all(np.isfinite(log_q))
+                    KL_CA = jnp.maximum((log_p - log_q).mean(), 0)
+
+                    challenge = PreNIR_2025_m04()
+                    constants[challenge.key_sector_ghg_pt(self.sector, ghg)] = jnp.stack(KL_PT)
+                    constants[challenge.key_sector_ghg_ca(self.sector, ghg)] = KL_CA
+
             else:
                 constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
                         jnp.zeros((1, 1)))
+
+                if self.calculate_KL_divergence_PreNIR_2025_m04:
+                    challenge = PreNIR_2025_m04()
+                    constants[challenge.key_sector_ghg_ca(self.sector, ghg)] = (
+                            jnp.zeros(()))
+                    constants[challenge.key_sector_ghg_pt(self.sector, ghg)] = (
+                            jnp.zeros((13,)))
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         pass

@@ -147,6 +147,9 @@ class DynamicElement(BaseModel):
     def posts_developing_this_page(self) -> list[str]:
         return []
 
+    def annual_scan_post(self, jrkey, post_vals, final_carry, ys, xs, years, constants):
+        pass
+
 
 BaseScenario_subclasses = []
 

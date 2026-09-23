@@ -13,6 +13,7 @@ from .annual_emission_results import (
         total_prediction_CI,
         )
 from .annual_subsidy_results import NationalAnnualProgramBalances
+from .challenge import PreNIR_2025_m04
 from .enums import GHG, Activity, GovernmentProgram, IPCC_Sector, LULUCF_Sectors
 from .model import compute_annual_emission_results
 from .nir_static_normals import (
@@ -359,6 +360,9 @@ class ScalingSiteInference(prob.SiteInference):
         else:
             return f'Scaling (minus {self.strategy_id})'
 
+    def one_line_description(self):
+        return "Hypothetical scaling of emission-reduction measures within an otherwise non-time-varying economy"
+
     @property
     def identifier(self) -> str:
         return scaling_model_id(self.data_cutoff)
@@ -500,6 +504,23 @@ class ScalingSiteInference(prob.SiteInference):
         return compute_annual_emission_results(
                 strategies=self.strategies,
                 barriers=self.barriers)
+
+    def prediction_scores_prenir_2025_m04(self):
+        assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
+        prenir = PreNIR_2025_m04()
+        results = self.batch_rollout_barriers()
+        return prenir.prediction_scores_from_batch_rollout(results)
+
+    def challenge_result_url(self, challenge_name) -> str:
+        if challenge_name == 'PreNIR_2025_m04':
+            return f'/models/prob/{self.name}/#{challenge_name}'
+        else:
+            return ''
+
+    def show_prediction_quality(self):
+        assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
+        return True
+
 
 
 class ScalingStudy(AblationStudy):
@@ -674,7 +695,9 @@ class ScalingStudy(AblationStudy):
                 'Bovaer_Adoption_Limit': cattle.Bovaer_Adoption_Limit(),
                 "Bovaer_Farm_Subsidy": cattle.Bovaer_Farm_Subsidy(),
                 "Bovaer_Production_Emission_Factors": cattle.Bovaer_Production_Emission_Factors(),
-                "Cattle_Enteric_Emission_Rates_NIR2025_Bovaer": cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(),
+                "Cattle_Enteric_Emission_Rates_NIR2025_Bovaer": cattle.Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(
+                        calculate_KL_divergence_PreNIR_2025_m04=True,
+                    ),
                 "Bovaer_Purchase_Cost": cattle.Bovaer_Purchase_Cost(),
                 "Bovaer_Monitoring": cattle.Bovaer_Monitoring(),
                 }
@@ -689,7 +712,9 @@ class ScalingStudy(AblationStudy):
             else:
                 barrier = NIR_Sector_Static_Normal_Barrier(
                         sector=sector,
-                        data_cutoff=datetime.date(year=2024, month=12, day=31))
+                        data_cutoff=datetime.date(year=2024, month=12, day=31),
+                        calculate_KL_divergence_PreNIR_2025_m04=True,
+                        )
                 key = f'NIR_Sector_Static_Normal_{sector.value}'
                 self._barriers[key] = barrier
 

@@ -56,3 +56,8 @@ def compute_annual_emission_results(
             years=years,
             n_samples=16000)
     return rval
+
+
+# TODO: compute_annual_emission_delta
+# works by looking at all of the dependencies, and ignoring things that are independent of a particular strategy
+# uses the same random key for computations both with and without the strategy
