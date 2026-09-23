@@ -188,7 +188,6 @@ def _gauss_hermite(n_quad: int):
     # to turn the exponential-quadrature weights into expectation weights.
     return jnp.asarray(np.sqrt(2.0) * nodes), jnp.asarray(weights_unnorm) / jnp.sqrt(jnp.pi)
 
-
 def _uniform_normal_mixture_log_prob(
         q_mu, # (M,)
         q_sigma, # (M,)
@@ -203,7 +202,7 @@ def _uniform_normal_mixture_log_prob(
     return log_q - jnp.log(M)
 
 
-@jax.jit
+@jax.jit(static_argnames=['n_quad'])
 def kl_divergence_uniform_normal_mixture(
         p,  # SymmetricBlendedLogNormal, with batch_shape == ()
         q_mu,  # (M,) mixture component means

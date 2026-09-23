@@ -114,7 +114,6 @@ class PreNIR_2025_m04(PreNIR):
                 KL_values[ii, jj][:13] = scores_pt[sector][ghg]
                 KL_values[ii, jj][13] = scores_ca[sector][ghg]
 
-
         weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
 
         return {
