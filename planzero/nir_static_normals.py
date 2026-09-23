@@ -17,6 +17,8 @@ from .annual_emission_results import aer_result_key
 from .barriers import Barrier
 from .challenge import PreNIR_2025_m04
 from .enums import GHG, PT, Activity, IPCC_Sector
+from .symmetric_blended_lognormal import kl_divergence_uniform_normal_mixture
+
 
 model_family = 'StaticNormal'
 model_version = 2
@@ -425,7 +427,6 @@ def _KL_NIR_BayesianNormal(
     comp_d,
     NIR_year, # target
     emission_year, # target
-    rng_key,
     model_db=model_db,
     ):
     """Return a vector of 14 numbers: real PTs first, then Canada total.
@@ -455,10 +456,6 @@ def _KL_NIR_BayesianNormal(
     eval_sigma[:, 13] = post_samples['sigma_ca']
     eval_sigma *= comp_d['scale']
 
-    # estimate KL empirically over this many samples
-    # TODO: estimate in closed form
-    NIR_emission_sample_size = 100
-
     real_PTs = [pt for pt in PT if pt != PT.XX]
     ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
         sector=sector,
@@ -466,26 +463,20 @@ def _KL_NIR_BayesianNormal(
         year=emission_year)
 
     for jj, pt in enumerate(real_PTs):
-        rng_key, tmp_key = jrandom.split(rng_key)
-        pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
-        log_p = pt_dists[jj].log_prob(pt_sample)
-        assert np.all(np.isfinite(log_p))
-        log_q = uniform_normal_mixture_log_prob(eval_mu[:, jj], eval_sigma[:, jj], pt_sample)
-        assert np.all(np.isfinite(log_q))
-        rval[jj] = max((log_p - log_q).mean(), 0)
+        rval[jj] = kl_divergence_uniform_normal_mixture(
+                p=pt_dists[jj],
+                q_mu=eval_mu[:, jj],
+                q_sigma=eval_sigma[:, jj])
 
-    rng_key, tmp_key = jrandom.split(rng_key)
-    ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
-    log_p = ca_dist.log_prob(ca_sample)
-    assert np.all(np.isfinite(log_p))
-    log_q = uniform_normal_mixture_log_prob(eval_mu[:, 13], eval_sigma[:, 13], ca_sample)
-    assert np.all(np.isfinite(log_q))
-    rval[13] = max((log_p - log_q).mean(), 0)
+    rval[13] = kl_divergence_uniform_normal_mixture(
+            p=ca_dist,
+            q_mu=eval_mu[:, 13],
+            q_sigma=eval_sigma[:,13])
     return rval
 
 
 @my_functools.cache
-def weighted_KL_score(year, model_id, seed_int=1234):
+def weighted_KL_score(year, model_id):
     abs_ktCO2e = np.zeros((len(IPCC_Sector),
                         len(GHG),
                         len(PT)))
@@ -502,19 +493,17 @@ def weighted_KL_score(year, model_id, seed_int=1234):
 
     KL_values = np.zeros_like(abs_ktCO2e)
 
-    rng_key = jrandom.key(seed_int)
     # now estimate the sector-gas KL divergences
     for (sector, ghg), comp_d in BNs_by_sector_ghg(model_id).items():
         KL_sg = _KL_NIR_BayesianNormal(
                 model_id,
                 sector=sector, ghg=ghg, comp_d=comp_d,
-                NIR_year=2025, emission_year=year,
-                rng_key=rng_key)
+                NIR_year=2025,
+                emission_year=year)
         KL_values[nir2025.idx_of_sector[sector], nir2025.idx_of_ghg[ghg]] = KL_sg
 
     weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
     return weighted_divergence, abs_ktCO2e, KL_values
-
 
 
 class NIR_Sector_Static_Normal_Barrier(Barrier):
@@ -616,9 +605,6 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
 
                 if self.calculate_KL_divergence_PreNIR_2025_m04:
                     assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
-
-                    NIR_emission_sample_size = self.draws_per_posterior_sample
-
                     real_PTs = [pt for pt in PT if pt != PT.XX]
 
                     ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
@@ -629,21 +615,15 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
                     KL_PT = []
 
                     for jj, pt in enumerate(real_PTs):
-                        jrkey, tmp_key = jrandom.split(jrkey)
-                        pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
-                        log_p = pt_dists[jj].log_prob(pt_sample)
-                        #assert np.all(np.isfinite(log_p))
-                        log_q = uniform_normal_mixture_log_prob(eval_mu[:, jj], eval_sigma[:, jj], pt_sample)
-                        #assert np.all(np.isfinite(log_q))
-                        KL_PT.append(jnp.maximum((log_p - log_q).mean(), 0))
-
-                    jrkey, tmp_key = jrandom.split(jrkey)
-                    ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
-                    log_p = ca_dist.log_prob(ca_sample)
-                    #assert np.all(np.isfinite(log_p))
-                    log_q = uniform_normal_mixture_log_prob(eval_mu[:, 13], eval_sigma[:, 13], ca_sample)
-                    #assert np.all(np.isfinite(log_q))
-                    KL_CA = jnp.maximum((log_p - log_q).mean(), 0)
+                        KL_PT.append(
+                                kl_divergence_uniform_normal_mixture(
+                                    p=pt_dists[jj],
+                                    q_mu=eval_mu[:, jj],
+                                    q_sigma=eval_sigma[:, jj]))
+                    KL_CA = kl_divergence_uniform_normal_mixture(
+                            p=ca_dist,
+                            q_mu=eval_mu[:, 13],
+                            q_sigma=eval_sigma[:, 13])
 
                     challenge = PreNIR_2025_m04()
                     constants[challenge.key_sector_ghg_pt(self.sector, ghg)] = jnp.stack(KL_PT)

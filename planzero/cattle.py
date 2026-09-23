@@ -21,6 +21,7 @@ from .sc_3210013001 import (
     Livestock_nonsums,
     number_of_cattle_by_class_and_farm_type_combined_surveys,
 )
+from .symmetric_blended_lognormal import kl_divergence_uniform_normal_mixture
 from .ureg import u
 
 feature_mask_by_farmtype = {
@@ -730,21 +731,15 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 KL_PT = []
 
                 for jj, pt in enumerate(real_PTs):
-                    jrkey, tmp_key = jrandom.split(jrkey)
-                    pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
-                    log_p = pt_dists[jj].log_prob(pt_sample)
-                    #assert np.all(np.isfinite(log_p))
-                    log_q = uniform_normal_mixture_log_prob(mu_pt[:, jj], sigma_pt[:, jj], pt_sample)
-                    #assert np.all(np.isfinite(log_q))
-                    KL_PT.append(jnp.maximum((log_p - log_q).mean(), 0))
-
-                jrkey, tmp_key = jrandom.split(jrkey)
-                ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
-                log_p = ca_dist.log_prob(ca_sample)
-                #assert np.all(np.isfinite(log_p))
-                log_q = uniform_normal_mixture_log_prob(mu_ca, sigma_ca, ca_sample)
-                #assert np.all(np.isfinite(log_q))
-                KL_CA = jnp.maximum((log_p - log_q).mean(), 0)
+                    KL_PT.append(
+                            kl_divergence_uniform_normal_mixture(
+                                p=pt_dists[jj],
+                                q_mu=mu_pt[:, jj],
+                                q_sigma=sigma_pt[:, jj]))
+                KL_CA = kl_divergence_uniform_normal_mixture(
+                        p=ca_dist,
+                        q_mu=mu_ca,
+                        q_sigma=sigma_ca)
 
                 challenge = PreNIR_2025_m04()
                 constants[challenge.key_sector_ghg_pt(sector, ghg)] = jnp.stack(KL_PT)

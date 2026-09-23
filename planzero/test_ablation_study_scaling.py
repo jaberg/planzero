@@ -1,5 +1,9 @@
+import datetime
+import time
+
 from .ablation_study_scaling import scaling_study_singleton
 from .endpoints import completed_prob_registry
+from .nir_static_normals import model_id_from_data_cutoff, weighted_KL_score
 
 
 def test_predicted_emissions():
@@ -29,4 +33,16 @@ def test_prediction_scores_prenir_2025_m04():
     scaling = reg['ScalingStudy_All_Strategies']
     prenir_results = scaling.prediction_scores_prenir_2025_m04()
     weighted_divergence = prenir_results['weighted_divergence']
+    print(weighted_divergence)
     assert 3.3 < weighted_divergence < 3.4, weighted_divergence
+
+    data_cutoff = datetime.date(year=2024, month=12, day=31)
+    model_id = model_id_from_data_cutoff(data_cutoff)
+    t0 = time.time()
+    weighted_divergence_, _, _ = weighted_KL_score(
+            year=2023,
+            model_id=model_id,
+            )
+    t1 = time.time()
+    print(weighted_divergence_, (t1 - t0))
+    assert abs(weighted_divergence - weighted_divergence_) < .1
