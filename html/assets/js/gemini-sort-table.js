@@ -23,8 +23,10 @@ function getTableState(table) {
  * Sorts the HTML table rows based on the content of a specific column.
  * @param {HTMLTableElement} table - The table element to sort.
  * @param {number} columnIndex - The zero-based index of the column to sort.
+ * @param {string} [initialDirection] - Initial sort direction ('asc'|'desc').
+ *     Only honored on the first sort of a table; ignored afterwards.
  */
-function sortTable(table, columnIndex) {
+function sortTable(table, columnIndex, initialDirection) {
     const state = getTableState(table);
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -35,6 +37,9 @@ function sortTable(table, columnIndex) {
     if (state.columnIndex === columnIndex) {
         // Toggle direction if the same column is clicked
         newDirection = state.direction === 'asc' ? 'desc' : 'asc';
+    } else if (state.columnIndex === -1 && (initialDirection === 'asc' || initialDirection === 'desc')) {
+        // Apply the configured initial sort direction on the first sort
+        newDirection = initialDirection;
     }
 
     // 2. Sorting Logic
@@ -50,8 +55,8 @@ function sortTable(table, columnIndex) {
         let comparison = 0;
 
         if (!isNaN(aNum) && !isNaN(bNum) && isFinite(aNum) && isFinite(bNum)) {
-            // Numerical comparison
-            comparison = bNum - aNum;
+            // Numerical comparison (base: ascending)
+            comparison = aNum - bNum;
         } else {
             // String (lexicographical) comparison
             comparison = aText.localeCompare(bText);
@@ -88,6 +93,26 @@ function sortTable(table, columnIndex) {
     // 5. Update the table state
     state.columnIndex = columnIndex;
     state.direction = newDirection;
+}
+
+/**
+ * Determines the initial sort column/direction for a table from its header cells.
+ * The right-most header cell annotated with a gemini-sort-initial-asc or
+ * gemini-sort-initial-desc class takes effect; all other annotated header cells
+ * are ignored. Defaults to the first column, ascending.
+ * @param {NodeList<HTMLElement>|HTMLElement[]} headers - The table header cells.
+ * @returns {{columnIndex: number, direction: string}}
+ */
+function determineInitialSort(headers) {
+    for (let i = headers.length - 1; i >= 0; i--) {
+        if (headers[i].classList.contains('gemini-sort-initial-desc')) {
+            return { columnIndex: i, direction: 'desc' };
+        }
+        if (headers[i].classList.contains('gemini-sort-initial-asc')) {
+            return { columnIndex: i, direction: 'asc' };
+        }
+    }
+    return { columnIndex: 0, direction: 'asc' };
 }
 
 /**
@@ -142,7 +167,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Optional: Sort by the first column initially (Name)
-        sortTable(table, 0);
+        // Apply the configured initial sort (right-most annotation wins; defaults to first column asc)
+        const initial = determineInitialSort(headers);
+        sortTable(table, initial.columnIndex, initial.direction);
     });
 });

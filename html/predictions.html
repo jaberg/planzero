@@ -4,30 +4,30 @@
 
 <section class="post">
     <header class="major">
-        <h1>Predictions</h1>
-        <p>Prediction and implementation challenges for probabilistic models of
-        Canada's future emissions.<p>
+        <h1>Metrics</h1>
+	<p>Evaluation metrics for PlanZero's probabilistic models.</p>
     </header>
 
-<h2>Pre-NIR</h2>
+    <p>
+    This page features multiple evaluation metrics:
+    <ul>
+{% for challenge_name, challenge_obj in sorted(planzero.challenge.registry.items())
+   if challenge_obj.show_on_predictions_page %}
+   <li><a href="#{{ challenge_name }}">{{ challenge_obj.pretty_name }}</a>: {{ challenge_obj.short_description }}</li>
+{% endfor %}
+    </ul>
+    </p>
 
-<p>
-{{siteref("NIR_Prediction", "Pre-NIR-YYYY-MM")|safe}}
-prediction challenges are about predicting National Inventory Report numbers
-for the NIR published in year YYYY, at a point MM months prior to publication.
-</p>
 
-
-{% for challenge_name, challenge_obj in planzero.challenge.registry.items()
+{% for challenge_name, challenge_obj in sorted(planzero.challenge.registry.items())
    if challenge_obj.show_on_predictions_page %}
 
-<h3>{{challenge_obj.pretty_name}}</h3>
+   <h2 id="{{ challenge_name }}">{{challenge_obj.pretty_name}}</h2>
 
 <p>
-{{ challenge_obj.short_description | safe}}
+{{ challenge_obj.description | safe}}
 </p>
 
-<!-- NEEDS TO BE SORTABLE CLASS NOT ID -->
 <table class="gemini-sort-data-table">
     <thead>
           <tr>
@@ -37,7 +37,7 @@ for the NIR published in year YYYY, at a point MM months prior to publication.
               <th>
                   Short Description
               </th>
-              <th>
+	      <th class="{{ challenge_obj.overall_loss_initial_sort_class }}">
 		      {{challenge_obj.overall_loss_column_title}}}
               </th>
           </tr>
@@ -54,7 +54,7 @@ for the NIR published in year YYYY, at a point MM months prior to publication.
               <td>{{site_inf.one_line_description() }}</td>
               <td>
                   {% if challenge_obj.results_available %}
-		  <a href="/models/prob/{{ident}}/#{{challenge_name}}">{{ "%.3f"|format(challenge_obj.overall_loss(site_inf)) }}</a>
+		  <a href="/models/prob/{{ident}}/#{{challenge_name}}">{{ challenge_obj.overall_loss_str(site_inf) }}</a>
                   {% else %}
                   {{siteref("Pending Prediction Challenge Results", "Pending")|safe}}
                   {% endif %}
