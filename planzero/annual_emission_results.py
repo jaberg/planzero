@@ -11,6 +11,22 @@ def aer_result_key(sector, ghg, activity):
     return f'AER_{sector.value}_{ghg.value}_{activity.value}'
 
 
+def aer_key_normal_mu_ca(
+        sector: IPCC_Sector,
+        ghg: GHG,
+        activity: Activity,
+        ) -> tuple[str, IPCC_Sector, GHG, Activity]:
+    return ('AER_Normal_mu_ca', sector, ghg, activity)
+
+
+def aer_key_normal_sigma_ca(
+        sector: IPCC_Sector,
+        ghg: GHG,
+        activity: Activity,
+        ) -> tuple[str, IPCC_Sector, GHG, Activity]:
+    return ('AER_Normal_sigma_ca', sector, ghg, activity)
+
+
 class AER_NotResultKey(Exception):
     pass
 

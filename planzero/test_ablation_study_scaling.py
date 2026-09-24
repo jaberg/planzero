@@ -3,7 +3,11 @@ import time
 
 from .ablation_study_scaling import scaling_study_singleton
 from .endpoints import completed_prob_registry
-from .nir_static_normals import model_id_from_data_cutoff, weighted_KL_score
+from .nir_static_normals import (
+    model_id_from_data_cutoff,
+    p_emissions_below_thresh_ex_LULUCF,
+    weighted_KL_score,
+)
 
 
 def test_predicted_emissions():
@@ -46,3 +50,20 @@ def test_prediction_scores_prenir_2025_m04():
     t1 = time.time()
     print(weighted_divergence_, (t1 - t0))
     assert abs(weighted_divergence - weighted_divergence_) < .1
+
+
+def test_netzero_2050():
+    reg = completed_prob_registry()
+
+    scaling = reg['ScalingStudy_minus_Scale_Bovaer']
+    p_lt_0 = scaling.challenge_netzero_2050()
+    print(p_lt_0)
+
+    static_est = p_emissions_below_thresh_ex_LULUCF(
+        model_id=model_id_from_data_cutoff(
+            data_cutoff=datetime.date(year=2024, month=12, day=31)),
+        thresh_ktCO2e=0)
+    print(static_est)
+
+    assert p_lt_0 * .9 < static_est < 1e-48
+    assert p_lt_0 * 1.1 > static_est

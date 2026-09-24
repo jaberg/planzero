@@ -9,12 +9,15 @@ from sklearn.linear_model import RidgeCV
 from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
 from . import nir2025, sts
-from .annual_emission_results import aer_result_key
+from .annual_emission_results import (
+    aer_key_normal_mu_ca,
+    aer_key_normal_sigma_ca,
+    aer_result_key,
+)
 from .barriers import Barrier
 from .challenge import PreNIR_2025_m04
 from .eccc_nir_annex3p4 import table_A3p4_11
 from .enums import GHG, PT, Activity, IPCC_Sector
-from .nir_static_normals import uniform_normal_mixture_log_prob
 from .sc_3210013001 import (
     FarmType,
     Livestock,
@@ -710,8 +713,19 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 break
         else:
             raise ValueError('Year 2023 not modelled')
-        mu_pt = ys['enteric_fermentation_ktCO2e_pt'][years_idx_of_2023]
-        mu_ca = ys['enteric_fermentation_ktCO2e_ca'][years_idx_of_2023]
+
+        for years_idx_of_2050, year in enumerate(years):
+            if year == 2050:
+                break
+        else:
+            years_idx_of_2050 = None
+
+        mu_pt_2023 = ys['enteric_fermentation_ktCO2e_pt'][years_idx_of_2023]
+        mu_ca_2023 = ys['enteric_fermentation_ktCO2e_ca'][years_idx_of_2023]
+
+        if years_idx_of_2050 is not None:
+            # mu_pt_2050 = ys['enteric_fermentation_ktCO2e_pt'][years_idx_of_2050]
+            mu_ca_2050 = ys['enteric_fermentation_ktCO2e_ca'][years_idx_of_2050]
 
         # from prob_bovaer.py
         sigma_pt = constants['sigma_pt'] * constants['enteric_ch4_ktCO2e_scale']
@@ -719,8 +733,6 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
 
         for ghg in GHG:
             if ghg == GHG.CH4:
-                NIR_emission_sample_size = self.draws_per_posterior_sample
-
                 real_PTs = [pt for pt in PT if pt != PT.XX]
 
                 ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
@@ -734,21 +746,37 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                     KL_PT.append(
                             kl_divergence_uniform_normal_mixture(
                                 p=pt_dists[jj],
-                                q_mu=mu_pt[:, jj],
+                                q_mu=mu_pt_2023[:, jj],
                                 q_sigma=sigma_pt[:, jj]))
                 KL_CA = kl_divergence_uniform_normal_mixture(
                         p=ca_dist,
-                        q_mu=mu_ca,
+                        q_mu=mu_ca_2023,
                         q_sigma=sigma_ca)
 
                 challenge = PreNIR_2025_m04()
                 constants[challenge.key_sector_ghg_pt(sector, ghg)] = jnp.stack(KL_PT)
                 constants[challenge.key_sector_ghg_ca(sector, ghg)] = KL_CA
+
+                if years_idx_of_2050 is not None:
+                    # use "Other" as activity to help ensure that this is the
+                    # only source setting the variable
+                    constants[aer_key_normal_mu_ca(sector, ghg, Activity.Other)] = mu_ca_2050
+                    constants[aer_key_normal_sigma_ca(sector, ghg, Activity.Other)] = sigma_ca
             else:
                 post_vals[challenge.key_sector_ghg_ca(sector, ghg)] = (
                         jnp.zeros(()))
                 post_vals[challenge.key_sector_ghg_pt(sector, ghg)] = (
                         jnp.zeros((13,)))
+
+                if years_idx_of_2050 is not None:
+                    # use "Other" as activity to help ensure that this is the
+                    # only source setting the variable
+                    constants[aer_key_normal_mu_ca(sector, ghg, Activity.Other)] = (
+                            jnp.zeros(()))
+                    constants[aer_key_normal_sigma_ca(sector, ghg, Activity.Other)] = (
+                        jnp.ones(()))
+
+
 
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
@@ -890,7 +918,10 @@ class Bovaer_Farm_Subsidy(Barrier):
         new_carry['bovine_population_fraction_on_bovaer'] = jnp.zeros(n_samples)
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
-        have_money = carry['tax_funded_budget_for_bovaer'] > 0
+        try:
+            have_money = carry['tax_funded_budget_for_bovaer'] > 0
+        except KeyError:
+            have_money = False
         new_carry['bovine_population_fraction_on_bovaer'] = jnp.where(
                 have_money,
                 new_carry['max_fraction_of_cattle_on_bovaer'],

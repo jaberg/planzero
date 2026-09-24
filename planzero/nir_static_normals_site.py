@@ -9,6 +9,7 @@ from .nir_static_normals import (
     inference_work_loop,
     model_id_from_data_cutoff,
     normals_by_sector_ghg,
+    p_emissions_below_thresh_ex_LULUCF,
     touch_components,
     touch_model,
     weighted_KL_score,
@@ -316,12 +317,19 @@ class Static_Normals_2024_12_31(SiteInference):
                 }
         return rval
 
+    def challenge_netzero_2050(self):
+        return p_emissions_below_thresh_ex_LULUCF(
+                model_id=self.model_id,
+                thresh_ktCO2e=0)
+
     def show_prediction_quality(self):
         assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
         return True
 
     def challenge_result_url(self, challenge_name) -> str:
-        if challenge_name == 'PreNIR_2025_m04':
+        if challenge_name in (
+                'PreNIR_2025_m04',
+                'NetZero_2050'):
             return f'/models/prob/{self.model_id}/#{challenge_name}'
         else:
             return ''

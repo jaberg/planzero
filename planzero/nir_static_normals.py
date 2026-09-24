@@ -13,12 +13,15 @@ from pydantic import computed_field
 from scipy.special import logsumexp
 
 from . import model_db, my_functools, nir2025
-from .annual_emission_results import aer_result_key
+from .annual_emission_results import (
+    aer_key_normal_mu_ca,
+    aer_key_normal_sigma_ca,
+    aer_result_key,
+)
 from .barriers import Barrier
 from .challenge import PreNIR_2025_m04
-from .enums import GHG, PT, Activity, IPCC_Sector
+from .enums import GHG, PT, Activity, IPCC_Sector, LULUCF_Sectors
 from .symmetric_blended_lognormal import kl_divergence_uniform_normal_mixture
-
 
 model_family = 'StaticNormal'
 model_version = 2
@@ -332,7 +335,6 @@ def loglik_NIR_Normal(
     logprob_X = float(np.sum(pt_log_probs[valid_mask[:13]])
                       + (ca_log_prob if valid_mask[13] else 0))
 
-    #print('ll_Normal', logprob_X)
     assert np.isfinite(logprob_X)
     return logprob_X
 
@@ -505,6 +507,37 @@ def weighted_KL_score(year, model_id):
     weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
     return weighted_divergence, abs_ktCO2e, KL_values
 
+@my_functools.cache
+def p_emissions_below_thresh_ex_LULUCF(
+        model_id:str,
+        thresh_ktCO2e:float,
+        ) -> float:
+    n_samples = 500
+    mu = np.zeros((n_samples,))
+    sigma_squared = np.zeros((n_samples,))
+
+    n_contribs = 0
+    for (sector, ghg), comp_d in BNs_by_sector_ghg(model_id).items():
+        if sector in LULUCF_Sectors:
+            continue
+        samples = model_db.load_ndarray_group(
+                model_id=model_id,
+                component_id=comp_d['component_id'],
+                group_id='grouped_samples')
+        n_chains, n_samples_, n_regions = samples['mu'].shape
+        assert n_samples == n_samples_
+        assert n_chains == 1
+        assert n_regions == 13
+        mu[:] += comp_d['scale'] * samples['mu'].sum(axis=2)[0] # sum regions for national mean
+        sigma_squared[:] += (comp_d['scale'] * samples['sigma_ca'][0]) ** 2
+        n_contribs += 1
+
+    normal = dist.Normal(loc=mu, scale=jnp.sqrt(sigma_squared))
+    p_below_thresh = normal.cdf(thresh_ktCO2e)
+    assert p_below_thresh.shape == (n_samples,)
+    rval = p_below_thresh.mean()
+    return rval
+
 
 class NIR_Sector_Static_Normal_Barrier(Barrier):
 
@@ -589,8 +622,12 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
                 eval_sigma[:, 13] = post_samples['sigma_ca']
                 eval_sigma *= comp_d['scale']
 
+                constants[aer_key_normal_mu_ca(self.sector, ghg, Activity.Other)] = (
+                        eval_mu[:, 13])
+                constants[aer_key_normal_sigma_ca(self.sector, ghg, Activity.Other)] = (
+                        eval_sigma[:, 13])
+
                 if n_samples == constants['n_samples']:
-                    # conveniently, we can draw one each from the posterior sample
                     jrkey, tmpkey = jrandom.split(jrkey)
                     constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
                             jrandom.normal(tmpkey, (
@@ -629,7 +666,7 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
                     constants[challenge.key_sector_ghg_pt(self.sector, ghg)] = jnp.stack(KL_PT)
                     constants[challenge.key_sector_ghg_ca(self.sector, ghg)] = KL_CA
 
-            else:
+            else: # no comp_d, this is an irrelevant (sector, ghg)
                 constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
                         jnp.zeros((1, 1)))
 
@@ -639,6 +676,12 @@ class NIR_Sector_Static_Normal_Barrier(Barrier):
                             jnp.zeros(()))
                     constants[challenge.key_sector_ghg_pt(self.sector, ghg)] = (
                             jnp.zeros((13,)))
+
+                constants[aer_key_normal_mu_ca(self.sector, ghg, Activity.Other)] = (
+                        jnp.zeros(()))
+                constants[aer_key_normal_sigma_ca(self.sector, ghg, Activity.Other)] = (
+                        jnp.ones(()))
+
 
     def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
         pass

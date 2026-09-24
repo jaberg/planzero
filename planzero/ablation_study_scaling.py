@@ -2,19 +2,19 @@ import datetime
 import warnings
 from typing import ClassVar
 
-import numpy as np
 import jax.numpy as jnp
+import numpy as np
 from pydantic import computed_field
 
 from . import cattle, model_db, nir2025_site, prob
 from .ablation import AblationStudy
 from .annual_emission_results import (
-        AnnualEmissionResults,
-        aer_sectors,
-        total_prediction_CI,
-        )
+    AnnualEmissionResults,
+    aer_sectors,
+    total_prediction_CI,
+)
 from .annual_subsidy_results import NationalAnnualProgramBalances
-from .challenge import PreNIR_2025_m04
+from .challenge import NetZero_2050, PreNIR_2025_m04
 from .enums import GHG, Activity, GovernmentProgram, IPCC_Sector, LULUCF_Sectors
 from .model import compute_annual_emission_results
 from .nir_static_normals import (
@@ -29,8 +29,6 @@ from .prob_bovaer import (
     cached_inference,
 )
 from .sparkline_echart_helper import (
-    PseudoRegion,
-    PseudoSectors,
     RegionalSparklineEChartHelperBase,
     SparklineEChartHelperBase,
     echart_from_napb,
@@ -517,8 +515,16 @@ class ScalingSiteInference(prob.SiteInference):
         results = self.batch_rollout_barriers()
         return prenir.prediction_scores_from_batch_rollout(results)
 
+    def challenge_netzero_2050(self):
+        results = self.batch_rollout_barriers()
+        challenge = NetZero_2050()
+        return challenge.prediction_scores_from_batch_rollout(results)
+
     def challenge_result_url(self, challenge_name) -> str:
-        if challenge_name == 'PreNIR_2025_m04':
+        if challenge_name in (
+                'PreNIR_2025_m04',
+                'NetZero_2050',
+                ):
             return f'/models/prob/{self.name}/#{challenge_name}'
         else:
             return ''
