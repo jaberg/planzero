@@ -1,25 +1,40 @@
-// Global state to track the current sort column index and direction
-let currentSort = {
-    columnIndex: -1,
-    direction: 'asc' // 'asc' for ascending, 'desc' for descending
-};
-let initialWidthsSet = false;
+// Per-table sort state: WeakMap keyed by table element
+const tableStates = new WeakMap();
+
+/**
+ * Returns the sort state object for the given table, creating it on first use.
+ * @param {HTMLTableElement} table - The table element.
+ * @returns {{columnIndex: number, direction: string, initialWidthsSet: boolean}}
+ */
+function getTableState(table) {
+    let state = tableStates.get(table);
+    if (!state) {
+        state = {
+            columnIndex: -1,
+            direction: 'asc', // 'asc' for ascending, 'desc' for descending
+            initialWidthsSet: false
+        };
+        tableStates.set(table, state);
+    }
+    return state;
+}
 
 /**
  * Sorts the HTML table rows based on the content of a specific column.
+ * @param {HTMLTableElement} table - The table element to sort.
  * @param {number} columnIndex - The zero-based index of the column to sort.
  */
-function sortTable(columnIndex) {
-    const table = document.getElementById('gemini-sort-data-table');
+function sortTable(table, columnIndex) {
+    const state = getTableState(table);
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
     const headers = table.querySelectorAll('th');
 
     // 1. Determine new sort direction
     let newDirection = 'asc';
-    if (currentSort.columnIndex === columnIndex) {
+    if (state.columnIndex === columnIndex) {
         // Toggle direction if the same column is clicked
-        newDirection = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        newDirection = state.direction === 'asc' ? 'desc' : 'asc';
     }
 
     // 2. Sorting Logic
@@ -52,7 +67,7 @@ function sortTable(columnIndex) {
 
     // 4. Update UI (Header Indicators)
     // Remove indicators from all headers
-    headers.forEach((th, index) => {
+    headers.forEach((th) => {
         th.classList.remove('th-sorted-asc', 'th-sorted-desc', 'bg-indigo-100');
         let indicator = th.querySelector('.sort-indicator');
         if (indicator) {
@@ -70,19 +85,20 @@ function sortTable(columnIndex) {
     indicatorIcon.innerHTML = '&#9660;'; // Down arrow
     currentHeader.appendChild(indicatorIcon);
 
-    // 5. Update the global state
-    currentSort.columnIndex = columnIndex;
-    currentSort.direction = newDirection;
+    // 5. Update the table state
+    state.columnIndex = columnIndex;
+    state.direction = newDirection;
 }
 
 /**
  * Captures the initial, automatically calculated column widths and applies them as fixed styles.
  * This function must run BEFORE we set the table to fixed layout, or it won't work correctly.
+ * @param {HTMLTableElement} table - The table element to fix widths for.
  */
-function fixColumnWidths() {
-    if (initialWidthsSet) return;
+function fixColumnWidths(table) {
+    const state = getTableState(table);
+    if (state.initialWidthsSet) return;
 
-    const table = document.getElementById('gemini-sort-data-table');
     const headers = table.querySelectorAll('th');
 
     // 1. Temporarily ensure the table-layout is AUTO so the browser calculates optimal widths
@@ -101,7 +117,7 @@ function fixColumnWidths() {
     // This locks the structure, preventing reflow during sorting.
     table.style.tableLayout = 'fixed';
 
-    initialWidthsSet = true;
+    state.initialWidthsSet = true;
 }
 
 
@@ -109,23 +125,24 @@ function fixColumnWidths() {
  * Attaches the click listener to all sortable headers when the DOM is ready.
  */
 document.addEventListener('DOMContentLoaded', () => {
-    const table = document.getElementById('gemini-sort-data-table');
-    const headers = document.querySelectorAll('#gemini-sort-data-table th');
+    document.querySelectorAll('table.gemini-sort-data-table').forEach((table) => {
+        const headers = table.querySelectorAll('th');
 
-    // 1. Capture and fix column widths based on initial content
-    // The browser must render the table before we can accurately measure widths.
-    fixColumnWidths();
+        // 1. Capture and fix column widths based on initial content
+        // The browser must render the table before we can accurately measure widths.
+        fixColumnWidths(table);
 
-    headers.forEach((header, index) => {
-        // Add a class for visual styling
-        header.classList.add('sortable-th');
-        
-        // Attach the sorting function to the click event
-        header.addEventListener('click', () => {
-            sortTable(index);
+        headers.forEach((header, index) => {
+            // Add a class for visual styling
+            header.classList.add('sortable-th');
+            
+            // Attach the sorting function to the click event
+            header.addEventListener('click', () => {
+                sortTable(table, index);
+            });
         });
-    });
 
-    // Optional: Sort by the first column initially (Name)
-    sortTable(0);
+        // Optional: Sort by the first column initially (Name)
+        sortTable(table, 0);
+    });
 });
