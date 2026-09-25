@@ -463,14 +463,14 @@ class Bovaer_Adoption_Limit(Barrier):
         n_samples = constants['sigma_ca'].shape[0]
         new_carry['BAL_key'], key = jrandom.split(carry['BAL_key'])
         low, high = self.prob_max_increase_rate
-        max_increase_fraction = jrandom.uniform(
+        y['max_increase_fraction'] = jrandom.uniform(
                 key, (n_samples,), 'float64', low / 100, high / 100)
         if 'bovine_population_fraction_on_bovaer' in outputs:
             new_carry['bovine_population_fraction_on_bovaer'] \
                     = carry['bovine_population_fraction_on_bovaer']
         new_carry['max_fraction_of_cattle_on_bovaer'] = jnp.minimum(
                 (carry['bovine_population_fraction_on_bovaer']
-                 + max_increase_fraction),
+                 + y['max_increase_fraction']),
                 (1 - self.organic_fraction))
 
     @property
@@ -483,7 +483,25 @@ class Bovaer_Production_Emission_Factors(Barrier):
 
     @computed_field
     def short_description(self) -> str:
-        return f"""Suppose that embedded/production emission of Bovaer is {self.rate}."""
+        return f"""Suppose that embedded/production emission of Bovaer is about {self.rate}."""
+
+    @computed_field
+    def description(self) -> str:
+        return f"""In deterministic models, this barrier estimates the
+        production emissions of Bovaer at {self.rate}.
+        </p>
+        <p>
+        In the probabilistic version of this barrier,
+        the logic is based on a "20-50x" reduction in CO2e compared with
+        methane emitted from cattle, as suggested by an LLM-AI chat,
+        which was the original source for the {self.rate} value.
+        For each sampled scenario, a reduction factor
+        is sampled uniformly from 20 to 50.
+        </p>
+        <p>This barrier does not reflect manufacturer or 3rd party
+        estimates of emission rates nor does
+        it include any change in production emission efficiency over time.
+        """
 
     @computed_field
     def rate(self) -> object:
@@ -794,12 +812,25 @@ class Bovaer_Monitoring(Barrier):
     on-site inspection"""
 
     @computed_field
+    def description(self) -> str:
+        return f"""Assume administering and monitoring costs
+    {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for
+    on-site inspection. Furthermore, estimate that these amounts are paid
+    in labour costs, from which income tax is collected back at a rate of
+    {self.income_tax_rate * 100}%.
+    """
+
+    @computed_field
     def paperwork_monitoring(self) -> object:
         return 1000 * u.CAD / u.farm / u.year
 
     @computed_field
     def onsite_monitoring(self) -> object:
         return 3000 * u.CAD / u.farm / u.year
+
+    @property
+    def income_tax_rate(self) -> float:
+        return .25
 
     @computed_field
     def research(self) -> dict[str, str]:
@@ -867,9 +898,9 @@ class Bovaer_Monitoring(Barrier):
                 farms_on_bovaer_ca * self.onsite_monitoring.magnitude)
 
         y['bovaer_monitoring_admin_ca_tax'] = (
-                y['bovaer_monitoring_admin_ca'] * .25)
+                y['bovaer_monitoring_admin_ca'] * self.income_tax_rate)
         y['bovaer_monitoring_onsite_ca_tax'] = (
-                y['bovaer_monitoring_onsite_ca'] * .25)
+                y['bovaer_monitoring_onsite_ca'] * self.income_tax_rate)
 
 
 class Bovaer_Farm_Subsidy(Barrier):
@@ -877,6 +908,15 @@ class Bovaer_Farm_Subsidy(Barrier):
     @computed_field
     def short_description(self) -> str:
         return f"""Pay farmers {self.subsidy_rate} to administer Bovaer."""
+
+    @computed_field
+    def description(self) -> str:
+        return f"""Model a tax-funded government subsidy program to pay
+        cattle farmers {self.subsidy_rate} to administer Bovaer to all
+        cattle on their farms, and comply with monitoring protocols.
+        It is assumed that this subsidy amount is deductible, not
+        subject to income tax.
+        """
 
     @computed_field
     def subsidy_rate(self) -> object:

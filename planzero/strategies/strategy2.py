@@ -34,7 +34,10 @@ class Scale_Bovaer(Strategy2):
     (according to the assumptions in
      <a href="{{coderef_url(Bovaer_Adoption_Limit)}}">Bovaer Adoption Limit</a>)
     are subsized by public funds, and go for it. This adoption is modelled as a nation-wide
-    rate of adoption, not province-by-province.</p>
+    rate of adoption, not province-by-province.
+    It is assumed that no statistically significant population of farmers
+    reverts to Bovaer-free farming.
+    </p>
     """
     # TODO: add a see-also type mechanism, to look at the effects
     # on the various barriers affected by this strategy.

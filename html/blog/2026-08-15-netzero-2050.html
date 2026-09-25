@@ -1,0 +1,81 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{{blog.status_title_html}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<h3 id="NetZero_2050">New Model Metric: Net-Zero-2050</h3>
+
+<p>
+Also new to the
+This post also ann
+
+        Net-Zero-2050 ranks models by how probable it is that net emissions (exclusive of land-use, land-use change and forestry, LULUCF) are less than zero by 2050.
+</p>
+
+<table class="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Name
+              </th>
+              <th>
+                  Short Description
+              </th>
+	      <th class="gemini-sort-initial-desc">
+		      probability of annual net emissions <= 0 (higher is better, 1 is perfect)}
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+        
+          <tr>
+              <td>
+                  <a href="/models/prob/ScalingStudy_All_Strategies/">Scaling</a>
+              </td>
+              <td>Hypothetical scaling of emission-reduction measures within an otherwise non-time-varying economy</td>
+              <td>
+                  
+		  <a href="/models/prob/ScalingStudy_All_Strategies/#NetZero_2050">6.09e-48</a>
+                  
+                  </td>
+          </tr>
+          
+          <tr>
+              <td>
+                  <a href="/models/prob/Static_Normals_2024_12_31/">Static Normals (data-cutoff: 2024-12-31)</a>
+              </td>
+              <td>Very simple baseline model - non-time-varying estimates</td>
+              <td>
+                  
+		  <a href="/models/prob/Static_Normals_2024_12_31/#NetZero_2050">2.38e-49</a>
+                  
+                  </td>
+          </tr>
+          
+    </tbody>
+</table>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>
+Until next time,
+</p>
+<p>
+- James Bergstra
+</p>
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+{% include "post-main.html" %}

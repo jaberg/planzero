@@ -610,25 +610,8 @@ The table can be sorted by each column to see the best-predicted and worst-predi
 
 </p>
 
-<table class="gemini-sort-data-table">
-    <thead>
-        <tr><th>Sector</th>
-		{% for ghg in planzero.enums.GHG %}
-		<th>{{ghg.value}}</th>
-		{% endfor %}
-	</tr>
-    </thead>
-    <tbody>
-	    {% for sector, ghg_KLs in planzero.prob.registry["Static_Normals_2024_12_31"].prediction_scores_prenir_2025_m04()['scores_ca'].items() %}
-	    <tr>
-		    <td><a href="/models/prob/Static_Normals_2024_12_31/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
-		    {% for ghg in planzero.enums.GHG %}
-		    <td>{% if ghg_KLs[ghg] > 0 %}{{ "%.2f"|format(ghg_KLs[ghg]) }}{% else %}0{% endif %}</td>
-		    {% endfor %}
-	    </tr>
-	    {% endfor %}
-    </tbody>
-</table>
+{% include "blog/2026-06-28-static-normals-kl-table.html" %}
+
 
 <p>
 Qualitative assessment in Appendix 4 noted seven sectors that seemed well-fit by the static normals model.

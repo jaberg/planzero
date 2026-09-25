@@ -10,8 +10,7 @@ from pydantic import BaseModel, computed_field
 
 from . import blog, strategies
 from .base import DynamicElement
-from .blog import latex
-from .html import coderef_url
+from .html import coderef_url, latex
 from .singleton_registry import SingletonRegistry
 from .sts import STS
 
@@ -47,6 +46,22 @@ def siteref(term, text=None):
         raise exc
 
 
+def template_globals() -> dict[str, object]:
+    def lref(term, text=None):
+        return aka_registry[term].local_ref(text)
+
+    return {
+        'CO2e': latex(r'\mathrm{CO}_2\mathrm e '),
+        'CO2': latex(r'\mathrm{CO}_2'),
+        'CH4': latex(r'\mathrm{CH}_4'),
+        'N2O': latex(r"\mathrm N_2 \mathrm O"),
+        'SF6': latex(r"\mathrm{SF}_6"),
+        'NF3': latex(r"\mathrm{NF}_3"),
+        'degrees': latex(r'^\circ'),
+        'lref': lref,
+    }
+
+
 class GlossaryTerm(BaseModel):
 
     reserved: bool = False
@@ -64,7 +79,7 @@ class GlossaryTerm(BaseModel):
             source = f'<p>{self.definition}</p>'
 
         template = jinja2.Template(source=source)
-        rval = template.render(self.template_globals())
+        rval = template.render(template_globals())
         return rval
 
     @property
@@ -115,21 +130,6 @@ class GlossaryTerm(BaseModel):
         super().__init_subclass__()
         if getattr(cls, 'include_in_registry', True): # default to True for historical reasons
             registry.add_class(cls)
-
-    def template_globals(self) -> dict[str, object]:
-        def lref(term, text=None):
-            return aka_registry[term].local_ref(text)
-
-        return dict(
-            CO2e=latex(r'\mathrm{CO}_2\mathrm e '),
-            CO2=latex(r'\mathrm{CO}_2'),
-            CH4=latex(r'\mathrm{CH}_4'),
-            N2O=latex(r"\mathrm N_2 \mathrm O"),
-            SF6=latex(r"\mathrm{SF}_6"),
-            NF3=latex(r"\mathrm{NF}_3"),
-            degrees=latex(r'^\circ'),
-            lref=lref,
-        )
 
     def local_ref(self, text=None) -> str:
         if text is None:
@@ -1753,7 +1753,21 @@ class Credible_Interval(GlossaryTerm):
     random variable in a probabilistic model might most-credibly take.
     For example, a 95% credible interval is the smallest interval containing
     the 95% most-probable values for the random variable.
+    </p>
+    <p>
+    In PlanZero, Credibility and Confidence are used interchangeably.
+    In the field of statistics, the terms have distinct meanings that apply to
+    Bayesian and frequentist estimators respectively.
+    PlanZero strives to use Bayesian reasoning,
+    but with MCMC methods there can be significant uncertainty due to the
+    limited sample size, which is the the sort of uncertainty that frequentist
+    methods deal with. Candidly I don't honestly know whether either term is
+    more appropriate for the estimates that arise from PlanZero modelling.
     """
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Confidence Interval']
 
     @property
     def see_also(self) -> dict[str, str]:

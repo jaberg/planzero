@@ -11,28 +11,442 @@
 Table of Contents:
 <ul>
     <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#impact">Probable Impact of Scaling Bovaer Adoption</a></li>
+    <li><a href="#prenir">NIR Prediction with the Scaling Model</a></li>
     <li><a href="#conclusion">Conclusion</a></li>
+    <li><a href="#appendix-1-new-elements">Appendix 1: New and Modified Barrier Elements to Model Bovaer Adoption Probabilistically</a></li>
+    <li><a href="#appendix-2-prob-modelling">Appendix 2: Probabilistic Modelling of Cattle Populations and Enteric Fermentation Emission Factors</a></li>
 </ul>
 </p>
 
 <h2 id="introduction">Introduction</h2>
 
+<p>
+A few months ago, a post called
+<a href="/post/2026-04-03-bovaer">Modelling a Bovaer Strategy</a> showed
+how predictions of the future might be influenced by a
+{{ siteref("Strategy", "strategy") }} (the strategy was about administering a feed additive to cattle that reduces emissions
+from enteric fermentation).
+The previous PlanZero post,
+<a href="/post/2026-06-28-static-normals">Static Normals:
+a Baseline Predictive Model</a>,
+introduced a different way of predicting the future,
+namely by extending a statistical pattern.
+This post is about combining both:
+it introduces a probabilistic
+"<a href="/models/prob/ScalingStudy_All_Strategies/">Scaling</a>" model whose predictions are based
+both on statistical patterns <i>and</i> the influence of a
+<a href="/models/prob/ScalingStudy_All_Strategies/strategies/Scale_Bovaer/">probabilistic interpretation of the "Scale Bovaer" strategy</a>
+that is similar to the deterministic one <a href="/post/2026-04-03-bovaer#model">introduced previously</a>.
+</p>
+
+<p>
+As before, the
+"<a href="/models/prob/ScalingStudy_All_Strategies/strategies/Scale_Bovaer/">Scale Bovaer</a>" strategy implements the idea that
+some fraction of cattle farmers would be open to 
+starting to administer Bovaer if they were sufficiently incentivized
+by government subsidy (and that no statistically significant population
+of farmers reverts to Bovaer-free farming).
+The model assumes, as before, that a sufficient incentive would be $5000 per year.
+(All $-denominated values in this site are in CAD unless otherwise indicated.)
+Differences relative to the previous deterministic model:
+<ul>
+	<li>Whereas the deterministic model fixed the fraction of farmers-open-to-switching-per-year at 5%, the probabilistic model varies it from 2.5-10% uniformly.</li>
+	<li>Whereas the deterministic model fixed production emissions at 45 kg {{CO2e}} / head / year, the probabilistic model varies it uniformly from 20x to 50x less than the reduced methane {{CO2e}}.</li>
+	<li>Whereas the deterministic model ignored income tax, the probabilistic model includes recouping it at a rate of 25%.</li>
+</ul>
+The probabilistic model estimates the
+cost per tonne {{CO2}}e abated over modelled period
+to lie in the range 188.99 - 200.08 (CAD / t{{CO2}}e) with 95% confidence.
+This is lower than 
+the deterministic estimate of $222/t {{CO2}}e in the previous post
+because of the recognition of income tax revenue.
+<a href="#appendix-1-new-elements">Appendix 1</a> provides
+a complete listing of modelling changes.
+</p>
+
+<p>
+The cost per tonne estimate is the ratio of values in the following two figures.
+The first figure is the expected <i>change</i> in emissions for each sector affected
+by the strategy
+(<a href="/models/prob/ScalingStudy_All_Strategies/strategies/Scale_Bovaer/#emissions">figure on strategy page</a>).
+The vertical is in units of <b>Mt{{CO2e}}</b>,
+and the horizontal is in units of <b>years</b> (adjust the slider below to zoom).
+The dotted line indicates the mean and the shaded regions indicate a 95% credible internval.
+a values above zero mean the strategy raised a sector's emissions, a values below zero mean the strategy lowered emissions.
+Mouse-over the slider below the panels to see and change the years shown.
+{% include "blog/2026-07-22-prob-bovaer-impact.html" %}
+
+The second figure is the expected change in government cashflow, due to spending
+on farm subsidies and monitoring programs, and income tax revenue from the
+work associated with monitoring.
+(<a href="/models/prob/ScalingStudy_All_Strategies/strategies/Scale_Bovaer/#subsidies">figure on strategy page</a>).
+The vertical here in units of <b>billions of CAD</b>.
+Values above zero represent government revenue. Values below zero represent government spending.
+{% include "blog/2026-07-22-prob-bovaer-subsidies.html" %}
+
+Dividing total cost until 2050 by total emissions abated
+gave values in the range of 188.99 - 200.08 (CAD / t{{CO2}}e) for 95% of the sampled scenarios.
+The range of cost per ton is relatively tight because despite many sources of uncertainty, the only one that affects this particular statistic is the uncertainty in production emissions.
+</p>
+
+
+<h3 id="PreNIR_2025_m04">NIR Prediction with the Scaling Model (Pre-NIR-2025-m04)</h3>
+
+<p>
+One possible use of PlanZero's predictive probabilistic models is to anticipate the values in
+National [Greenhouse Gas] Inventory Reports (NIRs) before they are released.
+If a model tends to be good at anticipating previously-released NIRs
+based on data available at previous points in time,
+we might believe it will be good at anticipating not-yet-released NIRs
+based on data available now.
+So far PlanZero includes just one NIR-prediction challenge
+(Pre-NIR-2025-m04, described in <a href="/post/2026-06-28-static-normals#appendix-prenir">this post</a>)
+which is about predicting the last year of NIR-2025 data
+(calendar year 2023), 4
+months ahead of publication.
+</p>
+
+<p>
+Since the Scaling model introduced in this post is a predictive model,
+it can be evaluated according to the Pre-NIR-2025-m04 protocol and
+evaluation metrics. The national-total-level results are included below,
+the full sector-by-sector scores can be found on the
+<a href="/models/prob/ScalingStudy_All_Strategies/#prediction-quality">Scaling page</a>
+</p>
+
+<table class="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Name
+              </th>
+              <th>
+                  Short Description
+              </th>
+	      <th class="gemini-sort-initial-asc">
+		      weighted KL-divergence (lower is better, zero is perfect)}
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+        
+          <tr>
+              <td>
+                  <a href="/models/prob/ScalingStudy_All_Strategies/">Scaling</a>
+              </td>
+              <td>Hypothetical scaling of emission-reduction measures within an otherwise non-time-varying economy</td>
+              <td>
+                  
+		  <a href="/models/prob/ScalingStudy_All_Strategies/#PreNIR_2025_m04">3.376</a>
+                  
+                  </td>
+          </tr>
+          
+          <tr>
+              <td>
+                  <a href="/models/prob/Static_Normals_2024_12_31/">Static Normals (data-cutoff: 2024-12-31)</a>
+              </td>
+              <td>Very simple baseline model - non-time-varying estimates</td>
+              <td>
+                  
+		  <a href="/models/prob/Static_Normals_2024_12_31/#PreNIR_2025_m04">3.367</a>
+                  
+                  </td>
+          </tr>
+          
+    </tbody>
+</table>
+
+<p>
+The Scaling model is slightly worse at predicting NIR data compared with the Static Normals model upon which it is based.
+The slight deterioration in prediction quality is
+expected based on the difference in modelling approach,
+which trades off the fitting of overall enteric emissions with static normals,
+with static normal models instead for two contributing variables: the cattle populations (by type) and emission factors (per cattle type).
+The Scaling model introduces these variables so that the Bovaer strategy
+has something to work on (the emission factors).
+A side-effect is that there are more constraints to satisfy
+(Statistics Canada publishes cattle population data, the NIR publishes
+emission factors for cattle, and the NIR also includes provincial and national
+enteric emission totals).
+Also this model assumes cattle are the only livestock type contributing
+enteric emissions, which is about
+<a href="/post/2026-03-31-enteric#qual">96-97% true</a>, but not 100% true.
+For all of these reasons, if not more, the resulting posterior estimate for the NIR totals
+isn't as accurate as the one in the
+<a href="/models/prob/Static_Normals_2024_12_31/#prediction-quality">Static Normals model</a>.
+Predictive accuracy isn't the strengh of static normals models generally,
+so a slight degradation doesn't bother me.
+I expect a jump in predictive accuracy across almost every sector
+when replacing the static normals baseline with an autoregressive model,
+which I hope to report with a post later this fall.
+For now, the details of modelling in the Scaling model are explained in
+<a href="appendix-2-prob-modelling">Appendix 2: Probabilistic Modelling of Cattle Populations and Enteric Fermentation Emission Factors</a>.
+</p>
+
 
 <h2 id="conclusion">Conclusion</h2>
 
 <p>
-Until next time,
+This post has introduced a probabilistic
+"<a href="/models/prob/ScalingStudy_All_Strategies/">Scaling</a>" model,
+which was created
+by combining the static normals probabilistic model
+with new probabilistic versions of the modelling elements
+used previously to estimate the impact of Bovaer adoption.
+The PlanZero pages for probabilistic models now feature
+strategies and barriers for models that have those sorts of elements.
+This site also now includes pages
+for the strategies and barrier elements in a model,
+which serve to organize the logic and computations associated with each model.
+For example,
+the strategy page for "<a href="/models/prob/ScalingStudy_All_Strategies/strategies/Scale_Bovaer/">Scale Bovaer</a>" currently features the figures above,
+and the "<a href="/models/prob/ScalingStudy_All_Strategies/barriers/Bovaer_Adoption_Limit/">Bovaer Adoption Limit</a>" barrier page describes and shows the
+assumption that just-over 2.5% to just-under 10% of farmers will start feeding Bovaer per year.
+The terms "strategy" and "barrier" will be explained in more detail in an upcoming
+post documenting PlanZero's computational modelling framework.
+</p>
+
+<p>
+My ambition for PlanZero in the not-too-distant future is to improve the Scaling model iteratively,
+first by the overall use of an autoregressive baseline model instead of the static normals,
+and then by sector-by-sector replacements of the generic statistical baseline with
+bespoke sector models that incorporate additional data sources and strategies.
+However, before making these iterative improvements I would like to finalize
+the glossary and perform significant clean-up and refactoring of PlanZero's source code so that those iterative changes
+will be easier and more systematic.
+</p>
+
+<p>
+Until then,
 </p>
 <p>
 - James Bergstra
 </p>
 
-<h2>Appendix: Modelling Cattle Population and Enteric Fermentation Emission Factors</h2>
+<h2 id="appendix-1-new-elements">Appendix 1: New and Modified Barrier Elements to Model Bovaer Adoption Probabilistically</h2>
 
-<p>rename prob_bovaer.py to barrier_cattle_population_static_normal</p>
-<p>describe the data and the probabilistic model used for inference.</p>
-<p>in the "posts developing this page" on <a href="/models/prob/ScalingStudy_All_Strategies/barriers/Cattle_Population_Static_Normal/"></a> have it link to this appendix.</p>
+<p>
+The Scaling Model is identical to the
+<a href="/models/prob/Static_Normals_2024_12_31/">Static Normals model (specifically with Dec 2024 data cutoff)</a> in every sector except
+"Enteric Fermentation"
+and "Other Product Manufacture and Use".
+This appendix enumerates new 
+<a href="/models/prob/ScalingStudy_All_Strategies/#barriers">barrier elements in the Scaling model</a>, relative to the Static Normals model,
+which combine to estimate the changes in those two sectors.
+The scaling model totally replaces the estimation of
+Enteric Fermentation
+and adds a new term that raises emissions in "Other Product Manufacture and Use".
+</p>
+<p>
+The new barrier elements are:
+<ul>
+	<li><a href="#a2-cattle">Cattle Population Static Normal</a></li>
+	<li><a href="#a2-bovaer-adoption">Bovaer Adoption Limit</a></li>
+	<li><a href="#a2-bovaer-production">Bovaer Production Emission Factors</a></li>
+</ul>
+</p>
 
+<h3 id="a2-cattle">Cattle Population Static Normal</h3>
+
+<p>Link to barrier page: 
+<a href="/models/prob/ScalingStudy_All_Strategies/barriers/Cattle_Population_Static_Normal/">Cattle Population Static Normal</a></p>
+
+<p>This barrier element makes static normal estimates of cattle populations
+    and enteric fermentation emission factors to explain three
+    things:
+    <ol>
+    <li>cattle counts</li>
+    <li>NIR2025 enteric fermentation emission factors</li>
+    <li>NIR2025 overall enteric fermentation emissions (including all livestock)</li>
+    </ol>
+    Estimates are made for each of 8 cattle populations (beef cows, dairy cows, beef heifers for replacement, beef heifers for slaughter, dairy heifers, calves, steers, and bulls),
+    and each province and territory.
+</p>
+<p>
+The Static Normals model only estimated the overall enteric fermentation emission.
+In this model, this element estimates it instead as
+a sum-product of the number of cattle of each type,
+and the emission factors of each type.
+Details of the probabilistic model are provided below in
+<a href="#appendix-2-prob-modelling">Appendix 2: Probabilistic Modelling of Cattle Populations and Enteric Fermentation Emission Factors</a>.
+</p>
+
+<h3 id="a2-bovaer-adoption">Bovaer Adoption Limit</h3>
+
+<p>Link to barrier page:
+<a href="/models/prob/ScalingStudy_All_Strategies/barriers/Bovaer_Adoption_Limit/">Barrier Adoption Limit</a></p>
+
+<p>
+Previously when modelling Bovaer deterministically,
+this element assumed that no more than 5.0 percent / year of farmers would switch to administering Bovaer in any given year,
+but that adoption could ultimately rise to 99.0%,
+(the 1% remainder being organic farmers who can't adopt it).
+
+Here, when used in a probabilistic model,
+this element assumes instead that 2.5-10.0% of farmers will switch to Bovaer in any given year.
+</p>
+
+<h3 id="a2-bovaer-production">Bovaer Production Emission Factors</h3>
+
+<p>Link to barrier page:
+<a href="/models/prob/ScalingStudy_All_Strategies/barriers/Bovaer_Production_Emission_Factors/">Bovaer Production Emission Factors</a></p>
+
+<p>
+When used in deterministic models,
+this element assumes an extra 45.0 kg {{CO2}} / head / year
+in the "Other Product Manufacture and Use" sector,
+in order to account for producing and distributing the Bovaer feed additive.
+</p>
+<p>
+In the probabilistic version of this barrier,
+the amount is based instead on a "20-50x" reduction in CO2e compared with methane emitted from cattle.
+This was the literal suggestion from an LLM-AI chat earlier this year,
+which was the original source for the 45.0 kg {{CO2}} / head / year value.
+For each sampled scenario, a reduction factor is sampled uniformly from 20 to 50.
+</p>
+
+<p>
+This barrier does not reflect manufacturer or 3rd party estimates of emission rates nor does it include any change in production emission efficiency over time.
+</p>
+
+<h3>Bovaer Monitoring</h3>
+<p>Link to barrier page: <a href="/models/prob/ScalingStudy_All_Strategies/barriers/Bovaer_Monitoring/">Bovaer Monitoring</a></p>
+<p>
+As before,
+this modelling element
+assumes administering and monitoring costs
+1000.0 CAD / farm / year for paperwork
+and 3000.0 CAD / farm / year for on-site inspection.
+When used in probabilistic modelling, this element furthermore estimates that these amounts are paid in labour costs, from which income tax is collected back at a rate of 25%.
+</p>
+
+<h2 id="appendix-2-prob-modelling">Appendix 2: Probabilistic Modelling of Cattle Populations and Enteric Fermentation Emission Factors</h2>
+
+<p>
+
+The
+<a href="/models/prob/Static_Normals_2024_12_31/">Static Normals model (specifically with Dec 2024 data cutoff)</a>
+modelled every sector's national and regional (provincial and territorial) emissions
+in the same way, described in
+<a href="/post/2026-06-28-static-normals#appendix-model">Appendix 2 of the post introducing that model</a>.
+The Scaling model handles Enteric Emissions differently, in order to introduce
+variables that could be acted-upon to simulate the effects of scaling Bovaer adoption.
+</p>
+
+<p>
+Also, in order to make reasonable inferences of the cattle-type populations
+and of their respective emission factors, this post draws on more data sources.
+Statistics Canada publishes national and regional cattle populations for each
+January 1 and July 1 since the 1930s.
+That data was described and first used in PlanZero in
+<a href="/post/2026-03-31-enteric">this post</a>, which explored the causes of
+enteric fermentation emissions.
+The NIR-2025 document also publishes the emission factors it has used for cattle
+and other livestock for each year covered, from 1990-2023.
+</p>
+
+<p>
+As noted in the previous post on enteric emissions,
+cattle are responsible for 96-97% of the national total in that sector,
+with the rest coming from other livestock types.
+This model assumes they contribute 100%.
+Future modelling work could compensate for this 3-4% gap in a few ways,
+but it isn't done yet.
+</p>
+
+<p>
+Formally, the enteric fermentation emissions,
+and cattle populations,
+and emissions factors
+in the
+Scaling model are estimated as the posterior distributions
+in this model after observing data up until Dec 31, 2024 from the
+three data sources above.
+<table>
+	<thead>
+		<tr>
+			<th>Unknown Variable and Distribution</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+	    <tr>
+		    <td>{{latex("\\phi_{(c,r)} ~\\sim~ \\mathrm{Lognormal}(-1, 2)")}}</td>
+		    <td>Scaled cattle headcount means, by cattle type
+			    {{latex("c")}} and region {{latex("r")}}.
+			    The scaling factor was the inverse of the largest
+			    recorded cattle-type headcount in the historical data,
+			    so that the scaled, observed cattle headcounts
+			    would lie between 0 and 1.
+		    </td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("\\beta_{(c,r)} ~\\sim~ \\mathrm{Lognormal}(-1, 1)")}}</td>
+		    <td>Scaled cattle headcount standard deviations, by cattle type
+			    {{latex("c")}} and region {{latex("r")}}.
+		    </td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("h_{(c,r)} ~\\sim~ \\mathcal{N}(\\phi_{(c, r)}, \\beta_{(c, r)})")}}</td>
+		    <td>Observable scaled cattle headcount, by cattle type
+			    {{latex("c")}} and region {{latex("r")}}.
+		    </td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("\\gamma_{(c)} ~\\sim~ \\mathcal{N}(A, B^2)")}}</td>
+		    <td>A latent emission factor {{latex("c")}} was defined
+			    for each cattle type, and used across regions.
+			    It was modelled as coming a-priori from a normal
+			    distribution around
+			    {{latex("A")}}, the approximate NIR-published means over time, and {{latex("B^2")}}, the approximate variance over time.</td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("f_{(c)} ~\\sim~ \\mathcal{N}(\\gamma_{(c)}, 20)")}}</td>
+		    <td>Observable emission factor, defined for each cattle type.</td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("\\sigma_{(r)} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}}</td>
+		    <td>A-priori, the variance in scaled <i>regional</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("\\sigma_{()} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}} </td>
+		    <td>A-priori, the variance in scaled <i>national</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("X_{(r,t)} ~\\sim~ \\mathcal{N}(
+			    \\sum_c h_{(c,r)} f_{(c)},
+			    \\sigma_{(r)}^2)")}}</td>
+		    <td>Observable model-estimated scaled NIR emissions for the region ({{latex("r")}}),
+			and annual time period ({{latex("t")}}).
+			Note that the distribution is "static", in that it is
+			the same for all annual time periods.
+		    </td>
+	    </tr>
+	    <tr>
+		    <td>{{latex("Y_{(t)} ~\\sim~ \\mathcal{N}(
+			    \\sum_{r \\in \\mathrm{regions}}
+				    \\sum_c h_{(c,r)} f_{(c)},
+			    \\sigma_{(s,g)}^2)")}}</td>
+		    <td>Observable model-estimated scaled national-total emissions
+			    for enteric fermentation emissions (methane).
+			    Note that the distribution is static,
+			    in that it is the same for all annual time periods.
+		    </td>
+	    </tr>
+	</tbody>
+</table>
+
+
+<p>Posterior estimates of
+the cattle population
+and emission factors were obtained
+using NumPyro's NUTS sampler and drawing 500 samples
+after warming up for 250.
+Cattle population counts were adapted for inference by averaging
+January and July headcounts to get annual headcounts.
+</p>
 
 <ul class="actions special">
     {% if prev_url_filename %}

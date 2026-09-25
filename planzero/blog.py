@@ -1,9 +1,11 @@
 import datetime
 import enum
 
+import jinja2
 from pydantic import BaseModel
 
 from . import enums, est_nir, ipcc_canada
+from .glossary import template_globals
 from .html import HTML_Matplotlib_Figure, latex
 from .ureg import u
 
@@ -75,7 +77,9 @@ class BlogPost(BaseModel):
 
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
-            kwargs = dict(kwargs, about=self.__class__.__doc__)
+            template = jinja2.Template(source=self.__class__.__doc__)
+            rendered = template.render(template_globals())
+            kwargs = dict(kwargs, about=rendered)
         super().__init__(**kwargs)
 
     @classmethod
@@ -108,10 +112,14 @@ class Glossary(BlogPost):
     This glossary also introduces modelling terminology to support future posts.
     The modelling terminology is used to reframe the NIR-reconstruction
     project within languages of both strategic management and of statistical
-    modelling."""
+    modelling.
+    This post deprecates the non-probabilistic "Scaling" model
+    and in fact all of the non-probabilistic models in the Models tab in favour
+    of probabilistic modelling generally.
+    """
     def __init__(self):
         super().__init__(
-            date=datetime.date(2026, 9, 15),
+            date=datetime.date(2026, 9, 25),
             title='New: the PlanZero glossary',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
@@ -124,15 +132,39 @@ class Glossary(BlogPost):
             status=BlogStatus.Planned,
             )
 
+class NetZero2050Metric(BlogPost):
+
+    """
+    New model evaluation metric: Probability of achieving Net-Zero by 2050.
+    Each predictive probabilistic model in PlanZero that looks as far out as 2050
+    is now ranked on the models page by how probably it assesses Canada could achieve 0 or less emissions by 2050.
+    Also, what used to be the "Predictions" tab is now called "Metrics".
+    """
+
+    def __init__(self):
+        super().__init__(
+            date=datetime.date(2026, 9, 15),
+            title='Ranking models by the Probability of Net-Zero by 2050',
+            url_filename="2026-08-15-netzero-2050",
+            author="James Bergstra",
+            #tags={},
+            status=BlogStatus.Draft,
+            )
+
 
 class ProbabilisticBovaer(BlogPost):
     """
     This post revisits the Bovaer strategy
-    (<a href="/blog/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
-    and adapts it to the Static Normals probabilistic model.
-    This post deprecates the non-probabilistic "Scaling" model
-    and in fact all of the non-probabilistic models in the Models tab in favour
-    of probabilistic modelling generally.
+    (<a href="/post/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
+    and extends PlanZero's probabilistic modelling
+    (<a href="/post/2026-06-28-static-normals">Static Normals:
+    a Baseline Predictive Model</a>)
+    with support for strategy and barrier scenario modelling elements.
+    Scaling the administration of Bovaer is estimated to reduce annual
+    emissions by 8.5-11 Mt{{CO2e}} annually by 2050, at a cost of $189-200
+    per abated tonne, with 95% confidence.
+    The estimated cost per tonne is lower than in the previous post because
+    this analyis includes tax recouped from the cost of monitoring labour.
     """
 
     def __init__(self):
@@ -146,8 +178,23 @@ class ProbabilisticBovaer(BlogPost):
                   ## TODO: the probabilistic models?
                   #enums.IPCC_Sector.Enteric_Fermentation,
                  },
-            status=BlogStatus.Planned,
+            status=BlogStatus.Draft,
             )
+
+    def generate_assets(self):
+        from .endpoints import completed_prob_registry
+
+        reg = completed_prob_registry()
+        scaling = reg['ScalingStudy_All_Strategies']
+
+        impact_chart = scaling.ablation_study.impact_chart('Scale_Bovaer')
+        subsidies_chart = scaling.ablation_study.government_impact_chart('Scale_Bovaer')
+
+        base = f'html/blog/{self.url_filename}'
+        impact_chart.save_as(f'{base}-impact.html')
+        print(f'{base}-impact.html')
+        subsidies_chart.save_as(f'{base}-subsidies.html')
+        print(f'{base}-subsidies.html')
 
 
 from .nir_static_normals_post import StaticNormals

@@ -329,16 +329,16 @@ def samples_from_grouped_samples(grouped_samples):
 
 
 class Cattle_Population_Static_Normal(Barrier):
-    """Static Normal estimates of cattle populations
-    and enteric fermentation emission factors, to explain three
+    """This barrier element makes static normal estimates of cattle populations
+    and enteric fermentation emission factors to explain three
     things:
-    (1) cattle counts,
-    (2) NIR2025 enteric fermentation emission factors,
-    (3) NIR2025 overall enteric fermentation emissions (including all livestock).
+    <ol>
+    <li>cattle counts</li>
+    <li>NIR2025 enteric fermentation emission factors</li>
+    <li>NIR2025 overall enteric fermentation emissions (including all livestock)</li>
+    </ol>
     Estimates are made for each of 8 cattle populations (beef cows, dairy cows, beef heifers for replacement, beef heifers for slaughter, dairy heifers, calves, steers, and bulls),
     and each province and territory.
-    </p>
-    <p>
     """
 
     @computed_field

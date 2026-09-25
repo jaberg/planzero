@@ -20,7 +20,20 @@
         <p>{{site_inference.short_description}}</p>
     </header>
 
-<h2>Model Estimates of Past and Future Emissions</h2>
+<p>
+Contents:
+<ul>
+	<li><a href="#emissions-estimates">Model Estimates of Past and Future Emissions</a></li>
+	<li><a href="#strategies">Strategies in this Model</a></li>
+	<li><a href="#barriers">Barriers in this Model</a></li>
+	{% if site_inference.show_prediction_quality %}
+	<li><a href="#prediction-quality">Prediction Quality</a></li>
+	{% endif %}
+	<li><a href="#posts">Posts Developing this Page</a></li>
+</ul>
+</p>
+
+<h2 id="emissions-estimates">Model Estimates of Past and Future Emissions</h2>
 
 {{site_inference.uncertain_sparkline_matrix_echart("banner_chart", v_unit="Mt_CO2e")|safe}}
 
@@ -110,7 +123,7 @@ at the bottom of this page.
 
 {% if site_inference.show_prediction_quality %}
 
-<h2>Prediction Quality</h2>
+<h2 id="prediction-quality">Prediction Quality</h2>
 
 <h3 id="PreNIR_2025_m04">Prediction Task: {{ planzero.challenge.registry["PreNIR_2025_m04"].pretty_name }}</h3>
 <p>
@@ -152,7 +165,7 @@ Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
 
 {% endif %}
 
-<h2 id="posts">Posts developing this page</h2>
+<h2 id="posts">Posts Developing this Page</h2>
 <ul>
 {% for ident in site_inference.posts_developing_this_page %}
 <li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
