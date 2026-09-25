@@ -536,18 +536,18 @@ async def get_models(request: Request):
 ## PREDICTIONS
 
 @app_cache
-def get_predictions_html():
+def get_metrics_html():
     from planzero.endpoints import completed_prob_registry as prob_registry
     prob_registry()  # call it to ensure the registry is populated
-    return templates.get_template('predictions.html').render(
+    return templates.get_template('metrics.html').render(
             get_context(
-                title="PlanZero - Predictions",
-                active_tab='predictions',
+                title="PlanZero - Metrics",
+                active_tab='metrics',
                 ))
 
-@app.get("/predictions/", response_class=HTMLResponse)
-async def get_predictions(request: Request):
-    html = get_predictions_html()
+@app.get("/metrics/", response_class=HTMLResponse)
+async def get_metrics(request: Request):
+    html = get_metrics_html()
     return HTMLResponse(content=html)
 
 
