@@ -135,10 +135,14 @@ class Glossary(BlogPost):
 class NetZero2050Metric(BlogPost):
 
     """
-    New model evaluation metric: Probability of achieving Net-Zero by 2050.
-    Each predictive probabilistic model in PlanZero that looks as far out as 2050
-    is now ranked on the models page by how probably it assesses Canada could achieve 0 or less emissions by 2050.
-    Also, what used to be the "Predictions" tab is now called "Metrics".
+    This relatively short post introduces a new model evaluation metric:
+    the probability of achieving Net-Zero by 2050.
+    The Scaling and Static Normals models
+    appear to produce plausible,
+    very small, estimates of that probability.
+    Reassuringly, the probability of achieving Net-Zero is higher
+    according to the scaling model, which includes an emissions-reduction
+    strategy.
     """
 
     def __init__(self):
