@@ -77,7 +77,7 @@ def endpoints():
         "/",
         "/ipcc-sectors/",
         "/models",
-        "/predictions/",
+        "/metrics/",
         "/strategies/",
         "/glossary/",
         "/about/",
