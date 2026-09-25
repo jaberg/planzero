@@ -23,20 +23,20 @@ The impact of a strategy is the difference between what will probably happen
 if the strategy is implemented, versus what will probably happen if it isn't.
 Both of these are predictions.
 To estimate the impact of strategies,
-PlanZero needs research and models models that make credible predictions for emissions,
+PlanZero needs models that make credible predictions for emissions,
 both with and without various strategies,
-with usefully tight credible intervals,
+with usefully tight {{ siteref("Credible_Interval", "confidence intervals") }},
 on various time horizons.
 </p>
 
 <p>
 This post introduces PlanZero's first predictive probabilistic model.
-It is a simple baseline that assumes
+It is a simple baseline that assumes:
 <ol>
 	<li>that provincial and territorial emissions per-sector and per-gas add up to national totals</li>
 	<li>that provincial and territorial emissions are <i>static</i> and don't actually change over time; they have been constant historically, and will remain constant in the future</li>
 </ol>
-The model is described as a hierarchical
+The model is defined as a hierarchical
 probabilistic model, and
 Bayesian inference is used to condition predictions on
 historical estimates.
@@ -50,23 +50,26 @@ reproduced below:
 
 <p>
 The visualization follows the style used in the previous post, which introduced
-the probabilistic NIR-2025. The visualization has been updated to show both
-a predictive model (the static normals model, conditioned on NIR-2025 data up to 2022)
-and the emissions that it should predict (the probabilistic NIR-2025's 2023 data,
+the <a href="/post/2026-05-20-prob-nir">probabilistic NIR-2025</a>.
+The visualization now includes
+both a predictive model (the static normals model,
+	based on NIR-2025 data up to 2022)
+and the emissions that it should predict (the 2023 data,
 shown in terms of upper and lower credible interval and mean, thin solid and dotted black lines respectively).
+Since the model is timeless, the model's predictions extend into the future.
+The visualization shows predictions out to year 2050.
 </p>
 
 <p>
-This post also introduces <i>predictions</i> to the PlanZero site, in two ways.
-The first way is that visualizations of predictive probabilistic models show ranges of
-95% credible emissions for future years.
-The second way is via the <a href="/metrics/">Metrics</a> page,
-a new one on PlanZero.
-The predictions page provides an overview of <i>kinds</i> of prediction,
-and a ranking of models in terms of metrics that formalize how good they are at making
-those predictions.
-The previous post on the probabilistic NIR-2025 introduced a model evaluation metric
-for scoring predictions in terms of KL-divergence from the probabilistic interpretation of measured emissions.
+This post also introduces a <a href="/metrics/">Metrics</a> page,
+featuring a ranking of models in terms of how successful they are at
+predicting NIR-2025's 2023 data based on information available as of the
+December 31 prior to its April 2025 publication.
+The earlier post on the
+<a href="/post/2026-05-20-prob-nir">probabilistic NIR-2025</a>
+introduced a model evaluation metric
+for scoring predictions in terms of their
+<a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence">KL-divergence</a> from the probabilistic interpretation of the NIR-reported emissions.
 This post uses that metric to score the static normals model.
 The metric is used for both individual sector-gas combinations, as well
 as an overall weighted average across all sectors and gases.
@@ -75,17 +78,18 @@ Future models might rank better by scoring closer to zero.
 </p>
 
 <p>
-I believe this is the first step in an important research loop that can lead
+I believe this is the first step in an important
+iterative research process that can lead
 PlanZero to making the best possible predictions.
 The machine learning community has made great progress over recent
 decades by combining two incremental, mutually supportive research programs.
-The first one is a relatively slow accumulation of benchmark prediction challenges.
-The second one is a relatively faster exploration of the space of models, algorithms, and data to find ways of improving the state of the art in those challenges.
-At the same time, the more accurately PlanZero can predict emissions impacts,
-the more helpful PlanZero can be in evaluating the many strategies that have
-helpful but not enormous emissions impacts.
-This is why the PlanZero site is now structured to feature <a href="/metrics/">predictions</a>
-and <a href="/models/">models</a> that can reflect two mutually reinforcing
+The first one (metrics) is a relatively slow accumulation of benchmark prediction challenges.
+The second one (models) is a relatively faster exploration of the space of models, algorithms, and data to find ways of improving the state of the art in those challenges.
+The more accurately PlanZero can predict emissions impacts,
+the more precisely PlanZero can estimate the impact of strategies.
+This is why the PlanZero site is now structured to feature
+<a href="/metrics/">metrics</a>
+and <a href="/models/">models</a> that can reflect the two mutually reinforcing
 research programs. I hope they will lead to as solid a foundation as possible for model-based
 planning of emission-reduction strategies.
 This rationale has been added to the <a href="/about/#incremental-iteration-on-prediction-metrics">About page</a>.
@@ -103,6 +107,8 @@ significant changes either for better or worse.
 We'll look at trends in a future post,
 that will introduce an autoregressive model as an alternative to the standard normals
 presented here.
+</p>
+<p>
 Before that post though, I'd like to insert two tidying-up posts.
 The Bovaer analysis should be adapted to operate on probabilistic models
 and the models page should be purged of "simulation-based models",

@@ -201,7 +201,7 @@ class ProbabilisticBovaer(BlogPost):
         print(f'{base}-subsidies.html')
 
 
-from .nir_static_normals_post import StaticNormals
+from .nir_static_normals_post import StaticNormals  # noqa: F401
 
 
 class ProbabilisticNIR2025(BlogPost):
