@@ -169,3 +169,4 @@ jobs:
           FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
         with:
           config: fly_gh.toml
+          region: yyz # https://github.com/superfly/fly-pr-review-apps/issues/74
