@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 import datetime
 
-from ..html import HTML_element, HTML_raw, HTML_P, HTML_UL, HTML_Markdown
+from ..html import HTML_element, HTML_raw, HTML_P
 
 class ActionStep(BaseModel):
     descr: str
@@ -14,7 +14,7 @@ class Stakeholder(BaseModel):
     name: str
     url: str
 
-from .. import DynamicElement
+from ..base import DynamicElement
 
 Strategy_subclasses = []
 

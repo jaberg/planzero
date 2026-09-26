@@ -1,17 +1,13 @@
-try:
-    import jax
-    import jax.numpy as jnp
-    import jax.random as jrandom
-    import numpyro
-    import numpyro.distributions as dist
-    from numpyro.distributions import Distribution, constraints
-    from numpyro.distributions.util import promote_shapes
+import functools
 
-except ImportError:
-    Distribution = object
-    class constraints:
-        real = None
-        positive = None
+import jax
+import jax.numpy as jnp
+import jax.random as jrandom
+import numpy as np
+import numpyro.distributions as dist
+from numpyro.distributions import Distribution, constraints
+from numpyro.distributions.util import promote_shapes
+
 
 class SymmetricBlendedLogNormal(Distribution):
     """A 3-element mixture model implementing a symmatric version of
@@ -108,12 +104,18 @@ class SymmetricBlendedLogNormal(Distribution):
 
     def sample(self, key, sample_shape=()):
         shape = sample_shape + self.batch_shape
+        assert shape == sample_shape
         key_comp, key_neg, key_norm, key_pos = jrandom.split(key, 4)
         
         # 1. Sample which component is active based on weights
         log_weights = self._get_log_weights()
-        comp = dist.Categorical(logits=log_weights).sample(
-            key_comp, sample_shape)
+        try:
+            comp = dist.Categorical(logits=log_weights, validate_args=False).sample(
+                key_comp, sample_shape)
+        except ValueError as err:
+            err.add_note(f"logits={log_weights}")
+            err.add_note(f"max(logits)={log_weights.max()}")
+            raise
         
         log_loc = self._active_lognormal_mu()
         
@@ -171,3 +173,78 @@ class SymmetricBlendedLogNormal(Distribution):
         ], axis=-1)
         
         return jax.nn.logsumexp(components_log_prob, axis=-1)
+
+
+# @functools.cache  ## messes up jax.jit below
+def _gauss_hermite(n_quad: int):
+    """Return Gauss-Hermite nodes and weights scaled so that
+    E[f] ~= sum_i weights_i * f(nodes_i) for a standard normal input f.
+
+    hermgauss gives nodes for the weight exp(-t**2) (a N(0, 1/2) measure);
+    scaling the nodes by sqrt(2) converts them to the N(0, 1) measure.
+    """
+    nodes, weights_unnorm = np.polynomial.hermite.hermgauss(n_quad)
+    # hermgauss weights satisfy sum(weights) = sqrt(pi), so divide by sqrt(pi)
+    # to turn the exponential-quadrature weights into expectation weights.
+    return jnp.asarray(np.sqrt(2.0) * nodes), jnp.asarray(weights_unnorm) / jnp.sqrt(jnp.pi)
+
+def _uniform_normal_mixture_log_prob(
+        q_mu, # (M,)
+        q_sigma, # (M,)
+        x, # (N,)
+        ) -> jnp.ndarray: # (N,)
+    """Log-density of an equally-weighted mixture of M normals,
+    Q(x) = (1/M) * sum_m N(x | q_mu[m], q_sigma[m]).
+    """
+    M, = q_mu.shape
+    components = dist.Normal(q_mu[:, None], q_sigma[:, None])
+    log_q = jax.nn.logsumexp(components.log_prob(x), axis=0)
+    return log_q - jnp.log(M)
+
+
+@jax.jit(static_argnames=['n_quad'])
+def kl_divergence_uniform_normal_mixture(
+        p,  # SymmetricBlendedLogNormal, with batch_shape == ()
+        q_mu,  # (M,) mixture component means
+        q_sigma,  # (M,) mixture component scales
+        n_quad: int = 64,  # Gauss-Hermite quadrature points per component
+        ) -> jnp.ndarray:  # scalar KL[P || Q], clamped at 0
+    """Deterministic estimate of KL divergence from P to a uniform mixture
+    of normals Q(x) = (1/M) * sum_m N(x | q_mu[m], q_sigma[m]).
+
+    Instead of a Monte-Carlo estimate, the KL is decomposed exactly over P's
+    three mixture components,
+
+        KL[P || Q] = sum_c w_c * E_{C_c}[ log P - log Q ],
+
+    and each expectation is evaluated with Gauss-Hermite quadrature on the
+    component's natural coordinates:
+        - normal component:        x = mu + scale_norm * t
+        - negative lognormal:      x = -exp(log_loc + scale_neg * t)
+        - positive lognormal:      x =  exp(log_loc + scale_pos * t)
+
+    This converges much faster and more accurately than Monte-Carlo sampling,
+    and is deterministic.
+    """
+    assert q_sigma.shape == q_mu.shape
+    # assert all(s > 0 for s in q_sigma), q_sigma  ## messes up jit
+
+    def f(x):
+        return p.log_prob(x) - _uniform_normal_mixture_log_prob(q_mu, q_sigma, x)
+
+    nodes, weights = _gauss_hermite(n_quad)
+    if isinstance(p, SymmetricBlendedLogNormal):
+        log_weights = p._get_log_weights() # (3,) in order [neg, norm, pos]
+        w_neg, w_norm, w_pos = jnp.exp(log_weights)
+        log_loc = p._active_lognormal_mu()
+
+        e_norm = (weights * f(p.mu + p.scale_norm * nodes)).sum()
+        e_neg = (weights * f(-jnp.exp(log_loc + p.scale_neg * nodes))).sum()
+        e_pos = (weights * f(jnp.exp(log_loc + p.scale_pos * nodes))).sum()
+
+        kl = w_norm * e_norm + w_neg * e_neg + w_pos * e_pos
+    elif isinstance(p, dist.Normal):
+        kl = (weights * f(p.mean + jnp.sqrt(p.variance) * nodes)).sum()
+    else:
+        raise NotImplementedError(p)
+    return jnp.maximum(kl, 0.0)

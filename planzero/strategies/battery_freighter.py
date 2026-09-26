@@ -1,5 +1,5 @@
-from .. import DynamicElement, SparseTimeSeries
-from .. import ureg as u
+from ..sts import SparseTimeSeries
+from ..ureg import ureg as u
 from .ideas import ideas
 
 

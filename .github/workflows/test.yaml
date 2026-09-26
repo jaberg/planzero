@@ -12,6 +12,7 @@ on:
 env:
   GITHUB_WORKSPACE: "${{ github.workspace }}"  # used for glossary code lookup
   JAX_ENABLE_X64: "1"
+  JAX_CHECK_STATIC_INDICES: "1"
   OMP_NUM_THREADS: "1"
   OPENBLAS_NUM_THREADS: "1"
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
@@ -51,7 +52,7 @@ jobs:
       - name: Install dev dependencies
         run: pip install -r requirements_dev.txt
 
-      - name: Show what versions are installed
+      - name: Python package versions
         run: pip freeze
 
       - name: Initialize model database
@@ -78,10 +79,6 @@ jobs:
           run: python -m planzero inference_work --model=Static_Normals_2024_12_31
         - name: Perform Static Normals inference
           run: python -m planzero inference_work --model=Static_Normals_2024_12_31
-        - name: Perform Static Normals inference
-          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
-        - name: Perform Static Normals inference
-          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
         if: steps.cache_restore_static_normals_2024_12_31.outputs.cache-hit != 'true'
@@ -90,12 +87,16 @@ jobs:
           path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
           key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
 
+      # TODO: cache this when it stabilizes
+      - name: Infer cattle population and emission factors for scaling ablation study
+        run: python -m planzero inference_work --model=ScalingStudy_All_Strategies
+
       # Run test and populate app cache (diskcache)
 
       - name: Run all tests
-        run: pytest -n 4 -W error --maxfail=10 .
+        run: pytest -n 4 --maxfail=10 -W error --durations=10 .
 
-      - name: Save app cache for deploy
+      - name: Save app cache (artifact) for deploy
         if: github.repository == 'jaberg/planzero'
         uses: actions/upload-artifact@v7
         with:
@@ -157,6 +158,10 @@ jobs:
           name: App Cache
           path: "${{ env.PLANZERO_APP_CACHE_DIR }}"
 
+      - name: Setup Tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: false
+
       - name: Deploy PR app to Fly.io
         id: deploy
         uses: superfly/fly-pr-review-apps@1.2.1
@@ -164,6 +169,4 @@ jobs:
           FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}"
         with:
           config: fly_gh.toml
-
-# https://github.com/tespkg/actions-cache
-# https://github.com/itchyny/s3-cache-action
+          region: yyz # https://github.com/superfly/fly-pr-review-apps/issues/74

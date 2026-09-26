@@ -4,19 +4,16 @@ import numpy as np
 
 from . import model_db, nir2025_site
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
-
-try:
-    from .nir_static_normals import (
-        BNs_by_sector_ghg,
-        inference_work_loop,
-        model_id_from_data_cutoff,
-        normals_by_sector_ghg,
-        touch_components,
-        touch_model,
-        weighted_KL_score,
-    )
-except ImportError:
-    pass
+from .nir_static_normals import (
+    BNs_by_sector_ghg,
+    inference_work_loop,
+    model_id_from_data_cutoff,
+    normals_by_sector_ghg,
+    p_emissions_below_thresh_ex_LULUCF,
+    touch_components,
+    touch_model,
+    weighted_KL_score,
+)
 from .prob import ClassVar, SiteInference, computed_field
 from .sparkline_echart_helper import (
     PseudoRegion,
@@ -46,7 +43,7 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
             'pos_shade': [max(ubound, 0) - max(lbound, 0) for yr in self.years],
             }
 
-    def load_data(self, model_id):
+    def load_data(self, model_id, seed=123):
 
         self.normals_by_sector_ghg = normals_by_sector_ghg(model_id)
         self.BNs_by_sector_ghg = BNs_by_sector_ghg(model_id)
@@ -56,7 +53,10 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
             break
         else:
             assert 0, 'no BayesianNormal components found'
-        n_new_draws = 125
+        n_new_draws = 32
+        # empirically n_new_draws 1 with 500 samples gives different results from
+        # n_new_draws 10, but above that it leads to fairly stable upper and lower
+        # bounds on the national total
 
         mean_with_lulucf = 0
         estimates_with_lulucf = np.zeros((n_new_draws, n_samples))
@@ -64,11 +64,10 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
         mean_without_lulucf = 0
         estimates_without_lulucf = np.zeros((n_new_draws, n_samples))
 
-
+        rng = np.random.default_rng(seed=seed)
         for sector in IPCC_Sector:
             sector_mean = 0
 
-            rng = np.random.default_rng(seed=123)
             estimates = rng.standard_normal((n_new_draws, n_samples, len(GHG)))
 
             for ii, ghg in enumerate(GHG):
@@ -155,7 +154,7 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
             'pos_shade': [max(ubound, 0) - max(lbound, 0) for yr in self.years],
             }
 
-    def load_data(self, model_id):
+    def load_data(self, model_id, seed=123):
         self.normals_by_sector_ghg = normals_by_sector_ghg(model_id)
         self.BNs_by_sector_ghg = BNs_by_sector_ghg(model_id)
 
@@ -164,9 +163,9 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
             break
         else:
             assert 0, 'no BayesianNormal components found'
-        n_new_draws = 125
+        n_new_draws = 32
 
-        rng = np.random.default_rng(seed=123)
+        rng = np.random.default_rng(seed=seed)
         estimates_ghg_pt = rng.standard_normal((n_new_draws, n_samples, len(GHG), 13))
         estimates_ghg_ca = rng.standard_normal((n_new_draws, n_samples, len(GHG)))
 
@@ -300,7 +299,7 @@ class Static_Normals_2024_12_31(SiteInference):
         return helper.make_echart()
 
     def prediction_scores_prenir_2025_m04(self):
-        assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
+        assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
         weighted_div, _, KLs = weighted_KL_score(
                 year=2023, model_id=self.model_id)
         scores_ca = {}
@@ -318,12 +317,19 @@ class Static_Normals_2024_12_31(SiteInference):
                 }
         return rval
 
+    def challenge_netzero_2050(self):
+        return p_emissions_below_thresh_ex_LULUCF(
+                model_id=self.model_id,
+                thresh_ktCO2e=0)
+
     def show_prediction_quality(self):
         assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
         return True
 
     def challenge_result_url(self, challenge_name) -> str:
-        if challenge_name == 'PreNIR_2025_m04':
+        if challenge_name in (
+                'PreNIR_2025_m04',
+                'NetZero_2050'):
             return f'/models/prob/{self.model_id}/#{challenge_name}'
         else:
             return ''

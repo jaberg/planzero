@@ -4,6 +4,8 @@ import sys
 
 from pathlib import Path
 
+from .endpoints import completed_prob_registry
+
 def print_max_gaps(args):
     from . import est_nir
     assert args.year == 2005
@@ -81,24 +83,17 @@ def request_all_planzero_pages(args):
         print(status_code, '{:.2f}'.format(client.last_get_time), endpoint)
 
 
-def nir_ar2_inference(args):
-    from . import nir_ar2
-    return nir_ar2.main()
-
-
 def main_model_id(args):
-    from . import prob
-    return prob.registry[args.model].main_model_id()
+    return completed_prob_registry()[args.model].main_model_id()
 
 
 def main_inference_prep(args):
-    from . import prob
-    return prob.registry[args.model].main_inference_prep()
+    return completed_prob_registry()[args.model].main_inference_prep()
 
 
 def main_inference_work(args):
-    from . import prob
-    return prob.registry[args.model].main_inference_work()
+    return completed_prob_registry()[args.model].main_inference_work()
+
 
 def main_generate_assets(args):
     from . import blog as post
@@ -130,9 +125,6 @@ if __name__ == '__main__':
 
     parser_request_all_pages = subparsers.add_parser('request_all_pages')
     parser_request_all_pages.set_defaults(func=request_all_planzero_pages)
-
-    parser_request_all_pages = subparsers.add_parser('nir_ar2_inference')
-    parser_request_all_pages.set_defaults(func=nir_ar2_inference)
 
     parser_model_id = subparsers.add_parser('model_id')
     parser_model_id.add_argument('--model', help='model name')

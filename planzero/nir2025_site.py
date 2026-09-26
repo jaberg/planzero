@@ -52,7 +52,7 @@ class NIR2025_SparklineEChartHelper(SparklineEChartHelperBase):
 
                 for jj, year in enumerate(self.years):
                     ca_dist, _ = nir2025.ktCO2e_numpyro_dist_pt_ca(
-                        sector, ghg, year)
+                            sector, ghg, year)
 
                     rng_key, rng_key_ = jrandom.split(rng_key)
                     estimated_sector_ghg_ca_year = ca_dist.sample(rng_key_, (n_samples,))
@@ -130,11 +130,7 @@ class NIR2025(SiteInference):
     include_in_registry: ClassVar[bool] = True
 
     def one_line_description(self):
-        return "Data with uncertainty from NIR-2025"
-
-    @computed_field
-    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        return (float('nan'), float('nan'))
+        return "Emissions with uncertainty from NIR-2025"
 
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
         helper = NIR2025_SparklineEChartHelper(div_id, v_unit, model_name=self.__class__.__name__)
@@ -160,3 +156,7 @@ class NIR2025(SiteInference):
         helper.order_regions()
         helper.add_regional_cells()
         return helper.make_echart()
+
+    @property
+    def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
+        return "N/A"
