@@ -1,65 +1,101 @@
+
+import jax.numpy as jnp
+
 from .scenario_model import *
 
 
 class Exponential_Population(ModelElement):
 
-    def __init__(self):
-        self.data_len = ndarray_dimension('data_len')
+    # derived from BaseModel 
+    # avoid defining __init__ if possible
 
-    def inference(self):
-        def annual_scan_prep(ws):
-            ws.general['alpha'] = None # sample
-            ws.general['data'] = [
+    def inference(self, ie: InferenceElement) -> None:
+        ie.general('alpha', known=False, shape=[])
+        ie.annual_X('data', known=True, shape=[ie.annual_scan_dim])
+        ie.carry('y_curr', initial_known=False, shape=[ie.annual_scan_dim])
+        ie.carry('y_prev', shape=[ie.annual_scan_dim],
+                 initial_known=True,
+                 final_known=False)
+        ie.annual_Y('mu', known=False, shape=[ie.annual_scan_dim])
+        ie.general('generated_data', known=True, shape=[ie.annual_scan_dim],
+                     observation='data')
+
+        @ie.annual_scan_prep()
+        def prep(ws:WorkSpace_AnnualScanPrep_Inference) -> None:
+            ws.general_nd['alpha'] = None # sample
+            ws.general_nd['data'] = [
                     1000, 1001, 1005, 1006, 1010, 1013, 1020]
-            ws.initial_carry['y_curr'] = 0
-            ws.initial_carry['y_prev'] = 0
+            ws.initial_carry_nd['y_curr'] = 0
+            ws.initial_carry_nd['y_prev'] = 0
         
-        def annual_scan_step(ws):
-            ws.next_carry['y_curr'] = 0
-            ws.next_carry['y_prev'] = 0
-            ws.y_t['mu'] = 0
+        @ie.annual_scan_step()
+        def step(ws:WorkSpace_AnnualScanStep_Inference) -> None:
+            ws.next_carry_nd['y_curr'] = 0
+            ws.next_carry_nd['y_prev'] = 0
+            ws.this_Y_nd['mu'] = 0
 
-        def annual_scan_post(ws):
-            ws.general['sample_data'] = 0 # sample, and observe data
+        @ie.annual_scan_post(reads=['data'])
+        def post(ws:WorkSpace_AnnualScanPost_Inference) -> None:
+            ws.general_nd['sample_data'] = 0 # sample, and observe data
 
-
-        return ModelElementInference(
-            defines={
-                General('alpha'): UnknownVariable(value_type=Ndarray()),
-                AnnualX('data'): Variable(value_type=Ndarray(shape=[self.data_len])),
-                AnnualCarry('y_curr'): UnknownVariable(value_type=Ndarray()),
-                AnnualCarry('y_prev'): UnknownVariable(value_type=Ndarray()),
-                AnnualY('mu'): UnknownVariable(value_type=Ndarray()),
-                General('sample_data'): UnknownVariable(
-                    value_type=Ndarray(shape=[self.data_len]),
-                    # requires=[ScanY('mu')],
-                    # definition_phase=InferencePostScan,
-                    observation=General('data')),
-                },
-            annual_scan_prep=annual_scan_prep,
-            annual_scan_step=annual_scan_step,
-            annual_scan_post=annual_scan_post,
-            annual_scan_post_reads=[General('data')],
-            )
-
-    def analysis(self):
-        def annual_scan_pre(ws):
-            ws.general['mean_2'] = jnp.mean(
-                    ws.posterior['mu'][:, 2])
-            ws.general[AnnualEmission(sector, gas, activity)] = 0
-
-        return AnalysisPhase(
+    def analysis(self, annual_scan_dim: NdarrayDim) -> ModelElementAnalysis:
+        rval = ModelElementAnalysis(
             defines={
                 General('mean_2'): Variable(value_type=Ndarray()),
-                General(AnnualEmission(sector, gas, activity)): Variable(),
+                #General(AnnualEmission(sector, gas, activity)): Variable(),
                 },
-            annual_scan_prep=annual_scan_pre,
-            annual_scan_prep_reads=[Posterior('mu')],
             )
 
+        @rval.annual_scan_prep(reads=[posterior('mu')])
+        def annual_scan_prep(ws:WorkSpace_AnnualScanPrep_Analysis) -> None:
+            ws.general_nd['mean_2'] = jnp.mean(
+                    ws.general_nd[posterior('mu')][:, 2])
+            #ws.general_nd[AnnualEmission(sector, gas, activity)] = 0
 
-def test_0():
-    pass
+        return rval
 
-    #model = Model()
-    #model.add_element(Exponential_Population())
+
+
+def test_add_inference_add_vars():
+
+    model = AnnualScanModel()
+    model.add_element(Exponential_Population())
+
+    print(model.mv.general_nd)
+
+    print(model.mv.initial_carry_nd)
+    print(model.mv.this_carry_nd)
+    print(model.mv.next_carry_nd)
+    print(model.mv.final_carry_nd)
+
+    print(model.mv.this_X_nd)
+    print(model.mv.Xs_nd)
+
+    print(model.mv.this_Y_nd)
+    print(model.mv.Ys_nd)
+
+    print("Posteriors")
+    print("----------")
+    for key, val in model.mv.posterior_nd.items():
+        print(key)
+        print(val)
+        print()
+    assert 'alpha' in model.mv.posterior_nd
+    assert 'y_curr' not in model.mv.posterior_nd
+    assert initial_carry('y_curr') in model.mv.posterior_nd
+    assert final_carry('y_curr') in model.mv.posterior_nd
+    assert initial_carry('y_prev') not in model.mv.posterior_nd
+    assert final_carry('y_prev') in model.mv.posterior_nd
+    assert 'mu' in model.mv.posterior_nd
+    assert 'sample_data' not in model.mv.posterior_nd
+    assert 'data' not in model.mv.posterior_nd
+
+
+if 0:
+  def test_add_inference_run():
+
+    model = AnnualScanModel()
+    model.add_element(Exponential_Population())
+
+    icomp = InferenceComputation(model=model)
+    icomp.run()
