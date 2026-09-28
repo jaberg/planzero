@@ -102,10 +102,7 @@ class DefinitionMetadata(BaseModel):
 
     observation: VarKey|None = None
 
-    # unknown variables
-    # that are also not observed
-    # are, by default, sampled and saved by MCMC samplers
-    known:bool = True
+    sample:bool = True
 
     subphase:Subphase = Subphase.Unknown
 
@@ -127,22 +124,9 @@ def _definition_metadata_timeslice(
                         shape=valtype.shape[1:],
                         dtype=valtype.dtype),
                     observation=dm.observation,
-                    known=dm.known,
+                    sample=dm.sample,
                     subphase=dm.subphase)
     raise ValueError(dm)
-
-
-def UnknownNdarray(shape, dtype='float64', **kwargs):
-    return NdarrayDefinitionMetadata(
-            value_type=NdarrayType(shape=shape, dtype=dtype),
-            known=False,
-            **kwargs)
-
-def DeterministicNdarray(shape, dtype='float64', **kwargs):
-    return NdarrayDefinitionMetadata(
-            value_type=NdarrayType(shape=shape, dtype=dtype),
-            known=True,
-            **kwargs)
 
 
 class VarAction(BaseModel):
@@ -332,7 +316,7 @@ class ModelElementPhase:
 
     def _ndm_from_kwargs(
             self,
-            known:bool,
+            sample:bool,
             shape:list[int|NdarrayDim]|None=None,
             dtype:str|None=None,
             observation:VarKey|None=None,
@@ -347,7 +331,7 @@ class ModelElementPhase:
                     value_type=NdarrayType(
                         shape=shape or [],
                         dtype=dtype or 'float64'),
-                    known=known,
+                    sample=sample,
                     observation=observation,
                     subphase=definition_subphase)
             return ndm
@@ -412,17 +396,14 @@ class ModelElementPhase:
         self.mv.general_nd[var_key] = self.mv.Ys_nd[var_key]
 
     def carry(self, var_key,
-              initial_known:bool,
-              final_known:bool|None = None,
+              initial_sample:bool,
+              next_sample:bool,
               **kwargs):
-        if final_known is None:
-            if initial_known:
-                raise ValueError('final_known argument is required if initial_known=True')
-            else:
-                final_known = False
 
-        initial_ndm = self._ndm_from_kwargs(known=initial_known, **kwargs)
-        final_ndm = self._ndm_from_kwargs(known=final_known, **kwargs)
+        initial_ndm = self._ndm_from_kwargs(sample=initial_sample, **kwargs)
+        this_ndm = self._ndm_from_kwargs(sample=False, **kwargs)
+        next_ndm = self._ndm_from_kwargs(sample=next_sample, **kwargs)
+        final_ndm = self._ndm_from_kwargs(sample=next_sample, **kwargs)
 
         self.mv.initial_carry_nd[var_key] = NdarrayVariableMetadata(
                 definition_metadata=initial_ndm,
@@ -431,13 +412,13 @@ class ModelElementPhase:
                 defining_subphase=Subphase.Prep)
 
         self.mv.this_carry_nd[var_key] = NdarrayVariableMetadata(
-                definition_metadata=final_ndm,
+                definition_metadata=this_ndm,
                 defining_element_id='__internal__',
                 defining_phase=self.defining_phase,
                 defining_subphase=Subphase.Internal_Between_Prep_and_Step)
 
         self.mv.next_carry_nd[var_key] = NdarrayVariableMetadata(
-                definition_metadata=final_ndm,
+                definition_metadata=next_ndm,
                 defining_element_id=self.element_id,
                 defining_phase=self.defining_phase,
                 defining_subphase=Subphase.Step)
@@ -487,7 +468,7 @@ class InferenceElement(ModelElementPhase):
         print(var_key)
         assert var_key not in self.mv.posterior_nd
         if (vm.defining_phase == ModellingPhase.Inference
-            and not dm.known
+            and dm.sample
             and dm.observation is None):
             self.mv.posterior_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=NdarrayDefinitionMetadata(
@@ -495,7 +476,7 @@ class InferenceElement(ModelElementPhase):
                             shape=[self.mcmc_dim] + dm.value_type.shape,
                             dtype=dm.value_type.dtype),
                         observation=None,
-                        known=True),
+                        sample=False),
                     defining_element_id='__internal__',
                     defining_phase=ModellingPhase.Inference,
                     defining_subphase=Subphase.Internal_After_Post)
