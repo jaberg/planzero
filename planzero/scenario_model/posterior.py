@@ -1,9 +1,20 @@
 # this resolves circular type references
 from __future__ import annotations
 
+import jax.random as jrandom
+import numpyro
 from jax.lax import scan as jax_scan
+from jax.typing import ArrayLike
+from numpyro.distributions.distribution import Distribution
 
-from .scenario_model import *
+from .base import GroupedPosterior, Model, Posterior, VarKey, initial_carry
+from .prior import (
+    InferenceWorkSpace_Post,
+    InferenceWorkSpace_Prep,
+    InferenceWorkSpace_Step,
+    ScanStorage,
+    WorkSpace,
+)
 
 
 class WorkSpacePrepPosterior_Dist_Attr:
@@ -479,4 +490,14 @@ class PosteriorComputation:
         return key
 
     def run_once(self):
-        jax_scan
+        inference_elements = self.model._inference_elements
+
+        for element_id, inference_element in inference_elements.items():
+            try:
+                ws = PosteriorWorkSpace_Prep(pc=self)
+                inference_element.annual_scan_prep_fn(ws)
+            except Exception as err:
+                err.add_note(f'element_id={element_id}')
+                raise
+
+        # jax_scan

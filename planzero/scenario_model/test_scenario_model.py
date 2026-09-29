@@ -2,8 +2,20 @@
 import jax.numpy as jnp
 import numpyro.distributions as dist
 
-from .posterior import *
-from .scenario_model import *
+from .base import (
+    AnnualScanModel,
+    ModelElement,
+    ModelInterface,
+    final_carry,
+    initial_carry,
+)
+from .posterior import (
+    PosteriorComputation,
+    WorkSpace_Prep,
+    WorkSpace_Proc,
+    WorkSpace_Step,
+)
+from .prior import InferenceComputation, run_mcmc
 
 
 class Exponential_Population(ModelElement):
@@ -11,26 +23,26 @@ class Exponential_Population(ModelElement):
     # derived from BaseModel 
     # avoid defining __init__ if possible
 
-    def inference(self, ie: InferenceElement) -> None:
-        ie.general('alpha', sample=True, shape=[])
-        ie.annual_X('data', sample=False, shape=[ie.inference_years_dim])
-        ie.carry('y_curr', shape=[ie.inference_years_dim],
+    def inference(self, mi: ModelInterface) -> None:
+        mi.general('alpha', sample=True, shape=[])
+        mi.annual_X('data', sample=False, shape=[mi.inference_years_dim])
+        mi.carry('y_curr', shape=[mi.inference_years_dim],
                  sample_initial=True,
                  sample_next=True,
                  )
-        ie.carry('y_prev', shape=[ie.inference_years_dim],
+        mi.carry('y_prev', shape=[mi.inference_years_dim],
                  sample_initial=False,
                  sample_next=False)
-        ie.annual_Y('mu', sample=False, shape=[ie.inference_years_dim])
-        ie.general('generated_data', shape=[ie.inference_years_dim],
+        mi.annual_Y('mu', sample=False, shape=[mi.inference_years_dim])
+        mi.general('generated_data', shape=[mi.inference_years_dim],
                    sample=True,
                    observation='data')
 
-        #@ie.define('alpha', sample=True, shape=[])
-        #@ie.define_annual('data', sample=False, annual_shape=[])
-        #@ie.define_carry('y_curr')
-        #@ie.define_carry('y_prev')
-        @ie.annual_scan_prep()
+        #@mi.define('alpha', sample=True, shape=[])
+        #@mi.define_annual('data', sample=False, annual_shape=[])
+        #@mi.define_carry('y_curr')
+        #@mi.define_carry('y_prev')
+        @mi.annual_scan_prep()
         def prep(ws:WorkSpace_Prep) -> None:
             ws.dist.general['alpha'] = dist.Kumaraswamy(1.25, 1.25)
             ws.dist.initial_carry['y_curr'] = dist.Normal()
@@ -38,8 +50,8 @@ class Exponential_Population(ModelElement):
             ws.val.annual_X['data'] = jnp.array(
                     [1000, 1001, 1005, 1006, 1010, 1013, 1020])
         
-        #@ie.define_Y('mu')
-        @ie.annual_scan_step()
+        #@mi.define_Y('mu')
+        @mi.annual_scan_step()
         def step(ws:WorkSpace_Step) -> None:
             coef = -0.5 + 3 * ws.val.general['alpha']
             ws.dist.next_carry['y_curr'] = dist.Normal(
@@ -50,8 +62,8 @@ class Exponential_Population(ModelElement):
             ws.val.next_carry['y_prev'] = ws.val.this_carry['y_curr']
             ws.val.this_Y['mu'] = ws.val.this_carry['y_curr'] * 1000
 
-        #@ie.define('generated_data')
-        @ie.annual_scan_post(reads=['data'])
+        #@mi.define('generated_data')
+        @mi.annual_scan_post(reads=['data'])
         def post(ws:WorkSpace_Proc) -> None:
             ws.dist.general['generated_data'] = dist.Normal(
                     ws.val.annual_Y['mu'],
