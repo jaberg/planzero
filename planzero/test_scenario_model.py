@@ -12,21 +12,21 @@ class Exponential_Population(ModelElement):
 
     def inference(self, ie: InferenceElement) -> None:
         ie.general('alpha', sample=True, shape=[])
-        ie.annual_X('data', sample=False, shape=[ie.annual_scan_dim])
-        ie.carry('y_curr', shape=[ie.annual_scan_dim],
-                 initial_sample=True,
-                 next_sample=True,
+        ie.annual_X('data', sample=False, shape=[ie.inference_years_dim])
+        ie.carry('y_curr', shape=[ie.inference_years_dim],
+                 sample_initial=True,
+                 sample_next=True,
                  )
-        ie.carry('y_prev', shape=[ie.annual_scan_dim],
-                 initial_sample=False,
-                 next_sample=False)
-        ie.annual_Y('mu', sample=False, shape=[ie.annual_scan_dim])
-        ie.general('generated_data', shape=[ie.annual_scan_dim],
+        ie.carry('y_prev', shape=[ie.inference_years_dim],
+                 sample_initial=False,
+                 sample_next=False)
+        ie.annual_Y('mu', sample=False, shape=[ie.inference_years_dim])
+        ie.general('generated_data', shape=[ie.inference_years_dim],
                    sample=True,
                    observation='data')
 
         @ie.annual_scan_prep()
-        def prep(ws:WorkSpace_AnnualScanPrep_Inference) -> None:
+        def prep(ws:InferenceWorkSpace_Prep) -> None:
             ws.dist.general['alpha'] = dist.Kumaraswamy(1.25, 1.25)
             ws.dist.initial_carry['y_curr'] = dist.Normal()
             ws.val.initial_carry['y_prev'] = jnp.zeros(())
@@ -34,7 +34,7 @@ class Exponential_Population(ModelElement):
                     [1000, 1001, 1005, 1006, 1010, 1013, 1020])
         
         @ie.annual_scan_step()
-        def step(ws:WorkSpace_AnnualScanStep_Inference) -> None:
+        def step(ws:InferenceWorkSpace_Step) -> None:
             coef = -0.5 + 3 * ws.val.general['alpha']
             ws.dist.next_carry['y_curr'] = dist.Normal(
                     coef
@@ -94,3 +94,4 @@ def test_add_inference_run():
 
     icomp = InferenceComputation(model=model, seed=123)
     icomp.run_once()
+    assert 1

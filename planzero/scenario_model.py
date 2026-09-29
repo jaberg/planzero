@@ -5,6 +5,7 @@ import enum
 from collections.abc import Callable
 from typing import Any, Literal
 
+from jax.lax import scan
 import jax.numpy as jnp
 import jax.random as jrandom
 from jax.typing import ArrayLike
@@ -91,11 +92,11 @@ def final_carry(var_key: VarKey) -> FinalCarry:
     return FinalCarry(carry_key=var_key)
 
 
-class ValType(BaseModel):
+class ValType(BaseModel, frozen=True):
     pass
 
 
-class NdarrayDim(BaseModel):
+class NdarrayDim(BaseModel, frozen=True):
     name: str
     unique_id: str
 
@@ -109,7 +110,7 @@ def ndarray_dimension(name):
             unique_id=f'dim_{ndarray_dim_counter}')
 
 
-class NdarrayType(ValType):
+class NdarrayType(ValType, frozen=True):
     shape: list[int|NdarrayDim]
     dtype: str = 'float64'
 
@@ -130,11 +131,11 @@ class NdarrayDefinitionMetadata(DefinitionMetadata):
 
 def _definition_metadata_timeslice(
         dm: NdarrayDefinitionMetadata,
-        annual_scan_dim:NdarrayDim,
+        inference_years_dim:NdarrayDim,
         ) -> NdarrayDefinitionMetadata:
     if isinstance(dm.value_type, NdarrayType):
         valtype = dm.value_type
-        if (len(valtype.shape) and valtype.shape[0] == annual_scan_dim):
+        if (len(valtype.shape) and valtype.shape[0] == inference_years_dim):
             return NdarrayDefinitionMetadata(
                     value_type=NdarrayType(
                         shape=valtype.shape[1:],
@@ -198,21 +199,187 @@ class WorkSpacePrepInference_Dist_InitialCarry(WorkSpacePrepInference_Dist_Attr)
         # check if the element, subphase defines item
         # check that the shape is correct
 
-        self.ic.storage_dist[item] = value
+        self.ic.storage_dist[initial_carry(item)] = value
         #
         # define the numpyro sample as well
-        self.wsd.ws.ic.storage_nd[item] = numpyro.sample(
+        self.wsd.ws.ic.storage_nd[initial_carry(item)] = numpyro.sample(
                 self.ic.model.mv.sample_sites[initial_carry(item)],
                 fn=value,
                 rng_key=self.ic._split_rng_key(),
                 )
 
+class WorkSpacePrepInference_Val_Attr:
+
+    wsv: WorkSpacePrepInference_Val
+
+    def __init__(self, wsv:WorkSpacePrepInference_Val):
+        self.wsv = wsv
+
+    @property
+    def ic(self) -> InferenceComputation:
+        return self.wsv.ws.ic
+
+
+class WorkSpacePrepInference_Val_General(WorkSpacePrepInference_Val_Attr):
+    """object to represent `ws.val.general`"""
+
+    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.ic.storage_nd[item] = value
+
+
+class WorkSpacePrepInference_Val_InitialCarry(WorkSpacePrepInference_Val_Attr):
+    """object to represent `ws.val.initial_carry`"""
+
+    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.ic.storage_nd[initial_carry(item)] = value
+
+
+class WorkSpacePrepInference_Val_AnnualX(WorkSpacePrepInference_Val_Attr):
+    """object to represent `ws.val.annual_X`"""
+
+    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.ic.storage_nd[item] = value
+
+
+class WorkSpaceStepInference_Dist_Attr:
+
+    wsd: WorkSpaceStepInference_Dist
+
+    def __init__(self, wsd:WorkSpaceStepInference_Dist):
+        self.wsd = wsd
+
+    @property
+    def ic(self) -> InferenceComputation:
+        return self.wsd.ws.ic
+
+    @property
+    def scan_storage(self) -> ScanStorage:
+        return self.wsd.ws.scan_storage
+
+
+class WorkSpaceStepInference_Dist_ThisY(WorkSpaceStepInference_Dist_Attr):
+    """object to represent `ws.dist.this_Y`"""
+
+    def __getitem__(self, item:VarKey) -> Distribution:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        raise NotImplementedError()
+
+
+    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        raise NotImplementedError()
+
+
+class WorkSpaceStepInference_Dist_NextCarry(WorkSpaceStepInference_Dist_Attr):
+    """object to represent `ws.dist.next_carry`"""
+
+    def __getitem__(self, item:VarKey) -> Distribution:
+        return self.scan_storage.next_carry_dist_d[item]
+
+    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.scan_storage.next_carry_dist_d[item] = value
+
+        self.scan_storage.next_carry_d[item] = numpyro.sample(
+                self.ic.model.mv.sample_sites[next_carry(item)],
+                fn=value,
+                rng_key=self.ic._split_rng_key(),
+                )
+
+
+class WorkSpaceStepInference_Val_Attr:
+
+    wsv: WorkSpaceStepInference_Val
+
+    def __init__(self, wsv:WorkSpaceStepInference_Val):
+        self.wsv = wsv
+
+    @property
+    def ic(self) -> InferenceComputation:
+        return self.wsv.ws.ic
+
+    @property
+    def scan_storage(self) -> ScanStorage:
+        return self.wsv.ws.scan_storage
+
+
+class WorkSpaceStepInference_Val_General(WorkSpaceStepInference_Val_Attr):
+    """object to represent `ws.val.general`"""
+
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        return self.ic.storage_nd[item]
+
+
+class WorkSpaceStepInference_Val_ThisCarry(WorkSpaceStepInference_Val_Attr):
+    """object to represent `ws.val.this_carry`"""
+
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        return self.scan_storage.this_carry_d[item]
+
+
+class WorkSpaceStepInference_Val_NextCarry(WorkSpaceStepInference_Val_Attr):
+    """object to represent `ws.val.next_carry`"""
+
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        raise NotImplementedError()
+
+
+    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.scan_storage.next_carry_d[item] = value
+
+
+class WorkSpaceStepInference_Val_ThisX(WorkSpaceStepInference_Val_Attr):
+    """object to represent `ws.val.this_X`"""
+
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        raise NotImplementedError()
+
+
+class WorkSpaceStepInference_Val_ThisY(WorkSpaceStepInference_Val_Attr):
+    """object to represent `ws.val.this_Y`"""
+
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        raise NotImplementedError()
+
+    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.scan_storage.this_Y_d[item] = value
+
 
 class WorkSpacePrepInference_Attr:
 
-    ws: WorkSpace_AnnualScanPrep_Inference
+    ws: InferenceWorkSpace_Prep
 
-    def __init__(self, ws:WorkSpace_AnnualScanPrep_Inference):
+    def __init__(self, ws:InferenceWorkSpace_Prep):
         self.ws = ws
 
 
@@ -244,6 +411,51 @@ class WorkSpacePrepInference_Val(WorkSpacePrepInference_Attr):
         return WorkSpacePrepInference_Val_AnnualX(self)
 
 
+class WorkSpaceStepInference_Attr:
+
+    ws: InferenceWorkSpace_Step
+
+    def __init__(self, ws:InferenceWorkSpace_Step):
+        self.ws = ws
+
+
+class WorkSpaceStepInference_Dist(WorkSpaceStepInference_Attr):
+    """object to represent `ws.dist`"""
+
+    @property
+    def this_Y(self) -> WorkSpaceStepInference_Dist_ThisY:
+        return WorkSpaceStepInference_Dist_ThisY(self)
+
+    @property
+    def next_carry(self) -> WorkSpaceStepInference_Dist_NextCarry:
+        return WorkSpaceStepInference_Dist_NextCarry(self)
+
+
+class WorkSpaceStepInference_Val(WorkSpaceStepInference_Attr):
+    """object to represent `ws.val`"""
+
+    @property
+    def general(self) -> WorkSpaceStepInference_Val_General:
+        return WorkSpaceStepInference_Val_General(self)
+
+    @property
+    def this_carry(self) -> WorkSpaceStepInference_Val_ThisCarry:
+        return WorkSpaceStepInference_Val_ThisCarry(self)
+
+    @property
+    def next_carry(self) -> WorkSpaceStepInference_Val_NextCarry:
+        return WorkSpaceStepInference_Val_NextCarry(self)
+
+    @property
+    def this_X(self) -> WorkSpaceStepInference_Val_ThisX:
+        return WorkSpaceStepInference_Val_ThisX(self)
+
+    @property
+    def this_Y(self) -> WorkSpaceStepInference_Val_ThisY:
+        return WorkSpaceStepInference_Val_ThisY(self)
+
+
+
 class WorkSpace:
     pass
 
@@ -252,61 +464,44 @@ class WorkSpace_AnnualScanPrep(WorkSpace):
     pass
 
 
-class WorkSpace_AnnualScanPrep_Inference(WorkSpace_AnnualScanPrep):
+class InferenceWorkSpace(WorkSpace):
     ic: InferenceComputation
 
     def __init__(self, ic:InferenceComputation):
         self.ic = ic
 
+
+class InferenceWorkSpace_Prep(InferenceWorkSpace):
+
     @property
-    def dist(self):
+    def dist(self) -> WorkSpacePrepInference_Dist:
         return WorkSpacePrepInference_Dist(self)
 
     @property
-    def val(self):
+    def val(self) -> WorkSpacePrepInference_Val:
         return WorkSpacePrepInference_Val(self)
 
 
+class InferenceWorkSpace_Step(InferenceWorkSpace):
+
+    scan_storage: ScanStorage
+
+    def __init__(self, ic:InferenceComputation, scan_storage:ScanStorage):
+        super().__init__(ic=ic)
+        self.scan_storage = scan_storage
+
+    @property
+    def dist(self) -> WorkSpaceStepInference_Dist:
+        return WorkSpaceStepInference_Dist(self)
+
+    @property
+    def val(self) -> WorkSpaceStepInference_Val:
+        return WorkSpaceStepInference_Val(self)
+
+
+
+
 class WorkSpace_AnnualScanPrep_Analysis(WorkSpace_AnnualScanPrep):
-    pass
-
-
-class WorkSpace_AnnualScanStep(WorkSpace):
-
-    @property
-    def general(self) -> NdarrayAccessor_RW:
-        return NdarrayAccessor_RW(self)
-
-    @property
-    def this_carry(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
-
-    @property
-    def next_carry(self) -> dict[VarKey, object]:
-        # read/write
-        raise NotImplementedError()
-
-    @property
-    def this_X(self) -> dict[VarKey, object]:
-        # read only
-        raise NotImplementedError()
-
-    @property
-    def Xs(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
-
-
-    @property
-    def this_Y(self) -> dict[VarKey, object]:
-        # read/write
-        raise NotImplementedError()
-
-
-class WorkSpace_AnnualScanStep_Inference(WorkSpace_AnnualScanStep):
-    pass
-
-
-class WorkSpace_AnnualScanStep_Analysis(WorkSpace_AnnualScanStep):
     pass
 
 
@@ -372,7 +567,7 @@ class ModelElementPhase:
 
     element_id: str
     defining_phase: ModellingPhase
-    annual_scan_dim: NdarrayDim
+    inference_years_dim: NdarrayDim
     mcmc_dim: NdarrayDim
     mv: ModelVariables
 
@@ -380,13 +575,13 @@ class ModelElementPhase:
             self,
             element_id: str,
             defining_phase: ModellingPhase,
-            annual_scan_dim: NdarrayDim,
+            inference_years_dim: NdarrayDim,
             mcmc_dim: NdarrayDim,
             mv: ModelVariables,
             ):
         self.element_id = element_id
         self.defining_phase = defining_phase
-        self.annual_scan_dim = annual_scan_dim
+        self.inference_years_dim = inference_years_dim
         self.mcmc_dim = mcmc_dim
         self.mv = mv
 
@@ -437,7 +632,7 @@ class ModelElementPhase:
             self.mv.this_X_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=_definition_metadata_timeslice(
                         ndm,
-                        annual_scan_dim=self.annual_scan_dim),
+                        inference_years_dim=self.inference_years_dim),
                     defining_element_id='__internal__',
                     defining_phase=ModellingPhase.Inference,
                     defining_subphase=Subphase.Internal_Between_Prep_and_Step)
@@ -457,7 +652,7 @@ class ModelElementPhase:
             self.mv.this_Y_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=_definition_metadata_timeslice(
                         ndm,
-                        annual_scan_dim=self.annual_scan_dim),
+                        inference_years_dim=self.inference_years_dim),
                     defining_element_id=self.element_id,
                     defining_phase=ModellingPhase.Inference,
                     defining_subphase=Subphase.Internal_Between_Prep_and_Step)
@@ -478,14 +673,14 @@ class ModelElementPhase:
         self.mv.general_nd[var_key] = self.mv.Ys_nd[var_key]
 
     def carry(self, var_key,
-              initial_sample:bool,
-              next_sample:bool,
+              sample_initial:bool,
+              sample_next:bool,
               **kwargs):
 
-        initial_ndm = self._ndm_from_kwargs(sample=initial_sample, **kwargs)
+        initial_ndm = self._ndm_from_kwargs(sample=sample_initial, **kwargs)
         this_ndm = self._ndm_from_kwargs(sample=False, **kwargs)
-        next_ndm = self._ndm_from_kwargs(sample=next_sample, **kwargs)
-        final_ndm = self._ndm_from_kwargs(sample=next_sample, **kwargs)
+        next_ndm = self._ndm_from_kwargs(sample=sample_next, **kwargs)
+        final_ndm = self._ndm_from_kwargs(sample=sample_next, **kwargs)
 
         self.mv.initial_carry_nd[var_key] = NdarrayVariableMetadata(
                 definition_metadata=initial_ndm,
@@ -528,8 +723,8 @@ class ModelElementPhase:
 
 class InferenceElement(ModelElementPhase):
 
-    annual_scan_prep_fn:Callable[[WorkSpace_AnnualScanPrep_Inference], None] = _workspace_no_op
-    annual_scan_step_fn:Callable[[WorkSpace_AnnualScanStep_Inference], None] = _workspace_no_op
+    annual_scan_prep_fn:Callable[[InferenceWorkSpace_Prep], None] = _workspace_no_op
+    annual_scan_step_fn:Callable[[InferenceWorkSpace_Step], None] = _workspace_no_op
     annual_scan_post_fn:Callable[[WorkSpace_AnnualScanPost_Inference], None] = _workspace_no_op
 
     def __init__(self, **kwargs):
@@ -537,7 +732,7 @@ class InferenceElement(ModelElementPhase):
 
     def annual_scan_prep(self, *, reads:list[VarKeyRole]|None=None):
         reads = reads or []
-        def decorator(fn: Callable[[WorkSpace_AnnualScanPrep_Inference], None]):
+        def decorator(fn: Callable[[InferenceWorkSpace_Prep], None]):
             #self.reads_by_subphase[Subphase.Prep] = reads
             self.annual_scan_prep_fn = fn
             return fn
@@ -545,7 +740,7 @@ class InferenceElement(ModelElementPhase):
 
     def annual_scan_step(self, *, reads:list[VarKeyRole]|None=None):
         reads = reads or []
-        def decorator(fn: Callable[[WorkSpace_AnnualScanStep_Inference], None]):
+        def decorator(fn: Callable[[InferenceWorkSpace_Step], None]):
             #self.reads_by_subphase[Subphase.Step] = reads
             self.annual_scan_step_fn = fn
             return fn
@@ -615,7 +810,7 @@ class ModelElement(BaseModel):
     def inference(self, ie:InferenceElement) -> None:
         raise NotImplementedError()
 
-    def analysis(self, annual_scan_dim:NdarrayDim) -> ModelElementAnalysis:
+    def analysis(self, inference_years_dim:NdarrayDim) -> ModelElementAnalysis:
         raise NotImplementedError()
 
 
@@ -636,6 +831,9 @@ class ModelVariables(BaseModel):
 
     posterior_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
+    # sample_sites has to be a single one-to-one dictionary because
+    # numpyro's mcmc works on the basis of the string values
+    # to return posteriors for sample sites.
     sample_sites: dict[VarKey, str] = {}
 
 
@@ -655,7 +853,7 @@ class Model(BaseModel):
     model_elements: dict[str, ModelElement] = {}
     _inference_elements: dict[str, InferenceElement] = {}
 
-    annual_scan_dim: NdarrayDim
+    inference_years_dim: NdarrayDim
     mcmc_dim: NdarrayDim
     mv: ModelVariables
 
@@ -666,7 +864,7 @@ class Model(BaseModel):
         self.model_elements[element.identifier] = element
         inference_element = InferenceElement(
                 element_id=element.identifier,
-                annual_scan_dim=self.annual_scan_dim,
+                inference_years_dim=self.inference_years_dim,
                 mcmc_dim=self.mcmc_dim,
                 mv=self.mv,
                 )
@@ -677,7 +875,7 @@ class Model(BaseModel):
 
 def AnnualScanModel():
     return Model(
-            annual_scan_dim=ndarray_dimension('annual_scan_dim'),
+            inference_years_dim=ndarray_dimension('inference_years_dim'),
             mcmc_dim=ndarray_dimension('mcmc_dim'),
             mv=ModelVariables(),
             )
@@ -697,6 +895,27 @@ class VariableMetadata(BaseModel):
 class NdarrayVariableMetadata(VariableMetadata):
 
     definition_metadata: NdarrayDefinitionMetadata
+
+
+class ScanStorage:
+
+    this_carry_d: dict[VarKey, ArrayLike]
+    this_X_d: dict[VarKey, ArrayLike]
+    next_carry_d: dict[VarKey, ArrayLike]
+    this_Y_d: dict[VarKey, ArrayLike]
+
+    next_carry_dist_d: dict[VarKey, Distribution]
+    this_Y_dist_d: dict[VarKey, Distribution]
+
+    def __init__(self, this_carry_d, this_X_d):
+        self.this_carry_d = this_carry_d
+        self.this_X_d = this_X_d
+
+        self.next_carry_d = {}
+        self.this_Y_d = {}
+
+        self.next_carry_dist_d = {}
+        self.this_Y_dist_d = {}
 
 
 class InferenceComputation:
@@ -720,10 +939,60 @@ class InferenceComputation:
         self.rng_key, key = jrandom.split(self.rng_key)
         return key
 
+    def _initial_carry_d(self):
+        initial_carry_d = {
+                var_key.carry_key: val
+                for var_key, val in self.storage_nd.items()
+                if getattr(var_key, 'var_key_type', None) == 'InitialCarry'
+                }
+        return initial_carry_d
+
+    def _X_d(self):
+        # I'm not sure what heuristic / policy to use here.
+        # First try: all var_keys in general_nd whose first shape dim
+        # is the inference_years_dim.
+        rval = {
+                var_key: self.storage_nd[var_key]
+                for var_key, nvm in self.model.mv.general_nd.items()
+                if (
+                    nvm.definition_metadata.value_type.shape
+                    and (
+                        nvm.definition_metadata.value_type.shape[0]
+                        == self.model.inference_years_dim)
+                    and var_key in self.storage_nd)
+                }
+        return rval
+
     def run_once(self):
         for element_id, inference_element in self.model._inference_elements.items():
-            ws = WorkSpace_AnnualScanPrep_Inference(ic=self)
-            inference_element.annual_scan_prep_fn(ws)
+            try:
+                ws = InferenceWorkSpace_Prep(ic=self)
+                inference_element.annual_scan_prep_fn(ws)
+            except Exception as err:
+                err.add_note(f'element_id={element_id}')
+                raise
+
+        def scan_step(this_carry_d, this_X_d):
+            scan_storage = ScanStorage(this_carry_d, this_X_d)
+            for element_id, inference_element in self.model._inference_elements.items():
+                try:
+                    ws = InferenceWorkSpace_Step(
+                            ic=self,
+                            scan_storage=scan_storage)
+                    inference_element.annual_scan_step_fn(ws)
+                except Exception as err:
+                    err.add_note(f'element_id={element_id}')
+                    raise
+            return scan_storage.next_carry_d, scan_storage.this_Y_d
+
+        initial_carry_d = self._initial_carry_d()
+        X_d = self._X_d()
+        final_carry_d, Y_d = scan(scan_step, initial_carry_d, X_d)
+        print('final carry')
+        print(final_carry_d)
+        print('Y_d')
+        print(Y_d)
+
 
 
     def run_mcmc(self):
