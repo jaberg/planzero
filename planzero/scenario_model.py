@@ -3,9 +3,13 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal
 
 import jax.numpy as jnp
+import jax.random as jrandom
+from jax.typing import ArrayLike
+import numpyro
+from numpyro.distributions.distribution import Distribution
 from pydantic import BaseModel, ConfigDict, computed_field
 
 
@@ -52,6 +56,7 @@ VarKey = (str | VarKeyBase)
 
 
 class Posterior(VarKeyBase, frozen=True):
+    var_key_type: Literal['Posterior'] = "Posterior"
     prior_var_key: VarKey
 
 
@@ -60,6 +65,7 @@ def posterior(var_key:VarKey) -> Posterior:
 
 
 class InitialCarry(VarKeyBase, frozen=True):
+    var_key_type: Literal['InitialCarry'] = "InitialCarry"
     carry_key: VarKey
 
 
@@ -67,7 +73,17 @@ def initial_carry(var_key: VarKey) -> InitialCarry:
     return InitialCarry(carry_key=var_key)
 
 
+class NextCarry(VarKeyBase, frozen=True):
+    var_key_type: Literal['NextCarry'] = "NextCarry"
+    carry_key: VarKey
+
+
+def next_carry(var_key: VarKey) -> NextCarry:
+    return NextCarry(carry_key=var_key)
+
+
 class FinalCarry(VarKeyBase, frozen=True):
+    var_key_type: Literal['FinalCarry'] = "FinalCarry"
     carry_key: VarKey
 
 
@@ -146,52 +162,112 @@ VarActionUnion = (
         | VarActionWrite)
 
 
+class WorkSpacePrepInference_Dist_Attr:
 
-class WorkSpaceInterface:
+    wsd: WorkSpacePrepInference_Dist
 
-    element_id:str
+    def __init__(self, wsd:WorkSpacePrepInference_Dist):
+        self.wsd = wsd
 
-    def __init__(self, *, element_id):
-        self.element_id = element_id
+    @property
+    def ic(self) -> InferenceComputation:
+        return self.wsd.ws.ic
+
+
+class WorkSpacePrepInference_Dist_General(WorkSpacePrepInference_Dist_Attr):
+    """object to represent `ws.dist.general`"""
+
+    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.ic.storage_dist[item] = value
+        #
+        # define the numpyro sample as well
+        self.wsd.ws.ic.storage_nd[item] = numpyro.sample(
+                self.ic.model.mv.sample_sites[item],
+                fn=value,
+                rng_key=self.ic._split_rng_key(),
+                )
+
+
+class WorkSpacePrepInference_Dist_InitialCarry(WorkSpacePrepInference_Dist_Attr):
+    """object to represent `ws.dist.initial_carry`"""
+
+    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+
+        self.ic.storage_dist[item] = value
+        #
+        # define the numpyro sample as well
+        self.wsd.ws.ic.storage_nd[item] = numpyro.sample(
+                self.ic.model.mv.sample_sites[initial_carry(item)],
+                fn=value,
+                rng_key=self.ic._split_rng_key(),
+                )
+
+
+class WorkSpacePrepInference_Attr:
+
+    ws: WorkSpace_AnnualScanPrep_Inference
+
+    def __init__(self, ws:WorkSpace_AnnualScanPrep_Inference):
+        self.ws = ws
+
+
+class WorkSpacePrepInference_Dist(WorkSpacePrepInference_Attr):
+    """object to represent `ws.dist`"""
+
+    @property
+    def general(self) -> WorkSpacePrepInference_Dist_General:
+        return WorkSpacePrepInference_Dist_General(self)
+
+    @property
+    def initial_carry(self) -> WorkSpacePrepInference_Dist_InitialCarry:
+        return WorkSpacePrepInference_Dist_InitialCarry(self)
+
+
+class WorkSpacePrepInference_Val(WorkSpacePrepInference_Attr):
+    """object to represent `ws.val`"""
+
+    @property
+    def general(self) -> WorkSpacePrepInference_Val_General:
+        return WorkSpacePrepInference_Val_General(self)
+
+    @property
+    def initial_carry(self) -> WorkSpacePrepInference_Val_InitialCarry:
+        return WorkSpacePrepInference_Val_InitialCarry(self)
+
+    @property
+    def annual_X(self) -> WorkSpacePrepInference_Val_AnnualX:
+        return WorkSpacePrepInference_Val_AnnualX(self)
 
 
 class WorkSpace:
-    reads: set[VarKey]
-
-
-class NdarrayAccessor_RW:
-
-    workspace:WorkSpace
-
-    def __getitem__(self, item) -> jnp.ndarray:
-        if item in self.workspace.reads:
-            return self._storage[item]
-        else:
-            raise KeyError(item)
-
-
-
-class WorkSpace_AnnualScanPrep(WorkSpace):
-
-    @property
-    def general_nd(self) -> NdarrayAccessor_RW:
-        raise NotImplementedError()
-
-    @property
-    def Xs(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
-
-    @property
-    def initial_carry_nd(self) -> NdarrayAccessor_RW:
-        raise NotImplementedError()
-
-
-class WorkSpace_AnnualScanPrep_Inference(WorkSpace_AnnualScanPrep):
     pass
 
 
-class WorkSpace_AnnualScanPrep_Analysis(WorkSpace_AnnualScanPrep):
+class WorkSpace_AnnualScanPrep(WorkSpace):
+    pass
 
+
+class WorkSpace_AnnualScanPrep_Inference(WorkSpace_AnnualScanPrep):
+    ic: InferenceComputation
+
+    def __init__(self, ic:InferenceComputation):
+        self.ic = ic
+
+    @property
+    def dist(self):
+        return WorkSpacePrepInference_Dist(self)
+
+    @property
+    def val(self):
+        return WorkSpacePrepInference_Val(self)
+
+
+class WorkSpace_AnnualScanPrep_Analysis(WorkSpace_AnnualScanPrep):
     pass
 
 
@@ -342,6 +418,9 @@ class ModelElementPhase:
                 definition_metadata=ndm,
                 defining_element_id=self.element_id,
                 defining_phase=self.defining_phase)
+        if ndm.sample:
+            assert var_key not in self.mv.sample_sites
+            self.mv.sample_sites[var_key] = str(var_key)
 
     def annual_X(self, var_key, **kwargs):
         ndm = self._ndm_from_kwargs(**kwargs)
@@ -351,6 +430,9 @@ class ModelElementPhase:
                 defining_element_id=self.element_id,
                 defining_phase=ModellingPhase.Inference,
                 defining_subphase=Subphase.Prep)
+        if ndm.sample:
+            assert var_key not in self.mv.sample_sites
+            self.mv.sample_sites[var_key] = str(var_key)
         try:
             self.mv.this_X_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=_definition_metadata_timeslice(
@@ -410,6 +492,10 @@ class ModelElementPhase:
                 defining_element_id=self.element_id,
                 defining_phase=self.defining_phase,
                 defining_subphase=Subphase.Prep)
+        if initial_ndm.sample:
+            site_var_key = initial_carry(var_key)
+            assert site_var_key not in self.mv.sample_sites
+            self.mv.sample_sites[site_var_key] = str(site_var_key)
 
         self.mv.this_carry_nd[var_key] = NdarrayVariableMetadata(
                 definition_metadata=this_ndm,
@@ -423,11 +509,21 @@ class ModelElementPhase:
                 defining_phase=self.defining_phase,
                 defining_subphase=Subphase.Step)
 
+        if next_ndm.sample:
+            site_var_key = next_carry(var_key)
+            assert site_var_key not in self.mv.sample_sites
+            self.mv.sample_sites[site_var_key] = str(site_var_key)
+
         self.mv.final_carry_nd[var_key] = NdarrayVariableMetadata(
                 definition_metadata=final_ndm,
                 defining_element_id='__internal__',
                 defining_phase=self.defining_phase,
                 defining_subphase=Subphase.Internal_Between_Step_and_Post)
+
+        if next_ndm.sample:
+            site_var_key = final_carry(var_key)
+            assert site_var_key not in self.mv.sample_sites
+            self.mv.sample_sites[site_var_key] = str(site_var_key)
 
 
 class InferenceElement(ModelElementPhase):
@@ -540,6 +636,8 @@ class ModelVariables(BaseModel):
 
     posterior_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
+    sample_sites: dict[VarKey, str] = {}
+
 
 class Model(BaseModel):
     """
@@ -554,14 +652,18 @@ class Model(BaseModel):
     """
     model_config = ConfigDict(strict=True)
 
-    elements: dict[str, ModelElement] = {}
+    model_elements: dict[str, ModelElement] = {}
+    _inference_elements: dict[str, InferenceElement] = {}
 
     annual_scan_dim: NdarrayDim
     mcmc_dim: NdarrayDim
     mv: ModelVariables
 
+    def model_post_init(self, context: Any) -> None:
+        self._inference_elements = {}  #necessary to avoid mutable shared dict?
+
     def add_element(self, element):
-        self.elements[element.identifier] = element
+        self.model_elements[element.identifier] = element
         inference_element = InferenceElement(
                 element_id=element.identifier,
                 annual_scan_dim=self.annual_scan_dim,
@@ -570,6 +672,7 @@ class Model(BaseModel):
                 )
         element.inference(inference_element)
         inference_element._add_posterior_variables()
+        self._inference_elements[element.identifier] = inference_element
 
 
 def AnnualScanModel():
@@ -600,16 +703,30 @@ class InferenceComputation:
 
     model: Model
 
-    storage_nd: dict[VarKey, jnp.ndarray]
+    storage_dist: dict[VarKey, Distribution]
+    storage_nd: dict[VarKey, ArrayLike]
     storage_obj: dict[VarKey, object]
+    rng_key: ArrayLike
 
-    def __init__(self, model:Model):
+    def __init__(self, model:Model, seed:int):
         self.model = model
 
+        self.storage_dist = {}
         self.storage_nd = {}
         self.storage_obj = {}
+        self.rng_key = jrandom.key(seed=seed)
 
-    def run(self):
+    def _split_rng_key(self) -> ArrayLike:
+        self.rng_key, key = jrandom.split(self.rng_key)
+        return key
+
+    def run_once(self):
+        for element_id, inference_element in self.model._inference_elements.items():
+            ws = WorkSpace_AnnualScanPrep_Inference(ic=self)
+            inference_element.annual_scan_prep_fn(ws)
+
+
+    def run_mcmc(self):
         raise NotImplementedError()
 
 
