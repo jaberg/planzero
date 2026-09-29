@@ -2,6 +2,7 @@
 import jax.numpy as jnp
 import numpyro.distributions as dist
 
+from .posterior import *
 from .scenario_model import *
 
 
@@ -30,7 +31,7 @@ class Exponential_Population(ModelElement):
         #@ie.define_carry('y_curr')
         #@ie.define_carry('y_prev')
         @ie.annual_scan_prep()
-        def prep(ws:InferenceWorkSpace_Prep) -> None:
+        def prep(ws:WorkSpace_Prep) -> None:
             ws.dist.general['alpha'] = dist.Kumaraswamy(1.25, 1.25)
             ws.dist.initial_carry['y_curr'] = dist.Normal()
             ws.val.initial_carry['y_prev'] = jnp.zeros(())
@@ -39,7 +40,7 @@ class Exponential_Population(ModelElement):
         
         #@ie.define_Y('mu')
         @ie.annual_scan_step()
-        def step(ws:InferenceWorkSpace_Step) -> None:
+        def step(ws:WorkSpace_Step) -> None:
             coef = -0.5 + 3 * ws.val.general['alpha']
             ws.dist.next_carry['y_curr'] = dist.Normal(
                     coef
@@ -51,16 +52,15 @@ class Exponential_Population(ModelElement):
 
         #@ie.define('generated_data')
         @ie.annual_scan_post(reads=['data'])
-        def post(ws:InferenceWorkSpace_Post) -> None:
+        def post(ws:WorkSpace_Proc) -> None:
             ws.dist.general['generated_data'] = dist.Normal(
                     ws.val.annual_Y['mu'],
                     scale=50.0)
 
 
-
 def test_add_inference_add_vars():
 
-    model = AnnualScanModel()
+    model = AnnualScanModel(n_inference_years=7, n_posterior_years=10)
     model.add_element(Exponential_Population())
 
     print(model.mv.general_nd)
@@ -88,14 +88,14 @@ def test_add_inference_add_vars():
     assert final_carry('y_curr') in model.mv.posterior_nd
     assert initial_carry('y_prev') not in model.mv.posterior_nd
     assert final_carry('y_prev') not in model.mv.posterior_nd
-    assert 'mu' in model.mv.posterior_nd
+    assert 'mu' not in model.mv.posterior_nd
     assert 'sample_data' not in model.mv.posterior_nd
     assert 'data' not in model.mv.posterior_nd
 
 
 def test_add_inference_run_smoke():
 
-    model = AnnualScanModel()
+    model = AnnualScanModel(n_inference_years=7, n_posterior_years=10)
     model.add_element(Exponential_Population())
 
     icomp = InferenceComputation(model=model, seed=123)
@@ -103,7 +103,25 @@ def test_add_inference_run_smoke():
 
 
 def test_add_inference_mcmc_smoke():
-    model = AnnualScanModel()
+    model = AnnualScanModel(n_inference_years=7, n_posterior_years=10)
     model.add_element(Exponential_Population())
 
-    InferenceComputation.run_mcmc(model=model, seed=123)
+    run_mcmc(model=model,
+             seed=123,
+             num_warmup=10,
+             thinning=1,
+             num_samples=10)
+
+def test_posterior_smoke():
+    model = AnnualScanModel(n_inference_years=7, n_posterior_years=10)
+    model.add_element(Exponential_Population())
+    mcmc = run_mcmc(model=model,
+             seed=123,
+             num_warmup=10,
+             thinning=1,
+             num_samples=10)
+
+    pc = PosteriorComputation(
+            model=model,
+            grouped_samples=mcmc.get_samples(group_by_chain=True),
+            )

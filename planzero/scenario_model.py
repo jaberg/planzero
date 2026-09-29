@@ -5,11 +5,10 @@ import enum
 from collections.abc import Callable
 from typing import Any, Literal
 
-from numpyro.contrib.control_flow import scan as numpyro_scan
-import jax.numpy as jnp
 import jax.random as jrandom
-from jax.typing import ArrayLike
 import numpyro
+from jax.typing import ArrayLike
+from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions.distribution import Distribution
 from pydantic import BaseModel, ConfigDict, computed_field
 
@@ -63,6 +62,11 @@ class Posterior(VarKeyBase, frozen=True):
 
 def posterior(var_key:VarKey) -> Posterior:
     return Posterior(prior_var_key=var_key)
+
+
+class GroupedPosterior(VarKeyBase, frozen=True):
+    var_key_type: Literal['GroupedPosterior'] = "GroupedPosterior"
+    prior_var_key: VarKey
 
 
 class InitialCarry(VarKeyBase, frozen=True):
@@ -599,8 +603,6 @@ class InferenceWorkSpace_Post(InferenceWorkSpace):
         return WorkSpacePostInference_Val(self)
 
 
-
-
 def _workspace_no_op(ws: WorkSpace) -> None:
     pass
 
@@ -878,9 +880,6 @@ class ModelElement(BaseModel):
     def inference(self, ie:InferenceElement) -> None:
         raise NotImplementedError()
 
-    def analysis(self, inference_years_dim:NdarrayDim) -> ModelElementAnalysis:
-        raise NotImplementedError()
-
 
 class ModelVariables(BaseModel):
 
@@ -925,6 +924,12 @@ class Model(BaseModel):
     mcmc_dim: NdarrayDim
     mv: ModelVariables
 
+    first_year:int = 1990
+
+    n_inference_years:int
+
+    n_posterior_years:int
+
     def model_post_init(self, context: Any) -> None:
         self._inference_elements = {}  #necessary to avoid mutable shared dict?
 
@@ -941,11 +946,13 @@ class Model(BaseModel):
         self._inference_elements[element.identifier] = inference_element
 
 
-def AnnualScanModel():
+def AnnualScanModel(n_inference_years:int, n_posterior_years:int):
     return Model(
             inference_years_dim=ndarray_dimension('inference_years_dim'),
             mcmc_dim=ndarray_dimension('mcmc_dim'),
             mv=ModelVariables(),
+            n_inference_years=n_inference_years,
+            n_posterior_years=n_posterior_years,
             )
 
 
@@ -1087,40 +1094,30 @@ class InferenceComputation:
                 err.add_note(f'element_id={element_id}')
                 raise
 
-    @classmethod
-    def run_mcmc(
-            cls,
-            model:Model,
-            seed:int,
-            num_warmup:int,
-            thinning:int,
-            num_samples:int,
-            ):
-        from numpyro.infer import MCMC, NUTS
-        def trace_fn():
-            # the seed value is ignored
-            # when running via MCMC
-            obj = cls(model=model, seed=1)
-            obj.run_once()
+def run_mcmc(
+        model:Model,
+        seed:int,
+        num_warmup:int,
+        thinning:int,
+        num_samples:int,
+        ):
+    from numpyro.infer import MCMC, NUTS
+    def trace_fn():
+        # the seed value is ignored
+        # when running via MCMC
+        obj = InferenceComputation(model=model, seed=1)
+        obj.run_once()
 
-        rng_key = jrandom.key(seed=seed)
-        mcmc = MCMC(NUTS(trace_fn),
-                    num_warmup=num_warmup,
-                    thinning=thinning,
-                    num_samples=num_samples)
-        mcmc.run(rng_key=rng_key)
-        mcmc.print_summary()
-        grouped_samples = mcmc.get_samples(group_by_chain=True)
-        for key, val in grouped_samples.items():
-            print(key)
-            print(val.shape)
-            print()
-        return mcmc
-
-
-class AnalysisComputation:
-
-    model: Model
-
-    def __init__(self, model:Model):
-        self.model = model
+    rng_key = jrandom.key(seed=seed)
+    mcmc = MCMC(NUTS(trace_fn),
+                num_warmup=num_warmup,
+                thinning=thinning,
+                num_samples=num_samples)
+    mcmc.run(rng_key=rng_key)
+    mcmc.print_summary()
+    grouped_samples = mcmc.get_samples(group_by_chain=True)
+    for key, val in grouped_samples.items():
+        print(key)
+        print(val.shape)
+        print()
+    return mcmc
