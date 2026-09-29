@@ -298,7 +298,7 @@ class WorkSpaceStepInference_Dist_NextCarry(WorkSpaceStepInference_Dist_Attr):
         self.scan_storage.next_carry_d[item] = numpyro.sample(
                 self.ic.model.mv.sample_sites[next_carry(item)],
                 fn=value,
-                rng_key=self.ic._split_rng_key(),
+                rng_key=self.scan_storage._split_rng_key(),
                 )
 
 
@@ -455,12 +455,90 @@ class WorkSpaceStepInference_Val(WorkSpaceStepInference_Attr):
         return WorkSpaceStepInference_Val_ThisY(self)
 
 
+class WorkSpacePostInference_Attr:
+
+    ws: InferenceWorkSpace_Post
+
+    def __init__(self, ws:InferenceWorkSpace_Post):
+        self.ws = ws
+
+
+class WorkSpacePostInference_Dist_Attr:
+
+    wsd: WorkSpacePostInference_Dist
+
+    def __init__(self, wsd:WorkSpacePostInference_Dist):
+        self.wsd = wsd
+
+    @property
+    def ic(self) -> InferenceComputation:
+        return self.wsd.ws.ic
+
+
+class WorkSpacePostInference_Dist_General(WorkSpacePostInference_Dist_Attr):
+    """object to represent `ws.dist.general`"""
+
+    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+        # check if the element, subphase defines item
+        # check that the shape is correct
+        #
+        self.ic.storage_dist[item] = value
+        #
+        # define the numpyro sample as well
+        self.wsd.ws.ic.storage_nd[item] = numpyro.sample(
+                self.ic.model.mv.sample_sites[item],
+                fn=value,
+                rng_key=self.ic._split_rng_key(),
+                )
+
+
+class WorkSpacePostInference_Dist(WorkSpacePostInference_Attr):
+    """object to represent `ws.dist`"""
+
+    @property
+    def general(self) -> WorkSpacePostInference_Dist_General:
+        return WorkSpacePostInference_Dist_General(self)
+
+
+class WorkSpacePostInference_Val_Attr:
+
+    wsv: WorkSpacePostInference_Val
+
+    def __init__(self, wsv:WorkSpacePostInference_Val):
+        self.wsv = wsv
+
+    @property
+    def ic(self) -> InferenceComputation:
+        return self.wsv.ws.ic
+
+
+class WorkSpacePostInference_Val_General(WorkSpacePostInference_Val_Attr):
+    """object to represent `ws.val.general`"""
+
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        return self.ic.storage_nd[item]
+
+
+class WorkSpacePostInference_Val_AnnualY(WorkSpacePostInference_Val_Attr):
+    """object to represent `ws.val.annual_Y`"""
+
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        return self.ic.storage_nd[item]
+
+
+class WorkSpacePostInference_Val(WorkSpacePostInference_Attr):
+    """object to represent `ws.val`"""
+
+    @property
+    def general(self) -> WorkSpacePostInference_Val_General:
+        return WorkSpacePostInference_Val_General(self)
+
+    @property
+    def annual_Y(self) -> WorkSpacePostInference_Val_AnnualY:
+        return WorkSpacePostInference_Val_AnnualY(self)
+
 
 class WorkSpace:
-    pass
-
-
-class WorkSpace_AnnualScanPrep(WorkSpace):
     pass
 
 
@@ -499,41 +577,17 @@ class InferenceWorkSpace_Step(InferenceWorkSpace):
         return WorkSpaceStepInference_Val(self)
 
 
-
-
-class WorkSpace_AnnualScanPrep_Analysis(WorkSpace_AnnualScanPrep):
-    pass
-
-
-class WorkSpace_AnnualScanPost(WorkSpace):
+class InferenceWorkSpace_Post(InferenceWorkSpace):
 
     @property
-    def general(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
+    def dist(self) -> WorkSpacePostInference_Dist:
+        return WorkSpacePostInference_Dist(self)
 
     @property
-    def initial_carry(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
-
-    @property
-    def final_carry(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
-
-    @property
-    def Xs(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
-
-    @property
-    def Ys(self) -> dict[VarKey, object]:
-        raise NotImplementedError()
+    def val(self) -> WorkSpacePostInference_Val:
+        return WorkSpacePostInference_Val(self)
 
 
-class WorkSpace_AnnualScanPost_Inference(WorkSpace_AnnualScanPost):
-    pass
-
-
-class WorkSpace_AnnualScanPost_Analysis(WorkSpace_AnnualScanPost):
-    pass
 
 
 def _workspace_no_op(ws: WorkSpace) -> None:
@@ -725,7 +779,7 @@ class InferenceElement(ModelElementPhase):
 
     annual_scan_prep_fn:Callable[[InferenceWorkSpace_Prep], None] = _workspace_no_op
     annual_scan_step_fn:Callable[[InferenceWorkSpace_Step], None] = _workspace_no_op
-    annual_scan_post_fn:Callable[[WorkSpace_AnnualScanPost_Inference], None] = _workspace_no_op
+    annual_scan_post_fn:Callable[[InferenceWorkSpace_Post], None] = _workspace_no_op
 
     def __init__(self, **kwargs):
         super().__init__(defining_phase=ModellingPhase.Inference, **kwargs)
@@ -748,7 +802,7 @@ class InferenceElement(ModelElementPhase):
 
     def annual_scan_post(self, *, reads:list[VarKeyRole]|None=None):
         reads = reads or []
-        def decorator(fn: Callable[[WorkSpace_AnnualScanPost_Inference], None]):
+        def decorator(fn: Callable[[InferenceWorkSpace_Post], None]):
             #self.reads_by_subphase[Subphase.Post] = reads
             self.annual_scan_post_fn = fn
             return fn
@@ -917,6 +971,15 @@ class ScanStorage:
         self.next_carry_dist_d = {}
         self.this_Y_dist_d = {}
 
+    def carry_rng(self):
+        if '__rng_key' not in self.next_carry_d:
+            self.next_carry_d['__rng_key'] = self.this_carry_d['__rng_key']
+
+    def _split_rng_key(self):
+        self.next_carry_d['__rng_key'], rval = jrandom.split(
+                self.next_carry_d['__rng_key'])
+        return rval
+
 
 class InferenceComputation:
 
@@ -943,7 +1006,7 @@ class InferenceComputation:
         initial_carry_d = {
                 var_key.carry_key: val
                 for var_key, val in self.storage_nd.items()
-                if getattr(var_key, 'var_key_type', None) == 'InitialCarry'
+                if isinstance(var_key, InitialCarry)
                 }
         return initial_carry_d
 
@@ -974,6 +1037,7 @@ class InferenceComputation:
 
         def scan_step(this_carry_d, this_X_d):
             scan_storage = ScanStorage(this_carry_d, this_X_d)
+            scan_storage.carry_rng()
             for element_id, inference_element in self.model._inference_elements.items():
                 try:
                     ws = InferenceWorkSpace_Step(
@@ -986,13 +1050,26 @@ class InferenceComputation:
             return scan_storage.next_carry_d, scan_storage.this_Y_d
 
         initial_carry_d = self._initial_carry_d()
+        initial_carry_d['__rng_key'] = self._split_rng_key()
         X_d = self._X_d()
+
         final_carry_d, Y_d = scan(scan_step, initial_carry_d, X_d)
         print('final carry')
         print(final_carry_d)
         print('Y_d')
         print(Y_d)
 
+        # TODO: check for collisions
+        self.storage_nd.update(Y_d)
+        self.rng_key = final_carry_d['__rng_key']
+
+        for element_id, inference_element in self.model._inference_elements.items():
+            try:
+                ws = InferenceWorkSpace_Post(ic=self)
+                inference_element.annual_scan_post_fn(ws)
+            except Exception as err:
+                err.add_note(f'element_id={element_id}')
+                raise
 
 
     def run_mcmc(self):

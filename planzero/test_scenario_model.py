@@ -25,6 +25,10 @@ class Exponential_Population(ModelElement):
                    sample=True,
                    observation='data')
 
+        #@ie.define('alpha', sample=True, shape=[])
+        #@ie.define_annual('data', sample=False, annual_shape=[])
+        #@ie.define_carry('y_curr')
+        #@ie.define_carry('y_prev')
         @ie.annual_scan_prep()
         def prep(ws:InferenceWorkSpace_Prep) -> None:
             ws.dist.general['alpha'] = dist.Kumaraswamy(1.25, 1.25)
@@ -33,6 +37,7 @@ class Exponential_Population(ModelElement):
             ws.val.annual_X['data'] = jnp.array(
                     [1000, 1001, 1005, 1006, 1010, 1013, 1020])
         
+        #@ie.define_Y('mu')
         @ie.annual_scan_step()
         def step(ws:InferenceWorkSpace_Step) -> None:
             coef = -0.5 + 3 * ws.val.general['alpha']
@@ -44,8 +49,9 @@ class Exponential_Population(ModelElement):
             ws.val.next_carry['y_prev'] = ws.val.this_carry['y_curr']
             ws.val.this_Y['mu'] = ws.val.this_carry['y_curr'] * 1000
 
+        #@ie.define('generated_data')
         @ie.annual_scan_post(reads=['data'])
-        def post(ws:WorkSpace_AnnualScanPost_Inference) -> None:
+        def post(ws:InferenceWorkSpace_Post) -> None:
             ws.dist.general['generated_data'] = dist.Normal(
                     ws.val.annual_Y['mu'],
                     scale=5.0)
