@@ -5,7 +5,7 @@ import enum
 from collections.abc import Callable
 from typing import Any, Literal
 
-from jax.lax import scan
+from numpyro.contrib.control_flow import scan as numpyro_scan
 import jax.numpy as jnp
 import jax.random as jrandom
 from jax.typing import ArrayLike
@@ -183,12 +183,18 @@ class WorkSpacePrepInference_Dist_General(WorkSpacePrepInference_Dist_Attr):
         # check that the shape is correct
         #
         self.ic.storage_dist[item] = value
-        #
-        # define the numpyro sample as well
+
+        obs_var_key = self.ic.model.mv.general_nd[item].definition_metadata.observation
+        if obs_var_key:
+            obs = self.ic.storage_nd[obs_var_key]
+        else:
+            obs = None
+
         self.wsd.ws.ic.storage_nd[item] = numpyro.sample(
                 self.ic.model.mv.sample_sites[item],
                 fn=value,
                 rng_key=self.ic._split_rng_key(),
+                obs=obs,
                 )
 
 
@@ -200,8 +206,7 @@ class WorkSpacePrepInference_Dist_InitialCarry(WorkSpacePrepInference_Dist_Attr)
         # check that the shape is correct
 
         self.ic.storage_dist[initial_carry(item)] = value
-        #
-        # define the numpyro sample as well
+
         self.wsd.ws.ic.storage_nd[initial_carry(item)] = numpyro.sample(
                 self.ic.model.mv.sample_sites[initial_carry(item)],
                 fn=value,
@@ -483,13 +488,19 @@ class WorkSpacePostInference_Dist_General(WorkSpacePostInference_Dist_Attr):
         # check that the shape is correct
         #
         self.ic.storage_dist[item] = value
-        #
+
         # define the numpyro sample as well
-        self.wsd.ws.ic.storage_nd[item] = numpyro.sample(
+        obs_var_key = self.ic.model.mv.general_nd[item].definition_metadata.observation
+        if obs_var_key:
+            obs = self.ic.storage_nd[obs_var_key]
+        else:
+            obs = None
+
+        self.ic.storage_nd[item] = numpyro.sample(
                 self.ic.model.mv.sample_sites[item],
                 fn=value,
                 rng_key=self.ic._split_rng_key(),
-                )
+                obs=obs)
 
 
 class WorkSpacePostInference_Dist(WorkSpacePostInference_Attr):
@@ -735,6 +746,9 @@ class ModelElementPhase:
         this_ndm = self._ndm_from_kwargs(sample=False, **kwargs)
         next_ndm = self._ndm_from_kwargs(sample=sample_next, **kwargs)
         final_ndm = self._ndm_from_kwargs(sample=sample_next, **kwargs)
+
+        if 'observation' in kwargs:
+            raise NotImplementedError()
 
         self.mv.initial_carry_nd[var_key] = NdarrayVariableMetadata(
                 definition_metadata=initial_ndm,
@@ -1027,7 +1041,8 @@ class InferenceComputation:
         return rval
 
     def run_once(self):
-        for element_id, inference_element in self.model._inference_elements.items():
+        inference_elements = self.model._inference_elements
+        for element_id, inference_element in inference_elements.items():
             try:
                 ws = InferenceWorkSpace_Prep(ic=self)
                 inference_element.annual_scan_prep_fn(ws)
@@ -1035,10 +1050,11 @@ class InferenceComputation:
                 err.add_note(f'element_id={element_id}')
                 raise
 
+
         def scan_step(this_carry_d, this_X_d):
             scan_storage = ScanStorage(this_carry_d, this_X_d)
             scan_storage.carry_rng()
-            for element_id, inference_element in self.model._inference_elements.items():
+            for element_id, inference_element in inference_elements.items():
                 try:
                     ws = InferenceWorkSpace_Step(
                             ic=self,
@@ -1053,7 +1069,7 @@ class InferenceComputation:
         initial_carry_d['__rng_key'] = self._split_rng_key()
         X_d = self._X_d()
 
-        final_carry_d, Y_d = scan(scan_step, initial_carry_d, X_d)
+        final_carry_d, Y_d = numpyro_scan(scan_step, initial_carry_d, X_d)
         print('final carry')
         print(final_carry_d)
         print('Y_d')
@@ -1063,7 +1079,7 @@ class InferenceComputation:
         self.storage_nd.update(Y_d)
         self.rng_key = final_carry_d['__rng_key']
 
-        for element_id, inference_element in self.model._inference_elements.items():
+        for element_id, inference_element in inference_elements.items():
             try:
                 ws = InferenceWorkSpace_Post(ic=self)
                 inference_element.annual_scan_post_fn(ws)
@@ -1071,10 +1087,35 @@ class InferenceComputation:
                 err.add_note(f'element_id={element_id}')
                 raise
 
+    @classmethod
+    def run_mcmc(
+            cls,
+            model:Model,
+            seed:int,
+            num_warmup:int,
+            thinning:int,
+            num_samples:int,
+            ):
+        from numpyro.infer import MCMC, NUTS
+        def trace_fn():
+            # the seed value is ignored
+            # when running via MCMC
+            obj = cls(model=model, seed=1)
+            obj.run_once()
 
-    def run_mcmc(self):
-        raise NotImplementedError()
-
+        rng_key = jrandom.key(seed=seed)
+        mcmc = MCMC(NUTS(trace_fn),
+                    num_warmup=num_warmup,
+                    thinning=thinning,
+                    num_samples=num_samples)
+        mcmc.run(rng_key=rng_key)
+        mcmc.print_summary()
+        grouped_samples = mcmc.get_samples(group_by_chain=True)
+        for key, val in grouped_samples.items():
+            print(key)
+            print(val.shape)
+            print()
+        return mcmc
 
 
 class AnalysisComputation:

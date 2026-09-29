@@ -54,7 +54,7 @@ class Exponential_Population(ModelElement):
         def post(ws:InferenceWorkSpace_Post) -> None:
             ws.dist.general['generated_data'] = dist.Normal(
                     ws.val.annual_Y['mu'],
-                    scale=5.0)
+                    scale=50.0)
 
 
 
@@ -93,11 +93,17 @@ def test_add_inference_add_vars():
     assert 'data' not in model.mv.posterior_nd
 
 
-def test_add_inference_run():
+def test_add_inference_run_smoke():
 
     model = AnnualScanModel()
     model.add_element(Exponential_Population())
 
     icomp = InferenceComputation(model=model, seed=123)
     icomp.run_once()
-    assert 1
+
+
+def test_add_inference_mcmc_smoke():
+    model = AnnualScanModel()
+    model.add_element(Exponential_Population())
+
+    InferenceComputation.run_mcmc(model=model, seed=123)
