@@ -4,6 +4,8 @@ import numpyro.distributions as dist
 from .base import (
     ndarray_dim,
     years_dim,
+    observation,
+    observation_valid,
 )
 from .computation import (
     ModelElement,
@@ -29,7 +31,7 @@ class Example_Population(ModelElement):
         ws.dist.general['alpha'] = dist.Kumaraswamy(1.25, 1.25)
         ws.dist.initial_carry['y_curr'] = dist.Normal()
         ws.val.initial_carry['y_prev'] = jnp.zeros(())
-        ws.val.annual_X['data'] = jnp.array(
+        ws.val.general['data'] = jnp.array(
                 [1000.0, 1001.1, 1005.2, 1006, 1010, 1013, 1020])
 
     @define_annual('mu', sampled=False, annual_shape=[])
@@ -49,11 +51,11 @@ class Example_Population(ModelElement):
         if ws.n_years < 7:
             raise NotImplementedError()
         elif ws.n_years == 7:
-            ws.obs.general['generated_data'] = ws.val.general['data']
+            ws.val.general[observation('generated_data')] = ws.val.general['data']
         else:
-            ws.obs.general['generated_data'] = jnp.concatenate(
+            ws.val.general[observation('generated_data')] = jnp.concatenate(
                     [ws.val.general['data'], jnp.zeros(ws.n_years - 7)])
-            ws.obs_valid.general['generated_data'] = ws.years < 1997
+            ws.val.general[observation_valid('generated_data')] = ws.years < 1997
         ws.dist.general['generated_data'] = dist.Normal(
-                ws.val.annual_Y['mu'],
+                ws.val.general['mu'],
                 scale=50.0)

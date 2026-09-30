@@ -1,20 +1,21 @@
 
 import jax.random as jrandom
+import pytest
 
 from .base import (
+    Phase,
     final_carry,
     initial_carry,
 )
-from .computation import Computation, run_mcmc, Model
+from .computation import Computation, Model, run_mcmc
 from .example_population import Example_Population
 
-import pytest
 
 @pytest.fixture
 
 def model():
     model = Model(
-            first_year=17,
+            first_year=1990,
             n_prior_years=7,
             n_posterior_years=10)
     model.add_element(Example_Population())
@@ -41,8 +42,11 @@ def test_add_inference_add_vars(model):
 
 
 def test_add_inference_run_smoke(model):
-    comp = Computation(model=model, seed=123)
-    comp.run_once()
+    comp = Computation(
+            model=model,
+            rng_key=jrandom.key(123),
+            grouped_samples=None)
+    comp.run_phase(Phase.Prior)
 
 
 def test_add_inference_mcmc_smoke(model):

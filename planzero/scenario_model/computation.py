@@ -4,6 +4,7 @@ from __future__ import annotations
 import jax.numpy as jnp
 import jax.random as jrandom
 import numpyro
+from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions.distribution import Distribution
@@ -11,130 +12,142 @@ from pydantic import BaseModel, computed_field
 
 from .base import (
     InitialCarry,
-    ModellingPhase,
     ModelVariables,
     NdarrayDefinitionMetadata,
     NdarrayDim,
     NdarrayType,
     NdarrayVariableMetadata,
+    Phase,
     Subphase,
     VarKey,
     final_carry,
     initial_carry,
     next_carry,
+    observation,
+    observation_valid,
     years_dim,
 )
 
 
-class WorkSpacePrepInference_Dist_Attr:
+class WorkSpacePrep_Dist_Attr:
 
-    wsd: WorkSpacePrepInference_Dist
+    wsd: WorkSpacePrep_Dist | WorkSpaceProc_Dist
+    comp: Computation
 
-    def __init__(self, wsd:WorkSpacePrepInference_Dist):
+    def __init__(self, wsd:WorkSpacePrep_Dist|WorkSpaceProc_Dist):
         self.wsd = wsd
-
-    @property
-    def ic(self) -> InferenceComputation:
-        return self.wsd.ws.ic
+        self.comp = self.wsd.ws.comp
 
 
-class WorkSpacePrepInference_Dist_General(WorkSpacePrepInference_Dist_Attr):
+class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
     """object to represent `ws.dist.general`"""
 
     def __setitem__(self, item:VarKey, value:Distribution) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
-        self.ic.storage_dist[item] = value
+        # TODO: check that the shape is correct
+        # TODO: check that the item is supposed to be sampled
+        self.comp.storage_dist[item] = value
 
-        obs_var_key = self.ic.model.mv.general_nd[item].definition_metadata.observation
-        if obs_var_key:
-            obs = self.ic.storage_nd[obs_var_key]
+        obs = self.comp.storage_nd.get(observation(item))
+        obs_valid = self.comp.storage_nd.get(observation_valid(item))
+
+        if self.comp.phase == Phase.Prior:
+            if obs is None and obs_valid is None:
+                # TODO: check that the shape is correct
+                self.comp.storage_nd[item] = numpyro.sample(
+                        self.comp.model.mv.sample_sites[item],
+                        fn=value,
+                        rng_key=self.comp._split_rng_key(),
+                        )
+            elif obs_valid is None:
+                self.comp.storage_nd[item] = numpyro.sample(
+                        self.comp.model.mv.sample_sites[item],
+                        fn=value,
+                        rng_key=self.comp._split_rng_key(),
+                        obs=obs,
+                        )
+            else:
+                raise NotImplementedError()
         else:
-            obs = None
-
-        self.wsd.ws.ic.storage_nd[item] = numpyro.sample(
-                self.ic.model.mv.sample_sites[item],
-                fn=value,
-                rng_key=self.ic._split_rng_key(),
-                obs=obs,
-                )
+            raise NotImplementedError()
 
 
-class WorkSpacePrepInference_Dist_InitialCarry(WorkSpacePrepInference_Dist_Attr):
+class WorkSpacePrep_Dist_InitialCarry(WorkSpacePrep_Dist_Attr):
     """object to represent `ws.dist.initial_carry`"""
 
     def __setitem__(self, item:VarKey, value:Distribution) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
+        # TODO: check that the shape is correct
+        # TODO: check that the item is supposed to be sampled
+        self.comp.storage_dist[initial_carry(item)] = value
 
-        self.ic.storage_dist[initial_carry(item)] = value
 
-        self.wsd.ws.ic.storage_nd[initial_carry(item)] = numpyro.sample(
-                self.ic.model.mv.sample_sites[initial_carry(item)],
-                fn=value,
-                rng_key=self.ic._split_rng_key(),
-                )
+        obs = self.comp.storage_nd.get(observation(initial_carry(item)))
+        obs_valid = self.comp.storage_nd.get(observation_valid(initial_carry(item)))
 
-class WorkSpacePrepInference_Val_Attr:
+        if self.comp.phase == Phase.Prior:
+            if obs or obs_valid:
+                raise NotImplementedError()
+            else:
+                # TODO: check that the shape is correct
+                self.comp.storage_nd[initial_carry(item)] = numpyro.sample(
+                        self.comp.model.mv.sample_sites[initial_carry(item)],
+                        fn=value,
+                        rng_key=self.comp._split_rng_key(),
+                        )
+        else:
+            raise NotImplementedError()
 
-    wsv: WorkSpacePrepInference_Val
 
-    def __init__(self, wsv:WorkSpacePrepInference_Val):
+class WorkSpacePrep_Val_Attr:
+
+    wsv: WorkSpacePrep_Val | WorkSpaceProc_Val
+    comp: Computation
+
+    def __init__(self, wsv:WorkSpacePrep_Val | WorkSpaceProc_Val):
         self.wsv = wsv
-
-    @property
-    def ic(self) -> InferenceComputation:
-        return self.wsv.ws.ic
+        self.comp = self.wsv.ws.comp
 
 
-class WorkSpacePrepInference_Val_General(WorkSpacePrepInference_Val_Attr):
+class WorkSpacePrep_Val_General(WorkSpacePrep_Val_Attr):
     """object to represent `ws.val.general`"""
 
+    def __getitem__(self, item:VarKey) -> ArrayLike:
+        return self.comp.storage_nd[item]
+
     def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
+        # TODO: check if the element, subphase defines item
+        # TODO: check that the shape is correct
+        # TODO: check that the item is not supposed to be sampled
         #
-        self.ic.storage_nd[item] = value
+        # TODO: if item is an `observation(obs_var_key)`
+        #    check that obs_var_key has nothing in storage_nd or storage_dist
+        #    because observations have to be defined before sampling.
+        #    ditto if item is an `observation_valid(obs_var_key)`
+        self.comp.storage_nd[item] = value
 
 
-class WorkSpacePrepInference_Val_InitialCarry(WorkSpacePrepInference_Val_Attr):
+class WorkSpacePrep_Val_InitialCarry(WorkSpacePrep_Val_Attr):
     """object to represent `ws.val.initial_carry`"""
 
     def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
-        self.ic.storage_nd[initial_carry(item)] = value
+        # TODO: check if the element, subphase defines item
+        # TODO: check that the shape is correct
+        # TODO: check that the item is not supposed to be sampled
+        self.comp.storage_nd[initial_carry(item)] = value
 
 
-class WorkSpacePrepInference_Val_AnnualX(WorkSpacePrepInference_Val_Attr):
-    """object to represent `ws.val.annual_X`"""
+class WorkSpaceStep_Dist_Attr:
 
-    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
-        self.ic.storage_nd[item] = value
+    wsd: WorkSpaceStep_Dist
+    comp: Computation
+    scan_storage: ScanStorage
 
-
-class WorkSpaceStepInference_Dist_Attr:
-
-    wsd: WorkSpaceStepInference_Dist
-
-    def __init__(self, wsd:WorkSpaceStepInference_Dist):
+    def __init__(self, wsd:WorkSpaceStep_Dist):
         self.wsd = wsd
-
-    @property
-    def ic(self) -> InferenceComputation:
-        return self.wsd.ws.ic
-
-    @property
-    def scan_storage(self) -> ScanStorage:
-        return self.wsd.ws.scan_storage
+        self.comp = self.wsd.ws.comp
+        self.scan_storage = wsd.ws.scan_storage
 
 
-class WorkSpaceStepInference_Dist_ThisY(WorkSpaceStepInference_Dist_Attr):
+class WorkSpaceStep_Dist_ThisY(WorkSpaceStep_Dist_Attr):
     """object to represent `ws.dist.this_Y`"""
 
     def __getitem__(self, item:VarKey) -> Distribution:
@@ -151,99 +164,98 @@ class WorkSpaceStepInference_Dist_ThisY(WorkSpaceStepInference_Dist_Attr):
         raise NotImplementedError()
 
 
-class WorkSpaceStepInference_Dist_NextCarry(WorkSpaceStepInference_Dist_Attr):
+class WorkSpaceStep_Dist_NextCarry(WorkSpaceStep_Dist_Attr):
     """object to represent `ws.dist.next_carry`"""
 
     def __getitem__(self, item:VarKey) -> Distribution:
         return self.scan_storage.next_carry_dist_d[item]
 
     def __setitem__(self, item:VarKey, value:Distribution) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
+        # TODO: check if the element, subphase defines item
+        # TODO: check that the shape is correct
+        # TODO: check that the item is supposed to be sampled
         #
         self.scan_storage.next_carry_dist_d[item] = value
 
-        self.scan_storage.next_carry_d[item] = numpyro.sample(
-                self.ic.model.mv.sample_sites[next_carry(item)],
-                fn=value,
-                rng_key=self.scan_storage._split_rng_key(),
-                )
+        obs = self.comp.storage_nd.get(observation(item))
+        obs_valid = self.comp.storage_nd.get(observation_valid(item))
+
+        if self.comp.phase == Phase.Prior:
+            if obs or obs_valid:
+                raise NotImplementedError()
+            else:
+                # TODO: check that the shape is correct
+                self.scan_storage.next_carry_d[item] = numpyro.sample(
+                        self.comp.model.mv.sample_sites[next_carry(item)],
+                        fn=value,
+                        rng_key=self.scan_storage._split_rng_key())
+        else:
+            raise NotImplementedError()
 
 
-class WorkSpaceStepInference_Val_Attr:
+class WorkSpaceStep_Val_Attr:
 
-    wsv: WorkSpaceStepInference_Val
+    wsv: WorkSpaceStep_Val
+    comp: Computation
+    scan_storage: ScanStorage
 
-    def __init__(self, wsv:WorkSpaceStepInference_Val):
+    def __init__(self, wsv:WorkSpaceStep_Val):
         self.wsv = wsv
-
-    @property
-    def ic(self) -> InferenceComputation:
-        return self.wsv.ws.ic
-
-    @property
-    def scan_storage(self) -> ScanStorage:
-        return self.wsv.ws.scan_storage
+        self.comp = self.wsv.ws.comp
+        self.scan_storage = wsv.ws.scan_storage
 
 
-class WorkSpaceStepInference_Val_General(WorkSpaceStepInference_Val_Attr):
+class WorkSpaceStep_Val_General(WorkSpaceStep_Val_Attr):
     """object to represent `ws.val.general`"""
 
     def __getitem__(self, item:VarKey) -> ArrayLike:
-        return self.ic.storage_nd[item]
+        return self.comp.storage_nd[item]
 
 
-class WorkSpaceStepInference_Val_ThisCarry(WorkSpaceStepInference_Val_Attr):
+class WorkSpaceStep_Val_ThisCarry(WorkSpaceStep_Val_Attr):
     """object to represent `ws.val.this_carry`"""
 
     def __getitem__(self, item:VarKey) -> ArrayLike:
         return self.scan_storage.this_carry_d[item]
 
 
-class WorkSpaceStepInference_Val_NextCarry(WorkSpaceStepInference_Val_Attr):
+class WorkSpaceStep_Val_NextCarry(WorkSpaceStep_Val_Attr):
     """object to represent `ws.val.next_carry`"""
 
     def __getitem__(self, item:VarKey) -> ArrayLike:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
+        # TODO: check if the element, subphase defines item
+        # TODO: check that the shape is correct
         raise NotImplementedError()
 
-
     def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
+        # TODO: check if the element, subphase defines item
+        # TODO: check that the shape is correct
+        # TODO: check that the item is not supposed to be sampled
         self.scan_storage.next_carry_d[item] = value
 
 
-class WorkSpaceStepInference_Val_ThisX(WorkSpaceStepInference_Val_Attr):
+class WorkSpaceStep_Val_ThisX(WorkSpaceStep_Val_Attr):
     """object to represent `ws.val.this_X`"""
 
     def __getitem__(self, item:VarKey) -> ArrayLike:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
         raise NotImplementedError()
 
 
-class WorkSpaceStepInference_Val_ThisY(WorkSpaceStepInference_Val_Attr):
+class WorkSpaceStep_Val_ThisY(WorkSpaceStep_Val_Attr):
     """object to represent `ws.val.this_Y`"""
 
     def __getitem__(self, item:VarKey) -> ArrayLike:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
         raise NotImplementedError()
 
     def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
+        # TODO: check if the element, subphase defines item
+        # TODO: check that the shape is correct
+        # TODO: check that the item is not supposed to be sampled
         #
         self.scan_storage.this_Y_d[item] = value
 
 
-class WorkSpacePrepInference_Attr:
+class WorkSpacePrep_Attr:
 
     ws: WorkSpace_Prep
 
@@ -251,35 +263,31 @@ class WorkSpacePrepInference_Attr:
         self.ws = ws
 
 
-class WorkSpacePrepInference_Dist(WorkSpacePrepInference_Attr):
+class WorkSpacePrep_Dist(WorkSpacePrep_Attr):
     """object to represent `ws.dist`"""
 
     @property
-    def general(self) -> WorkSpacePrepInference_Dist_General:
-        return WorkSpacePrepInference_Dist_General(self)
+    def general(self) -> WorkSpacePrep_Dist_General:
+        return WorkSpacePrep_Dist_General(self)
 
     @property
-    def initial_carry(self) -> WorkSpacePrepInference_Dist_InitialCarry:
-        return WorkSpacePrepInference_Dist_InitialCarry(self)
+    def initial_carry(self) -> WorkSpacePrep_Dist_InitialCarry:
+        return WorkSpacePrep_Dist_InitialCarry(self)
 
 
-class WorkSpacePrepInference_Val(WorkSpacePrepInference_Attr):
+class WorkSpacePrep_Val(WorkSpacePrep_Attr):
     """object to represent `ws.val`"""
 
     @property
-    def general(self) -> WorkSpacePrepInference_Val_General:
-        return WorkSpacePrepInference_Val_General(self)
+    def general(self) -> WorkSpacePrep_Val_General:
+        return WorkSpacePrep_Val_General(self)
 
     @property
-    def initial_carry(self) -> WorkSpacePrepInference_Val_InitialCarry:
-        return WorkSpacePrepInference_Val_InitialCarry(self)
-
-    @property
-    def annual_X(self) -> WorkSpacePrepInference_Val_AnnualX:
-        return WorkSpacePrepInference_Val_AnnualX(self)
+    def initial_carry(self) -> WorkSpacePrep_Val_InitialCarry:
+        return WorkSpacePrep_Val_InitialCarry(self)
 
 
-class WorkSpaceStepInference_Attr:
+class WorkSpaceStep_Attr:
 
     ws: WorkSpace_Step
 
@@ -287,219 +295,127 @@ class WorkSpaceStepInference_Attr:
         self.ws = ws
 
 
-class WorkSpaceStepInference_Dist(WorkSpaceStepInference_Attr):
+class WorkSpaceStep_Dist(WorkSpaceStep_Attr):
     """object to represent `ws.dist`"""
 
     @property
-    def this_Y(self) -> WorkSpaceStepInference_Dist_ThisY:
-        return WorkSpaceStepInference_Dist_ThisY(self)
+    def this_Y(self) -> WorkSpaceStep_Dist_ThisY:
+        return WorkSpaceStep_Dist_ThisY(self)
 
     @property
-    def next_carry(self) -> WorkSpaceStepInference_Dist_NextCarry:
-        return WorkSpaceStepInference_Dist_NextCarry(self)
+    def next_carry(self) -> WorkSpaceStep_Dist_NextCarry:
+        return WorkSpaceStep_Dist_NextCarry(self)
 
 
-class WorkSpaceStepInference_Val(WorkSpaceStepInference_Attr):
+class WorkSpaceStep_Val(WorkSpaceStep_Attr):
     """object to represent `ws.val`"""
 
     @property
-    def general(self) -> WorkSpaceStepInference_Val_General:
-        return WorkSpaceStepInference_Val_General(self)
+    def general(self) -> WorkSpaceStep_Val_General:
+        return WorkSpaceStep_Val_General(self)
 
     @property
-    def this_carry(self) -> WorkSpaceStepInference_Val_ThisCarry:
-        return WorkSpaceStepInference_Val_ThisCarry(self)
+    def this_carry(self) -> WorkSpaceStep_Val_ThisCarry:
+        return WorkSpaceStep_Val_ThisCarry(self)
 
     @property
-    def next_carry(self) -> WorkSpaceStepInference_Val_NextCarry:
-        return WorkSpaceStepInference_Val_NextCarry(self)
+    def next_carry(self) -> WorkSpaceStep_Val_NextCarry:
+        return WorkSpaceStep_Val_NextCarry(self)
 
     @property
-    def this_X(self) -> WorkSpaceStepInference_Val_ThisX:
-        return WorkSpaceStepInference_Val_ThisX(self)
+    def this_X(self) -> WorkSpaceStep_Val_ThisX:
+        return WorkSpaceStep_Val_ThisX(self)
 
     @property
-    def this_Y(self) -> WorkSpaceStepInference_Val_ThisY:
-        return WorkSpaceStepInference_Val_ThisY(self)
+    def this_Y(self) -> WorkSpaceStep_Val_ThisY:
+        return WorkSpaceStep_Val_ThisY(self)
 
 
-class WorkSpacePostInference_Attr:
+class WorkSpaceProc_Attr:
 
-    ws: WorkSpace_Post
+    ws: WorkSpace_Proc
 
-    def __init__(self, ws:WorkSpace_Post):
+    def __init__(self, ws:WorkSpace_Proc):
         self.ws = ws
 
 
-class WorkSpacePostInference_Dist_Attr:
-
-    wsd: WorkSpacePostInference_Dist
-
-    def __init__(self, wsd:WorkSpacePostInference_Dist):
-        self.wsd = wsd
-
-    @property
-    def ic(self) -> InferenceComputation:
-        return self.wsd.ws.ic
-
-
-class WorkSpacePostInference_Dist_General(WorkSpacePostInference_Dist_Attr):
-    """object to represent `ws.dist.general`"""
-
-    def __setitem__(self, item:VarKey, value:Distribution) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
-        self.ic.storage_dist[item] = value
-
-        # define the numpyro sample as well
-        obs_var_key = self.ic.model.mv.general_nd[item].definition_metadata.observation
-        if obs_var_key:
-            obs = self.ic.storage_nd[obs_var_key]
-        else:
-            obs = None
-
-        self.ic.storage_nd[item] = numpyro.sample(
-                self.ic.model.mv.sample_sites[item],
-                fn=value,
-                rng_key=self.ic._split_rng_key(),
-                obs=obs)
-
-
-class WorkSpacePostInference_Dist(WorkSpacePostInference_Attr):
+class WorkSpaceProc_Dist(WorkSpaceProc_Attr):
     """object to represent `ws.dist`"""
 
     @property
-    def general(self) -> WorkSpacePostInference_Dist_General:
-        return WorkSpacePostInference_Dist_General(self)
+    def general(self) -> WorkSpacePrep_Dist_General:
+        return WorkSpacePrep_Dist_General(self)
 
 
-class WorkSpacePostInference_Val_Attr:
-
-    wsv: WorkSpacePostInference_Val
-
-    def __init__(self, wsv:WorkSpacePostInference_Val):
-        self.wsv = wsv
-
-    @property
-    def ic(self) -> InferenceComputation:
-        return self.wsv.ws.ic
-
-
-class WorkSpacePostInference_Val_General(WorkSpacePostInference_Val_Attr):
-    """object to represent `ws.val.general`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        return self.ic.storage_nd[item]
-
-
-class WorkSpacePostInference_Val_AnnualY(WorkSpacePostInference_Val_Attr):
-    """object to represent `ws.val.annual_Y`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        return self.ic.storage_nd[item]
-
-
-class WorkSpacePostInference_Val(WorkSpacePostInference_Attr):
+class WorkSpaceProc_Val(WorkSpaceProc_Attr):
     """object to represent `ws.val`"""
 
     @property
-    def general(self) -> WorkSpacePostInference_Val_General:
-        return WorkSpacePostInference_Val_General(self)
+    def general(self) -> WorkSpacePrep_Val_General:
+        return WorkSpacePrep_Val_General(self)
 
-    @property
-    def annual_Y(self) -> WorkSpacePostInference_Val_AnnualY:
-        return WorkSpacePostInference_Val_AnnualY(self)
-
-
-class WorkSpacePostInference_Obs(WorkSpacePostInference_Attr):
-    """object to represent `ws.obs`"""
-
-    @property
-    def general(self) -> WorkSpacePostInference_Obs_General:
-        return WorkSpacePostInference_Obs_General(self)
-
-
-class WorkSpacePostInference_ObsValid(WorkSpacePostInference_Attr):
-    """object to represent `ws.obs_valid`"""
-
-    @property
-    def general(self) -> WorkSpacePostInference_ObsValid_General:
-        return WorkSpacePostInference_ObsValid_General(self)
+    # TODO: initial_carry
+    # TODO: final_carry
 
 
 class WorkSpace:
 
     year_0: int
     n_years: int
-    years: jnp.ndarray
-    phase: ModellingPhase
-    subphase: Subphase
+    phase: Phase
     comp: Computation
-
-    def __init__(self, ic:InferenceComputation):
-        super().__init__()
-        self.comp = comp
 
     def __init__(
             self,
             year_0:int,
             n_years:int,
-            phase:ModellingPhase,
-            subphase:Subphase):
+            phase:Phase,
+            comp:Computation,
+            ):
         self.year_0 = year_0
         self.n_years = n_years
         assert n_years >= 0
-        self.years = jnp.arange(year_0, year_0 + n_years)
         self.phase = phase
-        self.subphase = subphase
+        self.comp = comp
 
 
 class WorkSpace_Prep(WorkSpace):
 
     @property
-    def dist(self) -> WorkSpacePrepInference_Dist:
-        return WorkSpacePrepInference_Dist(self)
+    def dist(self) -> WorkSpacePrep_Dist:
+        return WorkSpacePrep_Dist(self)
 
     @property
-    def val(self) -> WorkSpacePrepInference_Val:
-        return WorkSpacePrepInference_Val(self)
+    def val(self) -> WorkSpacePrep_Val:
+        return WorkSpacePrep_Val(self)
 
 
 class WorkSpace_Step(WorkSpace):
 
     scan_storage: ScanStorage
 
-    def __init__(self, ic:InferenceComputation, scan_storage:ScanStorage):
-        super().__init__(ic=ic)
+    def __init__(self, scan_storage:ScanStorage, **kwargs):
+        super().__init__(**kwargs)
         self.scan_storage = scan_storage
 
     @property
-    def dist(self) -> WorkSpaceStepInference_Dist:
-        return WorkSpaceStepInference_Dist(self)
+    def dist(self) -> WorkSpaceStep_Dist:
+        return WorkSpaceStep_Dist(self)
 
     @property
-    def val(self) -> WorkSpaceStepInference_Val:
-        return WorkSpaceStepInference_Val(self)
+    def val(self) -> WorkSpaceStep_Val:
+        return WorkSpaceStep_Val(self)
 
 
 class WorkSpace_Proc(WorkSpace):
 
     @property
-    def dist(self) -> WorkSpacePostInference_Dist:
-        return WorkSpacePostInference_Dist(self)
+    def dist(self) -> WorkSpaceProc_Dist:
+        return WorkSpaceProc_Dist(self)
 
     @property
-    def val(self) -> WorkSpacePostInference_Val:
-        return WorkSpacePostInference_Val(self)
-
-    @property
-    def obs(self) -> WorkSpacePostInference_Obs:
-        return WorkSpacePostInference_Obs(self)
-
-    @property
-    def obs_valid(self) -> WorkSpacePostInference_ObsValid:
-        return WorkSpacePostInference_ObsValid(self)
+    def val(self) -> WorkSpaceProc_Val:
+        return WorkSpaceProc_Val(self)
 
 
 class ScanStorage:
@@ -535,19 +451,28 @@ class ScanStorage:
 class Computation:
 
     model: Model
-
     storage_dist: dict[VarKey, Distribution]
     storage_nd: dict[VarKey, ArrayLike]
-    storage_obj: dict[VarKey, object]
     rng_key: ArrayLike
+    phase: Phase
+    n_saved_samples: int
 
-    def __init__(self, model:Model, seed:int):
+    def __init__(
+            self,
+            model:Model,
+            grouped_samples:dict[str, ArrayLike]|None,
+            rng_key:ArrayLike):
+
         self.model = model
-
         self.storage_dist = {}
         self.storage_nd = {}
-        self.storage_obj = {}
-        self.rng_key = jrandom.key(seed=seed)
+        self.rng_key = rng_key
+        self.phase = (Phase.Prior
+                      if grouped_samples is None
+                      else Phase.Posterior)
+
+        if grouped_samples is not None:
+            raise NotImplementedError()
 
     def _split_rng_key(self) -> ArrayLike:
         self.rng_key, key = jrandom.split(self.rng_key)
@@ -561,7 +486,7 @@ class Computation:
                 }
         return initial_carry_d
 
-    def _X_d(self):
+    def _X_d(self, n_years):
         # I'm not sure what heuristic / policy to use here.
         # First try: all var_keys in general_nd whose first shape dim
         # is the inference_years_dim.
@@ -570,55 +495,85 @@ class Computation:
                 for var_key, nvm in self.model.mv.general_nd.items()
                 if (
                     nvm.definition_metadata.value_type.shape
-                    and (
-                        nvm.definition_metadata.value_type.shape[0]
-                        in {g_inference_years_dim, posterior_years_dim})
+                    and (nvm.definition_metadata.value_type.shape[0] == years_dim)
                     and var_key in self.storage_nd)
                 }
+
+        rval['__years'] = jnp.arange(
+                self.model.mv.year_0,
+                self.model.mv.year_0 + n_years)
         return rval
 
-    def run_once(self):
-        inference_elements = self.model._inference_elements
-        for element_id, inference_element in inference_elements.items():
+    def _elem_items(self):
+        yield from self.model.model_elements.items()
+
+    def _run_prep(self, n_years, phase):
+        for elem_id, elem in self._elem_items():
             try:
-                ws = WorkSpace_Prep(ic=self)
-                inference_element.annual_scan_prep_fn(ws)
+                ws = WorkSpace_Prep(
+                        comp=self,
+                        year_0=self.model.mv.year_0,
+                        n_years=n_years,
+                        phase=phase,
+                        )
+                elem.model_element_prepare(ws)
             except Exception as err:
-                err.add_note(f'element_id={element_id}')
+                err.add_note(f'element_id={elem_id}')
                 raise
 
+    def _run_step(self, n_years, phase):
 
         def scan_step(this_carry_d, this_X_d):
             scan_storage = ScanStorage(this_carry_d, this_X_d)
             scan_storage.carry_rng()
-            for element_id, inference_element in inference_elements.items():
+            for elem_id, elem in self._elem_items():
                 try:
                     ws = WorkSpace_Step(
-                            ic=self,
+                            comp=self,
+                            year_0=self.model.mv.year_0,
+                            n_years=n_years,
+                            phase=phase,
                             scan_storage=scan_storage)
-                    inference_element.annual_scan_step_fn(ws)
+                    elem.model_element_annual_step(ws)
                 except Exception as err:
-                    err.add_note(f'element_id={element_id}')
+                    err.add_note(f'element_id={elem_id}')
                     raise
             return scan_storage.next_carry_d, scan_storage.this_Y_d
 
         initial_carry_d = self._initial_carry_d()
         initial_carry_d['__rng_key'] = self._split_rng_key()
-        X_d = self._X_d()
+        X_d = self._X_d(n_years)
 
-        final_carry_d, Y_d = numpyro_scan(scan_step, initial_carry_d, X_d)
+        if phase == Phase.Prior:
+            final_carry_d, Y_d = numpyro_scan(scan_step, initial_carry_d, X_d)
+        else:
+            final_carry_d, Y_d = jax_scan(scan_step, initial_carry_d, X_d)
 
         # TODO: check for collisions
         self.storage_nd.update(Y_d)
         self.rng_key = final_carry_d['__rng_key']
 
-        for element_id, inference_element in inference_elements.items():
+    def _run_proc(self, n_years, phase):
+        for elem_id, elem in self._elem_items():
             try:
-                ws = WorkSpace_Post(ic=self)
-                inference_element.annual_scan_post_fn(ws)
+                ws = WorkSpace_Proc(
+                        comp=self,
+                        year_0=self.model.mv.year_0,
+                        n_years=n_years,
+                        phase=phase,
+                        )
+                elem.model_element_postprocess(ws)
             except Exception as err:
-                err.add_note(f'element_id={element_id}')
+                err.add_note(f'element_id={elem_id}')
                 raise
+
+    def run_phase(self, phase):
+        n_years = (self.model.mv.n_prior_years
+                   if phase == Phase.Prior
+                   else self.model.mv.n_posterior_years)
+        self._run_prep(n_years, phase)
+        self._run_step(n_years, phase)
+        self._run_proc(n_years, phase)
 
 def run_mcmc(
         model:Model,
@@ -843,11 +798,12 @@ class Model:
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Step)
 
-            final_var_key = final_carry(var_key)
             if next_ndm.sampled:
-                assert final_var_key not in self.mv.sample_sites
-                self.mv.sample_sites[final_var_key] = str(final_var_key)
+                next_var_key = next_carry(var_key)
+                assert next_var_key not in self.mv.sample_sites
+                self.mv.sample_sites[next_var_key] = str(next_var_key)
 
+            final_var_key = final_carry(var_key)
             self.mv.general_nd[final_var_key] = NdarrayVariableMetadata(
                     definition_metadata=next_ndm,
                     defining_element_id=element_id,

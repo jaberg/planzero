@@ -8,9 +8,9 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, computed_field
 
 
-class ModellingPhase(str, enum.Enum):
-    Inference = 'Inference'
-    Analysis = 'Analysis'
+class Phase(str, enum.Enum):
+    Prior = 'Prior'
+    Posterior = 'Posterior'
 
 
 class Subphase(str, enum.Enum):
@@ -89,6 +89,23 @@ class FinalCarry(VarKeyBase, frozen=True):
 
 def final_carry(var_key: VarKey) -> FinalCarry:
     return FinalCarry(carry_key=var_key)
+
+
+class Observation(VarKeyBase, frozen=True):
+    var_key_type: Literal['Observation'] = "Observation"
+    prior_var_key: VarKey
+
+def observation(var_key):
+    return Observation(prior_var_key=var_key)
+
+
+class ObservationValid(VarKeyBase, frozen=True):
+    var_key_type: Literal['Observation'] = "Observation"
+    obs_var_key: VarKey
+
+
+def observation_valid(obs_var_key):
+    return ObservationValid(obs_var_key=obs_var_key)
 
 
 class ValType(BaseModel, frozen=True):
@@ -195,95 +212,3 @@ class VarKeyRole(BaseModel, frozen=True):
 
     var_key: VarKey
     role: VariableRole
-
-
-class ModelElementPhase:
-    def carry(self, var_key,
-              sample_initial:bool,
-              sample_next:bool,
-              **kwargs):
-
-        initial_ndm = self._ndm_from_kwargs(sample=sample_initial, **kwargs)
-        this_ndm = self._ndm_from_kwargs(sample=False, **kwargs)
-        next_ndm = self._ndm_from_kwargs(sample=sample_next, **kwargs)
-        final_ndm = self._ndm_from_kwargs(sample=sample_next, **kwargs)
-
-        if next_ndm.sample:
-            site_var_key = final_carry(var_key)
-            assert site_var_key not in self.mv.sample_sites
-            self.mv.sample_sites[site_var_key] = str(site_var_key)
-
-
-def _no_op(*args, **kwargs):
-    pass
-
-
-class ModelInterface(ModelElementPhase):
-
-    annual_scan_prep_fn:Callable = _no_op
-    annual_scan_step_fn:Callable = _no_op
-    annual_scan_step2_fn:Callable = _no_op
-    annual_scan_post_fn:Callable = _no_op
-
-    def __init__(self, **kwargs):
-        super().__init__(defining_phase=ModellingPhase.Inference, **kwargs)
-
-    def annual_scan_prep(self, *, reads:list[VarKeyRole]|None=None):
-        reads = reads or []
-        def decorator(fn):
-            #self.reads_by_subphase[Subphase.Prep] = reads
-            self.annual_scan_prep_fn = fn
-            return fn
-        return decorator
-
-    def annual_scan_step(self, *, reads:list[VarKeyRole]|None=None):
-        reads = reads or []
-        def decorator(fn):
-            #self.reads_by_subphase[Subphase.Step] = reads
-            self.annual_scan_step_fn = fn
-            return fn
-        return decorator
-
-    def annual_scan_step2(self, *, reads:list[VarKeyRole]|None=None):
-        reads = reads or []
-        def decorator(fn):
-            #self.reads_by_subphase[Subphase.Step] = reads
-            self.annual_scan_step2_fn = fn
-            return fn
-        return decorator
-
-    def annual_scan_post(self, *, reads:list[VarKeyRole]|None=None):
-        reads = reads or []
-        def decorator(fn):
-            #self.reads_by_subphase[Subphase.Post] = reads
-            self.annual_scan_post_fn = fn
-            return fn
-        return decorator
-
-    def _add_posterior_variable(self, var_key, vm):
-        dm = vm.definition_metadata
-        print(var_key)
-        assert var_key not in self.mv.posterior_nd
-        if (vm.defining_phase == ModellingPhase.Inference
-            and dm.sample
-            and dm.observation is None):
-            self.mv.posterior_nd[var_key] = NdarrayVariableMetadata(
-                    definition_metadata=NdarrayDefinitionMetadata(
-                        value_type=NdarrayType(
-                            shape=[g_mcmc_dim] + dm.value_type.shape,
-                            dtype=dm.value_type.dtype),
-                        observation=None,
-                        sample=False),
-                    defining_element_id='__internal__',
-                    defining_phase=ModellingPhase.Inference,
-                    defining_subphase=Subphase.Internal_After_Post)
-
-    def _add_posterior_variables(self):
-        for var_key, vm in self.mv.general_nd.items():
-            self._add_posterior_variable(var_key, vm)
-
-        for var_key, vm in self.mv.initial_carry_nd.items():
-            self._add_posterior_variable(initial_carry(var_key), vm)
-
-        for var_key, vm in self.mv.final_carry_nd.items():
-            self._add_posterior_variable(final_carry(var_key), vm)
