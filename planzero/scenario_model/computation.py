@@ -7,15 +7,22 @@ import numpyro
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions.distribution import Distribution
+from pydantic import BaseModel, computed_field
 
 from .base import (
     InitialCarry,
-    Model,
+    ModellingPhase,
+    ModelVariables,
+    NdarrayDefinitionMetadata,
+    NdarrayDim,
+    NdarrayType,
+    NdarrayVariableMetadata,
+    Subphase,
     VarKey,
-    g_inference_years_dim,
+    final_carry,
     initial_carry,
     next_carry,
-    posterior_years_dim,
+    years_dim,
 )
 
 
@@ -238,9 +245,9 @@ class WorkSpaceStepInference_Val_ThisY(WorkSpaceStepInference_Val_Attr):
 
 class WorkSpacePrepInference_Attr:
 
-    ws: InferenceWorkSpace_Prep
+    ws: WorkSpace_Prep
 
-    def __init__(self, ws:InferenceWorkSpace_Prep):
+    def __init__(self, ws:WorkSpace_Prep):
         self.ws = ws
 
 
@@ -274,9 +281,9 @@ class WorkSpacePrepInference_Val(WorkSpacePrepInference_Attr):
 
 class WorkSpaceStepInference_Attr:
 
-    ws: InferenceWorkSpace_Step
+    ws: WorkSpace_Step
 
-    def __init__(self, ws:InferenceWorkSpace_Step):
+    def __init__(self, ws:WorkSpace_Step):
         self.ws = ws
 
 
@@ -318,9 +325,9 @@ class WorkSpaceStepInference_Val(WorkSpaceStepInference_Attr):
 
 class WorkSpacePostInference_Attr:
 
-    ws: InferenceWorkSpace_Post
+    ws: WorkSpace_Post
 
-    def __init__(self, ws:InferenceWorkSpace_Post):
+    def __init__(self, ws:WorkSpace_Post):
         self.ws = ws
 
 
@@ -405,27 +412,50 @@ class WorkSpacePostInference_Val(WorkSpacePostInference_Attr):
         return WorkSpacePostInference_Val_AnnualY(self)
 
 
+class WorkSpacePostInference_Obs(WorkSpacePostInference_Attr):
+    """object to represent `ws.obs`"""
+
+    @property
+    def general(self) -> WorkSpacePostInference_Obs_General:
+        return WorkSpacePostInference_Obs_General(self)
+
+
+class WorkSpacePostInference_ObsValid(WorkSpacePostInference_Attr):
+    """object to represent `ws.obs_valid`"""
+
+    @property
+    def general(self) -> WorkSpacePostInference_ObsValid_General:
+        return WorkSpacePostInference_ObsValid_General(self)
+
+
 class WorkSpace:
 
     year_0: int
     n_years: int
     years: jnp.ndarray
+    phase: ModellingPhase
+    subphase: Subphase
+    comp: Computation
 
-    def __init__(self, year_0:int, n_years:int):
+    def __init__(self, ic:InferenceComputation):
+        super().__init__()
+        self.comp = comp
+
+    def __init__(
+            self,
+            year_0:int,
+            n_years:int,
+            phase:ModellingPhase,
+            subphase:Subphase):
         self.year_0 = year_0
         self.n_years = n_years
         assert n_years >= 0
         self.years = jnp.arange(year_0, year_0 + n_years)
+        self.phase = phase
+        self.subphase = subphase
 
 
-class InferenceWorkSpace(WorkSpace):
-    ic: InferenceComputation
-
-    def __init__(self, ic:InferenceComputation):
-        self.ic = ic
-
-
-class InferenceWorkSpace_Prep(InferenceWorkSpace):
+class WorkSpace_Prep(WorkSpace):
 
     @property
     def dist(self) -> WorkSpacePrepInference_Dist:
@@ -436,7 +466,7 @@ class InferenceWorkSpace_Prep(InferenceWorkSpace):
         return WorkSpacePrepInference_Val(self)
 
 
-class InferenceWorkSpace_Step(InferenceWorkSpace):
+class WorkSpace_Step(WorkSpace):
 
     scan_storage: ScanStorage
 
@@ -453,7 +483,7 @@ class InferenceWorkSpace_Step(InferenceWorkSpace):
         return WorkSpaceStepInference_Val(self)
 
 
-class InferenceWorkSpace_Post(InferenceWorkSpace):
+class WorkSpace_Proc(WorkSpace):
 
     @property
     def dist(self) -> WorkSpacePostInference_Dist:
@@ -502,7 +532,7 @@ class ScanStorage:
         return rval
 
 
-class InferenceComputation:
+class Computation:
 
     model: Model
 
@@ -551,7 +581,7 @@ class InferenceComputation:
         inference_elements = self.model._inference_elements
         for element_id, inference_element in inference_elements.items():
             try:
-                ws = InferenceWorkSpace_Prep(ic=self)
+                ws = WorkSpace_Prep(ic=self)
                 inference_element.annual_scan_prep_fn(ws)
             except Exception as err:
                 err.add_note(f'element_id={element_id}')
@@ -563,7 +593,7 @@ class InferenceComputation:
             scan_storage.carry_rng()
             for element_id, inference_element in inference_elements.items():
                 try:
-                    ws = InferenceWorkSpace_Step(
+                    ws = WorkSpace_Step(
                             ic=self,
                             scan_storage=scan_storage)
                     inference_element.annual_scan_step_fn(ws)
@@ -577,10 +607,6 @@ class InferenceComputation:
         X_d = self._X_d()
 
         final_carry_d, Y_d = numpyro_scan(scan_step, initial_carry_d, X_d)
-        print('final carry')
-        print(final_carry_d)
-        print('Y_d')
-        print(Y_d)
 
         # TODO: check for collisions
         self.storage_nd.update(Y_d)
@@ -588,7 +614,7 @@ class InferenceComputation:
 
         for element_id, inference_element in inference_elements.items():
             try:
-                ws = InferenceWorkSpace_Post(ic=self)
+                ws = WorkSpace_Post(ic=self)
                 inference_element.annual_scan_post_fn(ws)
             except Exception as err:
                 err.add_note(f'element_id={element_id}')
@@ -605,7 +631,7 @@ def run_mcmc(
     def trace_fn():
         # the seed value is ignored
         # when running via MCMC
-        obj = InferenceComputation(model=model, seed=1)
+        obj = Computation(model=model, seed=1)
         obj.run_once()
 
     rng_key = jrandom.key(seed=seed)
@@ -616,8 +642,244 @@ def run_mcmc(
     mcmc.run(rng_key=rng_key)
     mcmc.print_summary()
     grouped_samples = mcmc.get_samples(group_by_chain=True)
-    for key, val in grouped_samples.items():
-        print(key)
-        print(val.shape)
-        print()
     return mcmc
+
+
+def subphase_from_f(f):
+    if f.__name__ == 'model_element_prepare':
+        return Subphase.Prep
+    elif f.__name__ == 'model_element_annual_step':
+        return Subphase.Step
+    elif f.__name__ == 'model_element_postprocess':
+        return Subphase.Proc
+    else:
+        raise NotImplementedError(f)
+
+_deco_attr_define = 'model_element_define'
+
+def define(
+        var_key:VarKey, *,
+        sampled:bool,
+        shape:list[int|NdarrayDim],
+        dtype:str='float64',
+        ):
+    def deco(f):
+        if not hasattr(f, _deco_attr_define):
+            setattr(f, _deco_attr_define, {})
+        assert var_key not in f.model_element_define
+        ndm = NdarrayDefinitionMetadata(
+                value_type=NdarrayType(
+                    shape=shape,
+                    dtype=dtype),
+                sampled=sampled,
+                subphase=subphase_from_f(f))
+        f.model_element_define[var_key] = ndm
+        return f
+    return deco
+
+
+_deco_attr_annual = 'model_element_annual_step'
+
+def define_annual(
+        var_key:VarKey, *,
+        sampled:bool,
+        annual_shape:list[int|NdarrayDim],
+        dtype:str='float64',
+        ):
+    def deco(f):
+        if not hasattr(f, _deco_attr_annual):
+            setattr(f, _deco_attr_annual, {})
+        assert var_key not in f.model_element_annual_step
+        ndm = NdarrayDefinitionMetadata(
+                value_type=NdarrayType(
+                    shape=[years_dim] + list(annual_shape),
+                    dtype=dtype),
+                sampled=sampled,
+                subphase=subphase_from_f(f))
+        f.model_element_annual_step[var_key] = ndm
+        return f
+    return deco
+
+_deco_attr_carry = 'model_element_define_carry'
+
+def define_carry(
+        var_key:VarKey, *,
+        initial_sampled:bool,
+        next_sampled:bool,
+        shape:list[int|NdarrayDim],
+        dtype:str='float64',
+        ):
+    def deco(f):
+        if not hasattr(f, _deco_attr_carry):
+            setattr(f, _deco_attr_carry, {})
+        assert var_key not in f.model_element_define_carry
+        initial_ndm = NdarrayDefinitionMetadata(
+                value_type=NdarrayType(
+                    shape=shape,
+                    dtype=dtype),
+                sampled=initial_sampled,
+                subphase=subphase_from_f(f))
+        next_ndm = NdarrayDefinitionMetadata(
+                value_type=NdarrayType(
+                    shape=shape,
+                    dtype=dtype),
+                sampled=next_sampled,
+                subphase=subphase_from_f(f))
+        f.model_element_define_carry[var_key] = (
+                initial_ndm, next_ndm)
+        return f
+    return deco
+
+
+
+class ModelElement(BaseModel):
+    """
+    Inherit from this to define a model
+    """
+
+    _identifier: str|None = None
+
+    @computed_field
+    def identifier(self) -> str:
+        # must be unique within a model
+        return self._identifier or self.__class__.__name__
+
+    def model_element_prepare(self, ws:WorkSpace_Prep):
+        pass
+
+    def model_element_annual_step(self, ws:WorkSpace_Step):
+        pass
+
+    def model_element_postprocess(self, ws:WorkSpace_Proc):
+        pass
+
+
+class Model:
+    """
+    Try to make the elements work mostly as a set.
+    Try to make this work like a bag of elements that self-assemble.
+    That way, documentation of the model can be created by documenting
+    the elements.
+    I'm afraid that if there is central structuring of the model, it will
+    just be impossible to understand.
+    Discourage thinking of elements as attributes of the model that can
+    be accessed individually.
+    """
+
+    model_elements: dict[str, ModelElement]
+    mv: ModelVariables
+
+    def __init__(self, first_year:int, n_prior_years:int, n_posterior_years:int):
+        self.model_elements = {}
+        self.mv = ModelVariables(
+                year_0=first_year,
+                n_prior_years=n_prior_years,
+                n_posterior_years=n_posterior_years,
+                )
+
+    def _add_define_d(self, element_id, defining_subphase, define_d):
+        for var_key, ndm in define_d.items():
+            self.mv.general_nd[var_key] = NdarrayVariableMetadata(
+                    definition_metadata=ndm,
+                    defining_element_id=element_id,
+                    defining_subphase=defining_subphase)
+            if ndm.sampled:
+                assert var_key not in self.mv.sample_sites
+                self.mv.sample_sites[var_key] = str(var_key)
+
+    def _add_define_annual_d(self, element_id, defining_subphase, annual_d):
+        for var_key, ndm in annual_d.items():
+            self.mv.general_nd[var_key] = NdarrayVariableMetadata(
+                    definition_metadata=ndm,
+                    defining_element_id=element_id,
+                    defining_subphase=defining_subphase)
+            if ndm.sampled:
+                assert var_key not in self.mv.sample_sites
+                self.mv.sample_sites[var_key] = str(var_key)
+
+            print(element_id, defining_subphase, var_key, ndm)
+
+            if defining_subphase in (Subphase.Prep, Subphase.Step):
+                this_ndm = NdarrayVariableMetadata(
+                        definition_metadata=NdarrayDefinitionMetadata(
+                            value_type=NdarrayType(
+                                shape=ndm.value_type.shape[1:],
+                                dtype=ndm.value_type.dtype),
+                            sampled=ndm.sampled,
+                            subphase=defining_subphase,
+                            ),
+                        defining_element_id=element_id,
+                        defining_subphase=defining_subphase)
+                if defining_subphase == Subphase.Prep:
+                    self.mv.this_X_nd[var_key] = this_ndm
+                else:
+                    self.mv.this_Y_nd[var_key] = this_ndm
+
+    def _add_define_carry_d(self, element_id, carry_d):
+        for var_key, (initial_ndm, next_ndm) in carry_d.items():
+
+            initial_var_key = initial_carry(var_key)
+
+            self.mv.general_nd[initial_var_key] = NdarrayVariableMetadata(
+                    definition_metadata=initial_ndm,
+                    defining_element_id=element_id,
+                    defining_subphase=Subphase.Prep)
+
+            if initial_ndm.sampled:
+                assert initial_var_key not in self.mv.sample_sites
+                self.mv.sample_sites[initial_var_key] = str(initial_var_key)
+
+            self.mv.this_carry_nd[var_key] = NdarrayVariableMetadata(
+                    definition_metadata=NdarrayDefinitionMetadata(
+                        value_type=initial_ndm.value_type,
+                        sampled=False,
+                        subphase=Subphase.Step,
+                        ),
+                    defining_element_id=element_id,
+                    defining_subphase=Subphase.Step)
+
+            self.mv.next_carry_nd[var_key] = NdarrayVariableMetadata(
+                    definition_metadata=next_ndm,
+                    defining_element_id=element_id,
+                    defining_subphase=Subphase.Step)
+
+            final_var_key = final_carry(var_key)
+            if next_ndm.sampled:
+                assert final_var_key not in self.mv.sample_sites
+                self.mv.sample_sites[final_var_key] = str(final_var_key)
+
+            self.mv.general_nd[final_var_key] = NdarrayVariableMetadata(
+                    definition_metadata=next_ndm,
+                    defining_element_id=element_id,
+                    defining_subphase=Subphase.Proc)
+
+    def add_element(self, element):
+        self.model_elements[element.identifier] = element
+        self._add_define_d(
+                element.identifier,
+                Subphase.Prep,
+                getattr(element.model_element_prepare, _deco_attr_define, {}))
+        assert not hasattr(element.model_element_annual_step, _deco_attr_define)
+        self._add_define_d(
+                element.identifier,
+                Subphase.Proc,
+                getattr(element.model_element_postprocess, _deco_attr_define, {}))
+
+        self._add_define_carry_d(
+                element.identifier,
+                getattr(element.model_element_prepare, _deco_attr_carry, {}))
+        assert not hasattr(element.model_element_annual_step, _deco_attr_carry)
+        assert not hasattr(element.model_element_postprocess, _deco_attr_carry)
+
+        self._add_define_annual_d(
+                element.identifier,
+                Subphase.Prep,
+                getattr(element.model_element_prepare, _deco_attr_annual, {}))
+        self._add_define_annual_d(
+                element.identifier,
+                Subphase.Step,
+                getattr(element.model_element_annual_step, _deco_attr_annual, {}))
+        self._add_define_annual_d(
+                element.identifier,
+                Subphase.Proc,
+                getattr(element.model_element_postprocess, _deco_attr_annual, {}))

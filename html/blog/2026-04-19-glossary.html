@@ -889,6 +889,138 @@ which I'll explain in the next section.
 </p>
 
 
+<h2>Appendix: Computational Framework</h2>
+
+<p>
+Inherit from ModelElement so that a sufficient number of base implementations
+will be provided in order to render the class on the site as part of the
+model documentation.
+Over-ride the base implementations to e.g. change the name,
+provide a description, tune the appearance and so on.
+</p>
+
+<p>
+Use method decorators to explain what variables your ModelElement defines.
+These decorators are required for two reasons:
+1. directing work between the three methods (e.g. providing carry elements to the scan function)
+2. establishing dependencies in order to sequence method-calls of multiple model elements.
+They also offer some conveniences:
+* a nice place to describe model variables, and provide visualization hints
+* improved guard-rails via better, earlier error-catching
+</p>
+
+<p>
+WorkSpace_Prep
+<ul>
+	<li>year_0: int, typically 1990</li>
+	<li>n_years: int</li>
+	<li>years: jax.numpy.ndarray, consecutive years from year_0, e.g. [1990, 1991, ..., 2022]</li>
+	<li>dist: access to numpyro distributions, for variables with sample=True</li>
+	<li>val: access to jax.numpy.ndarray values</li>
+</ul>
+</p>
+
+
+<h4>[Prep] General</h4>
+<p>
+Definition shape: any shape is allowed in the definition.
+</p>
+<p>
+Prior phase:
+* shape must match definition shape.
+</p>
+<p>
+Posterior phase:
+* trailing shape elements must match definition shape.
+* a leading mcmc dimension is allowed (will be present when sample=True)
+</p>
+
+<p>
+Data is typically a general variable, even when it is a time series.
+Data should typically be loaded and used in scan_prep
+or scan_postprocess.
+There are two exceptions to the typical case worth mentioning to give a sense of when not to use general variables for data, and use an annual
+<ol>
+	<li>Data about projections.
+		E.g. Canada's future population is projected by Statistics Canada,
+		far into the future, beyond horizons modelled by PlanZero.</li>
+	<li>Known future events.
+		E.g. leap years, solar radiance patterns, tides, and other
+		predictable future phenomena that can be scaled out as far
+		as necessary for posterior inference.</li>
+	</li>
+</p>
+
+<h4>[Prep] Scan_X</h4>
+<p>
+Definition shape: annual_shape can be anything.
+<p>
+
+<p>
+Prior phase:
+* shape [ws.n_years] + annual_shape
+</p>
+
+<p>
+Posterior phase.
+
+Shape must be one of
+* [ws.n_years] + annual_shape
+* [ws.n_mcmc, ws.n_years] + annual_shape
+
+It must be the second shape (with n_mcmc) when sampled=True
+</p>
+
+
+<h4>[Prep] initial_carry</h4>
+<p>
+Definition shape: shape can be anything.
+<p>
+
+<p>
+Prior phase:
+* shape
+</p>
+
+<p>
+Posterior phase.
+
+Shape will be one of
+* shape
+* [ws.n_mcmc] + annual_shape
+
+It will always be the second shape (with n_mcmc) when sampled=True
+</p>
+
+
+<p>
+
+<table>
+	<tr>
+		<th>Definition type</th>
+		<th>shape=[] </th>
+		<th>shape[0] integer</th>
+		<th>shape[0] conditioning_dim</th>
+		<th>shape[0] posterior_dim</th>
+	</tr>
+	<tr>
+		<tr>prep, General</tr>
+		<tr>a scalar</tr>
+		<tr>a vector, matrix, etc.</tr>
+		<tr>not allowed, use annual</tr>
+		<tr>not allowed, use annual</tr>
+	</tr>
+	<tr>
+		<tr>prep, Annual</tr>
+		<tr>not allowed</tr>
+		<tr>not allowed</tr>
+		<tr>must be created with length &ge; n_conditioning_years</tr>
+		<tr>must be created with length &ge; n_posterior_years</tr>
+	</tr>
+</table>
+
+Ndarrays defined
+<p>
 
 
 <ul class="actions special">
