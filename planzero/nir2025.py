@@ -188,7 +188,7 @@ def near_zero_sector_ghgs():
 
 
 @cache
-def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
+def ktCO2e_numpyro_dist_pt_ca(sector:IPCC_Sector, ghg:GHG, year:int):
     """Returns  ca_dist, pt_dists""" # XXX backward rel to fn name
     arr_pt, arr_ca = ktCO2e_dense_w_nan()
     ktco2e_pt = arr_pt[idx_of_sector[sector], idx_of_ghg[ghg], :, idx_of_year[year]]
@@ -785,20 +785,3 @@ def uncertainty_percent_by_IPCC_Sector_GHG(percent_col:str):
     rval[IPCC_Sector.Settlements, GHG.CH4] = 45. # kind of an average of Conversion of Forest Land and GrassLand
     rval[IPCC_Sector.Settlements, GHG.N2O] = 45. # kind of an average of Conversion of Forest Land and GrassLand
     return rval
-
-
-if __name__ == '__main__':
-    if 0:
-        df = load_uncertainty()
-        foo = {}
-        for record in df.iloc:
-            foo.setdefault(record['IPCC_Source_Category'], {})
-            foo[record['IPCC_Source_Category']].setdefault(record['Gas'], {})
-
-        assert len(foo) == len(IPCC_Sector)
-        for key, sector in zip(foo, IPCC_Sector):
-            print(f'uncertainty_IPCC_Category["{key}"] = {sector}')
-    else:
-        uncertainty_percent_by_IPCC_Sector_GHG_2023()
-
-
