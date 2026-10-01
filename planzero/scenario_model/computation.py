@@ -9,15 +9,16 @@ from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions.distribution import Distribution
 from numpyro.infer import MCMC, NUTS
-from pydantic import BaseModel, computed_field
 
 from .base import (
     GroupedPosterior,
     InitialCarry,
     ModelVariables,
     NdarrayDefinitionMetadata,
+    NdarrayDefinitionMetadata_w_Properties,
     NdarrayDim,
     NdarrayType,
+    NdarrayType_w_Properties,
     NdarrayVariableMetadata,
     NextCarry,
     Phase,
@@ -753,7 +754,7 @@ def run_mcmc(
     return mcmc
 
 
-def subphase_from_f(f):
+def _subphase_from_f(f):
     if f.__name__ == 'model_element_prepare':
         return Subphase.Prep
     elif f.__name__ == 'model_element_annual_step':
@@ -766,21 +767,21 @@ def subphase_from_f(f):
 _deco_attr_define = 'model_element_define'
 
 def define(
-        var_key:VarKey, *,
+        var_key:VarKey|property, *,
         sampled:bool,
-        shape:list[int|NdarrayDim],
+        shape:list[int|NdarrayDim|property],
         dtype:str='float64',
         ):
     def deco(f):
         if not hasattr(f, _deco_attr_define):
             setattr(f, _deco_attr_define, {})
         assert var_key not in f.model_element_define
-        ndm = NdarrayDefinitionMetadata(
-                value_type=NdarrayType(
+        ndm = NdarrayDefinitionMetadata_w_Properties(
+                value_type=NdarrayType_w_Properties(
                     shape=shape,
                     dtype=dtype),
                 sampled=sampled,
-                subphase=subphase_from_f(f))
+                subphase=_subphase_from_f(f))
         f.model_element_define[var_key] = ndm
         return f
     return deco
@@ -803,7 +804,7 @@ def define_annual(
                     shape=[years_dim] + list(annual_shape),
                     dtype=dtype),
                 sampled=sampled,
-                subphase=subphase_from_f(f))
+                subphase=_subphase_from_f(f))
         f.model_element_annual_step[var_key] = ndm
         return f
     return deco
@@ -826,13 +827,13 @@ def define_carry(
                     shape=shape,
                     dtype=dtype),
                 sampled=initial_sampled,
-                subphase=subphase_from_f(f))
+                subphase=_subphase_from_f(f))
         next_ndm = NdarrayDefinitionMetadata(
                 value_type=NdarrayType(
                     shape=shape,
                     dtype=dtype),
                 sampled=next_sampled,
-                subphase=subphase_from_f(f))
+                subphase=_subphase_from_f(f))
         f.model_element_define_carry[var_key] = (
                 initial_ndm, next_ndm)
         return f
@@ -840,14 +841,14 @@ def define_carry(
 
 
 
-class ModelElement(BaseModel):
+class ModelElement:
     """
     Inherit from this to define a model
     """
 
     _identifier: str|None = None
 
-    @computed_field
+    @property
     def identifier(self) -> str:
         # must be unique within a model
         return self._identifier or self.__class__.__name__
@@ -876,6 +877,30 @@ class ModelBuiltIns(ModelElement):
         ws.val.general[scan_step_ii_key] = jnp.arange(0, ws.n_years)
 
 
+def _resolve_properties_ndarray_definition(
+        element,
+        ndmp:NdarrayDefinitionMetadata_w_Properties,
+        ) -> NdarrayDefinitionMetadata:
+
+    def shape_elem_fn(shape_elem:int|NdarrayDim|property) -> int|NdarrayDim:
+        if isinstance(shape_elem, (int, NdarrayDim)):
+            return shape_elem
+        else:
+            return shape_elem.__get__(element, type(element))
+
+    def shape_fn(shape) -> list[int|NdarrayDim]:
+        return [shape_elem_fn(shape_elem) for shape_elem in shape]
+
+    def value_type_fn(value_type) -> NdarrayType:
+        return NdarrayType(
+                shape=shape_fn(value_type.shape),
+                dtype=value_type.dtype)
+    return NdarrayDefinitionMetadata(
+            value_type=value_type_fn(ndmp.value_type),
+            sampled=ndmp.sampled,
+            subphase=ndmp.subphase)
+
+
 class Model:
     """
     Try to make the elements work mostly as a set.
@@ -900,15 +925,37 @@ class Model:
                 )
         self.add_element(ModelBuiltIns())
 
-    def _add_define_d(self, element_id, defining_subphase, define_d):
-        for var_key, ndm in define_d.items():
+    def _add_define_d(
+            self,
+            element:ModelElement,
+            defining_subphase:Subphase,
+            define_d):
+
+        def add_var_key_ndm(var_key:VarKey, ndm):
             self.mv.general_nd[var_key] = NdarrayVariableMetadata(
-                    definition_metadata=ndm,
-                    defining_element_id=element_id,
+                    definition_metadata=_resolve_properties_ndarray_definition(
+                        element, ndm),
+                    defining_element_id=element.identifier,
                     defining_subphase=defining_subphase)
             if ndm.sampled:
-                assert var_key not in self.mv.sample_sites
+                assert var_key not in self.mv.sample_sites, var_key
                 self.mv.sample_sites[var_key] = str(var_key)
+
+        for var_key, ndm in define_d.items():
+            if isinstance(var_key, VarKey):
+                add_var_key_ndm(var_key, ndm)
+            elif isinstance(var_key, property):
+                var_key_prop = var_key.__get__(element, type(element))
+                if isinstance(var_key_prop, VarKey):
+                    add_var_key_ndm(var_key_prop, ndm)
+                elif isinstance(var_key_prop, dict):
+                    for int_key in var_key_prop.values():
+                        add_var_key_ndm(int_key, ndm)
+                else:
+                    raise NotImplementedError(var_key_prop)
+            else:
+                raise NotImplementedError(var_key)
+
 
     def _add_define_annual_d(self, element_id, defining_subphase, annual_d):
         for var_key, ndm in annual_d.items():
@@ -917,7 +964,7 @@ class Model:
                     defining_element_id=element_id,
                     defining_subphase=defining_subphase)
             if ndm.sampled:
-                assert var_key not in self.mv.sample_sites
+                assert var_key not in self.mv.sample_sites, var_key
                 self.mv.sample_sites[var_key] = str(var_key)
 
             print(element_id, defining_subphase, var_key, ndm)
@@ -949,7 +996,7 @@ class Model:
                     defining_subphase=Subphase.Prep)
 
             if initial_ndm.sampled:
-                assert initial_var_key not in self.mv.sample_sites
+                assert initial_var_key not in self.mv.sample_sites, initial_var_key
                 self.mv.sample_sites[initial_var_key] = str(initial_var_key)
 
             self.mv.this_carry_nd[var_key] = NdarrayVariableMetadata(
@@ -968,7 +1015,7 @@ class Model:
 
             if next_ndm.sampled:
                 next_var_key = next_carry(var_key)
-                assert next_var_key not in self.mv.sample_sites
+                assert next_var_key not in self.mv.sample_sites, next_var_key
                 self.mv.sample_sites[next_var_key] = str(next_var_key)
 
             final_var_key = final_carry(var_key)
@@ -978,14 +1025,16 @@ class Model:
                     defining_subphase=Subphase.Proc)
 
     def add_element(self, element):
+        assert element.identifier
+        assert element.identifier not in self.model_elements
         self.model_elements[element.identifier] = element
         self._add_define_d(
-                element.identifier,
+                element,
                 Subphase.Prep,
                 getattr(element.model_element_prepare, _deco_attr_define, {}))
         assert not hasattr(element.model_element_annual_step, _deco_attr_define)
         self._add_define_d(
-                element.identifier,
+                element,
                 Subphase.Proc,
                 getattr(element.model_element_postprocess, _deco_attr_define, {}))
 

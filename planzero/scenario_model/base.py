@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 import enum
-from collections.abc import Callable
-from typing import Any, Literal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict
 
 
 class Phase(str, enum.Enum):
@@ -162,20 +161,19 @@ class NdarrayDefinitionMetadata(DefinitionMetadata):
     value_type: NdarrayType
 
 
-def _definition_metadata_timeslice(
-        dm: NdarrayDefinitionMetadata,
-        ) -> NdarrayDefinitionMetadata:
-    if isinstance(dm.value_type, NdarrayType):
-        valtype = dm.value_type
-        if (len(valtype.shape) and valtype.shape[0] == years_dim):
-            return NdarrayDefinitionMetadata(
-                    value_type=NdarrayType(
-                        shape=valtype.shape[1:],
-                        dtype=valtype.dtype),
-                    # observation=dm.observation,
-                    sampled=dm.sampled,
-                    subphase=dm.subphase)
-    raise ValueError(dm)
+class NdarrayType_w_Properties(ValType, frozen=True):
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    shape: list[int|NdarrayDim|property]
+    dtype: str = 'float64'
+
+
+class NdarrayDefinitionMetadata_w_Properties(DefinitionMetadata):
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    value_type: NdarrayType_w_Properties
 
 
 class DefinitionError(Exception):
