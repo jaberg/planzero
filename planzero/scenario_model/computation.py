@@ -8,15 +8,18 @@ from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions.distribution import Distribution
+from numpyro.infer import MCMC, NUTS
 from pydantic import BaseModel, computed_field
 
 from .base import (
+    GroupedPosterior,
     InitialCarry,
     ModelVariables,
     NdarrayDefinitionMetadata,
     NdarrayDim,
     NdarrayType,
     NdarrayVariableMetadata,
+    NextCarry,
     Phase,
     Subphase,
     VarKey,
@@ -45,56 +48,106 @@ class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
     def __setitem__(self, item:VarKey, value:Distribution) -> None:
         # TODO: check that the shape is correct
         # TODO: check that the item is supposed to be sampled
-        self.comp.storage_dist[item] = value
 
         obs = self.comp.storage_nd.get(observation(item))
         obs_valid = self.comp.storage_nd.get(observation_valid(item))
 
         if self.comp.phase == Phase.Prior:
+
             if obs is None and obs_valid is None:
                 # TODO: check that the shape is correct
+                self.comp.storage_dist[item] = value
                 self.comp.storage_nd[item] = numpyro.sample(
                         self.comp.model.mv.sample_sites[item],
                         fn=value,
                         rng_key=self.comp._split_rng_key(),
                         )
             elif obs_valid is None:
-                self.comp.storage_nd[item] = numpyro.sample(
+                # don't define the distribution if the observation
+                # is provided, because it no longer makes sense
+                #
+                # but do store the observation as the sample
+                #
+                # TODO: check that obs' shape is correct
+                assert obs is not None
+                self.comp.storage_nd[item] = obs
+                numpyro.sample(
                         self.comp.model.mv.sample_sites[item],
                         fn=value,
                         rng_key=self.comp._split_rng_key(),
                         obs=obs,
                         )
             else:
+                # don't define the distribution if the observation
+                # is provided, because it no longer makes sense
+                assert obs_valid is not None
+                assert obs is not None
+                # mask the distribution
+                # mask the observation in the sample call?
+                # store value jnp.where(obs_valid, obs, an_actual_sample)
                 raise NotImplementedError()
         else:
-            raise NotImplementedError()
+            assert self.comp.phase == Phase.Posterior
+            if obs is None and obs_valid is None:
+                # don't define the distribution this time
+                # because the provided distribution was the prior.
+
+                assert item in self.comp.storage_nd
+                # TODO: check that the shape is correct
+                #       the shape should be [n_mcmc] + [var shape]
+
+            elif obs_valid is None:
+                assert obs is not None
+                # TODO: check that the shape is correct
+                #       obs' shape should be [var shape]
+                #       with no mcmc samples.
+
+                # technically this might be okay in some scenarios
+                # but if it happens for now, it's an error.
+                assert item not in self.comp.storage_nd
+
+                self.comp.storage_nd[item] = obs
+            else:
+                assert obs_valid is not None
+                assert obs is not None
+                # mask the distribution
+                # mask the observation in the sample call?
+                # store value jnp.where(obs_valid, obs, an_actual_sample)
+                raise NotImplementedError()
 
 
 class WorkSpacePrep_Dist_InitialCarry(WorkSpacePrep_Dist_Attr):
     """object to represent `ws.dist.initial_carry`"""
 
     def __setitem__(self, item:VarKey, value:Distribution) -> None:
-        # TODO: check that the shape is correct
-        # TODO: check that the item is supposed to be sampled
-        self.comp.storage_dist[initial_carry(item)] = value
-
-
         obs = self.comp.storage_nd.get(observation(initial_carry(item)))
         obs_valid = self.comp.storage_nd.get(observation_valid(initial_carry(item)))
 
         if self.comp.phase == Phase.Prior:
-            if obs or obs_valid:
-                raise NotImplementedError()
-            else:
+            if obs is None and obs_valid is None:
                 # TODO: check that the shape is correct
+                # TODO: check that the item is supposed to be sampled
+                self.comp.storage_dist[initial_carry(item)] = value
+
                 self.comp.storage_nd[initial_carry(item)] = numpyro.sample(
                         self.comp.model.mv.sample_sites[initial_carry(item)],
                         fn=value,
                         rng_key=self.comp._split_rng_key(),
                         )
+            else:
+                raise NotImplementedError()
         else:
-            raise NotImplementedError()
+            assert self.comp.phase == Phase.Posterior
+            if obs is None and obs_valid is None:
+                # don't define the distribution this time
+                # because the provided distribution was the prior.
+
+                assert initial_carry(item) in self.comp.storage_nd
+                # TODO: check that the shape is correct
+                #       the shape should be [n_mcmc] + [var shape]
+            else:
+                raise NotImplementedError()
+
 
 
 class WorkSpacePrep_Val_Attr:
@@ -455,12 +508,13 @@ class Computation:
     storage_nd: dict[VarKey, ArrayLike]
     rng_key: ArrayLike
     phase: Phase
-    n_saved_samples: int
+    n_mcmc: int|None
+    has_run: bool
 
     def __init__(
             self,
             model:Model,
-            grouped_samples:dict[str, ArrayLike]|None,
+            grouped_samples:dict[str, jnp.ndarray]|None,
             rng_key:ArrayLike):
 
         self.model = model
@@ -470,9 +524,45 @@ class Computation:
         self.phase = (Phase.Prior
                       if grouped_samples is None
                       else Phase.Posterior)
+        self.n_mcmc = None
+        self.has_run = False
 
         if grouped_samples is not None:
-            raise NotImplementedError()
+            self._load_grouped_samples(grouped_samples)
+
+    def _load_grouped_samples(self, grouped_samples:dict[str, jnp.ndarray]):
+        rlookup = {
+                val: key
+                for key, val in self.model.mv.sample_sites.items()}
+        assert len(rlookup) == len(self.model.mv.sample_sites)
+
+        for key_str, grouped_sample in grouped_samples.items():
+            var_key = rlookup[key_str]
+            assert len(grouped_sample.shape) >= 2
+            (n_groups, n_saved_samples, *shape) = grouped_sample.shape
+            if self.n_mcmc is None:
+                self.n_mcmc = n_saved_samples * n_groups
+            else:
+                assert self.n_mcmc == n_saved_samples * n_groups
+            if isinstance(var_key, NextCarry):
+                # TODO: I think this needs to be loaded into a padded
+                # array of shape [n_years, n_mcmc] + [var shape]
+                # and a separate pull_from_sample_mask array of shape [n_years]
+                # and these both need to be set up as Xs for the scan
+                # and then the ws.dist.next_carry __setitem__ needs to
+                # put either the this_X from the sample or the random draw
+                # into the scan_storage.next_carry_d, depending on the
+                # pull_from_sample_mask.
+                # ... and that's all assuming that these dists are not observed,
+                # .... which I'm sure they will be sometimes! I think that
+                # complicates the logic, but doesn't break the approach.
+                raise NotImplementedError()
+            else:
+                self.storage_nd[GroupedPosterior(prior_var_key=var_key)] = grouped_sample
+                self.storage_nd[var_key] \
+                        = grouped_sample.reshape([n_groups * n_saved_samples] + shape)
+        if self.n_mcmc is None:
+            raise NotImplementedError('grouped_samples was empty dict')
 
     def _split_rng_key(self) -> ArrayLike:
         self.rng_key, key = jrandom.split(self.rng_key)
@@ -486,7 +576,7 @@ class Computation:
                 }
         return initial_carry_d
 
-    def _X_d(self, n_years):
+    def _X_d(self):
         # I'm not sure what heuristic / policy to use here.
         # First try: all var_keys in general_nd whose first shape dim
         # is the inference_years_dim.
@@ -501,27 +591,27 @@ class Computation:
 
         rval['__years'] = jnp.arange(
                 self.model.mv.year_0,
-                self.model.mv.year_0 + n_years)
+                self.model.mv.year_0 + self.n_years)
         return rval
 
     def _elem_items(self):
         yield from self.model.model_elements.items()
 
-    def _run_prep(self, n_years, phase):
+    def _run_prep(self):
         for elem_id, elem in self._elem_items():
             try:
                 ws = WorkSpace_Prep(
                         comp=self,
                         year_0=self.model.mv.year_0,
-                        n_years=n_years,
-                        phase=phase,
+                        n_years=self.n_years,
+                        phase=self.phase,
                         )
                 elem.model_element_prepare(ws)
             except Exception as err:
                 err.add_note(f'element_id={elem_id}')
                 raise
 
-    def _run_step(self, n_years, phase):
+    def _run_step(self):
 
         def scan_step(this_carry_d, this_X_d):
             scan_storage = ScanStorage(this_carry_d, this_X_d)
@@ -531,8 +621,8 @@ class Computation:
                     ws = WorkSpace_Step(
                             comp=self,
                             year_0=self.model.mv.year_0,
-                            n_years=n_years,
-                            phase=phase,
+                            n_years=self.n_years,
+                            phase=self.phase,
                             scan_storage=scan_storage)
                     elem.model_element_annual_step(ws)
                 except Exception as err:
@@ -542,9 +632,9 @@ class Computation:
 
         initial_carry_d = self._initial_carry_d()
         initial_carry_d['__rng_key'] = self._split_rng_key()
-        X_d = self._X_d(n_years)
+        X_d = self._X_d()
 
-        if phase == Phase.Prior:
+        if self.phase == Phase.Prior:
             final_carry_d, Y_d = numpyro_scan(scan_step, initial_carry_d, X_d)
         else:
             final_carry_d, Y_d = jax_scan(scan_step, initial_carry_d, X_d)
@@ -553,27 +643,31 @@ class Computation:
         self.storage_nd.update(Y_d)
         self.rng_key = final_carry_d['__rng_key']
 
-    def _run_proc(self, n_years, phase):
+    def _run_proc(self):
         for elem_id, elem in self._elem_items():
             try:
                 ws = WorkSpace_Proc(
                         comp=self,
                         year_0=self.model.mv.year_0,
-                        n_years=n_years,
-                        phase=phase,
+                        n_years=self.n_years,
+                        phase=self.phase,
                         )
                 elem.model_element_postprocess(ws)
             except Exception as err:
                 err.add_note(f'element_id={elem_id}')
                 raise
+    @property
+    def n_years(self):
+        return (self.model.mv.n_prior_years
+                if self.phase == Phase.Prior
+                else self.model.mv.n_posterior_years)
 
-    def run_phase(self, phase):
-        n_years = (self.model.mv.n_prior_years
-                   if phase == Phase.Prior
-                   else self.model.mv.n_posterior_years)
-        self._run_prep(n_years, phase)
-        self._run_step(n_years, phase)
-        self._run_proc(n_years, phase)
+    def run(self):
+        assert not self.has_run
+        self._run_prep()
+        self._run_step()
+        self._run_proc()
+        self.has_run = True
 
 def run_mcmc(
         model:Model,
@@ -582,21 +676,19 @@ def run_mcmc(
         thinning:int,
         num_samples:int,
         ):
-    from numpyro.infer import MCMC, NUTS
     def trace_fn():
+        # TODO verify
         # the seed value is ignored
         # when running via MCMC
-        obj = Computation(model=model, seed=1)
-        obj.run_once()
-
+        obj = Computation(model=model, rng_key=jrandom.key(1), grouped_samples=None)
+        obj.run()
     rng_key = jrandom.key(seed=seed)
-    mcmc = MCMC(NUTS(trace_fn),
-                num_warmup=num_warmup,
-                thinning=thinning,
-                num_samples=num_samples)
+    mcmc = MCMC(
+            NUTS(trace_fn),
+            num_warmup=num_warmup,
+            thinning=thinning,
+            num_samples=num_samples)
     mcmc.run(rng_key=rng_key)
-    mcmc.print_summary()
-    grouped_samples = mcmc.get_samples(group_by_chain=True)
     return mcmc
 
 

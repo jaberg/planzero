@@ -46,7 +46,7 @@ def test_add_inference_run_smoke(model):
             model=model,
             rng_key=jrandom.key(123),
             grouped_samples=None)
-    comp.run_phase(Phase.Prior)
+    comp.run()
 
 
 def test_add_inference_mcmc_smoke(model):
@@ -64,10 +64,9 @@ def test_posterior_smoke(model):
              thinning=1,
              num_samples=10)
 
-    pc = Computation(
+    comp = Computation(
             model=model,
             grouped_samples=mcmc.get_samples(group_by_chain=True),
             rng_key=jrandom.key(123),
             )
-
-    pc.run_once()
+    comp.run()
