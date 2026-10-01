@@ -25,6 +25,7 @@ from .base import (
     VarKey,
     final_carry,
     initial_carry,
+    new_named_key,
     next_carry,
     observation,
     observation_valid,
@@ -45,7 +46,7 @@ class WorkSpacePrep_Dist_Attr:
 class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
     """object to represent `ws.dist.general`"""
 
-    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+    def __setitem__(self, item:VarKey, dist:Distribution) -> None:
         # TODO: check that the shape is correct
         # TODO: check that the item is supposed to be sampled
 
@@ -56,10 +57,10 @@ class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
 
             if obs is None and obs_valid is None:
                 # TODO: check that the shape is correct
-                self.comp.storage_dist[item] = value
+                self.comp.storage_dist[item] = dist
                 self.comp.storage_nd[item] = numpyro.sample(
                         self.comp.model.mv.sample_sites[item],
-                        fn=value,
+                        fn=dist,
                         rng_key=self.comp._split_rng_key(),
                         )
             elif obs_valid is None:
@@ -73,7 +74,7 @@ class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
                 self.comp.storage_nd[item] = obs
                 numpyro.sample(
                         self.comp.model.mv.sample_sites[item],
-                        fn=value,
+                        fn=dist,
                         rng_key=self.comp._split_rng_key(),
                         obs=obs,
                         )
@@ -84,7 +85,13 @@ class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
                 assert obs is not None
                 # mask the distribution
                 # mask the observation in the sample call?
-                # store value jnp.where(obs_valid, obs, an_actual_sample)
+                # store dist jnp.where(obs_valid, obs, an_actual_sample)
+                #
+                # Note that according to ...
+                # https://num.pyro.ai/en/stable/primitives.html#sample
+                # ... obs_mask parameter should *not* be used with MCMC
+                # ... so think about what this model needs in terms of
+                # .... symantics.
                 raise NotImplementedError()
         else:
             assert self.comp.phase == Phase.Posterior
@@ -112,14 +119,20 @@ class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
                 assert obs is not None
                 # mask the distribution
                 # mask the observation in the sample call?
-                # store value jnp.where(obs_valid, obs, an_actual_sample)
-                raise NotImplementedError()
+                # store dist jnp.where(obs_valid, obs, an_actual_sample)
+                self.comp.storage_nd[item] = numpyro.sample(
+                        self.comp.model.mv.sample_sites[item],
+                        fn=dist,
+                        rng_key=self.comp._split_rng_key(),
+                        obs=obs,
+                        obs_mask=obs_valid
+                        )
 
 
 class WorkSpacePrep_Dist_InitialCarry(WorkSpacePrep_Dist_Attr):
     """object to represent `ws.dist.initial_carry`"""
 
-    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+    def __setitem__(self, item:VarKey, dist:Distribution) -> None:
         obs = self.comp.storage_nd.get(observation(initial_carry(item)))
         obs_valid = self.comp.storage_nd.get(observation_valid(initial_carry(item)))
 
@@ -127,11 +140,11 @@ class WorkSpacePrep_Dist_InitialCarry(WorkSpacePrep_Dist_Attr):
             if obs is None and obs_valid is None:
                 # TODO: check that the shape is correct
                 # TODO: check that the item is supposed to be sampled
-                self.comp.storage_dist[initial_carry(item)] = value
+                self.comp.storage_dist[initial_carry(item)] = dist
 
                 self.comp.storage_nd[initial_carry(item)] = numpyro.sample(
                         self.comp.model.mv.sample_sites[initial_carry(item)],
-                        fn=value,
+                        fn=dist,
                         rng_key=self.comp._split_rng_key(),
                         )
             else:
@@ -184,7 +197,9 @@ class WorkSpacePrep_Val_InitialCarry(WorkSpacePrep_Val_Attr):
     def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
         # TODO: check if the element, subphase defines item
         # TODO: check that the shape is correct
-        # TODO: check that the item is not supposed to be sampled
+        ndm = self.comp.model.mv.this_carry_nd[item].definition_metadata
+        assert not ndm.sampled
+        assert value.shape == tuple(ndm.value_type.shape)
         self.comp.storage_nd[initial_carry(item)] = value
 
 
@@ -209,7 +224,6 @@ class WorkSpaceStep_Dist_ThisY(WorkSpaceStep_Dist_Attr):
         #
         raise NotImplementedError()
 
-
     def __setitem__(self, item:VarKey, value:Distribution) -> None:
         # check if the element, subphase defines item
         # check that the shape is correct
@@ -223,12 +237,10 @@ class WorkSpaceStep_Dist_NextCarry(WorkSpaceStep_Dist_Attr):
     def __getitem__(self, item:VarKey) -> Distribution:
         return self.scan_storage.next_carry_dist_d[item]
 
-    def __setitem__(self, item:VarKey, value:Distribution) -> None:
+    def __setitem__(self, item:VarKey, dist:Distribution) -> None:
         # TODO: check if the element, subphase defines item
         # TODO: check that the shape is correct
         # TODO: check that the item is supposed to be sampled
-        #
-        self.scan_storage.next_carry_dist_d[item] = value
 
         obs = self.comp.storage_nd.get(observation(item))
         obs_valid = self.comp.storage_nd.get(observation_valid(item))
@@ -238,12 +250,32 @@ class WorkSpaceStep_Dist_NextCarry(WorkSpaceStep_Dist_Attr):
                 raise NotImplementedError()
             else:
                 # TODO: check that the shape is correct
+                self.scan_storage.next_carry_dist_d[item] = dist
                 self.scan_storage.next_carry_d[item] = numpyro.sample(
                         self.comp.model.mv.sample_sites[next_carry(item)],
-                        fn=value,
+                        fn=dist,
                         rng_key=self.scan_storage._split_rng_key())
         else:
-            raise NotImplementedError()
+            if obs or obs_valid:
+                raise NotImplementedError()
+            else:
+                this_idx = self.scan_storage.this_X_d[str(scan_step_ii_key)]
+                n_prior_years = self.comp.model.mv.n_prior_years
+
+                self.scan_storage.next_carry_dist_d[item] = dist.mask(
+                        this_idx >= n_prior_years)
+
+                # TODO: require `dist` have a leading mcmc dim?
+                sample = numpyro.sample(
+                        self.comp.model.mv.sample_sites[next_carry(item)],
+                        fn=dist,
+                        rng_key=self.scan_storage._split_rng_key())
+
+                self.scan_storage.next_carry_d[item] = jnp.where(
+                        this_idx >= n_prior_years,
+                        sample,
+                        self.comp.storage_nd[NextCarry(carry_key=item)][
+                            jnp.minimum(this_idx, n_prior_years - 1)])
 
 
 class WorkSpaceStep_Val_Attr:
@@ -417,6 +449,7 @@ class WorkSpace:
     n_years: int
     phase: Phase
     comp: Computation
+    model: Model
 
     def __init__(
             self,
@@ -430,6 +463,7 @@ class WorkSpace:
         assert n_years >= 0
         self.phase = phase
         self.comp = comp
+        self.model = self.comp.model
 
 
 class WorkSpace_Prep(WorkSpace):
@@ -545,8 +579,23 @@ class Computation:
             else:
                 assert self.n_mcmc == n_saved_samples * n_groups
             if isinstance(var_key, NextCarry):
-                # TODO: I think this needs to be loaded into a padded
-                # array of shape [n_years, n_mcmc] + [var shape]
+                self.storage_nd[GroupedPosterior(prior_var_key=var_key)] = grouped_sample
+                (n_groups, n_saved_samples, n_prior_scan_steps, *annual_shape) \
+                        = grouped_sample.shape
+                assert n_prior_scan_steps == self.model.mv.n_prior_years
+                reshaped = grouped_sample.reshape(
+                        [n_groups * n_saved_samples, n_prior_scan_steps]
+                        + annual_shape)
+                transposed = reshaped.transpose(
+                        [1, 0] + list(range(2, len(annual_shape))))
+                self.storage_nd[var_key] = transposed
+
+                # post-conditions:
+                assert transposed.shape[0] == n_prior_scan_steps
+                assert transposed.shape[1] == self.n_mcmc
+                assert transposed.shape[2:] == tuple(annual_shape), (
+                        transposed.shape[2:], annual_shape)
+
                 # and a separate pull_from_sample_mask array of shape [n_years]
                 # and these both need to be set up as Xs for the scan
                 # and then the ws.dist.next_carry __setitem__ needs to
@@ -556,7 +605,6 @@ class Computation:
                 # ... and that's all assuming that these dists are not observed,
                 # .... which I'm sure they will be sometimes! I think that
                 # complicates the logic, but doesn't break the approach.
-                raise NotImplementedError()
             else:
                 self.storage_nd[GroupedPosterior(prior_var_key=var_key)] = grouped_sample
                 self.storage_nd[var_key] \
@@ -569,29 +617,42 @@ class Computation:
         return key
 
     def _initial_carry_d(self):
-        initial_carry_d = {
-                var_key.carry_key: val
-                for var_key, val in self.storage_nd.items()
-                if isinstance(var_key, InitialCarry)
-                }
-        return initial_carry_d
+        rval = {}
+        for var_key, val in self.storage_nd.items():
+            if isinstance(var_key, InitialCarry):
+                if self.phase == Phase.Prior:
+                    rval[var_key.carry_key] = val
+                else:
+                    assert self.phase == Phase.Posterior
+                    # In general, the posterior scan operates on
+                    # ndarrays with a leading mcmc dimension.
+                    # If this is a performance problem, consider
+                    # adding a hint to the @define_carry that it isn't
+                    # the case for a particular variable.
+                    ndm = self.model.mv.this_carry_nd[var_key.carry_key].definition_metadata
+                    reqd_shape = [self.n_mcmc] + ndm.value_type.shape
+                    if val.shape == tuple(ndm.value_type.shape):
+                        bcast_value = jnp.zeros(reqd_shape, dtype=val.dtype)
+                        rval[var_key.carry_key] = bcast_value
+                    else:
+                        assert val.shape == tuple(reqd_shape), (
+                                var_key, val.shape, reqd_shape)
+                        rval[var_key.carry_key] = val
+
+        return rval
 
     def _X_d(self):
         # I'm not sure what heuristic / policy to use here.
         # First try: all var_keys in general_nd whose first shape dim
         # is the inference_years_dim.
         rval = {
-                var_key: self.storage_nd[var_key]
+                str(var_key): self.storage_nd[var_key]
                 for var_key, nvm in self.model.mv.general_nd.items()
                 if (
                     nvm.definition_metadata.value_type.shape
                     and (nvm.definition_metadata.value_type.shape[0] == years_dim)
                     and var_key in self.storage_nd)
                 }
-
-        rval['__years'] = jnp.arange(
-                self.model.mv.year_0,
-                self.model.mv.year_0 + self.n_years)
         return rval
 
     def _elem_items(self):
@@ -801,6 +862,20 @@ class ModelElement(BaseModel):
         pass
 
 
+years_key = new_named_key('years')
+scan_step_ii_key = new_named_key('scan_step_ii')
+
+
+class ModelBuiltIns(ModelElement):
+    @define(years_key, sampled=False, shape=[years_dim])
+    @define(scan_step_ii_key, sampled=False, shape=[years_dim])
+    def model_element_prepare(self, ws:WorkSpace_Prep):
+        ws.val.general[years_key] = jnp.arange(
+                ws.model.mv.year_0,
+                ws.model.mv.year_0 + ws.n_years)
+        ws.val.general[scan_step_ii_key] = jnp.arange(0, ws.n_years)
+
+
 class Model:
     """
     Try to make the elements work mostly as a set.
@@ -823,6 +898,7 @@ class Model:
                 n_prior_years=n_prior_years,
                 n_posterior_years=n_posterior_years,
                 )
+        self.add_element(ModelBuiltIns())
 
     def _add_define_d(self, element_id, defining_subphase, define_d):
         for var_key, ndm in define_d.items():

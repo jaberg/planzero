@@ -3,7 +3,6 @@ import jax.random as jrandom
 import pytest
 
 from .base import (
-    Phase,
     final_carry,
     initial_carry,
 )
@@ -17,7 +16,7 @@ def model():
     model = Model(
             first_year=1990,
             n_prior_years=7,
-            n_posterior_years=10)
+            n_posterior_years=9)
     model.add_element(Example_Population())
     return model
 

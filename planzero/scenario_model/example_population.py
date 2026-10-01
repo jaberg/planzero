@@ -3,9 +3,9 @@ import numpyro.distributions as dist
 
 from .base import (
     ndarray_dim,
-    years_dim,
     observation,
     observation_valid,
+    years_dim,
 )
 from .computation import (
     ModelElement,
@@ -15,6 +15,7 @@ from .computation import (
     define,
     define_annual,
     define_carry,
+    years_key,
 )
 
 
@@ -55,7 +56,7 @@ class Example_Population(ModelElement):
         else:
             ws.val.general[observation('generated_data')] = jnp.concatenate(
                     [ws.val.general['data'], jnp.zeros(ws.n_years - 7)])
-            ws.val.general[observation_valid('generated_data')] = ws.years < 1997
+            ws.val.general[observation_valid('generated_data')] = ws.val.general[years_key] < 1997
         ws.dist.general['generated_data'] = dist.Normal(
                 ws.val.general['mu'],
                 scale=50.0)

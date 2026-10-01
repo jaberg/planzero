@@ -50,6 +50,20 @@ class VarKeyBase(BaseModel, frozen=True):
 VarKey = (str | VarKeyBase)
 
 
+class NamedKey(VarKeyBase, frozen=True):
+    name: str
+    unique_id: str
+
+_named_key_counter = 0
+
+def new_named_key(name:str) -> NamedKey:
+    global _named_key_counter
+    _named_key_counter += 1
+    return NamedKey(
+            name=name,
+            unique_id=f'named_key_id_{_named_key_counter}')
+
+
 class Posterior(VarKeyBase, frozen=True):
     var_key_type: Literal['Posterior'] = "Posterior"
     prior_var_key: VarKey
