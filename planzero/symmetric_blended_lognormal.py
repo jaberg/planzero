@@ -32,9 +32,9 @@ class SymmetricBlendedLogNormal(Distribution):
         relerr: if small relative to 1, the distribution is concentrated.
         """
         # relerr <= 0 will trigger constraints violation, catch earlier here
-        assert relerr > 0
+        assert jnp.all(relerr > 0)
 
-        assert rolloff > 0 # actually 0 maybe should work? not tested
+        assert jnp.all(rolloff > 0) # actually 0 maybe should work? not tested
 
         return cls(
             mu=mu,

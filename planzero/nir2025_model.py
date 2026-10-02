@@ -1,7 +1,11 @@
 from numpyro.distributions import Normal
 
 from .enums import GHG, PT, IPCC_Sector
-from .nir2025 import ktCO2e_numpyro_dist_pt_ca
+from .nir2025 import (
+    ktCO2e_numpyro_dist_pt_ca,
+    ktCO2e_numpyro_dist_pt_ca_years,
+    near_zero_sector_ghgs,
+)
 from .numpyro_utils import stack_distributions
 from .scenario_model.base import NamedKey
 from .scenario_model.computation import (
@@ -78,23 +82,34 @@ class NIR2025_ModelElement(ModelElement):
     @define(ca_key, sampled=True, shape=[n_samples_per_year, n_years])
     @define(pt_keys, sampled=True, shape=[n_samples_per_year, n_years])
     def model_element_prepare(self, ws:WorkSpace_Prep):
-        yearly_ca_dists = []
-        yearly_pt_dists_by_pt = {pt: [] for pt in PT if pt != PT.XX}
-        for year in range(ws.year_0, ws.year_0 + self.n_years):
-            ca_dist, pt_dists = ktCO2e_numpyro_dist_pt_ca(
-                    self.sector, self.ghg, year)
-            yearly_ca_dists.append(ca_dist)
-            assert len(pt_dists) == 13
-            for pt, pt_dist in zip(PT, pt_dists):
-                yearly_pt_dists_by_pt[pt].append(pt_dist)
+        if 0:
+            yearly_ca_dists = []
+            yearly_pt_dists_by_pt = {pt: [] for pt in PT if pt != PT.XX}
+            for year in range(ws.year_0, ws.year_0 + self.n_years):
+                ca_dist, pt_dists = ktCO2e_numpyro_dist_pt_ca(
+                        self.sector, self.ghg, year)
+                yearly_ca_dists.append(ca_dist)
+                assert len(pt_dists) == 13
+                for pt, pt_dist in zip(PT, pt_dists):
+                    yearly_pt_dists_by_pt[pt].append(pt_dist)
 
-        ws.dist.general[self.ca_key] = stack_distributions(
-                _upgrade_to_sbln_if_necessary(yearly_ca_dists)
-                ).expand_by((self.n_samples_per_year,))
-        for pt, key in self.pt_keys.items():
-            ws.dist.general[key] = stack_distributions(
-                    _upgrade_to_sbln_if_necessary(yearly_pt_dists_by_pt[pt])
+            ws.dist.general[self.ca_key] = stack_distributions(
+                    _upgrade_to_sbln_if_necessary(yearly_ca_dists)
                     ).expand_by((self.n_samples_per_year,))
+            for pt, key in self.pt_keys.items():
+                ws.dist.general[key] = stack_distributions(
+                        _upgrade_to_sbln_if_necessary(yearly_pt_dists_by_pt[pt])
+                        ).expand_by((self.n_samples_per_year,))
+        else:
+            ca_dist, pt_dists_by_pt = ktCO2e_numpyro_dist_pt_ca_years(
+                    self.sector, self.ghg,
+                    year_0=ws.year_0,
+                    n_years=self.n_years)
+            ws.dist.general[self.ca_key] = ca_dist.expand_by(
+                    (self.n_samples_per_year,))
+            for pt, key in self.pt_keys.items():
+                ws.dist.general[key] = pt_dists_by_pt[pt].expand_by(
+                        (self.n_samples_per_year,))
 
 
 def NIR2025_Model(
@@ -111,10 +126,11 @@ def NIR2025_Model(
             )
     for sector in IPCC_Sector:
         for ghg in GHG:
-            model.add_element(
-                    NIR2025_ModelElement(
-                        sector=sector,
-                        ghg=ghg,
-                        n_samples_per_year=n_samples_per_year,
-                        n_years=n_years))
+            if (sector, ghg) not in near_zero_sector_ghgs():
+                model.add_element(
+                        NIR2025_ModelElement(
+                            sector=sector,
+                            ghg=ghg,
+                            n_samples_per_year=n_samples_per_year,
+                            n_years=n_years))
     return model

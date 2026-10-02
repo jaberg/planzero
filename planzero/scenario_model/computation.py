@@ -100,6 +100,12 @@ class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
                 # don't define the distribution this time
                 # because the provided distribution was the prior.
 
+                # TODO: verify that what's in storage_nd was actually
+                #       put there by the loading of posterior samples.
+                #
+                #       If instead it is e.g. from a previous assignment to this key
+                #       then that previous assignment should be replaced!
+
                 assert item in self.comp.storage_nd
                 # TODO: check that the shape is correct
                 #       the shape should be [n_mcmc] + [var shape]
