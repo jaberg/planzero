@@ -1,16 +1,16 @@
 import argparse
 import os
 import sys
-
 from pathlib import Path
 
 from .endpoints import completed_prob_registry
+
 
 def print_max_gaps(args):
     from . import est_nir
     assert args.year == 2005
     est = est_nir.EstSectorEmissions()
-    max_gap = est.max_gap_2005()
+    est.max_gap_2005()
 
 
 def cache_ghgrp_by_petrinex(args):
