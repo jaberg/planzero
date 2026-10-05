@@ -1,3 +1,6 @@
+SHELL := /bin/bash
+.ONESHELL:
+
 target = ${PROJECTNAME}
 
 .build.base: Dockerfile
@@ -43,6 +46,12 @@ local:
 
 jupyter:
 	jupyter lab --port=8013 --ip 0.0.0.0 --no-browser --allow-root
+
+
+clear_model_registry:
+	if [[ -n "$${PLANZERO_MODEL_REGISTRY_ROOT}" ]]; then \
+		rm -Rf $${PLANZERO_MODEL_REGISTRY_ROOT}; \
+	fi
 
 
 bash_build_cache: .build.cache

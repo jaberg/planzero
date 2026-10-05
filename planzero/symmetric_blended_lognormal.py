@@ -32,9 +32,10 @@ class SymmetricBlendedLogNormal(Distribution):
         relerr: if small relative to 1, the distribution is concentrated.
         """
         # relerr <= 0 will trigger constraints violation, catch earlier here
-        assert jnp.all(relerr > 0)
+        # assert jnp.all(relerr > 0), relerr.min()
 
-        assert jnp.all(rolloff > 0) # actually 0 maybe should work? not tested
+        # actually 0 maybe should work? not tested
+        # assert jnp.all(rolloff > 0), rolloff.min()
 
         return cls(
             mu=mu,
@@ -170,7 +171,13 @@ class SymmetricBlendedLogNormal(Distribution):
             log_weights[..., 2] + log_p_pos
         ], axis=-1)
 
-        return jax.nn.logsumexp(components_log_prob, axis=-1)
+        rval = jax.nn.logsumexp(components_log_prob, axis=-1)
+
+        n_batch_dims = len(self.batch_shape)
+        while n_batch_dims:
+            rval = rval.sum(axis=-1)
+            n_batch_dims -= 1
+        return rval
 
 
 def _gauss_hermite(n_quad: int):

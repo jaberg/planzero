@@ -1,8 +1,8 @@
 from .example_model_element_class_parameters import (
-        Case,
-        PropertyModelElement,
-        property_model
-        )
+    Case,
+    PropertyModelElement,
+    property_model,
+)
 
 
 def test_vars_are_present():

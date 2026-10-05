@@ -1,6 +1,7 @@
 import enum
 
 import numpy as np
+from jax.typing import ArrayLike
 
 from . import nir2025
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors, col_by_pt, col_ca
@@ -41,8 +42,9 @@ class BaseBase:
     credibility_interval_95 = (.025, .975)
 
     def __init__(self, div_id, model_name):
+        # TODO: move div_id to make_echart() param
         self.div_id = div_id
-        self.model_name = model_name
+        self.model_name = model_name  # used to construct urls
         self.grid_list = []
         self.xAxis_list = []
         self.yAxis_list = []
@@ -51,7 +53,9 @@ class BaseBase:
         self.stats_d = {} # key -> stats e.g. lbounds, ubounds, etc.
         self.sorted_keys = [] # list of keys in raster order of panels
         self.color_by_key = {}
+        # self.nir_stats_d = {} # reference stats from NIR
 
+        # TODO: parameterize constructor as e.g. (year_0, n_years)
         # has to be every year or else scaling doesn't work properly
         # when combined with historic actuals
         self.years = np.arange(1990, 2050 + 1)
@@ -226,7 +230,7 @@ class BaseBase:
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
+                    areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
                     data=list(zip(self.years, data['pos_shade'])),
                     stack=f'stack_{key!s}_pos'
@@ -1023,4 +1027,50 @@ def echart_from_napb(
     }
     helper.assign_default_colors()
     helper.append_all_cells()
+    return helper.make_echart()
+
+
+def national_emissions_by_sector_echart_from_sample(
+        ktCO2e_sample: dict[IPCC_Sector, ArrayLike],
+        year_0: int,
+        n_years: int,
+        n_samples: int,
+        div_id:str,
+        v_unit:str,
+        model_name:str,
+        ) -> UncertainSparklineMatrixEChart:
+
+    helper = SparklineEChartHelperBase(div_id=div_id,
+                                       v_unit=v_unit,
+                                       model_name=model_name)
+    helper.years = np.arange(year_0, n_years + year_0)
+
+    mean_with_lulucf = 0
+    estimates_with_lulucf = np.zeros((n_samples, n_years))
+
+    mean_without_lulucf = 0
+    estimates_without_lulucf = np.zeros((n_samples, n_years))
+
+    for sector in IPCC_Sector:
+        mean_sector_total = helper.compute_stats_and_add_data_for_sector(
+            sector,
+            ktCO2e_sample[sector] * helper.v_unit_scale)
+
+        if sector not in LULUCF_Sectors:
+            estimates_without_lulucf += ktCO2e_sample[sector]
+            mean_without_lulucf += mean_sector_total
+
+        estimates_with_lulucf += ktCO2e_sample[sector]
+        mean_with_lulucf += mean_sector_total
+
+    helper.add_data_for_LULUCF_totals(
+        estimates_with_lulucf,
+        mean_with_lulucf,
+        estimates_without_lulucf,
+        mean_without_lulucf)
+
+    helper.order_sectors()
+    helper.add_total_cells()
+    helper.add_non_lulucf_cells()
+    helper.add_lulucf_cells()
     return helper.make_echart()

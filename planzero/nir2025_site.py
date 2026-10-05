@@ -3,21 +3,21 @@ try:
 except ImportError:
     pass
 import numpy as np
-from pydantic import computed_field
 
 from . import nir2025  # as the model being rendered by this code
 from . import nir2025 as site_nir  # as the reference model for the site
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
+from .nir2025_model import NIR2025_ScenarioModel
 from .nir_ar2_site import (
     RegionalSparklineEChartHelper,  # TODO: rename e.g. TimeVaryingSparklineEChartHelper
 )
 from .prob import ClassVar, SiteInference
+from .scenario_model import ScenarioModel, registry_compute_model
 from .sparkline_echart_helper import (
-    PseudoRegion,
-    PseudoSectors,
-    RegionalSparklineEChartHelperBase,
     SparklineEChartHelperBase,
+    national_emissions_by_sector_echart_from_sample,
 )
+from .sector_total_emissions_element import SectorTotalEmissionsVarKey
 
 n_samples = 250 # enough to do the job, not too slowly
 n_years = 34
@@ -132,14 +132,44 @@ class NIR2025(SiteInference):
     def one_line_description(self):
         return "Emissions with uncertainty from NIR-2025"
 
+    @property
+    def scenario_model(self) -> ScenarioModel:
+        return NIR2025_ScenarioModel(last_observed_year=2023)
+
+    @property
+    def comp(self):
+        return registry_compute_model(
+                model=self.scenario_model,
+                model_name="NIR2025",
+                cache_posterior=True,
+                seed_or_key=42)
+
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
-        helper = NIR2025_SparklineEChartHelper(div_id, v_unit, model_name=self.__class__.__name__)
-        helper.load_data()
-        helper.order_sectors()
-        helper.add_total_cells()
-        helper.add_non_lulucf_cells()
-        helper.add_lulucf_cells()
-        return helper.make_echart()
+        if 0:
+            helper = NIR2025_SparklineEChartHelper(
+                    div_id, v_unit, model_name=self.__class__.__name__)
+            helper.load_data()
+            helper.order_sectors()
+            helper.add_total_cells()
+            helper.add_non_lulucf_cells()
+            helper.add_lulucf_cells()
+            return helper.make_echart()
+        else:
+            # TODO: make it work, then move to base class
+            comp = self.comp
+            ktCO2e_sample = {sector: comp.storage_nd[
+                SectorTotalEmissionsVarKey(sector=sector)]
+                             for sector in IPCC_Sector}
+            rval = national_emissions_by_sector_echart_from_sample(
+                    ktCO2e_sample=ktCO2e_sample,
+                    year_0=comp.model.mv.year_0,
+                    n_years=comp.n_years,
+                    n_samples=comp.n_mcmc,
+                    div_id=div_id,
+                    v_unit=v_unit,
+                    model_name=self.__class__.__name__,
+                    )
+            return rval
 
     def GHGs_for_sector(self, sector):
         near_zeros = site_nir.near_zero_sector_ghgs()

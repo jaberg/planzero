@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import enum
-from typing import Literal
+from typing import Literal, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -152,7 +152,6 @@ class NdarrayType(ValType, frozen=True):
 class DefinitionMetadata(BaseModel):
 
     #observation: VarKey|None = None
-    sampled:bool = True
     subphase:Subphase = Subphase.Unknown
 
 
@@ -191,27 +190,19 @@ class NdarrayVariableMetadata(VariableMetadata):
     definition_metadata: NdarrayDefinitionMetadata
 
 
+ElementID = str
+
+
 class ModelVariables(BaseModel):
+    """
+    Things known about a model from just the add_element calls.
+    """
 
     general_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
-    #initial_carry_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-    this_carry_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-    next_carry_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-    #final_carry_nd: dict[VarKey, NdarrayVariableMetadata] = {}
+    carry_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
-    this_X_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-    #Xs_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-
-    this_Y_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-    #Ys_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-
-    #posterior_nd: dict[VarKey, NdarrayVariableMetadata] = {}
-
-    # sample_sites has to be a single one-to-one dictionary because
-    # numpyro's mcmc works on the basis of the string values
-    # to return posteriors for sample sites.
-    sample_sites: dict[VarKey, str] = {}
+    annual_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
     year_0:int
 
@@ -219,8 +210,4 @@ class ModelVariables(BaseModel):
 
     n_posterior_years:int
 
-
-class VarKeyRole(BaseModel, frozen=True):
-
-    var_key: VarKey
-    role: VariableRole
+    accesses_val: list[tuple[ElementID, Subphase, VarKey]] = []

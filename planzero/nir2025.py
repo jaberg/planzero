@@ -373,12 +373,11 @@ def ktCO2e_numpyro_dist_pt_ca_years(
         pos_ktco2e_ca = np.maximum(ktco2e_ca, 0.1)
         mu_ca = pos_ktco2e_ca
         rolloff_ca = pos_ktco2e_ca * .1 + eps
-    relerr_ca = unc
 
     # case 1 years: positive near-zero for the national total too
     mu_ca = np.where(case1, pnz['mu'], mu_ca)
     rolloff_ca = np.where(case1, pnz['rolloff'], rolloff_ca)
-    relerr_ca = np.where(case1, pnz['relerr'], relerr_ca)
+    relerr_ca = np.where(case1, pnz['relerr'], unc)
 
     nanmean_over_time = np.nanmean(arr_pt[sr, gh, real_pt_idx, :], axis=1)  # (13,)
     k_nan = np.isnan(ktco2e_pt)

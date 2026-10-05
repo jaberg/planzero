@@ -60,12 +60,14 @@ class PropertyModelElement(ModelElement):
     def n_samples(self) -> int:
         return self._n_samples
 
-    @define(prop_key, sampled=True, shape=[n_samples])
-    @define(dict_keys, sampled=True, shape=[n_samples])
+    @define(prop_key, prior_shape=[n_samples])
+    @define(dict_keys, prior_shape=[n_samples])
     def model_element_prepare(self, ws:WorkSpace_Prep):
         ws.dist.general[self.prop_key] = dist.Normal()
+        ws.val.general[self.prop_key] # draw sample
         for external_key, var_key in self.dict_keys.items():
             ws.dist.general[var_key] = dist.Normal(external_key)
+            # ws.val.general[var_key] # don't draw sample
 
 
 def property_model() -> Model:
@@ -73,6 +75,8 @@ def property_model() -> Model:
             first_year=0,
             n_prior_years=1,
             n_posterior_years=1,
+            num_warmup=7,
+            num_samples=9,
             )
     model.add_element(PropertyModelElement(n_samples=1))
     model.add_element(PropertyModelElement(n_samples=2))
