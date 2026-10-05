@@ -1,14 +1,12 @@
-import jax.random as jrandom
-
 from .enums import GHG, PT, IPCC_Sector
 from .nir2025 import (
     ktCO2e_numpyro_dist_pt_ca_years,
     near_zero_sector_ghgs,
 )
+from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
     ElementKey,
     ModelElement,
-    Phase,
     ScenarioModel,
     WorkSpace_Proc,
     define,
@@ -83,6 +81,9 @@ class NIR2025_ScenarioModel(ScenarioModel):
                 num_samples=250,
                 )
         sector_ghg_subtotal_keys = {sector: {} for sector in IPCC_Sector}
+        sector_region_ghg_subtotal_keys = {
+                (sector, pt): {}
+                for sector in IPCC_Sector for pt in PT if PT != PT.XX}
         for sector in IPCC_Sector:
             for ghg in GHG:
                 if (sector, ghg) not in near_zero_sector_ghgs():
@@ -92,8 +93,18 @@ class NIR2025_ScenarioModel(ScenarioModel):
                                 n_years=n_years)
                     self.add_element(elem, mcmc_group=str(sector))
                     sector_ghg_subtotal_keys[sector][ghg] = elem.ca_key
+                    for pt in PT:
+                        if pt == PT.XX:
+                            continue
+                        dd = sector_region_ghg_subtotal_keys.setdefault((sector, pt), {})
+                        dd[ghg] = elem.pt_keys[pt]
         self.add_element(
                 SectorTotalEmissionsElement(
                     sector_ghg_subtotal_keys=sector_ghg_subtotal_keys,
+                    ),
+                mcmc_group=None)
+        self.add_element(
+                RegionalTotalEmissionsElement(
+                    sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
                     ),
                 mcmc_group=None)

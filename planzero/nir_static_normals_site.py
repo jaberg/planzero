@@ -2,7 +2,7 @@ import datetime
 
 import numpy as np
 
-from . import model_db, nir2025_site
+from . import model_db
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
 from .nir_static_normals import (
     BNs_by_sector_ghg,
@@ -200,13 +200,6 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
             self.credibility_interval_95)
         self.add_static_data_for_region(PseudoRegion.NationalTotal,
                                         ca_mean, ca_lbound, ca_ubound)
-        self.nir2025_regional_sparkline_echart_helper = \
-                nir2025_site.NIR2025_RegionalSparklineEChartHelper(
-                        sector=self.sector,
-                        ghg=self.ghg,
-                        div_id=None,
-                        v_unit=self.v_unit)
-        self.nir2025_regional_sparkline_echart_helper.load_data()
 
 
 class Static_Normals_2024_12_31(SiteInference):

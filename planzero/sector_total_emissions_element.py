@@ -23,6 +23,10 @@ class SectorTotalEmissionsVarKey(VarKeyBase, frozen=True):
 
 
 class SectorTotalEmissionsElement(ModelElement):
+    """
+    Sum over GHG for each sector,
+    and define national totals with and without LULUCF sectors
+    """
 
     sector_ghg_subtotal_keys: dict[IPCC_Sector, dict[GHG, VarKey]]
 

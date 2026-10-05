@@ -1,4 +1,3 @@
-import enum
 
 import numpy as np
 from jax.typing import ArrayLike
@@ -22,14 +21,8 @@ from .html import (
     GridLinkElem,
     UncertainSparklineMatrixEChart,
 )
-
+from .regional_total_emissions_element import PseudoRegion
 from .sector_total_emissions_element import PseudoSector
-
-
-# TODO: if enums.Regions becomes a thing,
-# then no need for this anymore
-class PseudoRegion(str, enum.Enum):
-    NationalTotal = 'National Total'
 
 
 class BaseBase:
@@ -911,64 +904,53 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         xaxis_id, yaxis_id = self.append_cell_grid_and_axes(
                 row, col, row_ymin, row_ymax)
 
-        if hasattr(self, 'nir2025_regional_sparkline_echart_helper'):
-            nir2025_means = self.nir2025_regional_sparkline_echart_helper.data_by_region[region]['means']
-            nir2025_lbounds = self.nir2025_regional_sparkline_echart_helper.data_by_region[region]['lbounds']
-            nir2025_ubounds = self.nir2025_regional_sparkline_echart_helper.data_by_region[region]['ubounds']
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=2,
-                        type='dotted',
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, nir2025_means)),
-                    ))
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=1,
-                        type='solid',
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, nir2025_lbounds)),
-                    ))
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=1,
-                        type='solid',
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, nir2025_ubounds)),
-                    ))
-        else:
-            actuals = self.actuals_in_v_unit_scale(region)
+        from .nir2025_site import nir2025_pt_quantile_bounds
+        nir2025_q = nir2025_pt_quantile_bounds(
+                self.sector, self.ghg, q=self.actuals_q)
 
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=2,
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, actuals)),
-                    ))
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{region} NIR2025',
+                xAxisId=xaxis_id,
+                yAxisId=yaxis_id,
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=2,
+                    type='dotted',
+                    color='#000'),
+                data=list(zip(nir2025.nir2025_year_ints,
+                              self.v_unit_scale * nir2025_q[region][0.5])),
+                ))
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{region} NIR2025',
+                xAxisId=xaxis_id,
+                yAxisId=yaxis_id,
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=1,
+                    type='solid',
+                    color='#000'),
+                data=list(zip(nir2025.nir2025_year_ints,
+                              self.v_unit_scale * nir2025_q[region][0.025])),
+                ))
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{region} NIR2025',
+                xAxisId=xaxis_id,
+                yAxisId=yaxis_id,
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=1,
+                    type='solid',
+                    color='#000'),
+                data=list(zip(nir2025.nir2025_year_ints,
+                              self.v_unit_scale * nir2025_q[region][0.975])),
+                ))
+
         self.append_cell_data(region, xaxis_id, yaxis_id)
 
 
@@ -1051,4 +1033,33 @@ def national_emissions_by_sector_echart_from_sample(
     helper.add_total_cells()
     helper.add_non_lulucf_cells()
     helper.add_lulucf_cells()
+    return helper.make_echart()
+
+
+def sectoral_emissions_by_region_echart_from_sample(
+        ktCO2e_sample: dict[PT, ArrayLike],
+        year_0: int,
+        n_years: int,
+        n_samples: int,
+        sector:IPCC_Sector,
+        ghg: GHG|None,
+        div_id:str,
+        v_unit:str,
+        ) -> UncertainSparklineMatrixEChart:
+
+    helper = RegionalSparklineEChartHelperBase(
+            sector=sector,
+            ghg=ghg,
+            div_id=div_id,
+            v_unit=v_unit)
+    helper.years = np.arange(year_0, n_years + year_0)
+
+    estimates_ca = ktCO2e_sample[PseudoRegion.NationalTotal]
+    estimates_pt = np.asarray([ktCO2e_sample[pt] for pt in PT if pt != PT.XX])
+    helper.add_data_from_estimates(
+            estimates_pt=estimates_pt.transpose(1, 2, 0) * helper.v_unit_scale,
+            estimates_ca=estimates_ca * helper.v_unit_scale)
+
+    helper.order_regions()
+    helper.add_regional_cells()
     return helper.make_echart()
