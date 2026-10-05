@@ -13,66 +13,15 @@ from .nir_ar2_site import (
 )
 from .prob import ClassVar, SiteInference
 from .scenario_model import ScenarioModel, registry_compute_model
+from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsVarKey
 from .sparkline_echart_helper import (
-    SparklineEChartHelperBase,
     national_emissions_by_sector_echart_from_sample,
 )
-from .sector_total_emissions_element import SectorTotalEmissionsVarKey
 
 n_samples = 250 # enough to do the job, not too slowly
 n_years = 34
 n_regions = 13
 
-
-class NIR2025_SparklineEChartHelper(SparklineEChartHelperBase):
-
-    def load_data(self):
-        self.years = np.arange(1990, 2023 + 1)
-
-        mean_with_lulucf = 0
-        estimates_with_lulucf = np.zeros(
-            (n_samples, n_years))
-
-        mean_without_lulucf = 0
-        estimates_without_lulucf = np.zeros(
-            (n_samples, n_years))
-
-        rng_key = jrandom.key(1234)
-
-        near_zeros = site_nir.near_zero_sector_ghgs()
-
-        for sector in IPCC_Sector:
-
-            estimated_sector_total_ca = np.zeros(
-                (n_samples, n_years,))
-
-            for ii, ghg in enumerate(GHG):
-                if (sector, ghg) in near_zeros:
-                    continue
-
-                for jj, year in enumerate(self.years):
-                    ca_dist, _ = nir2025.ktCO2e_numpyro_dist_pt_ca(
-                            sector, ghg, year)
-
-                    rng_key, rng_key_ = jrandom.split(rng_key)
-                    estimated_sector_ghg_ca_year = ca_dist.sample(rng_key_, (n_samples,))
-                    estimated_sector_total_ca[:, jj] += estimated_sector_ghg_ca_year * self.v_unit_scale
-
-            mean_sector_total = self.compute_stats_and_add_data_for_sector(
-                sector,
-                estimated_sector_total_ca)
-
-            if sector not in LULUCF_Sectors:
-                estimates_without_lulucf += estimated_sector_total_ca
-                mean_without_lulucf += mean_sector_total
-            estimates_with_lulucf += estimated_sector_total_ca
-            mean_with_lulucf += mean_sector_total
-
-        self.add_data_for_LULUCF_totals(
-            estimates_with_lulucf,
-            mean_with_lulucf,
-            estimates_without_lulucf,
-            mean_without_lulucf)
 
 
 class NIR2025_RegionalSparklineEChartHelper(RegionalSparklineEChartHelper):
@@ -121,6 +70,16 @@ class NIR2025_RegionalSparklineEChartHelper(RegionalSparklineEChartHelper):
             estimates_ca=estimates_ca)
 
 
+# used in sparkline_echart_helper
+def nir2025_ca_quantile_bounds(sector:IPCC_Sector|PseudoSector, q):
+    comp = NIR2025().comp
+    var_key = SectorTotalEmissionsVarKey(sector=sector)
+    sample = comp.storage_nd[var_key]
+    qvals = np.quantile(sample, q=q, axis=0)
+    rval = {q_ii: qvals_ii for q_ii, qvals_ii in zip(q, qvals)}
+    return rval
+
+
 class NIR2025(SiteInference):
     """Emissions per province and territory,
     and per greenhouse gas, are taken from the 2025 National Inventory Report data,
@@ -145,31 +104,21 @@ class NIR2025(SiteInference):
                 seed_or_key=42)
 
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
-        if 0:
-            helper = NIR2025_SparklineEChartHelper(
-                    div_id, v_unit, model_name=self.__class__.__name__)
-            helper.load_data()
-            helper.order_sectors()
-            helper.add_total_cells()
-            helper.add_non_lulucf_cells()
-            helper.add_lulucf_cells()
-            return helper.make_echart()
-        else:
-            # TODO: make it work, then move to base class
-            comp = self.comp
-            ktCO2e_sample = {sector: comp.storage_nd[
-                SectorTotalEmissionsVarKey(sector=sector)]
-                             for sector in IPCC_Sector}
-            rval = national_emissions_by_sector_echart_from_sample(
-                    ktCO2e_sample=ktCO2e_sample,
-                    year_0=comp.model.mv.year_0,
-                    n_years=comp.n_years,
-                    n_samples=comp.n_mcmc,
-                    div_id=div_id,
-                    v_unit=v_unit,
-                    model_name=self.__class__.__name__,
-                    )
-            return rval
+        # TODO: make it work, then move to base class
+        comp = self.comp
+        ktCO2e_sample = {sector: comp.storage_nd[
+            SectorTotalEmissionsVarKey(sector=sector)]
+                         for sector in IPCC_Sector}
+        rval = national_emissions_by_sector_echart_from_sample(
+                ktCO2e_sample=ktCO2e_sample,
+                year_0=comp.model.mv.year_0,
+                n_years=comp.n_years,
+                n_samples=comp.n_mcmc,
+                div_id=div_id,
+                v_unit=v_unit,
+                model_name=self.__class__.__name__,
+                )
+        return rval
 
     def GHGs_for_sector(self, sector):
         near_zeros = site_nir.near_zero_sector_ghgs()

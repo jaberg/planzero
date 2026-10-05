@@ -172,15 +172,6 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
             estimates_without_lulucf,
             mean_without_lulucf)
 
-        # for drawing the reference values
-        # this should be updated to e.g. 2026, 2027 etc. as available
-        self.nir2025_sparkline_echart_helper = \
-                nir2025_site.NIR2025_SparklineEChartHelper(
-                        div_id='',
-                        model_name='',
-                        v_unit=self.v_unit)
-        self.nir2025_sparkline_echart_helper.load_data()
-
 
 class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
 

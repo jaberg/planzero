@@ -15,9 +15,9 @@ from .nir_static_normals import (
     weighted_KL_score,
 )
 from .prob import ClassVar, SiteInference, computed_field
+from .sector_total_emissions_element import PseudoSector
 from .sparkline_echart_helper import (
     PseudoRegion,
-    PseudoSectors,
     RegionalSparklineEChartHelperBase,
     SparklineEChartHelperBase,
 )
@@ -110,7 +110,7 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
             estimates_with_lulucf.flatten(),
             self.credibility_interval_95)
         self.add_static_data_for_sector(
-            PseudoSectors.Total_with_LULUCF,
+            PseudoSector.Total_with_LULUCF,
             mean_with_lulucf,
             lbound_with_lulucf,
             ubound_with_lulucf)
@@ -119,19 +119,10 @@ class SparklineEChartHelper(SparklineEChartHelperBase):
             estimates_without_lulucf.flatten(),
             self.credibility_interval_95)
         self.add_static_data_for_sector(
-            PseudoSectors.Total_without_LULUCF,
+            PseudoSector.Total_without_LULUCF,
             mean_without_lulucf,
             lbound_without_lulucf,
             ubound_without_lulucf)
-
-        # for drawing the reference values
-        # this should be updated to e.g. 2026, 2027 etc. as available
-        self.nir2025_sparkline_echart_helper = \
-                nir2025_site.NIR2025_SparklineEChartHelper(
-                        div_id='',
-                        model_name='',
-                        v_unit=self.v_unit)
-        self.nir2025_sparkline_echart_helper.load_data()
 
 
 class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
@@ -261,7 +252,7 @@ class Static_Normals_2024_12_31(SiteInference):
                 model_name='Static_Normals',
                 v_unit='Mt_CO2e')
         helper.load_data(self.model_id)
-        sector = PseudoSectors.Total_with_LULUCF
+        sector = PseudoSector.Total_with_LULUCF
         rval = (helper.data_by_sector[sector]['lbound'],
                 helper.data_by_sector[sector]['ubound'])
         return rval

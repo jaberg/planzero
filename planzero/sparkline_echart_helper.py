@@ -23,10 +23,7 @@ from .html import (
     UncertainSparklineMatrixEChart,
 )
 
-
-class PseudoSectors(str, enum.Enum):
-    Total_with_LULUCF = 'Total with LULUCF'
-    Total_without_LULUCF = 'Total without LULUCF'
+from .sector_total_emissions_element import PseudoSector
 
 
 # TODO: if enums.Regions becomes a thing,
@@ -40,6 +37,7 @@ class BaseBase:
     n_cols = 7
 
     credibility_interval_95 = (.025, .975)
+    actuals_q = (.025, .5, .975)
 
     def __init__(self, div_id, model_name):
         # TODO: move div_id to make_echart() param
@@ -53,7 +51,6 @@ class BaseBase:
         self.stats_d = {} # key -> stats e.g. lbounds, ubounds, etc.
         self.sorted_keys = [] # list of keys in raster order of panels
         self.color_by_key = {}
-        # self.nir_stats_d = {} # reference stats from NIR
 
         # TODO: parameterize constructor as e.g. (year_0, n_years)
         # has to be every year or else scaling doesn't work properly
@@ -338,6 +335,7 @@ class SparklineEChartHelperBase(BaseBase):
     n_total_rows = n_non_lulucf_rows + 2
     cells_include_actuals = True
 
+
     @property
     def v_unit_scale(self) -> float:
         if self.v_unit == 'Mt_CO2e':
@@ -377,7 +375,7 @@ class SparklineEChartHelperBase(BaseBase):
             axis=0)
 
         self.add_data_for_sector(
-            PseudoSectors.Total_with_LULUCF,
+            PseudoSector.Total_with_LULUCF,
             mean_with_lulucf,
             lbounds=lbounds_with_lulucf,
             ubounds=ubounds_with_lulucf)
@@ -388,7 +386,7 @@ class SparklineEChartHelperBase(BaseBase):
             axis=0)
 
         self.add_data_for_sector(
-            PseudoSectors.Total_without_LULUCF,
+            PseudoSector.Total_without_LULUCF,
             mean_without_lulucf,
             lbounds=lbounds_without_lulucf,
             ubounds=ubounds_without_lulucf)
@@ -502,9 +500,9 @@ class SparklineEChartHelperBase(BaseBase):
         #color = self.palette[(row * self.n_cols + col - 1) % len(self.palette)]
         if sector in LULUCF_Sectors:
             color = self.palette[9]
-        elif sector == PseudoSectors.Total_without_LULUCF:
+        elif sector == PseudoSector.Total_without_LULUCF:
             color = self.palette[10]
-        elif sector == PseudoSectors.Total_with_LULUCF:
+        elif sector == PseudoSector.Total_with_LULUCF:
             color = self.palette[11]
         else:
             color = {
@@ -584,72 +582,52 @@ class SparklineEChartHelperBase(BaseBase):
 
         if self.cells_include_actuals:
             # historical actuals
-            if hasattr(self, 'nir2025_sparkline_echart_helper'):
-                nir2025_means = self.nir2025_sparkline_echart_helper.data_by_sector[sector]['means']
-                nir2025_lbounds = self.nir2025_sparkline_echart_helper.data_by_sector[sector]['lbounds']
-                nir2025_ubounds = self.nir2025_sparkline_echart_helper.data_by_sector[sector]['ubounds']
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=2,
-                            type='dotted',
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, nir2025_means)),
-                        ))
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=1,
-                            type='solid',
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, nir2025_lbounds)),
-                        ))
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=1,
-                            type='solid',
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, nir2025_ubounds)),
-                        ))
-            else:
-                if sector == PseudoSectors.Total_without_LULUCF:
-                    mask = [(sec not in LULUCF_Sectors) for sec in IPCC_Sector]
-                    actuals = np.sum(self.arr_ca[mask], axis=(0, 1))
-                elif sector == PseudoSectors.Total_with_LULUCF:
-                    actuals = np.sum(self.arr_ca, axis=(0, 1))
-                else:
-                    actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
+            from .nir2025_site import nir2025_ca_quantile_bounds
+            bounds = nir2025_ca_quantile_bounds(sector, self.actuals_q)
 
-                actuals = actuals * self.v_unit_scale
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} NIR2025',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(
+                        width=2,
+                        type='dotted',
+                        color='#000'),
+                    data=list(zip(nir2025.nir2025_year_ints,
+                                  bounds[.5] * self.v_unit_scale)),
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} NIR2025',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(
+                        width=1,
+                        type='solid',
+                        color='#000'),
+                    data=list(zip(nir2025.nir2025_year_ints,
+                                  bounds[.025] * self.v_unit_scale)),
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} NIR2025',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(
+                        width=1,
+                        type='solid',
+                        color='#000'),
+                    data=list(zip(nir2025.nir2025_year_ints,
+                                  bounds[.975] * self.v_unit_scale)),
+                    ))
 
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=2,
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, actuals)),
-                        ))
 
         data = self.data_by_sector[sector]
         self.series_list.append(
@@ -751,12 +729,12 @@ class SparklineEChartHelperBase(BaseBase):
 
     def add_total_cells(self, ymin_without_lulucf=0):
         self.append_cell(0, 0,
-                         sector=PseudoSectors.Total_without_LULUCF,
+                         sector=PseudoSector.Total_without_LULUCF,
                          ymin=ymin_without_lulucf,
                          ymax=None)
         if self.sorted_lulucf:
             self.append_cell(self.n_total_rows - 1, 0,
-                             sector=PseudoSectors.Total_with_LULUCF,
+                             sector=PseudoSector.Total_with_LULUCF,
                              ymin=0,
                              ymax=None)
 
