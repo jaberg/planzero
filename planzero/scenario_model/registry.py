@@ -146,7 +146,6 @@ def registry_compute_model(
         model_name:str,
         cache_posterior:bool,  # True will save it in memory by model_name, and return from memory if possible
         seed_or_key:int|ArrayLike,
-        run_mcmc_kwargs:None|dict[str,int]=None,
         ) -> Computation:
     if cache_posterior and model_name in _registry_mem_cache:
         return _registry_mem_cache[model_name]
@@ -169,7 +168,7 @@ def registry_compute_model(
                 model_name, mcmc_group, submodel,
                 rng_key=tmp_key)
         for key, site in submodel_sample_sites.items():
-            assert key not in sample_sites
+            assert key not in sample_sites, key
             sample_sites[key] = site
 
     comp = compute_posterior(model_name, model, rng_key=rng_key, sample_sites=sample_sites)

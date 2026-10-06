@@ -20,6 +20,7 @@ from .computation import (
 from .computation import Model as ScenarioModel
 from .registry import registry_compute_model
 
+
 __all__ = [
         "ElementKey",
         "ModelElement",

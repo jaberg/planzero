@@ -11,6 +11,7 @@ from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions.distribution import Distribution
+from numpyro.distributions.kl import kl_divergence
 from numpyro.infer import MCMC, NUTS
 
 from .base import (
@@ -34,6 +35,7 @@ from .base import (
     next_carry,
     observation,
     observation_valid,
+    observation_weight,
     years_dim,
 )
 
@@ -62,12 +64,16 @@ class WorkSpacePrep_Dist_Attr:
 class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
     """object to represent `ws.dist.general`"""
 
+    def __getitem__(self, item:VarKey) -> Distribution:
+        return self.comp.storage_dist[item]
+
     def __setitem__(self, item:VarKey, dist:Distribution) -> None:
         # TODO: check that the shape is correct
         # TODO: check that the item is supposed to be sampled
 
         obs = self.comp.storage_nd.get(observation(item))
-        obs_valid = self.comp.storage_nd.get(observation_valid(item))
+        obs_valid = self.comp.storage_nd.get(
+                observation_valid(observation(item)))
 
         if self.comp.phase == Phase.Prior:
 
@@ -157,7 +163,8 @@ class WorkSpacePrep_Dist_InitialCarry(WorkSpacePrep_Dist_Attr):
 
     def __setitem__(self, item:VarKey, dist:Distribution) -> None:
         obs = self.comp.storage_nd.get(observation(initial_carry(item)))
-        obs_valid = self.comp.storage_nd.get(observation_valid(initial_carry(item)))
+        obs_valid = self.comp.storage_nd.get(
+                observation_valid(observation(initial_carry(item))))
 
         if self.comp.phase == Phase.Prior:
             if obs is None and obs_valid is None:
@@ -250,6 +257,57 @@ class WorkSpacePrep_Val_InitialCarry(WorkSpacePrep_Val_Attr):
         self.comp.storage_nd[initial_carry(item)] = value
 
 
+class WorkSpacePrep_ObsDist_Attr:
+
+    ws_od: WorkSpaceProc_ObsDist
+    comp: Computation
+
+    def __init__(self, ws_od:WorkSpaceProc_ObsDist):
+        self.ws_od = ws_od
+        self.comp = self.ws_od.ws.comp
+
+
+class WorkSpacePrep_ObsDist_General(WorkSpacePrep_ObsDist_Attr):
+
+    def __setitem__(self, item:VarKey, obs_dist:Distribution) -> None:
+
+        if self.comp.phase == Phase.Prior:
+            assert item not in self.comp.storage_nd
+            assert observation(item) not in self.comp.storage_nd
+            assert observation_valid(observation(item)) not in self.comp.storage_nd
+            # TODO: assignments of ^^ should also
+            # raise errors if storage_dist[observation(item)] is set,
+            # as I believe they are mathematically mutually exclusive
+
+            self.comp.storage_dist[observation(item)] = obs_dist
+
+            # must be defined already
+            prior_dist = self.comp.storage_dist[item]
+            obs_weight = self.comp.storage_nd[observation_weight(observation(item))]
+
+            expected_log_prob_plus_const = -kl_divergence(obs_dist, prior_dist)
+            numpyro.factor(self.comp.sample_site(item),
+                           obs_weight * expected_log_prob_plus_const)
+        else:
+            pass
+
+
+class WorkSpacePrep_ObsWeight_Attr:
+
+    ws_od: WorkSpaceProc_ObsWeight
+    comp: Computation
+
+    def __init__(self, ws_od:WorkSpaceProc_ObsWeight):
+        self.ws_od = ws_od
+        self.comp = self.ws_od.ws.comp
+
+
+class WorkSpacePrep_ObsWeight_General(WorkSpacePrep_ObsWeight_Attr):
+
+    def __setitem__(self, item:VarKey, obs_weight:ArrayLike) -> None:
+        self.comp.storage_nd[observation_weight(observation(item))] = obs_weight
+
+
 class WorkSpaceStep_Dist_Attr:
 
     wsd: WorkSpaceStep_Dist
@@ -290,7 +348,8 @@ class WorkSpaceStep_Dist_NextCarry(WorkSpaceStep_Dist_Attr):
         # TODO: check that the item is supposed to be sampled
 
         obs = self.comp.storage_nd.get(observation(item))
-        obs_valid = self.comp.storage_nd.get(observation_valid(item))
+        obs_valid = self.comp.storage_nd.get(
+                observation_valid(observation(item)))
 
         if self.comp.phase == Phase.Prior:
             if obs or obs_valid:
@@ -556,8 +615,22 @@ class WorkSpaceProc_Shape(WorkSpaceProc_Attr):
     def general(self) -> WorkSpacePrep_Shape_General:
         return WorkSpacePrep_Shape_General(self)
 
-    # TODO: initial_carry
-    # TODO: final_carry
+
+class WorkSpaceProc_ObsDist(WorkSpaceProc_Attr):
+    """object to represent `ws.obs_dist`"""
+
+    @property
+    def general(self) -> WorkSpacePrep_ObsDist_General:
+        return WorkSpacePrep_ObsDist_General(self)
+
+
+class WorkSpaceProc_ObsWeight(WorkSpaceProc_Attr):
+    """object to represent `ws.obs_dist`"""
+
+    @property
+    def general(self) -> WorkSpacePrep_ObsWeight_General:
+        return WorkSpacePrep_ObsWeight_General(self)
+
 
 
 class WorkSpace:
@@ -628,6 +701,15 @@ class WorkSpace_Proc(WorkSpace):
     @property
     def n_mcmc(self) -> int:
         return self.comp.n_mcmc
+
+    @property
+    def obs_dist(self) -> WorkSpaceProc_ObsDist:
+        return WorkSpaceProc_ObsDist(self)
+
+    @property
+    def obs_weight(self) -> WorkSpaceProc_ObsWeight:
+        return WorkSpaceProc_ObsWeight(self)
+
 
 
 class ScanStorage:

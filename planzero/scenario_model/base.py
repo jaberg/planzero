@@ -113,12 +113,21 @@ def observation(var_key):
 
 
 class ObservationValid(VarKeyBase, frozen=True):
-    var_key_type: Literal['Observation'] = "Observation"
-    obs_var_key: VarKey
+    var_key_type: Literal['ObservationValid'] = "ObservationValid"
+    obs_var_key: Observation
 
 
-def observation_valid(obs_var_key):
+def observation_valid(obs_var_key:Observation):
     return ObservationValid(obs_var_key=obs_var_key)
+
+
+class ObservationWeight(VarKeyBase, frozen=True):
+    var_key_type: Literal['ObservationWeight'] = "ObservationWeight"
+    obs_var_key: Observation
+
+
+def observation_weight(obs_var_key:Observation):
+    return ObservationWeight(obs_var_key=obs_var_key)
 
 
 class ValType(BaseModel, frozen=True):
