@@ -1,19 +1,21 @@
 
 import jax.random as jrandom
+import numpy as np
 import pytest
 
 from .base import (
-    GroupedPosterior,
+    ElementAnnualKey,
+    ElementCarryKey,
+    ElementGeneralKey,
+    FinalCarry,
+    InitialCarry,
     NextCarry,
-    final_carry,
-    initial_carry,
 )
 from .computation import Computation, Model, run_mcmc
 from .example_population import Example_Population
 
 
 @pytest.fixture
-
 def model():
     model = Model(
             first_year=1990,
@@ -27,18 +29,30 @@ def model():
 
 def test_add_inference_add_vars(model):
 
-    assert 'alpha' in model.mv.general_nd
-    assert 'data' in model.mv.general_nd
-    assert 'generated_data' in model.mv.general_nd
+    elem_id = 'Example_Population'
 
-    assert initial_carry('y_curr') in model.mv.general_nd
-    assert initial_carry('y_prev') in model.mv.general_nd
-    assert 'y_curr' in model.mv.carry_nd
-    assert 'y_prev' in model.mv.carry_nd
-    assert final_carry('y_curr') in model.mv.general_nd
-    assert final_carry('y_prev') in model.mv.general_nd
+    assert ElementGeneralKey(elem_id=elem_id, name='alpha') in model.mv.general_nd
+    assert ElementGeneralKey(elem_id=elem_id, name='data') in model.mv.general_nd
+    assert ElementGeneralKey(elem_id=elem_id, name='generated_data') in model.mv.general_nd
 
-    assert 'mu' in model.mv.annual_nd
+    assert InitialCarry(
+            carry_key=ElementCarryKey(elem_id=elem_id,
+                                      name='y_curr')) in model.mv.general_nd
+    assert InitialCarry(
+            carry_key=ElementCarryKey(elem_id=elem_id,
+                                      name='y_prev')) in model.mv.general_nd
+    assert ElementCarryKey(
+            elem_id=elem_id, name='y_curr') in model.mv.carry_nd
+    assert ElementCarryKey(
+            elem_id=elem_id, name='y_prev') in model.mv.carry_nd
+    assert FinalCarry(
+            carry_key=ElementCarryKey(elem_id=elem_id,
+                                      name='y_curr')) in model.mv.general_nd
+    assert FinalCarry(
+            carry_key=ElementCarryKey(elem_id=elem_id,
+                                      name='y_prev')) in model.mv.general_nd
+
+    assert ElementAnnualKey(elem_id=elem_id, name='mu') in model.mv.annual_nd
 
 
 def test_add_inference_run_smoke(model):
@@ -61,15 +75,30 @@ def test_posterior_smoke(model):
             rng_key=jrandom.key(123),
             )
     grouped_samples = mcmc.get_samples(group_by_chain=True)
+    sample_sites = {}
+    elem_id = 'Example_Population'
+    alpha_key = ElementGeneralKey(elem_id=elem_id, name='alpha')
+    y_curr_next = NextCarry(carry_key=ElementCarryKey(elem_id=elem_id, name='y_curr'))
+    y_curr_init = InitialCarry(carry_key=ElementCarryKey(elem_id=elem_id, name='y_curr'))
     sample_sites = {
-                'alpha': 'alpha',
-                NextCarry(carry_key='y_curr'): str(NextCarry(carry_key='y_curr')),
-                initial_carry('y_curr'): str(initial_carry('y_curr')),
+                alpha_key: str(alpha_key),
+                y_curr_next: str(y_curr_next),
+                y_curr_init: str(y_curr_init),
                 }
     assert set(sample_sites.values()) == set(grouped_samples)
+    generated_data_key = ElementGeneralKey(elem_id=elem_id, name='generated_data')
+    assert generated_data_key not in comp._ndarray_d
 
+    n_mcmc = 5
     comp.set_phase_posterior(
-            n_mcmc=5,
+            n_mcmc=n_mcmc,
             sample_sites=sample_sites,
             grouped_samples=grouped_samples)
     comp.run()
+
+    generated_data = comp._ndarray_d[generated_data_key]
+    assert generated_data.shape == (9, n_mcmc)
+    assert np.all(generated_data[0] == 1000.0)
+    assert np.all(generated_data[6] == 1020.0)
+    # Test that each mcmc sample is unique beyond the the first 7 steps
+    assert len({float(foo) for foo in generated_data[7]}) == n_mcmc

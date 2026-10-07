@@ -11,10 +11,13 @@ from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions.distribution import Distribution
-from numpyro.distributions.kl import kl_divergence
 from numpyro.infer import MCMC, NUTS
 
 from .base import (
+    ElementAnnualKey,
+    ElementCarryKey,
+    ElementGeneralKey,
+    FinalCarry,
     GroupedPosterior,
     InitialCarry,
     ModelVariables,
@@ -25,18 +28,15 @@ from .base import (
     NdarrayType_w_Properties,
     NdarrayVariableMetadata,
     NextCarry,
+    Observation,
+    ObservationValid,
     Phase,
     Subphase,
     VarKey,
-    VarKeyBase,
-    final_carry,
-    initial_carry,
-    new_named_key,
-    next_carry,
-    observation,
-    observation_valid,
-    observation_weight,
+    rng_var_key,
+    scan_step_ii_key,
     years_dim,
+    years_key,
 )
 
 VersionID: TypeAlias = int | float | str | tuple["VersionID", ...]
@@ -51,673 +51,12 @@ def hash_version_id(version_id: VersionID, n_chars=16) -> str:
     return hashlib.shake_128(encoded_data).hexdigest(n_chars)
 
 
-class WorkSpacePrep_Dist_Attr:
-
-    wsd: WorkSpacePrep_Dist | WorkSpaceProc_Dist
-    comp: Computation
-
-    def __init__(self, wsd:WorkSpacePrep_Dist|WorkSpaceProc_Dist):
-        self.wsd = wsd
-        self.comp = self.wsd.ws.comp
-
-
-class WorkSpacePrep_Dist_General(WorkSpacePrep_Dist_Attr):
-    """object to represent `ws.dist.general`"""
-
-    def __getitem__(self, item:VarKey) -> Distribution:
-        return self.comp.storage_dist[item]
-
-    def __setitem__(self, item:VarKey, dist:Distribution) -> None:
-        # TODO: check that the shape is correct
-        # TODO: check that the item is supposed to be sampled
-
-        obs = self.comp.storage_nd.get(observation(item))
-        obs_valid = self.comp.storage_nd.get(
-                observation_valid(observation(item)))
-
-        if self.comp.phase == Phase.Prior:
-
-            if obs is None and obs_valid is None:
-                # TODO: check that the shape is correct
-                self.comp.storage_dist[item] = dist
-            elif obs_valid is None:
-                # don't define the distribution if the observation
-                # is provided, because it no longer makes sense
-                #
-                # but do store the observation as the sample
-                #
-                # TODO: check that obs' shape is correct
-                assert obs is not None
-                self.comp.storage_nd[item] = obs
-                numpyro.sample(
-                        self.comp.sample_site(item),
-                        fn=dist,
-                        rng_key=self.comp._split_rng_key(),
-                        obs=obs,
-                        )
-            else:
-                # don't define the distribution if the observation
-                # is provided, because it no longer makes sense
-                assert obs_valid is not None
-                assert obs is not None
-                # mask the distribution
-                # mask the observation in the sample call?
-                # store dist jnp.where(obs_valid, obs, an_actual_sample)
-                #
-                # Note that according to ...
-                # https://num.pyro.ai/en/stable/primitives.html#sample
-                # ... obs_mask parameter should *not* be used with MCMC
-                # ... so think about what this model needs in terms of
-                # .... symantics.
-                raise NotImplementedError()
-        else:
-            assert self.comp.phase == Phase.Posterior
-            if obs is None and obs_valid is None:
-                # don't define the distribution this time
-                # because the provided distribution was the prior.
-
-                # TODO: verify that what's in storage_nd was actually
-                #       put there by the loading of posterior samples.
-                #
-                #       If instead it is e.g. from a previous assignment to this key
-                #       then that previous assignment should be replaced!
-                if item not in self.comp.storage_nd:
-                    # this can happen for items that are not sampled
-                    # in the prior computation such as the NIR2025
-                    # reference distributions
-                    # TODO: check that the shape is correct
-                    self.comp.storage_dist[item] = dist
-                else:
-                    assert item in self.comp.storage_nd
-                # TODO: check that the shape is correct
-                #       the shape should be [n_mcmc] + [var shape]
-
-            elif obs_valid is None:
-                assert obs is not None
-                # TODO: check that the shape is correct
-                #       obs' shape should be [var shape]
-                #       with no mcmc samples.
-
-                # technically this might be okay in some scenarios
-                # but if it happens for now, it's an error.
-                assert item not in self.comp.storage_nd
-
-                self.comp.storage_nd[item] = obs
-            else:
-                assert obs_valid is not None
-                assert obs is not None
-                # mask the distribution
-                # mask the observation in the sample call?
-                # store dist jnp.where(obs_valid, obs, an_actual_sample)
-                self.comp.storage_nd[item] = numpyro.sample(
-                        self.comp.sample_site(item),
-                        fn=dist,
-                        rng_key=self.comp._split_rng_key(),
-                        obs=obs,
-                        obs_mask=obs_valid
-                        )
-
-
-class WorkSpacePrep_Dist_InitialCarry(WorkSpacePrep_Dist_Attr):
-    """object to represent `ws.dist.initial_carry`"""
-
-    def __setitem__(self, item:VarKey, dist:Distribution) -> None:
-        obs = self.comp.storage_nd.get(observation(initial_carry(item)))
-        obs_valid = self.comp.storage_nd.get(
-                observation_valid(observation(initial_carry(item))))
-
-        if self.comp.phase == Phase.Prior:
-            if obs is None and obs_valid is None:
-                # TODO: check that the shape is correct
-                self.comp.storage_dist[initial_carry(item)] = dist
-
-                # Assume, for now, that we need the sampled value
-                # because otherwise we won't know until inside the scan logic
-                # at which time it is too late.
-                # If this assumption is violated, add an argument to
-                # @define_carry e.g. sample=False
-                self.comp.storage_nd[initial_carry(item)] = numpyro.sample(
-                        self.comp.sample_site(initial_carry(item)),
-                        fn=dist,
-                        rng_key=self.comp._split_rng_key(),
-                        )
-            else:
-                raise NotImplementedError()
-        else:
-            assert self.comp.phase == Phase.Posterior
-            if obs is None and obs_valid is None:
-                # don't define the distribution this time
-                # because the provided distribution was the prior.
-
-                assert initial_carry(item) in self.comp.storage_nd
-                # TODO: check that the shape is correct
-                #       the shape should be [n_mcmc] + [var shape]
-            else:
-                raise NotImplementedError()
-
-
-
-class WorkSpacePrep_Val_Attr:
-
-    wsv: WorkSpacePrep_Val | WorkSpaceProc_Val
-    comp: Computation
-
-    def __init__(self, wsv:WorkSpacePrep_Val | WorkSpaceProc_Val):
-        self.wsv = wsv
-        self.comp = self.wsv.ws.comp
-
-
-class WorkSpacePrep_Val_General(WorkSpacePrep_Val_Attr):
-    """object to represent `ws.val.general`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        try:
-            return self.comp.storage_nd[item]
-        except KeyError:
-            if item not in self.comp.storage_dist:
-                raise
-
-        if self.comp.phase == Phase.Prior:
-            dist = self.comp.storage_dist[item]
-        elif self.comp.phase == Phase.Posterior:
-            # A sample is being accesssed in the posterior that
-            # was not accessed in the prior. This happens for
-            # e.g. the NIR2025 reference distribution.
-            dist = self.comp.storage_dist[item].expand_by((self.comp.n_mcmc,))
-        else:
-            assert 0
-
-        self.comp.storage_nd[item] = numpyro.sample(
-                self.comp.sample_site(item),
-                fn=dist,
-                rng_key=self.comp._split_rng_key(),
-                )
-        return self.comp.storage_nd[item]
-
-    def __setitem__(self, item:VarKey, value:jnp.ndarray) -> None:
-        # TODO: check if the element, subphase defines item
-        # TODO: check that the shape is correct
-        # TODO: check that the item is not supposed to be sampled
-        #
-        # TODO: if item is an `observation(obs_var_key)`
-        #    check that obs_var_key has nothing in storage_nd or storage_dist
-        #    because observations have to be defined before sampling.
-        #    ditto if item is an `observation_valid(obs_var_key)`
-        self.comp.storage_nd[item] = value
-
-
-class WorkSpacePrep_Val_InitialCarry(WorkSpacePrep_Val_Attr):
-    """object to represent `ws.val.initial_carry`"""
-
-    def __setitem__(self, item:VarKey, value:jnp.ndarray) -> None:
-        # TODO: check if the element, subphase defines item
-        # TODO: check that the shape is correct
-        ndm = self.comp.model.mv.carry_nd[item].definition_metadata
-        assert value.shape == tuple(ndm.value_type.shape)
-        self.comp.storage_nd[initial_carry(item)] = value
-
-
-class WorkSpacePrep_ObsDist_Attr:
-
-    ws_od: WorkSpaceProc_ObsDist
-    comp: Computation
-
-    def __init__(self, ws_od:WorkSpaceProc_ObsDist):
-        self.ws_od = ws_od
-        self.comp = self.ws_od.ws.comp
-
-
-class WorkSpacePrep_ObsDist_General(WorkSpacePrep_ObsDist_Attr):
-
-    def __setitem__(self, item:VarKey, obs_dist:Distribution) -> None:
-
-        if self.comp.phase == Phase.Prior:
-            assert item not in self.comp.storage_nd
-            assert observation(item) not in self.comp.storage_nd
-            assert observation_valid(observation(item)) not in self.comp.storage_nd
-            # TODO: assignments of ^^ should also
-            # raise errors if storage_dist[observation(item)] is set,
-            # as I believe they are mathematically mutually exclusive
-
-            self.comp.storage_dist[observation(item)] = obs_dist
-
-            # must be defined already
-            prior_dist = self.comp.storage_dist[item]
-            obs_weight = self.comp.storage_nd[observation_weight(observation(item))]
-
-            expected_log_prob_plus_const = -kl_divergence(obs_dist, prior_dist)
-            numpyro.factor(self.comp.sample_site(item),
-                           obs_weight * expected_log_prob_plus_const)
-        else:
-            pass
-
-
-class WorkSpacePrep_ObsWeight_Attr:
-
-    ws_od: WorkSpaceProc_ObsWeight
-    comp: Computation
-
-    def __init__(self, ws_od:WorkSpaceProc_ObsWeight):
-        self.ws_od = ws_od
-        self.comp = self.ws_od.ws.comp
-
-
-class WorkSpacePrep_ObsWeight_General(WorkSpacePrep_ObsWeight_Attr):
-
-    def __setitem__(self, item:VarKey, obs_weight:ArrayLike) -> None:
-        self.comp.storage_nd[observation_weight(observation(item))] = obs_weight
-
-
-class WorkSpaceStep_Dist_Attr:
-
-    wsd: WorkSpaceStep_Dist
-    comp: Computation
-    scan_storage: ScanStorage
-
-    def __init__(self, wsd:WorkSpaceStep_Dist):
-        self.wsd = wsd
-        self.comp = self.wsd.ws.comp
-        self.scan_storage = wsd.ws.scan_storage
-
-
-class WorkSpaceStep_Dist_ThisY(WorkSpaceStep_Dist_Attr):
-    """object to represent `ws.dist.this_Y`"""
-
-    def __getitem__(self, item:VarKey) -> Distribution:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
-        raise NotImplementedError()
-
-    def __setitem__(self, item:VarKey, value:Distribution) -> None:
-        # check if the element, subphase defines item
-        # check that the shape is correct
-        #
-        raise NotImplementedError()
-
-
-class WorkSpaceStep_Dist_NextCarry(WorkSpaceStep_Dist_Attr):
-    """object to represent `ws.dist.next_carry`"""
-
-    def __getitem__(self, item:VarKey) -> Distribution:
-        return self.scan_storage.next_carry_dist_d[item]
-
-    def __setitem__(self, item:VarKey, dist:Distribution) -> None:
-        # TODO: check if the element, subphase defines item
-        # TODO: check that the shape is correct
-        # TODO: check that the item is supposed to be sampled
-
-        obs = self.comp.storage_nd.get(observation(item))
-        obs_valid = self.comp.storage_nd.get(
-                observation_valid(observation(item)))
-
-        if self.comp.phase == Phase.Prior:
-            if obs or obs_valid:
-                raise NotImplementedError()
-            else:
-                # TODO: check that the shape is correct
-                self.scan_storage.next_carry_dist_d[item] = dist
-                self.scan_storage.next_carry_d[item] = numpyro.sample(
-                        self.comp.sample_site(next_carry(item)),
-                        fn=dist,
-                        rng_key=self.scan_storage._split_rng_key())
-        elif self.comp.phase == Phase.Posterior:
-            if obs or obs_valid:
-                raise NotImplementedError()
-            else:
-                # We assume here that the posterior mcmc samples
-                # only cover n_prior_years initial years.
-                # When asked for posterior samples over more years
-                # we revert to drawing from the prior distribution (
-                # which is typically informed by time-invariant
-                # posterior samples.
-
-                this_idx = self.scan_storage.this_X_d[str(scan_step_ii_key)]
-                n_prior_years = self.comp.model.mv.n_prior_years
-
-                self.scan_storage.next_carry_dist_d[item] = dist.mask(
-                        this_idx >= n_prior_years)
-
-                # TODO: require `dist` have a leading mcmc dim?
-                possibly_necessary_conditional_sample = numpyro.sample(
-                        self.comp.sample_site(next_carry(item)),
-                        fn=dist,
-                        rng_key=self.scan_storage._split_rng_key())
-
-                self.scan_storage.next_carry_d[item] = jnp.where(
-                        this_idx >= n_prior_years,
-                        possibly_necessary_conditional_sample,
-                        self.comp.storage_nd[NextCarry(carry_key=item)][
-                            jnp.minimum(this_idx, n_prior_years - 1)])
-        else:
-            assert 0
-
-
-
-class WorkSpacePrep_Shape_Attr:
-
-    ws_shp: WorkSpacePrep_Shape | WorkSpaceProc_Shape
-    comp: Computation
-
-    def __init__(self, ws_shp:WorkSpacePrep_Shape | WorkSpaceProc_Shape):
-        self.ws_shp = ws_shp
-        self.comp = self.ws_shp.ws.comp
-
-
-class WorkSpacePrep_Shape_General(WorkSpacePrep_Shape_Attr):
-
-    def __getitem__(self, item) -> list[int|NdarrayDim]:
-        vm = self.comp.model.mv.general_nd[item]
-        prior_shape = vm.definition_metadata.value_type.shape
-        if self.comp.phase == Phase.Prior:
-            rval = []
-            for shape_ii in prior_shape:
-                if isinstance(shape_ii, int):
-                    rval.append(shape_ii)
-                elif shape_ii == years_dim:
-                    rval.append(self.comp.n_years)
-                else:
-                    raise NotImplementedError(shape_ii)
-            return rval
-        else:
-            assert self.comp.phase == Phase.Posterior
-            # shape could be same as prior shape
-            # or left-extended with 1 for broadcasting over mcmc dim
-            # or left-extended with mcmc_dim
-            # ... it might be worth offering a way to provide a hint
-            # in the @define because otherwise I don't think it's knowable
-            # prior to having the actual value to check.
-            if item in self.comp.storage_nd:
-                return list(self.comp.storage_nd[item].shape)
-            else:
-                print(self.comp.storage_nd.keys())
-                raise NotImplementedError(item)
-
-
-class WorkSpaceStep_Val_Attr:
-
-    wsv: WorkSpaceStep_Val
-    comp: Computation
-    scan_storage: ScanStorage
-
-    def __init__(self, wsv:WorkSpaceStep_Val):
-        self.wsv = wsv
-        self.comp = self.wsv.ws.comp
-        self.scan_storage = wsv.ws.scan_storage
-
-
-class WorkSpaceStep_Val_General(WorkSpaceStep_Val_Attr):
-    """object to represent `ws.val.general`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        return self.comp.storage_nd[item]
-
-
-class WorkSpaceStep_Val_ThisCarry(WorkSpaceStep_Val_Attr):
-    """object to represent `ws.val.this_carry`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        return self.scan_storage.this_carry_d[item]
-
-
-class WorkSpaceStep_Val_NextCarry(WorkSpaceStep_Val_Attr):
-    """object to represent `ws.val.next_carry`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        # TODO: check if the element, subphase defines item
-        # TODO: check that the shape is correct
-        raise NotImplementedError()
-
-    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
-        # TODO: check if the element, subphase defines item
-        # TODO: check that the shape is correct
-        # TODO: check that the item is not supposed to be sampled
-        self.scan_storage.next_carry_d[item] = value
-
-
-class WorkSpaceStep_Val_ThisX(WorkSpaceStep_Val_Attr):
-    """object to represent `ws.val.this_X`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        raise NotImplementedError()
-
-
-class WorkSpaceStep_Val_ThisY(WorkSpaceStep_Val_Attr):
-    """object to represent `ws.val.this_Y`"""
-
-    def __getitem__(self, item:VarKey) -> ArrayLike:
-        raise NotImplementedError()
-
-    def __setitem__(self, item:VarKey, value:ArrayLike) -> None:
-        # TODO: check if the element, subphase defines item
-        # TODO: check that the shape is correct
-        # TODO: check that the item is not supposed to be sampled
-        #
-        self.scan_storage.this_Y_d[item] = value
-
-
-class WorkSpacePrep_Attr:
-
-    ws: WorkSpace_Prep
-
-    def __init__(self, ws:WorkSpace_Prep):
-        self.ws = ws
-
-
-class WorkSpacePrep_Dist(WorkSpacePrep_Attr):
-    """object to represent `ws.dist`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_Dist_General:
-        return WorkSpacePrep_Dist_General(self)
-
-    @property
-    def initial_carry(self) -> WorkSpacePrep_Dist_InitialCarry:
-        return WorkSpacePrep_Dist_InitialCarry(self)
-
-
-class WorkSpacePrep_Val(WorkSpacePrep_Attr):
-    """object to represent `ws.val`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_Val_General:
-        return WorkSpacePrep_Val_General(self)
-
-    @property
-    def initial_carry(self) -> WorkSpacePrep_Val_InitialCarry:
-        return WorkSpacePrep_Val_InitialCarry(self)
-
-
-class WorkSpacePrep_Shape(WorkSpacePrep_Attr):
-    """object to represent `ws.shape`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_Shape_General:
-        return WorkSpacePrep_Shape_General(self)
-
-    @property
-    def initial_carry(self) -> WorkSpacePrep_Shape_InitialCarry:
-        return WorkSpacePrep_Shape_InitialCarry(self)
-
-
-class WorkSpaceStep_Attr:
-
-    ws: WorkSpace_Step
-
-    def __init__(self, ws:WorkSpace_Step):
-        self.ws = ws
-
-
-class WorkSpaceStep_Dist(WorkSpaceStep_Attr):
-    """object to represent `ws.dist`"""
-
-    @property
-    def this_Y(self) -> WorkSpaceStep_Dist_ThisY:
-        return WorkSpaceStep_Dist_ThisY(self)
-
-    @property
-    def next_carry(self) -> WorkSpaceStep_Dist_NextCarry:
-        return WorkSpaceStep_Dist_NextCarry(self)
-
-
-class WorkSpaceStep_Val(WorkSpaceStep_Attr):
-    """object to represent `ws.val`"""
-
-    @property
-    def general(self) -> WorkSpaceStep_Val_General:
-        return WorkSpaceStep_Val_General(self)
-
-    @property
-    def this_carry(self) -> WorkSpaceStep_Val_ThisCarry:
-        return WorkSpaceStep_Val_ThisCarry(self)
-
-    @property
-    def next_carry(self) -> WorkSpaceStep_Val_NextCarry:
-        return WorkSpaceStep_Val_NextCarry(self)
-
-    @property
-    def this_X(self) -> WorkSpaceStep_Val_ThisX:
-        return WorkSpaceStep_Val_ThisX(self)
-
-    @property
-    def this_Y(self) -> WorkSpaceStep_Val_ThisY:
-        return WorkSpaceStep_Val_ThisY(self)
-
-
-class WorkSpaceProc_Attr:
-
-    ws: WorkSpace_Proc
-
-    def __init__(self, ws:WorkSpace_Proc):
-        self.ws = ws
-
-
-class WorkSpaceProc_Dist(WorkSpaceProc_Attr):
-    """object to represent `ws.dist`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_Dist_General:
-        return WorkSpacePrep_Dist_General(self)
-
-
-class WorkSpaceProc_Val(WorkSpaceProc_Attr):
-    """object to represent `ws.val`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_Val_General:
-        return WorkSpacePrep_Val_General(self)
-
-
-class WorkSpaceProc_Shape(WorkSpaceProc_Attr):
-    """object to represent `ws.shape`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_Shape_General:
-        return WorkSpacePrep_Shape_General(self)
-
-
-class WorkSpaceProc_ObsDist(WorkSpaceProc_Attr):
-    """object to represent `ws.obs_dist`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_ObsDist_General:
-        return WorkSpacePrep_ObsDist_General(self)
-
-
-class WorkSpaceProc_ObsWeight(WorkSpaceProc_Attr):
-    """object to represent `ws.obs_dist`"""
-
-    @property
-    def general(self) -> WorkSpacePrep_ObsWeight_General:
-        return WorkSpacePrep_ObsWeight_General(self)
-
-
-
-class WorkSpace:
-
-    year_0: int
-    n_years: int
-    phase: Phase
-    comp: Computation
-    model: Model
-
-    def __init__(
-            self,
-            year_0:int,
-            n_years:int,
-            phase:Phase,
-            comp:Computation,
-            ):
-        self.year_0 = year_0
-        self.n_years = n_years
-        assert n_years >= 0
-        self.phase = phase
-        self.comp = comp
-        self.model = self.comp.model
-
-
-class WorkSpace_Prep(WorkSpace):
-
-    @property
-    def dist(self) -> WorkSpacePrep_Dist:
-        return WorkSpacePrep_Dist(self)
-
-    @property
-    def val(self) -> WorkSpacePrep_Val:
-        return WorkSpacePrep_Val(self)
-
-
-class WorkSpace_Step(WorkSpace):
-
-    scan_storage: ScanStorage
-
-    def __init__(self, scan_storage:ScanStorage, **kwargs):
-        super().__init__(**kwargs)
-        self.scan_storage = scan_storage
-
-    @property
-    def dist(self) -> WorkSpaceStep_Dist:
-        return WorkSpaceStep_Dist(self)
-
-    @property
-    def val(self) -> WorkSpaceStep_Val:
-        return WorkSpaceStep_Val(self)
-
-
-class WorkSpace_Proc(WorkSpace):
-
-    @property
-    def dist(self) -> WorkSpaceProc_Dist:
-        return WorkSpaceProc_Dist(self)
-
-    @property
-    def val(self) -> WorkSpaceProc_Val:
-        return WorkSpaceProc_Val(self)
-
-    @property
-    def shape(self) -> WorkSpaceProc_Shape:
-        return WorkSpaceProc_Shape(self)
-
-    @property
-    def n_mcmc(self) -> int:
-        return self.comp.n_mcmc
-
-    @property
-    def obs_dist(self) -> WorkSpaceProc_ObsDist:
-        return WorkSpaceProc_ObsDist(self)
-
-    @property
-    def obs_weight(self) -> WorkSpaceProc_ObsWeight:
-        return WorkSpaceProc_ObsWeight(self)
-
-
-
 class ScanStorage:
 
-    this_carry_d: dict[VarKey, ArrayLike]
-    this_X_d: dict[VarKey, ArrayLike]
-    next_carry_d: dict[VarKey, ArrayLike]
-    this_Y_d: dict[VarKey, ArrayLike]
+    this_carry_d: dict[VarKey, jnp.ndarray]
+    this_X_d: dict[VarKey, jnp.ndarray]
+    next_carry_d: dict[VarKey, jnp.ndarray]
+    this_Y_d: dict[VarKey, jnp.ndarray]
 
     next_carry_dist_d: dict[VarKey, Distribution]
     this_Y_dist_d: dict[VarKey, Distribution]
@@ -733,27 +72,447 @@ class ScanStorage:
         self.this_Y_dist_d = {}
 
     def carry_rng(self):
-        if '__rng_key' not in self.next_carry_d:
-            self.next_carry_d['__rng_key'] = self.this_carry_d['__rng_key']
+        if rng_var_key not in self.next_carry_d:
+            self.next_carry_d[rng_var_key] = self.this_carry_d[rng_var_key]
 
     def _split_rng_key(self):
-        self.next_carry_d['__rng_key'], rval = jrandom.split(
-                self.next_carry_d['__rng_key'])
+        self.next_carry_d[rng_var_key], rval = jrandom.split(
+                self.next_carry_d[rng_var_key])
         return rval
+
+def build_general_prior_shape(comp:Computation, var_key:VarKey, val_shape:tuple) -> list[int]:
+    metadata_shape = comp.model.mv.general_nd[var_key].definition_metadata.value_type.shape
+    prior_shape_list:list[int] = []
+    for ii, dim_ii in enumerate(metadata_shape):
+        if isinstance(dim_ii, NdarrayDim):
+            comp.ndarray_dim_d.setdefault(dim_ii, val_shape[ii])
+            prior_shape_list.append(comp.ndarray_dim_d[dim_ii])
+        elif isinstance(dim_ii, int):
+            prior_shape_list.append(dim_ii)
+        else:
+            raise NotImplementedError(dim_ii)
+    return prior_shape_list
+
+
+def storage_nd_check_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, val:jnp.ndarray) -> bool:
+    prior_shape = tuple(build_general_prior_shape(comp, var_key, val.shape))
+
+    if comp.phase == Phase.Prior:
+        assert val.shape == prior_shape, (var_key, val.shape, prior_shape)
+        return False
+    elif comp.phase == Phase.Posterior:
+        if val.shape == prior_shape:
+            return True
+        elif (val.shape == prior_shape + (1,)
+              or val.shape == prior_shape + (comp.n_mcmc,)):
+            return False
+        else:
+            raise NotImplementedError(val.shape)
+    else:
+        raise NotImplementedError(comp.phase)
+
+
+def storage_nd_check_ElementAnnualKey(comp:Computation, var_key:VarKey, val:jnp.ndarray) -> bool:
+    metadata_shape = comp.model.mv.general_nd[var_key].definition_metadata.value_type.shape
+    general_shape = tuple(
+            comp.n_years if dim_ii == years_dim else dim_ii
+            for dim_ii in metadata_shape)
+    if comp.phase == Phase.Prior:
+        assert val.shape == general_shape, (
+                val.shape, comp.n_years, general_shape)
+        return False
+    elif comp.phase == Phase.Posterior:
+        if val.shape == general_shape:
+            return True
+        elif (val.shape == general_shape + (1,)
+              or val.shape == general_shape + (comp.n_mcmc,)):
+            return False
+        else:
+            raise NotImplementedError(val.shape)
+    else:
+        raise NotImplementedError(comp.phase)
+
+
+def storage_nd_check_InitialCarry(comp:Computation, var_key:InitialCarry, val:jnp.ndarray) -> bool:
+    annual_shape = tuple(
+            comp.model.mv.carry_nd[var_key.carry_key].definition_metadata.value_type.shape)
+    if comp.phase == Phase.Prior:
+        assert val.shape == annual_shape
+        return False
+    elif comp.phase == Phase.Posterior:
+        if val.shape == annual_shape:
+            return True
+        elif (val.shape == annual_shape + (1,)
+              or val.shape == annual_shape + (comp.n_mcmc,)):
+            return False
+        else:
+            # it may be that the shape should be right-padded for broadcasting
+            # over mcmc dimension
+            # or it may be that the shape needs to be explicitly unrolled over the
+            # the mcmc dimension because of the recursive carry definition.
+            raise NotImplementedError(var_key, val.shape)
+    else:
+        raise NotImplementedError(comp.phase)
+
+
+def storage_nd_check_NextCarry(comp:Computation, var_key:NextCarry, val:jnp.ndarray) -> bool:
+    annual_shape = tuple(
+            comp.model.mv.carry_nd[var_key.carry_key].definition_metadata.value_type.shape)
+    if comp.phase == Phase.Prior:
+        raise NotImplementedError()
+    elif comp.phase == Phase.Posterior:
+        # a next_carry prior distribution will lead to this assignment
+        # when loading saved MCMC samples
+        if val.shape == (comp.model.n_prior_years,) + annual_shape + (comp.n_mcmc,):
+            return False
+        else:
+            raise NotImplementedError(val.shape)
+    else:
+        raise NotImplementedError(comp.phase)
+
+
+def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
+    """Is it okay for an obs, obs_valid, or obs_weight, obs_dist to have obs_shape?
+    as it relates to prior_var_key?
+    """
+    if isinstance(prior_var_key, ElementGeneralKey):
+        # the observation can have fewer, equal, or more dimensions than the
+        # observed variable. If there are more, they represent multiple observations
+        # If there are fewer, they represent broadcast observations.
+        metadata_prior_shape = comp.model.mv.general_nd[prior_var_key].definition_metadata.value_type.shape
+
+        if comp.phase == Phase.Prior:
+            n_obs_dim = len(obs_shape)
+            # make a version of the obs_shape that matches the length of prior_shape
+            if n_obs_dim < len(metadata_prior_shape):
+                padded_obs_shape = (1,) * (len(metadata_prior_shape) - n_obs_dim) + obs_shape
+            elif n_obs_dim == len(metadata_prior_shape):
+                padded_obs_shape = obs_shape
+            else:
+                padded_obs_shape = obs_shape[-len(metadata_prior_shape):]
+
+            assert len(padded_obs_shape) == len(metadata_prior_shape)
+
+            # ensure that it is broadcastable
+            for obs_shape_ii, prior_shape_ii in zip(padded_obs_shape, metadata_prior_shape):
+                if isinstance(prior_shape_ii, int):
+                    assert obs_shape_ii in (1, prior_shape_ii)
+            return False
+
+        elif comp.phase == Phase.Posterior:
+            # it is only okay to pass the same shape as in the prior
+            # or the same shape with a (1,) tagged on the end of the shape
+            return False
+        else:
+            raise NotImplementedError(comp.phase)
+
+        # The observation should not have mcmc dimension in Posterior phase
+        # it should be automatically right-padded by the storage_nd_set
+    else:
+        raise NotImplementedError(prior_var_key)
+
+
+def storage_nd_check_Observation(comp:Computation, var_key:Observation, val:jnp.ndarray) -> bool:
+    prior_var_key = var_key.prior_var_key
+    # the order of things is for the model element define the distribution lastly
+    # and for the computation system to then set the sampled value
+    assert prior_var_key not in comp._ndarray_d, prior_var_key
+    assert prior_var_key not in comp._dist_d, prior_var_key
+    pad_right = storage_nd_check_observation_shape(comp, prior_var_key, val.shape)
+    return pad_right
+
+
+def storage_nd_check_ObservationValid(comp:Computation, var_key:ObservationValid, val:jnp.ndarray) -> bool:
+    assert val.dtype == jnp.bool
+    # the order of things is for the model element to define the 
+    # valid mask first, before setting obs_val or obs_dist,
+    # in order, at least possibly, to validate the observed data
+    # at the time of setting the obs_val or obs_dist
+    obs_var_key = var_key.obs_var_key
+    assert obs_var_key not in comp._ndarray_d, var_key
+    assert obs_var_key not in comp._dist_d, var_key
+    pad_right = storage_nd_check_observation_shape(comp, obs_var_key.prior_var_key, val.shape)
+    return pad_right
+
+
+def set_dist_ElementGeneralKey_posterior_obs_valid(
+        comp:Computation,
+        var_key:ElementGeneralKey,
+        dist:Distribution,
+        obs_val:jnp.ndarray,
+        obs_valid:jnp.ndarray,
+        ):
+    dist_shape = dist.shape()
+    prior_shape = tuple(build_general_prior_shape(comp, var_key, dist_shape))
+    if dist_shape == prior_shape:
+        mcmc_left = numpyro.sample(
+                comp.sample_site(var_key),
+                fn=dist.expand_by((comp.n_mcmc,)),
+                rng_key=comp._split_rng_key())
+        assert isinstance(mcmc_left, jnp.ndarray)
+        mcmc_right = jnp.moveaxis(mcmc_left, 0, -1)
+    elif dist_shape == prior_shape + (comp.n_mcmc,):
+        mcmc_right = numpyro.sample(
+                comp.sample_site(var_key),
+                fn=dist,
+                rng_key=comp._split_rng_key())
+        assert isinstance(mcmc_right, jnp.ndarray)
+    elif dist_shape == prior_shape + (1,):
+        # I'm not sure, but I *think* that because of the semantics
+        # of the mcmc dim, it does not make sense to broadcast
+        # a sample over that axis, even if all of the parameters
+        # are set to broadcast in the mcmc dimension.
+        left_extradim = numpyro.sample(
+                comp.sample_site(var_key),
+                fn=dist.expand_by((comp.n_mcmc,)),
+                rng_key=comp._split_rng_key())
+        assert isinstance(left_extradim, jnp.ndarray)
+        right_extradim = jnp.moveaxis(left_extradim, 0, -1)
+        mcmc_right = right_extradim[..., 0, :]
+    else:
+        raise NotImplementedError(dist_shape, prior_shape)
+
+    assert obs_valid.ndim == obs_val.ndim == mcmc_right.ndim, (
+            obs_valid.shape, obs_val.shape, mcmc_right.shape)
+    updated_sample = jnp.where(obs_valid, obs_val, mcmc_right)
+    comp._ndarray_d[var_key] = updated_sample
+
+
+def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist:Distribution):
+    obs_var_key = Observation(prior_var_key=var_key)
+    obsvalid_var_key = ObservationValid(obs_var_key=obs_var_key)
+
+    obs = comp._ndarray_d.get(obs_var_key)
+    obs_valid = comp._ndarray_d.get(obsvalid_var_key)
+    obs_dist = comp._dist_d.get(obs_var_key)
+    if obs_dist:
+        # set up a call to numpyro.factor
+        raise NotImplementedError()
+
+    if comp.phase == Phase.Prior:
+        # TODO: check that the shape is correct
+        # shape correctness does not depend on obs
+
+        if obs is None and obs_valid is None:
+            comp._dist_d[var_key] = dist
+
+        elif obs_valid is None:
+            # don't define the distribution if the observation
+            # is provided, because it no longer makes sense
+            #
+            # but do store the observation as the sample
+            #
+            # TODO: check that obs' shape is correct
+            assert obs is not None
+            comp._ndarray_d[var_key] = obs
+            numpyro.sample(
+                    comp.sample_site(var_key),
+                    fn=dist,
+                    rng_key=comp._split_rng_key(),
+                    obs=obs,
+                    )
+        else:
+            # don't define the distribution if the observation
+            # is provided, because it no longer makes sense
+            assert obs_valid is not None
+            assert obs is not None
+            # mask the distribution
+            # mask the observation in the sample call?
+            # store dist jnp.where(obs_valid, obs, an_actual_sample)
+            #
+            # Note that according to ...
+            # https://num.pyro.ai/en/stable/primitives.html#sample
+            # ... obs_mask parameter should *not* be used with MCMC
+            # ... so think about what this model needs in terms of
+            # .... symantics.
+            raise NotImplementedError()
+    else:
+        assert comp.phase == Phase.Posterior
+        if obs is None and obs_valid is None:
+            # don't define the distribution this time
+            # because the provided distribution was the prior.
+
+            # TODO: verify that what's in _ndarray_d was actually
+            #       put there by the loading of posterior samples.
+            #
+            #       If instead it is e.g. from a previous assignment to this key
+            #       then that previous assignment should be replaced!
+            if var_key not in comp._ndarray_d:
+                # this can happen for items that are not sampled
+                # in the prior computation such as the NIR2025
+                # reference distributions
+                # TODO: check that the shape is correct
+                comp._dist_d[var_key] = dist
+            else:
+                assert var_key in comp._ndarray_d
+            # TODO: check that the shape is correct
+            #       the shape should be [n_mcmc] + [var shape]
+
+        elif obs_valid is None:
+            assert obs is not None
+            # TODO: check that the shape is correct
+            #       obs' shape should be [var shape]
+            #       with no mcmc samples.
+
+            # technically this might be okay in some scenarios
+            # but if it happens for now, it's an error.
+            assert var_key not in comp._ndarray_d
+
+            comp._ndarray_d[var_key] = obs
+        else:
+            assert obs is not None
+            set_dist_ElementGeneralKey_posterior_obs_valid(
+                    comp, var_key, dist,
+                    obs_val=obs,
+                    obs_valid=obs_valid)
+
+
+def set_dist_InitialCarry(comp:Computation, ic_key:InitialCarry, dist:Distribution):
+    obs_var_key = Observation(prior_var_key=ic_key)
+    obsvalid_var_key = ObservationValid(obs_var_key=obs_var_key)
+
+    obs = comp._ndarray_d.get(obs_var_key)
+    obs_valid = comp._ndarray_d.get(obsvalid_var_key)
+    obs_dist = comp._dist_d.get(obs_var_key)
+    if obs_dist:
+        # set up a call to numpyro.factor
+        raise NotImplementedError()
+
+    if comp.phase == Phase.Prior:
+        # TODO: check that the shape is correct
+        # shape correctness does not depend on obs
+
+        if obs is None and obs_valid is None:
+            comp._dist_d[ic_key] = dist
+
+        elif obs_valid is None:
+            # don't define the distribution if the observation
+            # is provided, because it no longer makes sense
+            #
+            # but do store the observation as the sample
+            #
+            # TODO: check that obs' shape is correct
+            assert obs is not None
+            comp._ndarray_d[ic_key] = obs
+            numpyro.sample(
+                    comp.sample_site(ic_key),
+                    fn=dist,
+                    rng_key=comp._split_rng_key(),
+                    obs=obs,
+                    )
+        else:
+            # don't define the distribution if the observation
+            # is provided, because it no longer makes sense
+            assert obs_valid is not None
+            assert obs is not None
+            # mask the distribution
+            # mask the observation in the sample call?
+            # store dist jnp.where(obs_valid, obs, an_actual_sample)
+            #
+            # Note that according to ...
+            # https://num.pyro.ai/en/stable/primitives.html#sample
+            # ... obs_mask parameter should *not* be used with MCMC
+            # ... so think about what this model needs in terms of
+            # .... symantics.
+            raise NotImplementedError()
+    else:
+        assert comp.phase == Phase.Posterior
+        if obs is None and obs_valid is None:
+            # don't define the distribution this time
+            # because the provided distribution was the prior.
+
+            # TODO: verify that what's in _ndarray_d was actually
+            #       put there by the loading of posterior samples.
+            #
+            #       If instead it is e.g. from a previous assignment to this key
+            #       then that previous assignment should be replaced!
+            if ic_key not in comp._ndarray_d:
+                # this can happen for items that are not sampled
+                # in the prior computation such as the NIR2025
+                # reference distributions
+                # TODO: check that the shape is correct
+                comp._dist_d[ic_key] = dist
+            else:
+                # There are samples loaded from mcmc in _ndarray_d
+                pass
+                # TODO: check that the shape is correct
+
+        elif obs_valid is None:
+            assert obs is not None
+            # TODO: check that the shape is correct
+            #       obs' shape should be [var shape]
+            #       with no mcmc samples.
+
+            # technically this might be okay in some scenarios
+            # but if it happens for now, it's an error.
+            assert ic_key not in comp._ndarray_d
+
+            comp._ndarray_d[ic_key] = obs
+        else:
+            assert obs is not None
+            raise NotImplementedError()
+
+
+class ComputationDistD:
+    """Dict-like access by key for all ndarrays in a Computation
+    """
+    comp: Computation
+
+    def __init__(self, comp:Computation):
+        self.comp = comp
+
+    def __contains__(self, item:VarKey):
+        try:
+            self.comp.get_dist(item)
+            return True
+        except KeyError:
+            return False
+
+    def __getitem__(self, item:VarKey) -> Distribution:
+        return self.comp.get_dist(item)
+
+    def __setitem__(self, item:VarKey, value:Distribution):
+        self.comp.set_dist(item, value)
+
+
+class ComputationNdarrayD:
+    """Dict-like access by key for all ndarrays in a Computation
+    """
+    comp: Computation
+
+    def __init__(self, comp:Computation):
+        self.comp = comp
+
+    def __contains__(self, item:VarKey):
+        try:
+            self.comp.get_ndarray(item, sample_if_necessary=True)
+            return True
+        except KeyError:
+            return False
+
+    def __getitem__(self, item:VarKey) -> jnp.ndarray:
+        return self.comp.get_ndarray(item, sample_if_necessary=True)
+
+    def __setitem__(self, item:VarKey, value:jnp.ndarray):
+        self.comp.set_ndarray(item, value)
 
 
 class Computation:
     """
     Things that are discovered by running a model, either as Prior or Posterior.
+
+    All elements in storage_nd have a trailing n_mcmc dimension during Posterior
+    computations.
     """
 
     model: Model
-    storage_dist: dict[VarKey, Distribution]
-    storage_nd: dict[VarKey, ArrayLike] # TODO: jnp.ndarray
+    _dist_d: dict[VarKey, Distribution]
+    _ndarray_d: dict[VarKey, jnp.ndarray]
     rng_key: ArrayLike
     phase: Phase
     has_run: bool
     sample_sites: dict[VarKey, str]
+    ndarray_dim_d: dict[NdarrayDim, int]
 
     n_mcmc: int
 
@@ -763,8 +522,8 @@ class Computation:
             rng_key:ArrayLike|int):
 
         self.model = model
-        self.storage_dist = {}
-        self.storage_nd = {}
+        self._dist_d = {}
+        self._ndarray_d = {}
         if isinstance(rng_key, int):
             self.rng_key = jrandom.key(rng_key)
         else:
@@ -772,14 +531,123 @@ class Computation:
         self.phase = Phase.Prior
         self.has_run = False
         self.sample_sites = {}
+        self.ndarray_dim_d = {}
 
     @property
-    def _ws_prep(self) -> WorkSpace_Prep:
-        return WorkSpace_Prep(
+    def dist_d(self) -> ComputationDistD:
+        return ComputationDistD(self)
+
+    @property
+    def ndarray_d(self) -> ComputationNdarrayD:
+        return ComputationNdarrayD(self)
+
+    def get_dist(self, item:VarKey) -> Distribution:
+        return self._dist_d[item]
+
+    def set_dist(self, var_key:VarKey, dist:Distribution):
+        if isinstance(var_key, ElementGeneralKey):
+            set_dist_ElementGeneralKey(self, var_key, dist)
+        elif isinstance(var_key, InitialCarry):
+            set_dist_InitialCarry(self, var_key, dist)
+        else:
+            raise NotImplementedError(var_key)
+
+    def get_ndarray(self, var_key:VarKey, sample_if_necessary) -> jnp.ndarray:
+        try:
+            return self._ndarray_d[var_key]
+        except KeyError:
+            if (var_key not in self._dist_d or not sample_if_necessary):
+                raise
+        self.set_ndarray_from_dist(var_key)
+        return self._ndarray_d[var_key]
+
+    def set_ndarray(self, item:VarKey, value:jnp.ndarray):
+        if isinstance(item, ElementGeneralKey):
+            pad_right = storage_nd_check_ElementGeneralKey(self, item, value)
+
+        elif isinstance(item, ElementAnnualKey):
+            pad_right = storage_nd_check_ElementAnnualKey(self, item, value)
+
+        elif isinstance(item, InitialCarry):
+            pad_right = storage_nd_check_InitialCarry(self, item, value)
+
+        elif isinstance(item, NextCarry):
+            pad_right = storage_nd_check_NextCarry(self, item, value)
+
+        elif isinstance(item, Observation):
+            pad_right = storage_nd_check_Observation(self, item, value)
+
+        elif isinstance(item, ObservationValid):
+            pad_right = storage_nd_check_ObservationValid(self, item, value)
+
+        elif isinstance(item, GroupedPosterior):
+            pad_right = False
+
+        else:
+            raise NotImplementedError(item)
+
+        if pad_right:
+            padded = value[..., None]
+        else:
+            padded = value
+        self._ndarray_d[item] = padded
+
+    def set_ndarray_from_dist(self, var_key:VarKey):
+        assert var_key in self._dist_d
+        if var_key in self._ndarray_d:
+        # if it's already set, this method can't promise it's set to the right distribution
+            raise NotImplementedError()
+
+        # accessing an undefined value of a general key after the dist
+        # has been set for that key, triggers sampling.
+
+        obs_var_key = Observation(prior_var_key=var_key)
+        obs_val = self._ndarray_d.get(obs_var_key)
+        obs_dist = self._dist_d.get(obs_var_key)
+        if obs_val or obs_dist:
+            raise NotImplementedError()
+
+        if self.phase == Phase.Prior:
+            dist = self._dist_d[var_key]
+            left_mcmc = False
+        elif self.phase == Phase.Posterior:
+            # A sample is being accesssed in the posterior that
+            # was not accessed in the prior. This happens for
+            # e.g. the NIR2025 reference distribution.
+            dist = self._dist_d[var_key].expand_by((self.n_mcmc,))
+            left_mcmc = True
+        else:
+            raise NotImplementedError(self.phase)
+
+        dist_sample = numpyro.sample(
+                self.sample_site(var_key),
+                fn=dist,
+                rng_key=self._split_rng_key(),
+                )
+        if isinstance(dist_sample, jnp.ndarray):
+            if left_mcmc:
+                transposed_sample = jnp.moveaxis(dist_sample, 0, -1)
+            else:
+                transposed_sample = dist_sample
+            self.set_ndarray(var_key, transposed_sample)
+        else:
+            raise NotImplementedError()
+
+
+    def _workspace(self,
+                   elem_id:str,
+                   subphase:Subphase,
+                   scan_storage:ScanStorage|None=None
+                   ) -> Workspace:
+        assert (subphase == Subphase.Step) == (scan_storage is not None)
+        return Workspace(
                 comp=self,
                 year_0=self.model.mv.year_0,
                 n_years=self.n_years,
                 phase=self.phase,
+                elem_id=elem_id,
+                subphase=subphase,
+                scan_storage=scan_storage,
                 )
     @property
     def n_years(self) -> int:
@@ -791,8 +659,45 @@ class Computation:
         self.sample_sites[item] = str(item)
         return self.sample_sites[item]
 
-    def load_grouped_samples(self, *args, **kwargs):
-        return self.set_phase_posterior(*args, **kwargs)
+    def _load_general_grouped_sample(self, var_key, grouped_sample):
+        self.set_ndarray(GroupedPosterior(prior_var_key=var_key), grouped_sample)
+        (n_groups, n_saved_samples, *prior_shape) = grouped_sample.shape
+
+        # reshape to combine groups and saved samples as if single chain mcmc
+        reshaped = grouped_sample.reshape([n_groups * n_saved_samples] + prior_shape)
+        # transpose mcmc dimension to the end
+        transposed = reshaped.transpose(list(range(1, len(prior_shape))) + [0])
+
+        self.set_ndarray(var_key, transposed)
+
+    def _load_nextcarry_grouped_sample(self, var_key, grouped_sample):
+        self.set_ndarray(GroupedPosterior(prior_var_key=var_key), grouped_sample)
+        (n_groups, n_saved_samples, n_prior_scan_steps, *annual_shape) \
+                = grouped_sample.shape
+        assert n_prior_scan_steps == self.model.mv.n_prior_years
+        # reshape to combine groups and saved samples as if single chain mcmc
+        reshaped = grouped_sample.reshape(
+                [n_groups * n_saved_samples, n_prior_scan_steps]
+                + annual_shape)
+        # transpose mcmc dimension to the end
+        transposed = jnp.moveaxis(reshaped, 0, -1)
+
+        # post-conditions:
+        assert transposed.shape[0] == n_prior_scan_steps
+        assert transposed.shape[-1] == self.n_mcmc
+        assert transposed.shape[1:-1] == tuple(annual_shape)
+
+        self.set_ndarray(var_key, transposed)
+
+        # and a separate pull_from_sample_mask array of shape [n_years]
+        # and these both need to be set up as Xs for the scan
+        # and then the ws.dist.next_carry __setitem__ needs to
+        # put either the this_X from the sample or the random draw
+        # into the scan_storage.next_carry_d, depending on the
+        # pull_from_sample_mask.
+        # ... and that's all assuming that these dists are not observed,
+        # .... which I'm sure they will be sometimes! I think that
+        # complicates the logic, but doesn't break the approach.
 
     def set_phase_posterior(
             self,
@@ -810,39 +715,30 @@ class Computation:
         for key_str, grouped_sample in grouped_samples.items():
             var_key = rlookup[key_str]
             assert len(grouped_sample.shape) >= 2
-            (n_groups, n_saved_samples, *shape) = grouped_sample.shape
+            (n_groups, n_saved_samples) = grouped_sample.shape[:2]
             assert n_saved_samples * n_groups == self.n_mcmc
-            if isinstance(var_key, NextCarry):
-                self.storage_nd[GroupedPosterior(prior_var_key=var_key)] = grouped_sample
-                (n_groups, n_saved_samples, n_prior_scan_steps, *annual_shape) \
-                        = grouped_sample.shape
-                assert n_prior_scan_steps == self.model.mv.n_prior_years
-                reshaped = grouped_sample.reshape(
-                        [n_groups * n_saved_samples, n_prior_scan_steps]
-                        + annual_shape)
-                transposed = reshaped.transpose(
-                        [1, 0] + list(range(2, len(annual_shape))))
-                self.storage_nd[var_key] = transposed
 
-                # post-conditions:
-                assert transposed.shape[0] == n_prior_scan_steps
-                assert transposed.shape[1] == self.n_mcmc
-                assert transposed.shape[2:] == tuple(annual_shape), (
-                        transposed.shape[2:], annual_shape)
+            #
+            # Posterior calculations are carried out with trailing mcmc dimension.
+            #
+            # storage_nd requires every variable to be ndarray so that every variable
+            # can have a trailing mcmc dimension.
+            #
+            # MCMC dimension is trailing so that implicit broadcasting of leading
+            # dimensions and the most idiomatic
+            # indexing e.g. ws.val.general[foo][ii] still work as they should.
+            #
+            # This mcmc dimension is not meant to be hidden from user. They can
+            # see it when they access `shape` attribute, and they can write
+            # code that branches on ws.phase.
+            #
 
-                # and a separate pull_from_sample_mask array of shape [n_years]
-                # and these both need to be set up as Xs for the scan
-                # and then the ws.dist.next_carry __setitem__ needs to
-                # put either the this_X from the sample or the random draw
-                # into the scan_storage.next_carry_d, depending on the
-                # pull_from_sample_mask.
-                # ... and that's all assuming that these dists are not observed,
-                # .... which I'm sure they will be sometimes! I think that
-                # complicates the logic, but doesn't break the approach.
+            if isinstance(var_key, (ElementGeneralKey, InitialCarry)):
+                self._load_general_grouped_sample(var_key, grouped_sample)
+            elif isinstance(var_key, NextCarry):
+                self._load_nextcarry_grouped_sample(var_key, grouped_sample)
             else:
-                self.storage_nd[GroupedPosterior(prior_var_key=var_key)] = grouped_sample
-                self.storage_nd[var_key] \
-                        = grouped_sample.reshape([n_groups * n_saved_samples] + shape)
+                raise NotImplementedError(var_key)
 
     def _split_rng_key(self) -> ArrayLike:
         self.rng_key, key = jrandom.split(self.rng_key)
@@ -850,48 +746,52 @@ class Computation:
 
     def _initial_carry_d(self):
         rval = {}
-        for var_key, val in self.storage_nd.items():
+        for var_key, val in self._ndarray_d.items():
             if isinstance(var_key, InitialCarry):
+                carry_key = var_key.carry_key
                 if self.phase == Phase.Prior:
-                    rval[var_key.carry_key] = val
-                else:
-                    assert self.phase == Phase.Posterior
-                    # In general, the posterior scan operates on
-                    # ndarrays with a leading mcmc dimension.
-                    # If this is a performance problem, consider
-                    # adding a hint to the @define_carry that it isn't
-                    # the case for a particular variable.
-                    ndm = self.model.mv.carry_nd[var_key.carry_key].definition_metadata
-                    reqd_shape = [self.n_mcmc] + ndm.value_type.shape
-                    if val.shape == tuple(ndm.value_type.shape):
-                        bcast_value = jnp.zeros(reqd_shape, dtype=val.dtype)
-                        rval[var_key.carry_key] = bcast_value
+                    rval[carry_key] = val
+                elif self.phase == Phase.Posterior:
+                    if val.shape[-1] == self.n_mcmc:
+                        rval[carry_key] = val
+                    elif val.shape[-1] == 1:
+                        shape = val.shape[:-1] + (self.n_mcmc,)
+                        rval[carry_key] = jnp.full(
+                                shape, val, dtype=val.dtype)
                     else:
-                        assert val.shape == tuple(reqd_shape), (
-                                var_key, val.shape, reqd_shape)
-                        rval[var_key.carry_key] = val
-
+                        # how did this get into _ndarray_d?
+                        raise NotImplementedError(val.shape)
+                else:
+                    raise NotImplementedError(self.phase)
         return rval
 
-
-    def _X_d(self):
+    def _sample_from_dists_that_might_be_accessed(self):
         # I'm not sure what heuristic / policy to use here.
         # First try: all var_keys in general_nd whose first shape dim
         # is the inference_years_dim.
-        for _, subphase, var_key in self.model.mv.accesses_val:
-            if (subphase == Subphase.Step
-                and var_key in self.storage_dist # it's been assigned a prior distribution
-                and var_key not in self.storage_nd): # hasn't beens sampled yet
-                # touch the general value to draw a sample
-                self._ws_prep.val.general[var_key]
+        for key_var in self.model.mv.carry_nd:
+            if isinstance(key_var, ElementCarryKey):
+                ic_key = InitialCarry(carry_key=key_var)
+            else:
+                raise NotImplementedError()
+            if ic_key in self._ndarray_d:
+                pass
+            elif ic_key in self._dist_d:
+                self.set_ndarray_from_dist(ic_key)
+            else:
+                raise NotImplementedError(key_var)
 
+        for elem_id, access_subphase, var_key in self.model.mv.accesses_val:
+            if (access_subphase == Subphase.Step
+                and var_key in self._dist_d # it's been assigned a prior distribution
+                and var_key not in self._ndarray_d): # hasn't beens sampled yet
+                self.set_ndarray_from_dist(var_key)
+
+    def _X_d(self) -> dict[VarKey, jnp.ndarray]:
         rval = {
-                str(var_key): self.storage_nd[var_key]
-                for var_key, nvm in self.model.mv.general_nd.items()
-                if (
-                    nvm.definition_metadata.value_type.shape
-                    and (nvm.definition_metadata.value_type.shape[0] == years_dim)
-                    and var_key in self.storage_nd)
+                var_key: self._ndarray_d[var_key]
+                for var_key, nvm in self.model.mv.annual_nd.items()
+                if nvm.defining_subphase == Subphase.Prep
                 }
         return rval
 
@@ -901,7 +801,7 @@ class Computation:
     def _run_prep(self):
         for elem_id, elem in self._elem_items():
             try:
-                elem.model_element_prepare(self._ws_prep)
+                elem.model_element_prepare(self._workspace(elem_id, Subphase.Prep))
             except Exception as err:
                 err.add_note(f'element_id={elem_id}')
                 raise
@@ -913,20 +813,17 @@ class Computation:
             scan_storage.carry_rng()
             for elem_id, elem in self._elem_items():
                 try:
-                    ws = WorkSpace_Step(
-                            comp=self,
-                            year_0=self.model.mv.year_0,
-                            n_years=self.n_years,
-                            phase=self.phase,
-                            scan_storage=scan_storage)
+                    ws = self._workspace(elem_id, Subphase.Step, scan_storage)
                     elem.model_element_annual_step(ws)
                 except Exception as err:
                     err.add_note(f'element_id={elem_id}')
                     raise
             return scan_storage.next_carry_d, scan_storage.this_Y_d
 
+        self._sample_from_dists_that_might_be_accessed()
+
         initial_carry_d = self._initial_carry_d()
-        initial_carry_d['__rng_key'] = self._split_rng_key()
+        initial_carry_d[rng_var_key] = self._split_rng_key()
         X_d = self._X_d()
 
         if self.phase == Phase.Prior:
@@ -935,18 +832,14 @@ class Computation:
             final_carry_d, Y_d = jax_scan(scan_step, initial_carry_d, X_d)
 
         # TODO: check for collisions
-        self.storage_nd.update(Y_d)
-        self.rng_key = final_carry_d['__rng_key']
+        self._ndarray_d.update(Y_d)
+        # TODO: store all of the final_carry_d and final_carry_dist_d
+        self.rng_key = final_carry_d[rng_var_key]
 
     def _run_proc(self):
         for elem_id, elem in self._elem_items():
             try:
-                ws = WorkSpace_Proc(
-                        comp=self,
-                        year_0=self.model.mv.year_0,
-                        n_years=self.n_years,
-                        phase=self.phase,
-                        )
+                ws = self._workspace(elem_id, Subphase.Proc)
                 elem.model_element_postprocess(ws)
                 if self.phase == Phase.Posterior:
                     elem.model_element_postprocess_posterior_only(ws)
@@ -985,7 +878,6 @@ def run_mcmc(
     extra_fields = mcmc.get_extra_fields()
     if "diverging" in extra_fields:
         n_divergences = jnp.sum(extra_fields["diverging"])
-        print(f"Number of divergences: {n_divergences}")
         assert n_divergences <= model.n_divergences_acceptable, (
                 n_divergences, model.n_divergences_acceptable)
     return mcmc
@@ -1007,7 +899,7 @@ def _subphase_from_f(f):
 _deco_attr_access_val = 'model_element_access_val'
 
 def access_val(
-        var_key:VarKey|property,
+        var_key:str|VarKey|property,
         ):
     def deco(f):
         if not hasattr(f, _deco_attr_access_val):
@@ -1023,7 +915,7 @@ def access_val(
 _deco_attr_define = 'model_element_define'
 
 def define(
-        var_key:VarKey|property, *,
+        var_key:str|VarKey|property, *,
         prior_shape:list[int|NdarrayDim|property],
         dtype:str='float64',
         ):
@@ -1044,7 +936,7 @@ def define(
 _deco_attr_annual = 'model_element_annual_step'
 
 def define_annual(
-        var_key:VarKey, *,
+        var_key:str|VarKey, *,
         annual_shape:list[int|NdarrayDim],
         dtype:str='float64',
         ):
@@ -1064,7 +956,7 @@ def define_annual(
 _deco_attr_carry = 'model_element_define_carry'
 
 def define_carry(
-        var_key:VarKey, *,
+        var_key:str|VarKey, *,
         shape:list[int|NdarrayDim],
         dtype:str='float64',
         ):
@@ -1088,12 +980,6 @@ def define_carry(
     return deco
 
 
-class ElementKey(VarKeyBase, frozen=True):
-
-    elem_id: str
-    name: str
-
-
 class ModelElement:
     """
     Inherit from this to define a model
@@ -1106,8 +992,8 @@ class ModelElement:
         # must be unique within a model
         return self._identifier or self.__class__.__name__
 
-    def element_key(self, name:str) -> ElementKey:
-        return ElementKey(
+    def general_key(self, name:str) -> ElementGeneralKey:
+        return ElementGeneralKey(
                 elem_id=self.identifier,
                 name=name)
 
@@ -1128,23 +1014,19 @@ class ModelElement:
         pass
 
 
-years_key = new_named_key('years')
-scan_step_ii_key = new_named_key('scan_step_ii')
-
-
 class ModelBuiltIns(ModelElement):
 
     @property
     def version_id(self) -> VersionID:
         return 1
 
-    @define(years_key, prior_shape=[years_dim])
-    @define(scan_step_ii_key, prior_shape=[years_dim])
-    def model_element_prepare(self, ws:WorkSpace_Prep):
-        ws.val.general[years_key] = jnp.arange(
+    @define_annual(years_key, annual_shape=[])
+    @define_annual(scan_step_ii_key, annual_shape=[])
+    def model_element_prepare(self, ws:Workspace):
+        ws.val.annual[years_key] = jnp.arange(
                 ws.model.mv.year_0,
                 ws.model.mv.year_0 + ws.n_years)
-        ws.val.general[scan_step_ii_key] = jnp.arange(0, ws.n_years)
+        ws.val.annual[scan_step_ii_key] = jnp.arange(0, ws.n_years)
 
 
 def _resolve_properties_ndarray_definition(
@@ -1238,6 +1120,12 @@ class Model:
         for var_key, ndm in define_d.items():
             if isinstance(var_key, VarKey):
                 add_var_key_ndm(var_key, ndm)
+            elif isinstance(var_key, str):
+                add_var_key_ndm(
+                        ElementGeneralKey(
+                            elem_id=element.identifier,
+                            name=var_key),
+                        ndm=ndm)
             elif isinstance(var_key, property):
                 var_key_prop = var_key.__get__(element, type(element))
                 if isinstance(var_key_prop, VarKey):
@@ -1252,13 +1140,11 @@ class Model:
 
 
     def _add_define_annual_d(self, element_id, defining_subphase, annual_d):
-        for var_key, ndm in annual_d.items():
+        def add_var_key_ndm(var_key:ElementAnnualKey, ndm):
             self.mv.general_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=ndm,
                     defining_element_id=element_id,
                     defining_subphase=defining_subphase)
-
-            print(element_id, defining_subphase, var_key, ndm)
 
             if defining_subphase in (Subphase.Prep, Subphase.Step):
                 this_ndm = NdarrayVariableMetadata(
@@ -1272,9 +1158,20 @@ class Model:
                         defining_subphase=defining_subphase)
                 self.mv.annual_nd[var_key] = this_ndm
 
-    def _add_define_carry_d(self, element_id, carry_d):
-        for var_key, (initial_ndm, next_ndm) in carry_d.items():
+        for var_key, ndm in annual_d.items():
+            if isinstance(var_key, ElementAnnualKey):
+                add_var_key_ndm(var_key, ndm)
+            elif isinstance(var_key, str):
+                add_var_key_ndm(
+                        ElementAnnualKey(
+                            elem_id=element_id,
+                            name=var_key),
+                        ndm)
+            else:
+                raise NotImplementedError(var_key)
 
+    def _add_define_carry_d(self, element_id, carry_d):
+        def add_var_key_ndm(var_key:ElementCarryKey, initial_ndm, next_ndm):
             self.mv.carry_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=NdarrayDefinitionMetadata(
                         value_type=initial_ndm.value_type,
@@ -1283,21 +1180,41 @@ class Model:
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Step)
 
-            self.mv.general_nd[initial_carry(var_key)] = NdarrayVariableMetadata(
+            initial_key = InitialCarry(carry_key=var_key)
+            self.mv.general_nd[initial_key] = NdarrayVariableMetadata(
                     definition_metadata=initial_ndm,
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Prep)
 
-            self.mv.general_nd[final_carry(var_key)] = NdarrayVariableMetadata(
+            final_key = FinalCarry(carry_key=var_key)
+            self.mv.general_nd[final_key] = NdarrayVariableMetadata(
                     definition_metadata=next_ndm,
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Proc)
+
+        for var_key, (initial_ndm, next_ndm) in carry_d.items():
+            if isinstance(var_key, ElementCarryKey):
+                add_var_key_ndm(var_key, initial_ndm, next_ndm)
+            elif isinstance(var_key, str):
+                add_var_key_ndm(
+                        ElementCarryKey(
+                            elem_id=element_id,
+                            name=var_key),
+                        initial_ndm, next_ndm)
+            else:
+                raise NotImplementedError(var_key)
 
     def _process_access_val_d(self, elem_id, avd):
         for subphase, var_key_d in avd.items():
             for var_key, should_be_empty in var_key_d.items():
                 assert should_be_empty == {}
-                self.mv.accesses_val.append((elem_id, subphase, var_key))
+                if isinstance(var_key, VarKey):
+                    self.mv.accesses_val.append((elem_id, subphase, var_key))
+                elif isinstance(var_key, str):
+                    var_key_ = ElementGeneralKey(elem_id=elem_id, name=var_key)
+                    self.mv.accesses_val.append((elem_id, subphase, var_key_))
+                else:
+                    raise NotImplementedError(var_key)
 
     def add_element(
             self,
@@ -1389,10 +1306,9 @@ def compute_model(
     if isinstance(seed_or_key, int):
         seed_or_key = jrandom.key(seed_or_key)
     raise NotImplementedError()
-    if grouped_samples is None:
-        seed_or_key, key = jrandom.split(seed_or_key)
-        mcmc = run_mcmc(model, seed=key)
-        grouped_samples = mcmc.get_samples(group_by_chain=True)
+    seed_or_key, key = jrandom.split(seed_or_key)
+    mcmc = run_mcmc(model, seed=key)
+    grouped_samples = mcmc.get_samples(group_by_chain=True)
     comp = Computation(
             model=model,
             rng_key=seed_or_key)
@@ -1400,3 +1316,5 @@ def compute_model(
             n_mcmc=model.num_samples,
             grouped_samples=grouped_samples)
     return comp
+
+from .workspace import Workspace

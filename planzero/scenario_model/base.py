@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import enum
-from typing import Literal, Union
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -35,99 +35,100 @@ class VariableRole(str, enum.Enum):
     PosteriorCache = 'PosteriorCache'
 
 
-class VarKeyBase(BaseModel, frozen=True):
+class VarKey(BaseModel, frozen=True):
+    var_key_type: Literal['Posterior',
+                          'GroupedPosterior',
+                          'NamedKey',
+                          'InitialCarry',
+                          'NextCarry',
+                          'FinalCarry',
+                          'Observation',
+                          'ObservationValid',
+                          'ObservationWeight',
+                          'ElementGeneralKey',
+                          'ElementCarryKey',
+                          'ElementAnnualKey',
+                          ]
 
-    # let AnnualEmissionRate VarKey declare
-    # incompatibility with everything but General
-    # ... what about Ys though?
-    # TODO: Scoping and Storage -- can Xs and Ys be part of general?
-    # Maybe the answer is a simple "yes", Xs and Ys can be accessed
-    # via ws.general, and are restricted subsets of ws.general
-    disallowed_roles: frozenset[VariableRole] = frozenset()
+    def __lt__(self, other):
+        return str(self) < str(other)
 
 
-VarKey = (str | VarKeyBase)
-
-
-class NamedKey(VarKeyBase, frozen=True):
+class NamedKey(VarKey, frozen=True):
+    var_key_type: Literal['NamedKey'] = "NamedKey"
     name: str
     unique_id: str
 
 _named_key_counter = 0
 
-def new_named_key(name:str) -> NamedKey:
+def _new_named_key(name:str) -> NamedKey:
     global _named_key_counter
     _named_key_counter += 1
     return NamedKey(
             name=name,
             unique_id=f'named_key_id_{_named_key_counter}')
 
+rng_var_key = _new_named_key('rng')
 
-class Posterior(VarKeyBase, frozen=True):
+class Posterior(VarKey, frozen=True):
     var_key_type: Literal['Posterior'] = "Posterior"
     prior_var_key: VarKey
 
 
-def posterior(var_key:VarKey) -> Posterior:
-    return Posterior(prior_var_key=var_key)
-
-
-class GroupedPosterior(VarKeyBase, frozen=True):
+class GroupedPosterior(VarKey, frozen=True):
     var_key_type: Literal['GroupedPosterior'] = "GroupedPosterior"
     prior_var_key: VarKey
 
 
-class InitialCarry(VarKeyBase, frozen=True):
+class InitialCarry(VarKey, frozen=True):
     var_key_type: Literal['InitialCarry'] = "InitialCarry"
-    carry_key: VarKey
+    carry_key: ElementCarryKey
 
 
-def initial_carry(var_key: VarKey) -> InitialCarry:
-    return InitialCarry(carry_key=var_key)
-
-
-class NextCarry(VarKeyBase, frozen=True):
+class NextCarry(VarKey, frozen=True):
     var_key_type: Literal['NextCarry'] = "NextCarry"
-    carry_key: VarKey
+    carry_key: ElementCarryKey
 
 
-def next_carry(var_key: VarKey) -> NextCarry:
-    return NextCarry(carry_key=var_key)
-
-
-class FinalCarry(VarKeyBase, frozen=True):
+class FinalCarry(VarKey, frozen=True):
     var_key_type: Literal['FinalCarry'] = "FinalCarry"
-    carry_key: VarKey
+    carry_key: ElementCarryKey
 
 
-def final_carry(var_key: VarKey) -> FinalCarry:
-    return FinalCarry(carry_key=var_key)
-
-
-class Observation(VarKeyBase, frozen=True):
+class Observation(VarKey, frozen=True):
     var_key_type: Literal['Observation'] = "Observation"
     prior_var_key: VarKey
 
-def observation(var_key):
-    return Observation(prior_var_key=var_key)
 
-
-class ObservationValid(VarKeyBase, frozen=True):
+class ObservationValid(VarKey, frozen=True):
     var_key_type: Literal['ObservationValid'] = "ObservationValid"
     obs_var_key: Observation
 
 
-def observation_valid(obs_var_key:Observation):
-    return ObservationValid(obs_var_key=obs_var_key)
-
-
-class ObservationWeight(VarKeyBase, frozen=True):
+class ObservationWeight(VarKey, frozen=True):
     var_key_type: Literal['ObservationWeight'] = "ObservationWeight"
     obs_var_key: Observation
 
 
-def observation_weight(obs_var_key:Observation):
-    return ObservationWeight(obs_var_key=obs_var_key)
+class ElementGeneralKey(VarKey, frozen=True):
+    var_key_type: Literal['ElementGeneralKey'] = "ElementGeneralKey"
+    elem_id: str
+    name: str
+
+
+class ElementCarryKey(VarKey, frozen=True):
+    var_key_type: Literal['ElementCarryKey'] = "ElementCarryKey"
+    elem_id: str
+    name: str
+
+
+class ElementAnnualKey(VarKey, frozen=True):
+    var_key_type: Literal['ElementAnnualKey'] = "ElementAnnualKey"
+    elem_id: str
+    name: str
+
+years_key = ElementAnnualKey(elem_id='ModelBuiltIns', name='years')
+scan_step_ii_key = ElementAnnualKey(elem_id="ModelBuiltIns", name='scan_step_ii')
 
 
 class ValType(BaseModel, frozen=True):

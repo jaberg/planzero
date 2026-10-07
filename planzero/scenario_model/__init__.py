@@ -1,42 +1,33 @@
 from .base import (
-    NamedKey,
     Phase,
-    VarKey,
-    VarKeyBase,
     mcmc_dim,
-    new_named_key,
+    ndarray_dim,
     years_dim,
-)
-from .computation import (
-        ElementKey,
-        ModelElement,
-        WorkSpace_Prep,
-        WorkSpace_Proc,
-        access_val,
-        define,
-        define_annual,
-        define_carry,
+    years_key,
 )
 from .computation import Model as ScenarioModel
+from .computation import (
+    ModelElement,
+    access_val,
+    define,
+    define_annual,
+    define_carry,
+)
 from .registry import registry_compute_model
-
+from .workspace import Workspace
 
 __all__ = [
-        "ElementKey",
-        "ModelElement",
-        "NamedKey",
-        "Phase",
-        "ScenarioModel",
-        "VarKey",
-        "VarKeyBase",
-        "WorkSpace_Prep",
-        "WorkSpace_Proc",
-        "access_val",
-        "define",
-        "define_annual",
-        "define_carry",
-        "mcmc_dim",
-        "new_named_key",
-        "registry_compute_model",
-        "years_dim",
-        ]
+    "ModelElement",
+    "Phase",
+    "ScenarioModel",
+    "Workspace",
+    "access_val",
+    "define",
+    "define_annual",
+    "define_carry",
+    "mcmc_dim",
+    "ndarray_dim",
+    "registry_compute_model",
+    "years_dim",
+    "years_key",
+]

@@ -2,13 +2,12 @@ import hashlib
 import os
 import pickle
 
-import jax.numpy as jnp
 import jax.random as jrandom
 import numpy as np
 from jax.typing import ArrayLike
 
 from .base import GroupedPosterior, VarKey
-from .computation import Computation, Model, run_mcmc, hash_version_id
+from .computation import Computation, Model, hash_version_id, run_mcmc
 
 MODEL_REGISTRY_ROOT = os.environ.get('PLANZERO_MODEL_REGISTRY_ROOT')
 
