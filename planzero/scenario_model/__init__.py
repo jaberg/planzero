@@ -1,4 +1,10 @@
 from .base import (
+    AnnualKey,
+    CarryKey,
+    ElementAnnualKey,
+    ElementCarryKey,
+    ElementGeneralKey,
+    GeneralKey,
     Phase,
     mcmc_dim,
     ndarray_dim,
@@ -17,6 +23,12 @@ from .registry import registry_compute_model
 from .workspace import Workspace
 
 __all__ = [
+    "AnnualKey",
+    "CarryKey",
+    "ElementAnnualKey",
+    "ElementCarryKey",
+    "ElementGeneralKey",
+    "GeneralKey",
     "ModelElement",
     "Phase",
     "ScenarioModel",

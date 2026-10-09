@@ -8,11 +8,11 @@ from .nir2025 import (
 from .nir2025_model import NIR2025_ModelElement
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
-    ElementKey,
+    GeneralKey,
     ModelElement,
     Phase,
     ScenarioModel,
-    WorkSpace_Proc,
+    Workspace,
     define,
     years_dim,
 )
@@ -22,28 +22,29 @@ from .sector_total_emissions_element import SectorTotalEmissionsElement
 class StaticNormals_ModelElement(ModelElement):
     sector: IPCC_Sector
     ghg: GHG
-    _unit_ca_key: ElementKey
-    _unit_pt_keys: dict[PT, ElementKey]
-    _ktCO2e_ca_key: ElementKey
-    _ktCO2e_pt_keys: dict[PT, ElementKey]
+    _unit_ca_key: GeneralKey
+    _unit_pt_keys: dict[PT, GeneralKey]
+    _ktCO2e_ca_key: GeneralKey
+    _ktCO2e_pt_keys: dict[PT, GeneralKey]
 
-    def __init__(self, sector:IPCC_Sector, ghg:GHG, nir_ca_key, nir_pt_keys):
+    def __init__(self, sector:IPCC_Sector, ghg:GHG, nir_ca_key, nir_pt_keys, nir_scale_key):
         self.sector = sector
         self.ghg = ghg
         self.nir_ca_key = nir_ca_key
         self.nir_pt_keys = nir_pt_keys
+        self.nir_scale_key = nir_scale_key
 
-        self._unit_ca_key = self.element_key(
+        self._unit_ca_key = self.general_key(
                 f'unit_{self.sector.value}_{self.ghg.value}_ca')
         self._unit_pt_keys = {
-                pt: self.element_key(
+                pt: self.general_key(
                     f'unit_{self.sector.value}_{self.ghg.value}_{pt.value}')
                 for pt in PT if pt != PT.XX}
 
-        self._ktCO2e_ca_key = self.element_key(
+        self._ktCO2e_ca_key = self.general_key(
                 f'ktCO2e_{self.sector.value}_{self.ghg.value}_ca')
         self._ktCO2e_pt_keys = {
-                pt: self.element_key(
+                pt: self.general_key(
                     f'ktCO2e_{self.sector.value}_{self.ghg.value}_{pt.value}')
                 for pt in PT if pt != PT.XX}
 
@@ -60,30 +61,29 @@ class StaticNormals_ModelElement(ModelElement):
         return (1,)
 
     @property
-    def unit_ca_key(self) -> ElementKey:
+    def unit_ca_key(self) -> GeneralKey:
         return self._unit_ca_key
 
     @property
-    def unit_pt_keys(self) -> dict[PT, ElementKey]:
+    def unit_pt_keys(self) -> dict[PT, GeneralKey]:
         return self._unit_pt_keys
 
     @property
-    def ktCO2e_ca_key(self) -> ElementKey:
+    def ktCO2e_ca_key(self) -> GeneralKey:
         return self._ktCO2e_ca_key
 
     @property
-    def ktCO2e_pt_keys(self) -> dict[PT, ElementKey]:
+    def ktCO2e_pt_keys(self) -> dict[PT, GeneralKey]:
         return self._ktCO2e_pt_keys
 
-    # TODO: how do these bare-string key_vars get different sample_sites?
     @define('mu', prior_shape=[13])
     @define('sigma_pt', prior_shape=[13])
     @define('sigma_ca', prior_shape=[])
-    @define(unit_ca_key, prior_shape=[years_dim])
-    @define(unit_pt_keys, prior_shape=[years_dim])
+    @define(unit_ca_key, prior_shape=[])
+    @define(unit_pt_keys, prior_shape=[])
     @define(ktCO2e_ca_key, prior_shape=[years_dim])
     @define(ktCO2e_pt_keys, prior_shape=[years_dim])
-    def model_element_postprocess(self, ws:WorkSpace_Proc):
+    def model_element_postprocess(self, ws:Workspace):
         n_regions = 13
         assert n_regions == len(self.unit_pt_keys)
 
@@ -91,38 +91,50 @@ class StaticNormals_ModelElement(ModelElement):
         ws.dist.general['sigma_pt'] = dist.LogNormal(-1.0, 0.7).expand((n_regions,))
         ws.dist.general['sigma_ca'] = dist.LogNormal(-1.0, 0.7)
 
-        mu_ca = ws.val.general['mu'].sum(axis=-1) # over regions
+        mu_ca = ws.val.general['mu'].sum(axis=0) # over regions
 
-        emission_scale = jnp.max(ws.dist.general[self.nir_ca_key].mu)
+        emission_scale = ws.val.general[self.nir_scale_key]
 
         squish = dist.transforms.AffineTransform(loc=0, scale=1/emission_scale)
+        as_years = jnp.ones((ws.n_years,) + ws.mcmc_broadcast_shape)
 
-        for ii, (pt, key) in enumerate(self.unit_pt_keys.items()):
-            ws.dist.general[key] = dist.Normal(
-                    ws.val.general['mu'][..., ii],
-                    ws.val.general['sigma_pt'][..., ii])
+        # TODO: don't hard-code this, have the nir model element export it
+        hardcoded_weight = jnp.array(33.0)
 
-            ws.obs_weight.general[key] \
-                    = ws.shape.general[self.nir_pt_keys[pt]][0]
-            ws.obs_dist.general[key] = dist.TransformedDistribution(
+        for ii, (pt, unit_key) in enumerate(self.unit_pt_keys.items()):
+
+            ws.obs_weight.general[unit_key] = hardcoded_weight
+            ws.obs_dist.general[unit_key] = dist.TransformedDistribution(
                     ws.dist.general[self.nir_pt_keys[pt]],
                     squish)
 
-            if ws.phase == Phase.Posterior:
-                ws.val.general[self.ktCO2e_pt_keys[pt]] = (
-                        emission_scale * ws.val.general[key])
+            ws.dist.general[unit_key] = dist.Normal(
+                    ws.val.general['mu'][ii],
+                    ws.val.general['sigma_pt'][ii])
 
-        ws.dist.general[self.unit_ca_key] = dist.Normal(
-                mu_ca,
-                ws.val.general['sigma_ca'])
-        ws.obs_weight.general[self.unit_ca_key] \
-                = ws.shape.general[self.nir_ca_key][0]
+            if ws.phase == Phase.Posterior:
+                # predictions for future years
+                ws.dist.general[self.ktCO2e_pt_keys[pt]] = dist.Normal(
+                        as_years * emission_scale * ws.val.general['mu'][ii],
+                        as_years * emission_scale * ws.val.general['sigma_pt'][ii])
+
+
+        ws.obs_weight.general[self.unit_ca_key] = hardcoded_weight
         ws.obs_dist.general[self.unit_ca_key] = dist.TransformedDistribution(
                 ws.dist.general[self.nir_ca_key],
                 squish)
+        ws.dist.general[self.unit_ca_key] = dist.Normal(
+                mu_ca,
+                ws.val.general['sigma_ca'])
+
         if ws.phase == Phase.Posterior:
-            ws.val.general[self.ktCO2e_ca_key] = (
-                    emission_scale * ws.val.general[self.unit_ca_key])
+            # predictions for future years
+            # which are distinct rather than scaled random variables
+            # relative to the unit_ca_key, because unit_ca_key
+            # refers to previous, observed years' emissions
+            ws.dist.general[self.ktCO2e_ca_key] = dist.Normal(
+                    as_years * emission_scale * mu_ca,
+                    as_years * emission_scale * ws.val.general['sigma_ca'])
 
 
 class StaticNormals_ScenarioModel(ScenarioModel):
@@ -130,7 +142,7 @@ class StaticNormals_ScenarioModel(ScenarioModel):
     def __init__(self,
                  last_observed_year:int,
                  last_forecast_year=2050,
-                 sectors:type[IPCC_Sector]|set[IPCC_Sector]=IPCC_Sector,
+                 sectors:type[IPCC_Sector]|list[IPCC_Sector]=IPCC_Sector,
                  ):
         """
         sectors: default to all sectors (site models require all sectors), but subsets can be used in testing
@@ -159,6 +171,7 @@ class StaticNormals_ScenarioModel(ScenarioModel):
                     snorm_elem = StaticNormals_ModelElement(
                                 sector=sector,
                                 ghg=ghg,
+                                nir_scale_key=nir_elem.scale_key,
                                 nir_ca_key=nir_elem.ca_key,
                                 nir_pt_keys=nir_elem.pt_keys)
                     self.add_element(snorm_elem, mcmc_group=mcmc_group)

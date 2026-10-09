@@ -127,6 +127,11 @@ class ElementAnnualKey(VarKey, frozen=True):
     elem_id: str
     name: str
 
+
+CarryKey = ElementCarryKey
+GeneralKey = ElementGeneralKey
+AnnualKey = ElementAnnualKey
+
 years_key = ElementAnnualKey(elem_id='ModelBuiltIns', name='years')
 scan_step_ii_key = ElementAnnualKey(elem_id="ModelBuiltIns", name='scan_step_ii')
 

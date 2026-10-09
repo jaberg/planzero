@@ -1,3 +1,5 @@
+import jax.numpy as jnp
+
 from .enums import GHG, PT, IPCC_Sector
 from .nir2025 import (
     ktCO2e_numpyro_dist_pt_ca_years,
@@ -5,10 +7,10 @@ from .nir2025 import (
 )
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
-    ElementKey,
+    GeneralKey,
     ModelElement,
     ScenarioModel,
-    WorkSpace_Proc,
+    Workspace,
     define,
 )
 from .sector_total_emissions_element import SectorTotalEmissionsElement
@@ -17,8 +19,9 @@ from .sector_total_emissions_element import SectorTotalEmissionsElement
 class NIR2025_ModelElement(ModelElement):
     sector: IPCC_Sector
     ghg: GHG
-    _ca_key: ElementKey
-    _pt_keys: dict[PT, ElementKey]
+    _scale_key: GeneralKey
+    _ca_key: GeneralKey
+    _pt_keys: dict[PT, GeneralKey]
     _n_years: int
 
     def __init__(self, sector:IPCC_Sector, ghg:GHG, n_years:int):
@@ -26,9 +29,10 @@ class NIR2025_ModelElement(ModelElement):
         self.sector = sector
         self.ghg = ghg
         self._n_years = n_years
-        self._ca_key = self.element_key(f'{self.sector.value}_{self.ghg.value}_ca')
+        self._ca_key = self.general_key(f'{self.sector.value}_{self.ghg.value}_ca')
+        self._scale_key = self.general_key(f'{self.sector.value}_{self.ghg.value}_scale')
         self._pt_keys = {
-                pt: self.element_key(f'{self.sector.value}_{self.ghg.value}_{pt.value}')
+                pt: self.general_key(f'{self.sector.value}_{self.ghg.value}_{pt.value}')
                 for pt in PT if pt != PT.XX}
 
     @classmethod
@@ -44,27 +48,33 @@ class NIR2025_ModelElement(ModelElement):
         return (1,)
 
     @property
-    def ca_key(self) -> ElementKey:
+    def ca_key(self) -> GeneralKey:
         return self._ca_key
 
     @property
-    def pt_keys(self) -> dict[PT, ElementKey]:
+    def scale_key(self) -> GeneralKey:
+        return self._scale_key
+
+    @property
+    def pt_keys(self) -> dict[PT, GeneralKey]:
         return self._pt_keys
 
     @property
     def n_years(self) -> int:
         return self._n_years
 
+    @define(scale_key, prior_shape=[])
     @define(ca_key, prior_shape=[n_years])
     @define(pt_keys, prior_shape=[n_years])
-    def model_element_postprocess(self, ws:WorkSpace_Proc):
+    def model_element_postprocess(self, ws:Workspace):
         ca_dist, pt_dists_by_pt = ktCO2e_numpyro_dist_pt_ca_years(
                 self.sector, self.ghg,
                 year_0=ws.year_0,
                 n_years=self.n_years)
-        ws.dist.general[self.ca_key] = ca_dist
+        ws.dist.general[self.ca_key] = ws.mcmc_expand(ca_dist)
         for pt, key in self.pt_keys.items():
-            ws.dist.general[key] = pt_dists_by_pt[pt]
+            ws.dist.general[key] = ws.mcmc_expand(pt_dists_by_pt[pt])
+        ws.val.general[self.scale_key] = jnp.max(ca_dist.mu)
 
 
 class NIR2025_ScenarioModel(ScenarioModel):

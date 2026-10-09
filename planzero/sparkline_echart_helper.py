@@ -1005,29 +1005,26 @@ def national_emissions_by_sector_echart_from_sample(
                                        model_name=model_name)
     helper.years = np.arange(year_0, n_years + year_0)
 
-    mean_with_lulucf = 0
-    estimates_with_lulucf = np.zeros((n_samples, n_years))
+    estimates_with_lulucf = np.zeros((n_years, n_samples))
 
-    mean_without_lulucf = 0
-    estimates_without_lulucf = np.zeros((n_samples, n_years))
+    estimates_without_lulucf = np.zeros((n_years, n_samples))
 
     for sector in IPCC_Sector:
-        mean_sector_total = helper.compute_stats_and_add_data_for_sector(
+        helper.compute_stats_and_add_data_for_sector(
             sector,
-            ktCO2e_sample[sector] * helper.v_unit_scale)
+            ktCO2e_sample[sector].T * helper.v_unit_scale)
 
         if sector not in LULUCF_Sectors:
             estimates_without_lulucf += ktCO2e_sample[sector]
-            mean_without_lulucf += mean_sector_total
 
         estimates_with_lulucf += ktCO2e_sample[sector]
-        mean_with_lulucf += mean_sector_total
 
     helper.add_data_for_LULUCF_totals(
-        estimates_with_lulucf,
-        mean_with_lulucf,
-        estimates_without_lulucf,
-        mean_without_lulucf)
+        estimates_with_lulucf.T * helper.v_unit_scale,
+        estimates_with_lulucf.mean(axis=1) * helper.v_unit_scale,
+        estimates_without_lulucf.T * helper.v_unit_scale,
+        estimates_without_lulucf.mean(axis=1) * helper.v_unit_scale,
+        )
 
     helper.order_sectors()
     helper.add_total_cells()
@@ -1055,10 +1052,11 @@ def sectoral_emissions_by_region_echart_from_sample(
     helper.years = np.arange(year_0, n_years + year_0)
 
     estimates_ca = ktCO2e_sample[PseudoRegion.NationalTotal]
+    # shape (n_pt, n_years, n_samples)
     estimates_pt = np.asarray([ktCO2e_sample[pt] for pt in PT if pt != PT.XX])
     helper.add_data_from_estimates(
-            estimates_pt=estimates_pt.transpose(1, 2, 0) * helper.v_unit_scale,
-            estimates_ca=estimates_ca * helper.v_unit_scale)
+            estimates_pt=estimates_pt.transpose(2, 1, 0) * helper.v_unit_scale,
+            estimates_ca=estimates_ca.T * helper.v_unit_scale)
 
     helper.order_regions()
     helper.add_regional_cells()

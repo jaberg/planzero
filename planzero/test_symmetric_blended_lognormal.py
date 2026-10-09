@@ -1,7 +1,6 @@
 import jax
 import jax.numpy as jnp
 import jax.random as jrandom
-import numpy as np
 
 from .symmetric_blended_lognormal import (
     SymmetricBlendedLogNormal,

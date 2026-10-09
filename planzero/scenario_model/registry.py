@@ -21,7 +21,8 @@ def var_key_hash(var_key: VarKey, n_chars=16) -> str:
     encoded_data = str(var_key).encode('utf-8')
 
     # 2. Generate and return the hexadecimal digest
-    return hashlib.shake_128(encoded_data).hexdigest(n_chars)
+    rval = hashlib.shake_128(encoded_data).hexdigest(n_chars)
+    return rval
 
 
 def model_root(model_name:str):
@@ -87,9 +88,13 @@ def compute_mcmc_submodel(
         submodel:Model,
         rng_key:ArrayLike,
         ):
-    submodel_version_id = tuple(
-            [(elem_id, elem.version_id)
-             for elem_id, elem in sorted(submodel.model_elements.items())])
+    this_subsystem_version = 1.1
+    submodel_version_id = (
+            this_subsystem_version,
+            tuple(
+                [(elem_id, elem.version_id)
+                 for elem_id, elem in sorted(submodel.model_elements.items())]),
+                )
     version_hash:str = hash_version_id(submodel_version_id)
     if not sentinel_present(model_name, 'mcmc', mcmc_group, version_hash):
         print('collecting sample sites for', model_name, mcmc_group, version_hash)
@@ -98,27 +103,29 @@ def compute_mcmc_submodel(
         print('running mcmc for', model_name, mcmc_group, version_hash)
         mcmc = run_mcmc(submodel, seed=rng_key)
         grouped_samples = mcmc.get_samples(group_by_chain=True)
+        saved_sample_sites = {}
         for var_key, sample_site in comp.sample_sites.items():
             if sample_site in grouped_samples:
                 save_var(
                         model_name,
                         GroupedPosterior(prior_var_key=var_key),
                         grouped_samples[sample_site])
-        sentinel_save(model_name, 'mcmc', mcmc_group, version_hash, comp.sample_sites)
-        sample_sites = comp.sample_sites
+                saved_sample_sites[var_key] = sample_site
+        assert len(saved_sample_sites) == len(grouped_samples)
+        sentinel_save(model_name, 'mcmc', mcmc_group, version_hash, saved_sample_sites)
     else:
-        sample_sites = sentinel_load(model_name, 'mcmc', mcmc_group, version_hash)
-    return sample_sites
+        saved_sample_sites = sentinel_load(model_name, 'mcmc', mcmc_group, version_hash)
+    return saved_sample_sites
 
 
 def compute_posterior(
         model_name:str,
         model:Model,
         rng_key:ArrayLike,
-        sample_sites:dict[VarKey, str],
+        saved_sample_sites:dict[VarKey, str],
         ) -> Computation:
     grouped_samples = {}
-    for var_key, sample_site in sample_sites.items():
+    for var_key, sample_site in saved_sample_sites.items():
         try:
             grouped_samples[sample_site] = load_var(
                     model_name,
@@ -131,7 +138,7 @@ def compute_posterior(
     comp = Computation(model=model, rng_key=rng_key)
     comp.set_phase_posterior(
             n_mcmc=model.num_samples,
-            sample_sites=sample_sites,
+            sample_sites=saved_sample_sites,
             grouped_samples=grouped_samples)
     comp.run()
     return comp
@@ -159,7 +166,7 @@ def registry_compute_model(
     os.makedirs(model_root(model_name), exist_ok=True)
 
     # It should be possible to run this loop concurrently e.g. vmap
-    sample_sites = {}
+    saved_sample_sites = {}
     for mcmc_group, submodel in submodels.items():
         # for saving MCMC re-sampling of sample sites
         rng_key, tmp_key = jrandom.split(rng_key)
@@ -167,10 +174,10 @@ def registry_compute_model(
                 model_name, mcmc_group, submodel,
                 rng_key=tmp_key)
         for key, site in submodel_sample_sites.items():
-            assert key not in sample_sites, key
-            sample_sites[key] = site
+            assert key not in saved_sample_sites, key
+            saved_sample_sites[key] = site
 
-    comp = compute_posterior(model_name, model, rng_key=rng_key, sample_sites=sample_sites)
+    comp = compute_posterior(model_name, model, rng_key=rng_key, saved_sample_sites=saved_sample_sites)
 
     if cache_posterior:
         _registry_mem_cache[model_name] = comp

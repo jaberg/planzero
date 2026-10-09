@@ -6,8 +6,7 @@ import jax.random as jrandom
 import numpy as np
 import numpyro.distributions as dist
 from jax.typing import ArrayLike
-from numpyro.distributions import Distribution, constraints
-from numpyro.distributions.kl import dispatch
+from numpyro.distributions import Distribution, constraints, kl
 from numpyro.distributions.util import promote_shapes
 
 
@@ -192,7 +191,7 @@ class SymmetricBlendedLogNormal(Distribution):
 
         rval = jax.nn.logsumexp(components_log_prob, axis=-1)
 
-        if isinstance(value, jnp.ndarray):
+        if isinstance(value, jnp.ndarray|np.ndarray):
             assert rval.shape == value.shape
         else:
             assert rval.shape == ()
@@ -263,11 +262,12 @@ def kl_divergence_uniform_normal_mixture(
     p_shape = p.batch_shape
     try:
         assert len(q_shape) >= len(p_shape)
-        qp_shape = q_shape[-len(p_shape):]
+        if len(p_shape):
+            qp_shape = q_shape[-len(p_shape):]
 
-        assert len(qp_shape) == len(p_shape)
-        for qpsi, psi in zip(qp_shape, p_shape):
-            assert qpsi == psi or qpsi == 1
+            assert len(qp_shape) == len(p_shape)
+            for qpsi, psi in zip(qp_shape, p_shape):
+                assert qpsi == psi or qpsi == 1
     except AssertionError as err:
         err.add_note('q_shape must explicitly include p_shape dims for broadcasting')
         err.add_note(f'p_shape={p_shape}')
@@ -309,7 +309,7 @@ def kl_divergence_uniform_normal_mixture(
     return jnp.maximum(kl, 0.0)
 
 
-@dispatch(dist.TransformedDistribution, dist.Normal)
+@kl.dispatch(dist.TransformedDistribution, dist.Normal)
 def kl_divergence(p:dist.TransformedDistribution, q:dist.Normal) -> jnp.ndarray:
     if (len(p.transforms) == 1
         and isinstance(p.transforms[0], dist.transforms.AffineTransform)
@@ -330,7 +330,7 @@ def kl_divergence(p:dist.TransformedDistribution, q:dist.Normal) -> jnp.ndarray:
         raise NotImplementedError(p)
 
 
-@dispatch(SymmetricBlendedLogNormal, dist.Normal)
+@kl.dispatch(SymmetricBlendedLogNormal, dist.Normal)
 def kl_divergence(p:SymmetricBlendedLogNormal, q:dist.Normal) -> jnp.ndarray:  # noqa: F811
     if q.batch_shape == ():
         n_missing_dims = 1 + len(p.batch_shape)

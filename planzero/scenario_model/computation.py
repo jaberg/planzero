@@ -10,7 +10,7 @@ import numpyro
 from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
-from numpyro.distributions.distribution import Distribution
+from numpyro.distributions import Distribution, kl
 from numpyro.infer import MCMC, NUTS
 
 from .base import (
@@ -30,6 +30,7 @@ from .base import (
     NextCarry,
     Observation,
     ObservationValid,
+    ObservationWeight,
     Phase,
     Subphase,
     VarKey,
@@ -107,7 +108,7 @@ def storage_nd_check_ElementGeneralKey(comp:Computation, var_key:ElementGeneralK
               or val.shape == prior_shape + (comp.n_mcmc,)):
             return False
         else:
-            raise NotImplementedError(val.shape)
+            raise NotImplementedError(val.shape, prior_shape, comp.n_mcmc)
     else:
         raise NotImplementedError(comp.phase)
 
@@ -189,9 +190,13 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
             elif n_obs_dim == len(metadata_prior_shape):
                 padded_obs_shape = obs_shape
             else:
-                padded_obs_shape = obs_shape[-len(metadata_prior_shape):]
+                if len(metadata_prior_shape) == 0:
+                    padded_obs_shape = ()
+                else:
+                    padded_obs_shape = obs_shape[-len(metadata_prior_shape):]
 
-            assert len(padded_obs_shape) == len(metadata_prior_shape)
+            assert len(padded_obs_shape) == len(metadata_prior_shape), (
+                    padded_obs_shape, metadata_prior_shape)
 
             # ensure that it is broadcastable
             for obs_shape_ii, prior_shape_ii in zip(padded_obs_shape, metadata_prior_shape):
@@ -212,19 +217,20 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
         raise NotImplementedError(prior_var_key)
 
 
-def storage_nd_check_Observation(comp:Computation, var_key:Observation, val:jnp.ndarray) -> bool:
-    prior_var_key = var_key.prior_var_key
+def storage_nd_check_Observation(comp:Computation, obs_key:Observation, val:jnp.ndarray) -> bool:
+    prior_var_key = obs_key.prior_var_key
     # the order of things is for the model element define the distribution lastly
     # and for the computation system to then set the sampled value
     assert prior_var_key not in comp._ndarray_d, prior_var_key
     assert prior_var_key not in comp._dist_d, prior_var_key
+
     pad_right = storage_nd_check_observation_shape(comp, prior_var_key, val.shape)
     return pad_right
 
 
 def storage_nd_check_ObservationValid(comp:Computation, var_key:ObservationValid, val:jnp.ndarray) -> bool:
     assert val.dtype == jnp.bool
-    # the order of things is for the model element to define the 
+    # the order of things is for the model element to define the
     # valid mask first, before setting obs_val or obs_dist,
     # in order, at least possibly, to validate the observed data
     # at the time of setting the obs_val or obs_dist
@@ -233,6 +239,18 @@ def storage_nd_check_ObservationValid(comp:Computation, var_key:ObservationValid
     assert obs_var_key not in comp._dist_d, var_key
     pad_right = storage_nd_check_observation_shape(comp, obs_var_key.prior_var_key, val.shape)
     return pad_right
+
+
+def storage_nd_check_ObservationWeight(comp:Computation, var_key:ObservationValid, val:jnp.ndarray) -> bool:
+    # the order of things is for the model element to define the
+    # valid mask first, before setting obs_val or obs_dist,
+    # in order, at least possibly, to validate the observed data
+    # at the time of setting the obs_val or obs_dist
+    obs_var_key = var_key.obs_var_key
+    assert obs_var_key not in comp._ndarray_d, var_key
+    assert obs_var_key not in comp._dist_d, var_key
+    assert val.shape == () or val.shape == (1,)
+    return False
 
 
 def set_dist_ElementGeneralKey_posterior_obs_valid(
@@ -281,29 +299,31 @@ def set_dist_ElementGeneralKey_posterior_obs_valid(
 def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist:Distribution):
     obs_var_key = Observation(prior_var_key=var_key)
     obsvalid_var_key = ObservationValid(obs_var_key=obs_var_key)
+    obsweight_var_key = ObservationWeight(obs_var_key=obs_var_key)
 
     obs = comp._ndarray_d.get(obs_var_key)
     obs_valid = comp._ndarray_d.get(obsvalid_var_key)
     obs_dist = comp._dist_d.get(obs_var_key)
-    if obs_dist:
-        # set up a call to numpyro.factor
+    obs_weight = comp._ndarray_d.get(obsweight_var_key)
+
+    have_obs_val = obs is not None
+    have_obs_valid = obs_valid is not None
+    have_obs_dist = obs_dist is not None
+    if have_obs_dist:
+        assert obs_weight is not None
+    if have_obs_val and obs_weight is not None:
         raise NotImplementedError()
 
+    # TODO: check that the shape is correct
+    # shape correctness does not depend on obs
     if comp.phase == Phase.Prior:
-        # TODO: check that the shape is correct
-        # shape correctness does not depend on obs
 
-        if obs is None and obs_valid is None:
+        if not (have_obs_val or have_obs_dist):
+
+            assert not have_obs_valid
             comp._dist_d[var_key] = dist
 
-        elif obs_valid is None:
-            # don't define the distribution if the observation
-            # is provided, because it no longer makes sense
-            #
-            # but do store the observation as the sample
-            #
-            # TODO: check that obs' shape is correct
-            assert obs is not None
+        elif have_obs_val and not have_obs_valid:
             comp._ndarray_d[var_key] = obs
             numpyro.sample(
                     comp.sample_site(var_key),
@@ -311,11 +331,10 @@ def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist
                     rng_key=comp._split_rng_key(),
                     obs=obs,
                     )
-        else:
+
+        elif have_obs_val and have_obs_valid:
             # don't define the distribution if the observation
             # is provided, because it no longer makes sense
-            assert obs_valid is not None
-            assert obs is not None
             # mask the distribution
             # mask the observation in the sample call?
             # store dist jnp.where(obs_valid, obs, an_actual_sample)
@@ -326,9 +345,24 @@ def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist
             # ... so think about what this model needs in terms of
             # .... symantics.
             raise NotImplementedError()
-    else:
-        assert comp.phase == Phase.Posterior
-        if obs is None and obs_valid is None:
+
+        elif have_obs_dist and have_obs_valid:
+            # ... some type of masking should be done?
+            raise NotImplementedError()
+
+        elif have_obs_dist and not have_obs_valid:
+            neg_expected_log_prob_plus_const = (
+                   kl.kl_divergence(obs_dist, dist) * obs_weight)
+            numpyro.factor(
+                    comp.sample_site(var_key),
+                    -neg_expected_log_prob_plus_const.sum())
+            comp._dist_d[var_key] = dist
+        else:
+            raise NotImplementedError(
+                    'observation of both values and distribution')
+
+    elif comp.phase == Phase.Posterior:
+        if not (have_obs_val or have_obs_dist):
             # don't define the distribution this time
             # because the provided distribution was the prior.
 
@@ -348,8 +382,7 @@ def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist
             # TODO: check that the shape is correct
             #       the shape should be [n_mcmc] + [var shape]
 
-        elif obs_valid is None:
-            assert obs is not None
+        elif have_obs_val and not have_obs_valid:
             # TODO: check that the shape is correct
             #       obs' shape should be [var shape]
             #       with no mcmc samples.
@@ -357,14 +390,58 @@ def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist
             # technically this might be okay in some scenarios
             # but if it happens for now, it's an error.
             assert var_key not in comp._ndarray_d
-
             comp._ndarray_d[var_key] = obs
-        else:
-            assert obs is not None
+
+        elif have_obs_val and have_obs_valid:
+            # draw a sample, but then mix it with the observations
+            # according to obs_valid. (Subroutine because there is
+            # some special-casing based on shapes.)
             set_dist_ElementGeneralKey_posterior_obs_valid(
                     comp, var_key, dist,
                     obs_val=obs,
                     obs_valid=obs_valid)
+
+        elif have_obs_dist and have_obs_valid:
+            raise NotImplementedError()
+
+        elif have_obs_dist and not have_obs_valid:
+            # simply use the obs_dist as the posterior
+            comp._dist_d[var_key] = obs_dist
+
+        else:
+            raise NotImplementedError(
+                    'observation of both values and distribution')
+    else:
+        raise NotImplementedError(comp.phase)
+
+
+def set_dist_Observation(
+        comp:Computation,
+        obs_key:Observation,
+        dist:Distribution,
+        ) ->None:
+    prior_var_key = obs_key.prior_var_key
+    # the order of things is
+    # 1. set observation values / distribution
+    # 2. set the prior on the variable
+    #
+    # In step 2, this runtime will ensure samples from prior or posterior
+    #    are assigned to comp._ndarray_d[prior_var_key]
+    assert prior_var_key not in comp._ndarray_d, prior_var_key
+    assert prior_var_key not in comp._dist_d, prior_var_key
+
+    if obs_key in comp._ndarray_d:
+        raise NotImplementedError(
+                'setting both distribution and values for observation',
+                obs_key)
+
+    pad_right = storage_nd_check_observation_shape(comp, prior_var_key, dist.shape())
+    if pad_right:
+        # I suspect there is some pytree magic to do this for any distribution
+        # but I don't know what it is. I think all of the parameters of the dist
+        # must be right-padded.
+        raise NotImplementedError()
+    comp._dist_d[obs_key] = dist
 
 
 def set_dist_InitialCarry(comp:Computation, ic_key:InitialCarry, dist:Distribution):
@@ -549,6 +626,8 @@ class Computation:
             set_dist_ElementGeneralKey(self, var_key, dist)
         elif isinstance(var_key, InitialCarry):
             set_dist_InitialCarry(self, var_key, dist)
+        elif isinstance(var_key, Observation):
+            set_dist_Observation(self, var_key, dist)
         else:
             raise NotImplementedError(var_key)
 
@@ -580,6 +659,9 @@ class Computation:
         elif isinstance(item, ObservationValid):
             pad_right = storage_nd_check_ObservationValid(self, item, value)
 
+        elif isinstance(item, ObservationWeight):
+            pad_right = storage_nd_check_ObservationWeight(self, item, value)
+
         elif isinstance(item, GroupedPosterior):
             pad_right = False
 
@@ -595,7 +677,8 @@ class Computation:
     def set_ndarray_from_dist(self, var_key:VarKey):
         assert var_key in self._dist_d
         if var_key in self._ndarray_d:
-        # if it's already set, this method can't promise it's set to the right distribution
+            # if it's already set, this method can't promise it's
+            # set to the right distribution
             raise NotImplementedError()
 
         # accessing an undefined value of a general key after the dist
@@ -604,18 +687,20 @@ class Computation:
         obs_var_key = Observation(prior_var_key=var_key)
         obs_val = self._ndarray_d.get(obs_var_key)
         obs_dist = self._dist_d.get(obs_var_key)
+
         if obs_val or obs_dist:
             raise NotImplementedError()
 
         if self.phase == Phase.Prior:
             dist = self._dist_d[var_key]
             left_mcmc = False
+
         elif self.phase == Phase.Posterior:
             # A sample is being accesssed in the posterior that
             # was not accessed in the prior. This happens for
             # e.g. the NIR2025 reference distribution.
-            dist = self._dist_d[var_key].expand_by((self.n_mcmc,))
-            left_mcmc = True
+            dist = self._dist_d[var_key]
+            left_mcmc = False
         else:
             raise NotImplementedError(self.phase)
 
@@ -666,7 +751,7 @@ class Computation:
         # reshape to combine groups and saved samples as if single chain mcmc
         reshaped = grouped_sample.reshape([n_groups * n_saved_samples] + prior_shape)
         # transpose mcmc dimension to the end
-        transposed = reshaped.transpose(list(range(1, len(prior_shape))) + [0])
+        transposed = jnp.moveaxis(reshaped, 0, -1)
 
         self.set_ndarray(var_key, transposed)
 
@@ -878,6 +963,8 @@ def run_mcmc(
     extra_fields = mcmc.get_extra_fields()
     if "diverging" in extra_fields:
         n_divergences = jnp.sum(extra_fields["diverging"])
+        for elem_id in model.model_elements:
+            print('Element', elem_id)
         assert n_divergences <= model.n_divergences_acceptable, (
                 n_divergences, model.n_divergences_acceptable)
     return mcmc
@@ -993,6 +1080,8 @@ class ModelElement:
         return self._identifier or self.__class__.__name__
 
     def general_key(self, name:str) -> ElementGeneralKey:
+        if name == "":
+            raise NotImplementedError("name should not be empty")
         return ElementGeneralKey(
                 elem_id=self.identifier,
                 name=name)
@@ -1001,16 +1090,16 @@ class ModelElement:
     def version_id(self) -> VersionID:
         raise NotImplementedError(self)
 
-    def model_element_prepare(self, ws:WorkSpace_Prep):
+    def model_element_prepare(self, ws:Workspace):
         pass
 
-    def model_element_annual_step(self, ws:WorkSpace_Step):
+    def model_element_annual_step(self, ws:Workspace):
         pass
 
-    def model_element_postprocess(self, ws:WorkSpace_Proc):
+    def model_element_postprocess(self, ws:Workspace):
         pass
 
-    def model_element_postprocess_posterior_only(self, ws:WorkSpace_Proc):
+    def model_element_postprocess_posterior_only(self, ws:Workspace):
         pass
 
 

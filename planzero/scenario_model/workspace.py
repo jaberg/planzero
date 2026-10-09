@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import jax
 import jax.numpy as jnp
 import numpyro
 from jax.typing import ArrayLike
@@ -125,8 +126,17 @@ class ValGeneral:
             else:
                 raise NotImplementedError(self.ws.subphase)
             return self.ws.comp.get_ndarray(var_key, sample_if_necessary)
+        elif self.attr == 'obs_val':
+            obs_key = Observation(prior_var_key=var_key)
+            if self.ws.subphase in (Subphase.Prep, Subphase.Proc):
+                sample_if_necessary = True
+            elif self.ws.subphase == Subphase.Step:
+                sample_if_necessary = False
+            else:
+                raise NotImplementedError(self.ws.subphase)
+            return self.ws.comp.get_ndarray(obs_key, sample_if_necessary)
         else:
-            raise NotImplementedError(f'{self.attr}_general_get')
+            raise NotImplementedError(self.attr)
 
 
     def __setitem__(self, item:str|ElementGeneralKey, value:jnp.ndarray):
@@ -138,6 +148,7 @@ class ValGeneral:
 
         if self.attr == 'val':
             self.ws.comp.ndarray_d[var_key] = value
+
         elif self.attr == 'obs_val':
             obs_var_key = Observation(prior_var_key=var_key)
             self.ws.comp.ndarray_d[obs_var_key] = value
@@ -146,8 +157,15 @@ class ValGeneral:
             obsvalid_var_key = ObservationValid(
                    obs_var_key=Observation(prior_var_key=var_key))
             self.ws.comp.ndarray_d[obsvalid_var_key] = value
+
+        elif self.attr == 'obs_weight':
+            obs_var_key = ObservationWeight(
+                   obs_var_key=Observation(
+                       prior_var_key=var_key))
+            self.ws.comp.ndarray_d[obs_var_key] = value
+
         else:
-            raise NotImplementedError(f'{self.attr}_general_set')
+            raise NotImplementedError(self.attr)
 
 
 class ValAnnual:
@@ -179,7 +197,7 @@ class ValAnnual:
                 raise NotImplementedError(self.ws.subphase)
             return self.ws.comp.get_ndarray(var_key, sample_if_necessary)
         else:
-            raise NotImplementedError(f'{self.attr}_annual_get')
+            raise NotImplementedError(self.attr)
 
     def __setitem__(self, item:str|ElementAnnualKey, value:jnp.ndarray):
         if isinstance(item, str):
@@ -196,7 +214,7 @@ class ValAnnual:
             obs_key = Observation(prior_var_key=var_key)
             self.ws.comp.ndarray_d[obs_key] = value
         else:
-            raise NotImplementedError(f'{self.attr}_annual_set')
+            raise NotImplementedError(self.attr)
 
 
 class ValInitialCarry:
@@ -289,6 +307,8 @@ class DistGeneral:
 
         if self.attr == 'dist':
             return self.ws.comp.dist_d[var_key]
+        elif self.attr == 'obs_dist':
+            return self.ws.comp.dist_d[Observation(prior_var_key=var_key)]
         else:
             raise NotImplementedError(self.attr)
 
@@ -300,7 +320,11 @@ class DistGeneral:
         del item
 
         if self.attr == 'dist':
+            # ws.obs.general[item] = dist
             self.ws.comp.dist_d[var_key] = dist
+        elif self.attr == 'obs_dist':
+            # ws.obs_dist.general[item] = dist
+            self.ws.comp.dist_d[Observation(prior_var_key=var_key)] = dist
         else:
             raise NotImplementedError(self.attr)
 
@@ -614,7 +638,52 @@ class Workspace:
         else:
             return (1,)
 
+    def mcmc_broadcast_dist(self, dist:Distribution) -> Distribution:
+        if self.phase == Phase.Prior:
+            return dist
+        else:
+            if isinstance(dist, Distribution):
+                return right_pad_universal(dist)
 
+    def mcmc_broadcast_ndarray(self, nd:jnp.ndarray) -> jnp.ndarray:
+        if self.phase == Phase.Prior:
+            return nd
+        else:
+            return jnp.expand_dims(nd, axis=-1)
+
+    def mcmc_expand(self, dist):
+        if self.phase == Phase.Prior:
+            return dist
+        else:
+            padded = right_pad_universal(dist)
+            return padded.expand(dist.shape() + (self.n_mcmc,))
+
+
+
+def right_pad_universal(dist):
+    """
+    Right-pads ANY NumPyro distribution's batch_shape with (1,).
+    Safely handles both scalar parameters and matrix parameters.
+    """
+    new_params = {}
+
+    # Look up the exact event dimensions required for each parameter
+    for param_name, constraint in dist.arg_constraints.items():
+        val = getattr(dist, param_name)
+        val = jnp.asarray(val)  # Ensure it is a JAX array
+
+        # constraint.event_dim tells us how many dimensions are at the end
+        # of the array that belong to the "event".
+        # We calculate the insertion axis to be right BEFORE the event dimensions.
+        event_dim = constraint.event_dim
+        insert_axis = val.ndim - event_dim
+
+        new_params[param_name] = jnp.expand_dims(val, axis=insert_axis)
+
+    # Re-instantiate the distribution using the reshaped parameters.
+    # Because we are calling the constructor anew, NumPyro will automatically
+    # calculate and set the correct _batch_shape for us!
+    return type(dist)(**new_params)
 
 class WorkSpacePrep_Dist_InitialCarry:
     """object to represent `ws.dist.initial_carry`"""

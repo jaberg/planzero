@@ -13,12 +13,29 @@ from .sparkline_echart_helper import (
 )
 
 
+def sector_total_emissions_var_key(sector:IPCC_Sector|PseudoSector):
+    return SectorTotalEmissionsVarKey(
+            sector=sector,
+            elem_id="SectorTotalEmissionsElement",
+            name="")
+
+
+def regional_total_emissions_var_key(
+        sector:IPCC_Sector,
+        pt):
+    return RegionalTotalEmissionsVarKey(
+            sector=sector,
+            pt=pt,
+            elem_id="RegionalTotalEmissionsElement",
+            name="")
+
+
 # used in sparkline_echart_helper
 def nir2025_ca_quantile_bounds(sector:IPCC_Sector|PseudoSector, q):
     comp = NIR2025().comp
-    var_key = SectorTotalEmissionsVarKey(sector=sector)
-    sample = comp.storage_nd[var_key]
-    qvals = np.quantile(sample, q=q, axis=0)
+    var_key = sector_total_emissions_var_key(sector)
+    sample = comp.ndarray_d[var_key]
+    qvals = np.quantile(sample, q=q, axis=1)
     rval = {q_ii: qvals_ii for q_ii, qvals_ii in zip(q, qvals)}
     return rval
 
@@ -26,19 +43,19 @@ def nir2025_ca_quantile_bounds(sector:IPCC_Sector|PseudoSector, q):
 def nir2025_sample_by_pt(sector:IPCC_Sector, ghg:GHG|None):
     comp = NIR2025().comp
     if ghg is None:
-        ktCO2e_sample = {pt: comp.storage_nd[
-            RegionalTotalEmissionsVarKey(sector=sector, pt=pt)]
+        ktCO2e_sample = {pt: comp.ndarray_d[
+            regional_total_emissions_var_key(sector, pt)]
                          for pt in PT if pt != PT.XX}
-        ktCO2e_sample[PseudoRegion.NationalTotal] = comp.storage_nd[
-                RegionalTotalEmissionsVarKey(
-                    sector=sector,
+        ktCO2e_sample[PseudoRegion.NationalTotal] = comp.ndarray_d[
+                regional_total_emissions_var_key(
+                    sector,
                     pt=PseudoRegion.NationalTotal)]
     else:
         elem_id = NIR2025_ModelElement.element_identifier(sector, ghg, n_years=34)
         ktCO2e_sample = {
-                pt: comp.storage_nd[var_key]
+                pt: comp.ndarray_d[var_key]
                 for pt, var_key in comp.model.model_elements[elem_id].pt_keys.items()}
-        ktCO2e_sample[PseudoRegion.NationalTotal] = comp.storage_nd[
+        ktCO2e_sample[PseudoRegion.NationalTotal] = comp.ndarray_d[
                 comp.model.model_elements[elem_id].ca_key]
     return ktCO2e_sample
 
@@ -47,7 +64,7 @@ def nir2025_pt_quantile_bounds(sector:IPCC_Sector, ghg:GHG|None, q) -> dict[PT|P
     ktCO2e_sample = nir2025_sample_by_pt(sector, ghg)
     regions = [pt for pt in PT if pt != PT.XX] + [PseudoRegion.NationalTotal]
     rval = {pt: {
-        qi: qval for qi, qval in zip(q, np.quantile(ktCO2e_sample[pt], q=q, axis=0))}
+        qi: qval for qi, qval in zip(q, np.quantile(ktCO2e_sample[pt], q=q, axis=1))}
             for pt in regions}
     return rval
 
@@ -78,8 +95,8 @@ class NIR2025(SiteInference):
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
         # TODO: make it work, then move to base class
         comp = self.comp
-        ktCO2e_sample = {sector: comp.storage_nd[
-            SectorTotalEmissionsVarKey(sector=sector)]
+        ktCO2e_sample = {sector: comp.ndarray_d[
+            sector_total_emissions_var_key(sector)]
                          for sector in IPCC_Sector}
         rval = national_emissions_by_sector_echart_from_sample(
                 ktCO2e_sample=ktCO2e_sample,
