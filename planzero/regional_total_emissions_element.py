@@ -35,14 +35,17 @@ class RegionalTotalEmissionsElement(ModelElement):
     sector_region_ghg_subtotal_keys: dict[
             tuple[IPCC_Sector, PT],
             dict[GHG, GeneralKey|AnnualKey]]
+    expect_all_sectors:bool
 
     def __init__(
             self,
             sector_region_ghg_subtotal_keys: dict[
                 tuple[IPCC_Sector, PT],
                 dict[GHG, GeneralKey|AnnualKey]],
+            expect_all_sectors:bool=True,
             ):
         self.sector_region_ghg_subtotal_keys = sector_region_ghg_subtotal_keys
+        self.expect_all_sectors = expect_all_sectors
 
     @property
     def sector_region_keys(self) -> dict[
@@ -89,7 +92,7 @@ class RegionalTotalEmissionsElement(ModelElement):
 
                 out_key = self.sector_region_keys[sector, PseudoRegion.NationalTotal]
                 ws.val.general[out_key] = national_total
-            if n_skipped:
+            if n_skipped and self.expect_all_sectors:
                 warnings.warn(
                         'regional_total_emissions_element skipped'
                         f' {n_skipped} sector-pt combinations')

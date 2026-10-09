@@ -33,12 +33,15 @@ class SectorTotalEmissionsElement(ModelElement):
     """
 
     sector_ghg_subtotal_keys: dict[IPCC_Sector, dict[GHG, GeneralKey|AnnualKey]]
+    expect_all_sectors:bool
 
     def __init__(
             self,
             sector_ghg_subtotal_keys: dict[IPCC_Sector, dict[GHG, GeneralKey|AnnualKey]],
+            expect_all_sectors=True,
             ):
         self.sector_ghg_subtotal_keys = sector_ghg_subtotal_keys
+        self.expect_all_sectors = expect_all_sectors
 
     @property
     def sector_keys(self) -> dict[IPCC_Sector, SectorTotalEmissionsVarKey]:
@@ -83,7 +86,7 @@ class SectorTotalEmissionsElement(ModelElement):
 
                 total_w_lulucf += sector_total
 
-            if n_skipped:
+            if n_skipped and self.expect_all_sectors:
                 warnings.warn(
                         'sector_total_emissions_element skipped'
                         f' {n_skipped} sectors')

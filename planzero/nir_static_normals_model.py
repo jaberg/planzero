@@ -184,11 +184,13 @@ class StaticNormals_ScenarioModel(ScenarioModel):
         self.add_element(
                 SectorTotalEmissionsElement(
                     sector_ghg_subtotal_keys=sector_ghg_subtotal_keys,
+                    expect_all_sectors=(sectors=IPCC_Sector),
                     ),
                 mcmc_group=None)
         self.add_element(
                 RegionalTotalEmissionsElement(
                     sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
+                    expect_all_sectors=(sectors=IPCC_Sector),
                     ),
                 mcmc_group=None)
 
