@@ -1,28 +1,19 @@
 """
 BaseModels for Probabilistic Models
-
-Analog to sim.py for Simulation-based models.
 """
 
 from typing import ClassVar
 
 from pydantic import BaseModel, computed_field
 
+from . import ablation
+from .annual_emission_results import AnnualEmissionResults
+from .enums import GHG
+from .html import html_by_ghg
 from .singleton_registry import SingletonRegistry
 
 registry = SingletonRegistry()
 
-
-# TODO Is this class used?
-class InferenceResult(BaseModel):
-
-    inference_name: str
-
-    # these can be large, should be str->memory-mapped file
-    post_samples: dict[str, object]
-
-
-site_inferences = registry # TODO: deprecate alais
 
 class SiteInference(BaseModel):
     """A specific simulation (no caller configuration, all pre-loaded)
@@ -30,17 +21,13 @@ class SiteInference(BaseModel):
     """
 
     include_in_registry: ClassVar[bool] = False
+    strategy_id: str|None = None
 
     def main_model_id(self) -> int:
         # if model corresponds to a model in model_db, print model_id to
         # stdout and return 0
         print()
         return 1
-
-    def main_inference_cache_key(self):
-        # called via e.g. __main__.py
-        # e.g. GH Actions will be used to cache a directory based on this key
-        pass
 
     def main_inference_prep(self):
         # called via e.g. __main__.py
@@ -75,9 +62,15 @@ class SiteInference(BaseModel):
         else:
             return rval
 
-    @computed_field
+    @property
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         return (float('nan'), float('nan'))
+
+    @property
+    def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
+        low, high = self.predicted_emissions_2050_MtCO2e_bounds_ul
+        rval = f"{low:.1f} - {high:.1f} Mt{html_by_ghg[GHG.CO2]}e"
+        return rval
 
     def prediction_scores_prenir_2025_06(self) -> dict:
         raise NotImplementedError()
@@ -97,7 +90,50 @@ class SiteInference(BaseModel):
     def posts_developing_this_page(self) -> list[str]:
         return []
 
+    @computed_field
+    def strategy_ids(self) -> list[str]:
+        as_id = self.ablation_study_id
+        if as_id is None:
+            return []
+        else:
+            return ablation.registry[as_id].strategy_ids
 
-from . import nir2025_site
-from . import nir_static_normals_site
-from . import nir_ar2_site
+    @property
+    def affected_sectors_by_strategy(self) -> dict:
+        raise NotImplementedError()
+
+    @property
+    def strategies(self) -> dict:
+        if self.ablation_study_id is None:
+            rval = {}
+        else:
+            assert None not in self.ablation_study.strategies
+            rval = {
+                    key: val
+                    for key, val in self.ablation_study.strategies.items()
+                    if key != self.strategy_id
+                    }
+        return rval
+
+    @property
+    def barriers(self) -> dict:
+        if self.ablation_study_id is None:
+            return {}
+        else:
+            return self.ablation_study.barriers
+
+    @computed_field
+    def ablation_study_id(self) -> str|None:
+        return None
+
+    @property
+    def ablation_study(self) -> ablation.AblationStudy:
+        as_id = self.ablation_study_id
+        if as_id is None:
+            return None
+        else:
+            return ablation.registry[as_id]
+
+    def emission_results(self) -> AnnualEmissionResults:
+        raise NotImplementedError()
+

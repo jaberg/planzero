@@ -1,13 +1,11 @@
 import array
 import os
 
+import jax.numpy as jnp
+import jax.random as jrandom
 import numpy as np
+import numpyro.distributions as dist
 import pandas as pd
-
-try:
-    import numpyro.distributions as dist
-except ImportError:
-    pass
 
 from . import ghgvalues
 from .base import DynamicElement, State
@@ -129,6 +127,7 @@ def ktCO2e_dense_w_nan():
     return arr_pt, arr_ca
 
 
+@cache
 def load_uncertainty():
     """Return uncertainty as DataFrame with standard pre-processing
     """
@@ -185,7 +184,7 @@ def near_zero_sector_ghgs():
     return rval
 
 
-def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
+def ktCO2e_numpyro_dist_pt_ca(sector:IPCC_Sector, ghg:GHG, year:int):
     """Returns  ca_dist, pt_dists""" # XXX backward rel to fn name
     arr_pt, arr_ca = ktCO2e_dense_w_nan()
     ktco2e_pt = arr_pt[idx_of_sector[sector], idx_of_ghg[ghg], :, idx_of_year[year]]
@@ -221,7 +220,6 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                 relerr=unc)
 
             pt_dists = []
-            pt_total_abs = np.nansum(abs(ktco2e_pt))
 
             for pt in PT:
                 if pt == PT.XX:
@@ -252,7 +250,6 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                 raise Exception(sector, ghg, ktco2e_ca, unc) from e
 
             pt_dists = []
-            pt_total = np.nansum(ktco2e_pt)
             assert np.nanmin(ktco2e_pt) >= 0, (sector, ghg, ktco2e_pt)
 
             def positive_nearzero_dist():
@@ -302,6 +299,163 @@ def ktCO2e_numpyro_dist_pt_ca(sector, ghg, year):
                 pt_dists.append(pt_dist)
 
     return ca_dist, pt_dists
+
+
+def ktCO2e_numpyro_dist_pt_ca_years(
+        sector:IPCC_Sector,
+        ghg:GHG,
+        year_0:int,
+        n_years:int,
+        ) -> tuple[SymmetricBlendedLogNormal, dict[PT, SymmetricBlendedLogNormal]]:
+    """Vectorized version of ktCO2e_numpyro_dist_pt_ca.
+
+    Instantiates the SymmetricBlendedLogNormal distributions for all of the
+    years [year_0, year_0 + n_years), as batched distributions (batch shape
+    (n_years,)) for the national total and for each region.
+
+    The returned distributions differ from the single-year version in case 1:
+    instead of unit Normals, the positive near-zero SymmetricBlendedLogNormal
+    is used.
+    """
+    years = np.arange(year_0, year_0 + n_years)
+    arr_pt, arr_ca = ktCO2e_dense_w_nan()
+    yr_ii = years - 1990
+    assert (yr_ii >= 0).all() and (yr_ii < arr_ca.shape[2]).all()
+
+    sr = idx_of_sector[sector]
+    gh = idx_of_ghg[ghg]
+
+    ktco2e_ca = arr_ca[sr, gh, yr_ii]  # (n_years,)
+
+    real_pts = [pt for pt in PT if pt != PT.XX]
+    real_pt_idx = np.asarray([idx_of_pt[pt] for pt in real_pts])  # (13,)
+    ktco2e_pt = arr_pt[sr, gh, real_pt_idx[:, None], yr_ii[None, :]]  # (13, n_years)
+
+    # case 1: negligible emissions (mask)
+    case1 = (
+        (np.abs(ktco2e_ca) <= 1)
+        | ((sector, ghg) in near_zero_sector_ghgs())
+        )  # (n_years,)
+
+    pc_unc_2023 = uncertainty_percent_by_IPCC_Sector_GHG_2023().get(
+        (sector, ghg), float('nan'))
+    pc_unc_1990 = uncertainty_percent_by_IPCC_Sector_GHG_1990().get(
+        (sector, ghg), float('nan'))
+    unc = np.interp(
+        years,
+        [1990., 2023.],
+        [pc_unc_1990, pc_unc_2023]) / 100.
+    unc = np.maximum(unc, 0.01)
+    unc = np.where(np.isnan(unc), 1.0, unc)  # (n_years,)
+
+    eps = 1
+
+    # params for near-zeros
+    pnz = { 'mu': .5 * eps,
+            'rolloff': .01 * eps,
+            'relerr': .5}
+
+    # can-be-negative bool
+    # some provinces sometimes have negative settlement emissions
+    can_neg = sector in [
+        IPCC_Sector.Harvested_Wood_Products,
+        IPCC_Sector.Forest_Land,
+        IPCC_Sector.Cropland,
+        IPCC_Sector.Settlements,
+        ]
+
+    if can_neg:
+        # case 2: sectors that can be negative or positive
+        mu_ca = ktco2e_ca
+        rolloff_ca = np.full((n_years,), 100.)  # kt CO2e
+    else:
+        # case 3: sectors that cannot be negative
+        pos_ktco2e_ca = np.maximum(ktco2e_ca, 0.1)
+        mu_ca = pos_ktco2e_ca
+        rolloff_ca = pos_ktco2e_ca * .1 + eps
+
+    # case 1 years: positive near-zero for the national total too
+    mu_ca = np.where(case1, pnz['mu'], mu_ca)
+    rolloff_ca = np.where(case1, pnz['rolloff'], rolloff_ca)
+    relerr_ca = np.where(case1, pnz['relerr'], unc)
+
+    nanmean_over_time = np.nanmean(arr_pt[sr, gh, real_pt_idx, :], axis=1)  # (13,)
+    k_nan = np.isnan(ktco2e_pt)
+    k_small = ~k_nan & (ktco2e_pt < eps)
+    row_pt_idx = real_pt_idx[:, None]
+    k_nu_early = (row_pt_idx == idx_of_pt[PT.NU]) & (years <= 1998)[None, :]  # Nunavut created in 1999
+    k_ognt_early = (
+        (row_pt_idx == idx_of_pt[PT.NT])
+        & (years < 1999)[None, :]
+        & (sector == IPCC_Sector.SCS__Oil_and_Gas_Extraction)
+        & k_nan # human judgement: no oil & gas sector in NT at this time
+        )
+    k_nanmean_nan = np.isnan(nanmean_over_time)[:, None]
+
+    if can_neg:
+        # case 2: sectors that can be negative or positive
+        mu2 = np.where(k_nan, 0., ktco2e_pt)
+        roll2 = np.full((len(real_pts), n_years), 100.)  # kt CO2e
+        rel2 = np.where(k_nan, np.maximum(unc, 1.0), unc)
+        mu_pt, roll_pt, rel_pt = mu2, roll2, rel2
+    else:
+        # case 3: sectors that cannot be negative
+        nanmean_mu = np.maximum(nanmean_over_time[:, None], eps)
+        mu3 = np.where(
+            k_nan, nanmean_mu,
+            np.where(k_small, pnz['mu'], ktco2e_pt))
+        roll3 = np.where(
+            k_nan, nanmean_mu * .1,
+            np.where(k_small, pnz['rolloff'], ktco2e_pt * .1))
+        rel3 = np.where(
+            k_nan, 0.7,
+            np.where(k_small, pnz['relerr'], unc))
+        k_pnz_pt = k_nu_early | k_ognt_early | (k_nan & k_nanmean_nan)
+        mu3 = np.where(k_pnz_pt, pnz['mu'], mu3)
+        roll3 = np.where(k_pnz_pt, pnz['rolloff'], roll3)
+        rel3 = np.where(k_pnz_pt, pnz['relerr'], rel3)
+        mu_pt, roll_pt, rel_pt = mu3, roll3, rel3
+
+        if np.any(~case1):
+            assert np.nanmin(ktco2e_pt[:, ~case1]) >= 0, (sector, ghg)
+
+    # case 1 years: positive near-zero for every region
+    mu_pt = np.where(case1[None, :], pnz['mu'], mu_pt)
+    roll_pt = np.where(case1[None, :], pnz['rolloff'], roll_pt)
+    rel_pt = np.where(case1[None, :], pnz['relerr'], rel_pt)
+
+    ca_dist = SymmetricBlendedLogNormal.rolloff_relerr(
+        mu=mu_ca,
+        rolloff=rolloff_ca,
+        relerr=relerr_ca)
+
+    pt_dists = {
+        pt: SymmetricBlendedLogNormal.rolloff_relerr(
+            mu=mu_pt[pp],
+            rolloff=roll_pt[pp],
+            relerr=rel_pt[pp])
+        for pp, pt in enumerate(real_pts)
+        }
+
+    return ca_dist, pt_dists
+
+
+def sample_pt_ca(jrng_key, sample_size, years, PTs, sector, ghg):
+    n_years = len(years)
+    ca_sample = np.empty((sample_size, n_years))
+    pt_sample = np.empty((sample_size, n_years, len(PTs),))
+    for ii, year in enumerate(years):
+        ca_dist, pt_dists = ktCO2e_numpyro_dist_pt_ca(
+            sector=sector,
+            ghg=ghg,
+            year=year)
+        jrng_key, rng_key_ = jrandom.split(jrng_key)
+        ca_sample[:, ii] = ca_dist.sample(rng_key_, (sample_size,))
+        for jj, pt in enumerate(PTs):
+            jrng_key, rng_key_ = jrandom.split(jrng_key)
+            pt_sample[:, ii, jj,] = pt_dists[jj].sample(rng_key_, (sample_size,))
+
+    return jrng_key, jnp.array(pt_sample), jnp.array(ca_sample)
 
 
 @cache
@@ -766,20 +920,3 @@ def uncertainty_percent_by_IPCC_Sector_GHG(percent_col:str):
     rval[IPCC_Sector.Settlements, GHG.CH4] = 45. # kind of an average of Conversion of Forest Land and GrassLand
     rval[IPCC_Sector.Settlements, GHG.N2O] = 45. # kind of an average of Conversion of Forest Land and GrassLand
     return rval
-
-
-if __name__ == '__main__':
-    if 0:
-        df = load_uncertainty()
-        foo = {}
-        for record in df.iloc:
-            foo.setdefault(record['IPCC_Source_Category'], {})
-            foo[record['IPCC_Source_Category']].setdefault(record['Gas'], {})
-
-        assert len(foo) == len(IPCC_Sector)
-        for key, sector in zip(foo, IPCC_Sector):
-            print(f'uncertainty_IPCC_Category["{key}"] = {sector}')
-    else:
-        uncertainty_percent_by_IPCC_Sector_GHG_2023()
-
-

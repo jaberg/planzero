@@ -1,5 +1,7 @@
+from . import planet_model  # noqa: F401
 from .base import Scenario, u
 from .sim import simulation_result, site_simulations
+
 
 def test_empty_sim():
     scenario = Scenario(name='foo', t_start=2000 * u.years)

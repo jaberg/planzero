@@ -45,6 +45,12 @@ class DynamicElement(BaseModel):
 
     tags: set = set() # eg. barrier, strategy
 
+    simgroup: str|None = None # used in model.py
+
+    @computed_field
+    def pretty_name(self) -> str:
+        return str(self.identifier).replace('_', ' ')
+
     @computed_field
     def short_description(self) -> str | None:
         # The intent is for subclasses to over-ride this method.
@@ -136,6 +142,13 @@ class DynamicElement(BaseModel):
         plt.close()
         svg_string = svg_buffer.getvalue()
         return svg_string
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return []
+
+    def annual_scan_post(self, jrkey, post_vals, final_carry, ys, xs, years, constants):
+        pass
 
 
 BaseScenario_subclasses = []

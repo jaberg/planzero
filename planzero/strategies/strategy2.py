@@ -34,19 +34,26 @@ class Scale_Bovaer(Strategy2):
     (according to the assumptions in
      <a href="{{coderef_url(Bovaer_Adoption_Limit)}}">Bovaer Adoption Limit</a>)
     are subsized by public funds, and go for it. This adoption is modelled as a nation-wide
-    proportionality, not province-by-province.</p>
+    rate of adoption, not province-by-province.
+    It is assumed that no statistically significant population of farmers
+    reverts to Bovaer-free farming.
+    </p>
     """
     # TODO: add a see-also type mechanism, to look at the effects
     # on the various barriers affected by this strategy.
 
     @computed_field
     def short_description(self) -> str:
-        return f"Model that farmers who are open to using Bovaer are subsidized to start administering it."
+        return "Subsidize farmers to administer Bovaer."
 
     def see_also_html(self, context_vars) -> list[str]:
         sources = [
             ('<a'
-             ' href="/models/sim/{{sim_name}}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' {% if sim_name %}'
+             ' href="/models/sim/{{ sim_name }}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' {% else %}'
+             ' href="/models/prob/{{ site_inference_name }}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' {% endif %}'
              ' Adoption Limit</a>, which is the model barrier that sets the rate'
              ' of adoption for this strategy'),
             ('<a'
@@ -75,6 +82,11 @@ class Scale_Bovaer(Strategy2):
             coderef_url=coderef_url,
             )
         return rval
+
+    # XXX what is this?
+    @computed_field
+    def ipcc_sectors(self) -> list:
+        return []
 
     @computed_field
     def extra_ipcc_sectors(self) -> list[object]:
@@ -105,3 +117,22 @@ class Scale_Bovaer(Strategy2):
         max_fraction = state.latest.max_fraction_of_cattle_on_bovaer
         current.bovine_population_fraction_on_bovaer = max_fraction
         return state.t_now + 1 * u.years
+
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
+        n_samples = constants['n_samples']
+        import jax.numpy as jnp
+        import jax.random as jrandom
+        new_carry['tax_funded_budget_for_bovaer'] = jnp.zeros(n_samples)
+        key = jrandom.key(9343)
+        new_carry['bovaer_start_year'] = jrandom.uniform(
+                key,
+                (n_samples,),
+                'float64',
+                2027, # min plausible year
+                2035) # max plausible year consistent with scaling scenario
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        import jax.numpy as jnp
+        new_carry['bovaer_start_year'] = carry['bovaer_start_year']
+        new_carry['tax_funded_budget_for_bovaer'] = jnp.where(
+                year >= carry['bovaer_start_year'], float('inf'), 0.0)
