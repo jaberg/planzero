@@ -11,9 +11,10 @@ from .base import (
     years_dim,
     years_key,
 )
-from .computation import Model as ScenarioModel
 from .computation import (
+    Computation,
     ModelElement,
+    ScenarioModel,
     access_val,
     define,
     define_annual,
@@ -25,6 +26,7 @@ from .workspace import Workspace
 __all__ = [
     "AnnualKey",
     "CarryKey",
+    "Computation",
     "ElementAnnualKey",
     "ElementCarryKey",
     "ElementGeneralKey",

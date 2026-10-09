@@ -1,3 +1,5 @@
+import datetime
+
 import jax.numpy as jnp
 import numpyro.distributions as dist
 
@@ -6,12 +8,12 @@ from .nir2025 import (
     near_zero_sector_ghgs,
 )
 from .nir2025_model import NIR2025_ModelElement
+from .nir_model import NIR_ScenarioModel
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
     GeneralKey,
     ModelElement,
     Phase,
-    ScenarioModel,
     Workspace,
     define,
     years_dim,
@@ -137,20 +139,24 @@ class StaticNormals_ModelElement(ModelElement):
                     as_years * emission_scale * ws.val.general['sigma_ca'])
 
 
-class StaticNormals_ScenarioModel(ScenarioModel):
+class StaticNormals_ScenarioModel(NIR_ScenarioModel):
 
     def __init__(self,
-                 last_observed_year:int,
+                 data_cutoff:datetime.date,
                  last_forecast_year=2050,
                  sectors:type[IPCC_Sector]|list[IPCC_Sector]=IPCC_Sector,
                  ):
         """
         sectors: default to all sectors (site models require all sectors), but subsets can be used in testing
         """
-        assert 1990 <= last_observed_year <= 2023
+        if data_cutoff == datetime.date(year=2024, month=12, day=31):
+            last_observed_nir_year = 2022
+        else:
+            raise NotImplementedError(data_cutoff)
+        assert 1990 <= last_observed_nir_year <= 2023
         super().__init__(
                 first_year=1990,
-                n_prior_years=last_observed_year + 1 - 1990,
+                n_prior_years=last_observed_nir_year + 1 - 1990,
                 n_posterior_years=last_forecast_year + 1 - 1990,
                 num_warmup=250,
                 num_samples=500,
@@ -184,13 +190,13 @@ class StaticNormals_ScenarioModel(ScenarioModel):
         self.add_element(
                 SectorTotalEmissionsElement(
                     sector_ghg_subtotal_keys=sector_ghg_subtotal_keys,
-                    expect_all_sectors=(sectors=IPCC_Sector),
+                    expect_all_sectors=(sectors==IPCC_Sector),
                     ),
                 mcmc_group=None)
         self.add_element(
                 RegionalTotalEmissionsElement(
                     sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
-                    expect_all_sectors=(sectors=IPCC_Sector),
+                    expect_all_sectors=(sectors==IPCC_Sector),
                     ),
                 mcmc_group=None)
 

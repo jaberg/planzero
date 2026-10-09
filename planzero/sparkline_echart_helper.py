@@ -1,6 +1,6 @@
 
+import jax.numpy as jnp
 import numpy as np
-from jax.typing import ArrayLike
 
 from . import nir2025
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors, col_by_pt, col_ca
@@ -991,7 +991,7 @@ def echart_from_napb(
 
 
 def national_emissions_by_sector_echart_from_sample(
-        ktCO2e_sample: dict[IPCC_Sector, ArrayLike],
+        ktCO2e_sample: dict[IPCC_Sector|PseudoSector, jnp.ndarray],
         year_0: int,
         n_years: int,
         n_samples: int,
@@ -1005,19 +1005,13 @@ def national_emissions_by_sector_echart_from_sample(
                                        model_name=model_name)
     helper.years = np.arange(year_0, n_years + year_0)
 
-    estimates_with_lulucf = np.zeros((n_years, n_samples))
-
-    estimates_without_lulucf = np.zeros((n_years, n_samples))
-
     for sector in IPCC_Sector:
         helper.compute_stats_and_add_data_for_sector(
             sector,
             ktCO2e_sample[sector].T * helper.v_unit_scale)
 
-        if sector not in LULUCF_Sectors:
-            estimates_without_lulucf += ktCO2e_sample[sector]
-
-        estimates_with_lulucf += ktCO2e_sample[sector]
+    estimates_with_lulucf = ktCO2e_sample[PseudoSector.Total_with_LULUCF]
+    estimates_without_lulucf = ktCO2e_sample[PseudoSector.Total_without_LULUCF]
 
     helper.add_data_for_LULUCF_totals(
         estimates_with_lulucf.T * helper.v_unit_scale,
@@ -1034,7 +1028,7 @@ def national_emissions_by_sector_echart_from_sample(
 
 
 def sectoral_emissions_by_region_echart_from_sample(
-        ktCO2e_sample: dict[PT, ArrayLike],
+        ktCO2e_sample: dict[PT|PseudoRegion, jnp.ndarray],
         year_0: int,
         n_years: int,
         n_samples: int,

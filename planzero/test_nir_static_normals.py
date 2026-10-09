@@ -1,3 +1,5 @@
+import datetime
+
 from .enums import IPCC_Sector
 from .nir_static_normals_model import StaticNormals_ScenarioModel
 from .scenario_model import registry_compute_model
@@ -11,7 +13,7 @@ variety_of_sectors = [
 
 def test_smoke():
     model = StaticNormals_ScenarioModel(
-            last_observed_year=2022,
+            data_cutoff=datetime.date(year=2024, month=12, day=31),
             last_forecast_year=2050,
             sectors=variety_of_sectors,
             )

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import jax
 import jax.numpy as jnp
 import numpyro
 from jax.typing import ArrayLike
@@ -22,7 +21,7 @@ from .base import (
     scan_step_ii_key,
     years_dim,
 )
-from .computation import Computation, Model, ScanStorage
+from .computation import Computation, ScanStorage, ScenarioModel
 
 
 def dist_scan_set_next(comp:Computation, scan_storage:ScanStorage, var_key:ElementCarryKey, dist:Distribution):
@@ -555,7 +554,7 @@ class Workspace:
     n_years: int
     phase: Phase
     comp: Computation
-    model: Model
+    model: ScenarioModel
     elem_id: str
     subphase: Subphase
     scan_storage: ScanStorage|None

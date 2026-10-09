@@ -7,7 +7,7 @@ import numpy as np
 from jax.typing import ArrayLike
 
 from .base import GroupedPosterior, VarKey
-from .computation import Computation, Model, hash_version_id, run_mcmc
+from .computation import Computation, ScenarioModel, hash_version_id, run_mcmc
 
 MODEL_REGISTRY_ROOT = os.environ.get('PLANZERO_MODEL_REGISTRY_ROOT')
 
@@ -85,7 +85,7 @@ def sentinel_load(model_name:str, sentinel:str, submodel_name:str, version_hash:
 def compute_mcmc_submodel(
         model_name:str,
         mcmc_group:str,
-        submodel:Model,
+        submodel:ScenarioModel,
         rng_key:ArrayLike,
         ):
     this_subsystem_version = 1.1
@@ -120,7 +120,7 @@ def compute_mcmc_submodel(
 
 def compute_posterior(
         model_name:str,
-        model:Model,
+        model:ScenarioModel,
         rng_key:ArrayLike,
         saved_sample_sites:dict[VarKey, str],
         ) -> Computation:
@@ -148,7 +148,7 @@ _registry_mem_cache:dict[str, Computation] = {}
 
 
 def registry_compute_model(
-        model:Model,
+        model:ScenarioModel,
         model_name:str,
         cache_posterior:bool,  # True will save it in memory by model_name, and return from memory if possible
         seed_or_key:int|ArrayLike,

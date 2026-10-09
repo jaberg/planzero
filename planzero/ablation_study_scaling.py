@@ -4,7 +4,6 @@ from typing import ClassVar
 
 import jax.numpy as jnp
 import numpy as np
-from pydantic import computed_field
 
 from . import cattle, model_db, nir2025_site, prob
 from .ablation import AblationStudy
@@ -327,11 +326,16 @@ class ScalingSiteInference(prob.SiteInference):
     """Maximal deployment of available, modelled products,
     based on a baseline assumption of static emissions amounts."""
 
+    include_in_registry:bool = False
+
     data_cutoff:datetime.date = datetime.date(year=2024, month=12, day=31)
 
     rollout_nbytes_budget:int = 200_000_000
 
-    @computed_field
+    def __init__(self):
+        raise NotImplementedError()
+
+    @property
     def ablation_study_id(self) -> str|None:
         return 'ScalingStudy'
 
@@ -342,7 +346,7 @@ class ScalingSiteInference(prob.SiteInference):
         else:
             return f'ScalingStudy_minus_{self.strategy_id}'
 
-    @computed_field
+    @property
     def pretty_name(self) -> str:
         if self.strategy_id is None:
             return 'Scaling'
@@ -356,7 +360,7 @@ class ScalingSiteInference(prob.SiteInference):
     def identifier(self) -> str:
         return scaling_model_id(self.data_cutoff)
 
-    @computed_field
+    @property
     def show_on_models_page(self) -> bool:
         return (self.strategy_id is None)
 
@@ -528,7 +532,7 @@ class ScalingSiteInference(prob.SiteInference):
 
 class ScalingStudy(AblationStudy):
 
-    include_in_registry: ClassVar[bool] = True
+    include_in_registry: ClassVar[bool] = False
     site_inference_names: dict[str|None, str]|None = None
 
     @property

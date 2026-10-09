@@ -17,13 +17,13 @@ def completed_prob_registry() -> singleton_registry.SingletonRegistry:
     )
 
     # creates obj, populates inference registries
-    ablation.registry['ScalingStudy']
+    # ablation.registry['ScalingStudy']
 
     rval = prob.registry
 
     assert 'NIR2025' in rval
     assert 'Static_Normals_2024_12_31' in rval
-    assert 'ScalingStudy_All_Strategies' in rval
+    # assert 'ScalingStudy_All_Strategies' in rval
     return rval
 
 

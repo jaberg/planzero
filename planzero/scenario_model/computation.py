@@ -582,7 +582,7 @@ class Computation:
     computations.
     """
 
-    model: Model
+    model: ScenarioModel
     _dist_d: dict[VarKey, Distribution]
     _ndarray_d: dict[VarKey, jnp.ndarray]
     rng_key: ArrayLike
@@ -595,7 +595,7 @@ class Computation:
 
     def __init__(
             self,
-            model:Model,
+            model:ScenarioModel,
             rng_key:ArrayLike|int):
 
         self.model = model
@@ -941,7 +941,7 @@ class Computation:
 
 
 def run_mcmc(
-        model:Model,
+        model:ScenarioModel,
         seed:int|ArrayLike,
         ):
     def trace_fn():
@@ -1141,7 +1141,7 @@ def _resolve_properties_ndarray_definition(
             subphase=ndmp.subphase)
 
 
-class Model:
+class ScenarioModel:
     """
     Try to make the elements work mostly as a set.
     Try to make this work like a bag of elements that self-assemble.
@@ -1369,7 +1369,7 @@ class Model:
                 getattr(element.model_element_postprocess_posterior_only,
                         _deco_attr_access_val, {}))
 
-    def mcmc_submodels(self) -> dict[str, Model]:
+    def mcmc_submodels(self) -> dict[str, ScenarioModel]:
         rval = {}
         for elem_id, elem in self.model_elements.items():
             if isinstance(elem, ModelBuiltIns):
@@ -1378,7 +1378,7 @@ class Model:
             if mcmc_group is None:
                 continue
             if mcmc_group not in rval:
-                rval[mcmc_group] = Model(
+                rval[mcmc_group] = ScenarioModel(
                         first_year=self.first_year,
                         n_prior_years=self.n_prior_years,
                         n_posterior_years=self.n_posterior_years,
@@ -1389,7 +1389,7 @@ class Model:
 
 
 def compute_model(
-        model,
+        model:ScenarioModel,
         seed_or_key:int|ArrayLike,
         ) -> Computation:
     if isinstance(seed_or_key, int):

@@ -5,11 +5,14 @@ from .nir2025 import (
     ktCO2e_numpyro_dist_pt_ca_years,
     near_zero_sector_ghgs,
 )
-from .regional_total_emissions_element import RegionalTotalEmissionsElement
+from .nir_model import NIR_ScenarioModel
+from .regional_total_emissions_element import (
+    PseudoRegion,
+    RegionalTotalEmissionsElement,
+)
 from .scenario_model import (
     GeneralKey,
     ModelElement,
-    ScenarioModel,
     Workspace,
     define,
 )
@@ -77,12 +80,13 @@ class NIR2025_ModelElement(ModelElement):
         ws.val.general[self.scale_key] = jnp.max(ca_dist.mu)
 
 
-class NIR2025_ScenarioModel(ScenarioModel):
+class NIR2025_ScenarioModel(NIR_ScenarioModel):
 
     def __init__(self, last_observed_year:int):
         assert last_observed_year >= 1990
         last_observed_year = min(last_observed_year, 2023)
         n_years = last_observed_year + 1 - 1990
+        assert n_years == 34
         super().__init__(
                 first_year=1990,
                 n_prior_years=n_years,
@@ -118,3 +122,17 @@ class NIR2025_ScenarioModel(ScenarioModel):
                     sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
                     ),
                 mcmc_group=None)
+
+    def ktCO2e_var_key_sector_ghg_region(self, sector, ghg, pt) -> GeneralKey:
+        elem_id = NIR2025_ModelElement.element_identifier(sector, ghg, 34)
+        model_elem = self.model_elements[elem_id]
+        if isinstance(model_elem, NIR2025_ModelElement):
+            if isinstance(pt, PT):
+                return model_elem.pt_keys[pt]
+            elif isinstance(pt, PseudoRegion) and pt == PseudoRegion.NationalTotal:
+                return model_elem.ca_key
+            else:
+                raise NotImplementedError(pt)
+
+        else:
+            raise NotImplementedError()

@@ -6,15 +6,13 @@ from . import model_db
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors
 from .nir_static_normals import (
     BNs_by_sector_ghg,
-    inference_work_loop,
-    model_id_from_data_cutoff,
     normals_by_sector_ghg,
     p_emissions_below_thresh_ex_LULUCF,
-    touch_components,
-    touch_model,
     weighted_KL_score,
 )
-from .prob import ClassVar, SiteInference, computed_field
+from .nir_static_normals_model import StaticNormals_ScenarioModel
+from .prob import SiteInference as SiteModel
+from .scenario_model import ScenarioModel
 from .sector_total_emissions_element import PseudoSector
 from .sparkline_echart_helper import (
     PseudoRegion,
@@ -202,7 +200,7 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
                                         ca_mean, ca_lbound, ca_ubound)
 
 
-class Static_Normals_2024_12_31(SiteInference):
+class Static_Normals_2024_12_31(SiteModel):
     """Emissions per province and territory,
     and per greenhouse gas, modelled as
     non-time-varying Normal distributions.
@@ -211,34 +209,33 @@ class Static_Normals_2024_12_31(SiteInference):
     This is a baseline model, not intended to be accurate.
     """
 
-    include_in_registry: ClassVar[bool] = True
+    include_in_registry:bool = True
 
-    data_cutoff:object = datetime.date(year=2024, month=12, day=31)
 
-    @property
-    def model_id(self):
-        return model_id_from_data_cutoff(self.data_cutoff)
+    def __init__(self):
+        data_cutoff = datetime.date(year=2024, month=12, day=31)
+        registry_name = (
+                f'StaticNormals_data-cutoff'
+                f'-{data_cutoff.year}'
+                f'-{data_cutoff.month}'
+                f'-{data_cutoff.day}'
+                '_lfy-2050')
+        scenario_model = StaticNormals_ScenarioModel(
+                data_cutoff=data_cutoff,
+                last_forecast_year=2050,
+                )
+        super().__init__(
+                scenario_model_registry_name=registry_name,
+                scenario_model=scenario_model)
 
-    def main_model_id(self) -> int:
-        print(self.model_id)
-        return 0
-
-    def main_inference_prep(self):
-        touch_model(self.data_cutoff)
-        touch_components(self.data_cutoff)
-
-    def main_inference_work(self):
-        # this entrypoint may be used by concurrent workers
-        inference_work_loop(self.data_cutoff)
-
-    def one_line_description(self):
+    def one_line_description(self) -> str:
         return "Very simple baseline model - non-time-varying estimates"
 
-    @computed_field
+    @property
     def show_on_models_page(self) -> bool:
         return True
 
-    @computed_field
+    @property
     def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
         helper = SparklineEChartHelper(
                 div_id=None,
@@ -318,7 +315,7 @@ class Static_Normals_2024_12_31(SiteInference):
         else:
             return ''
 
-    @computed_field
+    @property
     def pretty_name(self) -> str:
         return 'Static Normals (data-cutoff: 2024-12-31)'
 
