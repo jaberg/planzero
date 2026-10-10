@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import jax.random as jrandom
+import numpyro.distributions as dist
 
 from .symmetric_blended_lognormal import (
     SymmetricBlendedLogNormal,
@@ -65,7 +66,6 @@ def test_kl_converges_with_quadrature_order():
 
 
 def test_kl_agrees_with_monte_carlo():
-    from numpyro.distributions import Normal
 
     rng_key = jrandom.key(1234)
     p = SymmetricBlendedLogNormal.rolloff_relerr(
@@ -78,10 +78,60 @@ def test_kl_agrees_with_monte_carlo():
     x = p.sample(rng_key, sample_shape=(1_000_000,))
     log_p = p.log_prob(x)
     M, = q_mu.shape
-    log_q = Normal(q_mu[:, None], q_sigma[:, None]).log_prob(x)
+    log_q = dist.Normal(q_mu[:, None], q_sigma[:, None]).log_prob(x)
     log_q = jax.nn.logsumexp(log_q, axis=0) - jnp.log(M)
     kl_mc = (log_p - log_q).mean()
 
     assert jnp.isfinite(kl) and jnp.isfinite(kl_mc)
     assert float(jnp.abs(kl - kl_mc)) < 0.02, (kl, kl_mc)
     assert 1.85 < kl < 1.86
+
+
+def test_affine_dispatch():
+    p1 = SymmetricBlendedLogNormal.rolloff_relerr(
+            mu=jnp.array([1, 2, 3, 4]),
+            rolloff=3, relerr=.2)
+    p10 = dist.TransformedDistribution(
+            p1, dist.transforms.AffineTransform(loc=0, scale=10))
+
+    q1 = dist.Normal(3, 1)
+    q10 = dist.Normal(30, 10)
+
+    kl1 = dist.kl_divergence(p1, q1)
+    kl10 = dist.kl_divergence(p10, q10)
+
+    print(kl1)
+    print(kl10)
+
+    assert jnp.allclose(kl1, kl10)
+
+
+def test_kl_divergence_shape_p_being_sbln_vec_q_being_normal():
+    p = SymmetricBlendedLogNormal.rolloff_relerr(
+            mu=jnp.array([10, 20, 30, 40]),
+            rolloff=3, relerr=.2)
+    q = dist.Normal(30, 1)
+
+    kl_div = dist.kl_divergence(p, q)
+    assert kl_div.shape == (4,)
+
+    a, b, c, d = [float(e) for e in kl_div]
+
+    assert a > b > c < d
+
+
+def test_shape_understanding():
+    p = dist.Normal(0, 1)
+    assert p.shape() == ()
+    assert p.batch_shape == ()
+    assert p.event_shape == ()
+
+    p = dist.Normal(jnp.array([0]), 1)
+    assert p.shape() == (1,)
+    assert p.batch_shape == (1,)
+    assert p.event_shape == ()
+
+    p = dist.Normal(jnp.array([0, 0]), 1)
+    assert p.shape() == (2,)
+    assert p.batch_shape == (2,)
+    assert p.event_shape == ()

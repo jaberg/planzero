@@ -133,6 +133,5 @@ class NIR2025_ScenarioModel(NIR_ScenarioModel):
                 return model_elem.ca_key
             else:
                 raise NotImplementedError(pt)
-
         else:
             raise NotImplementedError()

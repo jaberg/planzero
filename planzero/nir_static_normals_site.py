@@ -214,15 +214,19 @@ class Static_Normals_2024_12_31(SiteModel):
 
     def __init__(self):
         data_cutoff = datetime.date(year=2024, month=12, day=31)
-        registry_name = (
-                f'StaticNormals_data-cutoff'
-                f'-{data_cutoff.year}'
-                f'-{data_cutoff.month}'
-                f'-{data_cutoff.day}'
-                '_lfy-2050')
+        # registry_name = (
+        #         f'StaticNormals_data-cutoff'
+        #         f'-{data_cutoff.year}'
+        #         f'-{data_cutoff.month}'
+        #         f'-{data_cutoff.day}'
+        #         '_lfy-2050')
+        registry_name = 'Static_Normals_2024_12_31'
         scenario_model = StaticNormals_ScenarioModel(
                 data_cutoff=data_cutoff,
                 last_forecast_year=2050,
+                sectors=[IPCC_Sector.Forest_Land,
+                         IPCC_Sector.SCS__Public_Electricity_and_Heat,
+                         ],
                 )
         super().__init__(
                 scenario_model_registry_name=registry_name,
@@ -235,51 +239,7 @@ class Static_Normals_2024_12_31(SiteModel):
     def show_on_models_page(self) -> bool:
         return True
 
-    @property
-    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        helper = SparklineEChartHelper(
-                div_id=None,
-                model_name='Static_Normals',
-                v_unit='Mt_CO2e')
-        helper.load_data(self.model_id)
-        sector = PseudoSector.Total_with_LULUCF
-        rval = (helper.data_by_sector[sector]['lbound'],
-                helper.data_by_sector[sector]['ubound'])
-        return rval
-
-    def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
-        helper = SparklineEChartHelper(
-                div_id,
-                v_unit,
-                model_name=self.__class__.__name__)
-        helper.load_data(self.model_id)
-        helper.order_sectors()
-        helper.add_total_cells()
-        helper.add_non_lulucf_cells()
-        helper.add_lulucf_cells()
-        return helper.make_echart()
-
-    def GHGs_for_sector(self, sector):
-        normals = normals_by_sector_ghg(self.model_id)
-        rval = []
-        for ghg in GHG:
-            if (sector, ghg) in normals:
-                continue
-            rval.append(ghg)
-        return rval
-
-    def sector_echart(self, sector, ghg, v_unit):
-        helper = RegionalSparklineEChartHelper(
-            sector=sector,
-            ghg=ghg,
-            div_id=f'{self.__class__.__name__}_regional_sparkline_echart_{ghg.value if ghg else "all"}',
-            v_unit=v_unit)
-        helper.load_data(self.model_id)
-        helper.order_regions()
-        helper.add_regional_cells()
-        return helper.make_echart()
-
-    def prediction_scores_prenir_2025_m04(self):
+    def __TODO_prediction_scores_prenir_2025_m04(self):
         assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
         weighted_div, _, KLs = weighted_KL_score(
                 year=2023, model_id=self.model_id)
@@ -298,16 +258,17 @@ class Static_Normals_2024_12_31(SiteModel):
                 }
         return rval
 
-    def challenge_netzero_2050(self):
+    def __TODO_challenge_netzero_2050(self):
         return p_emissions_below_thresh_ex_LULUCF(
                 model_id=self.model_id,
                 thresh_ktCO2e=0)
 
-    def show_prediction_quality(self):
+    def __TODO_show_prediction_quality(self):
         assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
         return True
 
-    def challenge_result_url(self, challenge_name) -> str:
+    def __TODO_challenge_result_url(self, challenge_name) -> str:
+        return ''
         if challenge_name in (
                 'PreNIR_2025_m04',
                 'NetZero_2050'):

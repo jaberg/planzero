@@ -306,26 +306,28 @@ def kl_divergence_uniform_normal_mixture(
             raise NotImplementedError()
     else:
         raise NotImplementedError(p)
-    return jnp.maximum(kl, 0.0)
+    rval = jnp.maximum(kl, 0.0)
+    assert rval.shape == p_shape
+    return rval
 
 
 @kl.dispatch(dist.TransformedDistribution, dist.Normal)
 def kl_divergence(p:dist.TransformedDistribution, q:dist.Normal) -> jnp.ndarray:
     if (len(p.transforms) == 1
         and isinstance(p.transforms[0], dist.transforms.AffineTransform)
+        and p.transforms[0].loc == 0
         ):
-        # p = base_dist * scale + loc
+        # p = base_dist * scale
         #
-        # kl(p, q) = kl(base_dist, (q - loc) / scale)
-        # = kl(base_dist, q * 1/scale - loc/scale)
+        # kl(p, q) = kl(base_dist * scale, q)
+        # = kl(base_dist, q / scale)
         #
         # shift the normal parametrically
-        loc = p.transforms[0].loc
         scale = p.transforms[0].scale
-        shifted_q_loc = q.loc - loc / scale
-        shifted_q_scale = q.scale / scale
-        base_q = dist.Normal(shifted_q_loc, shifted_q_scale)
-        return kl_divergence(p.base_dist, base_q)
+        affine_q_loc = q.loc / scale
+        affine_q_scale = q.scale / scale
+        affine_q = dist.Normal(affine_q_loc, affine_q_scale)
+        return kl.kl_divergence(p.base_dist, affine_q)
     else:
         raise NotImplementedError(p)
 
@@ -338,8 +340,9 @@ def kl_divergence(p:SymmetricBlendedLogNormal, q:dist.Normal) -> jnp.ndarray:  #
                 p,
                 q_mu=jnp.array(q.loc)[(None,) * n_missing_dims],
                 q_sigma=jnp.array(q.scale)[(None,) * n_missing_dims],
-                )[0]
+                n_quad=16,
+                )
+        assert rval.shape == p.batch_shape
+        return rval
     else:
         raise NotImplementedError()
-    assert rval.shape == ()
-    return rval

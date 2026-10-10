@@ -8,7 +8,7 @@ from .nir2025 import (
     near_zero_sector_ghgs,
 )
 from .nir2025_model import NIR2025_ModelElement
-from .nir_model import NIR_ScenarioModel
+from .nir_model import NIR_ScenarioModel, PseudoRegion, PseudoSector
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
     GeneralKey,
@@ -28,8 +28,16 @@ class StaticNormals_ModelElement(ModelElement):
     _unit_pt_keys: dict[PT, GeneralKey]
     _ktCO2e_ca_key: GeneralKey
     _ktCO2e_pt_keys: dict[PT, GeneralKey]
+    _fit_to_data:bool
 
-    def __init__(self, sector:IPCC_Sector, ghg:GHG, nir_ca_key, nir_pt_keys, nir_scale_key):
+    def __init__(self,
+                 sector:IPCC_Sector,
+                 ghg:GHG,
+                 nir_ca_key,
+                 nir_pt_keys,
+                 nir_scale_key,
+                 fit_to_data:bool,
+                 ):
         self.sector = sector
         self.ghg = ghg
         self.nir_ca_key = nir_ca_key
@@ -50,6 +58,8 @@ class StaticNormals_ModelElement(ModelElement):
                     f'ktCO2e_{self.sector.value}_{self.ghg.value}_{pt.value}')
                 for pt in PT if pt != PT.XX}
 
+        self._fit_to_data = fit_to_data
+
     @classmethod
     def element_identifier(cls, sector, ghg):
         return f'StaticNormals_ModelElement_{sector.value}_{ghg.value}'
@@ -60,7 +70,10 @@ class StaticNormals_ModelElement(ModelElement):
 
     @property
     def version_id(self):
-        return (1,)
+        if self._fit_to_data:
+            return (1, self._fit_to_data, 1.2)
+        else:
+            return (1, self._fit_to_data)
 
     @property
     def unit_ca_key(self) -> GeneralKey:
@@ -100,15 +113,15 @@ class StaticNormals_ModelElement(ModelElement):
         squish = dist.transforms.AffineTransform(loc=0, scale=1/emission_scale)
         as_years = jnp.ones((ws.n_years,) + ws.mcmc_broadcast_shape)
 
-        # TODO: don't hard-code this, have the nir model element export it
-        hardcoded_weight = jnp.array(33.0)
+        obs_weight = jnp.array(1.0)
 
         for ii, (pt, unit_key) in enumerate(self.unit_pt_keys.items()):
 
-            ws.obs_weight.general[unit_key] = hardcoded_weight
-            ws.obs_dist.general[unit_key] = dist.TransformedDistribution(
-                    ws.dist.general[self.nir_pt_keys[pt]],
-                    squish)
+            if self._fit_to_data:
+                ws.obs_weight.general[unit_key] = obs_weight
+                ws.obs_dist.general[unit_key] = dist.TransformedDistribution(
+                        ws.dist.general[self.nir_pt_keys[pt]],
+                        squish)
 
             ws.dist.general[unit_key] = dist.Normal(
                     ws.val.general['mu'][ii],
@@ -120,11 +133,11 @@ class StaticNormals_ModelElement(ModelElement):
                         as_years * emission_scale * ws.val.general['mu'][ii],
                         as_years * emission_scale * ws.val.general['sigma_pt'][ii])
 
-
-        ws.obs_weight.general[self.unit_ca_key] = hardcoded_weight
-        ws.obs_dist.general[self.unit_ca_key] = dist.TransformedDistribution(
-                ws.dist.general[self.nir_ca_key],
-                squish)
+        if self._fit_to_data:
+            ws.obs_weight.general[self.unit_ca_key] = obs_weight
+            ws.obs_dist.general[self.unit_ca_key] = dist.TransformedDistribution(
+                    ws.dist.general[self.nir_ca_key],
+                    squish)
         ws.dist.general[self.unit_ca_key] = dist.Normal(
                 mu_ca,
                 ws.val.general['sigma_ca'])
@@ -158,14 +171,14 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                 first_year=1990,
                 n_prior_years=last_observed_nir_year + 1 - 1990,
                 n_posterior_years=last_forecast_year + 1 - 1990,
-                num_warmup=250,
-                num_samples=500,
+                num_warmup=150,
+                num_samples=250,
                 )
-        sector_ghg_subtotal_keys = {sector: {} for sector in sectors}
+        sector_ghg_subtotal_keys = {sector: {} for sector in IPCC_Sector}
         sector_region_ghg_subtotal_keys = {
                 (sector, pt): {}
-                for sector in sectors for pt in PT if PT != PT.XX}
-        for sector in sectors:
+                for sector in IPCC_Sector for pt in PT if PT != PT.XX}
+        for sector in IPCC_Sector:
             for ghg in GHG:
                 if (sector, ghg) not in near_zero_sector_ghgs():
                     mcmc_group = f'{sector.value}_{ghg.value}'
@@ -174,12 +187,17 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                             ghg=ghg,
                             n_years=self.n_prior_years)
                     self.add_element(nir_elem, mcmc_group=mcmc_group)
+                    if isinstance(sectors, list) and sector not in sectors:
+                        fit_to_data = False
+                    else:
+                        fit_to_data = True
                     snorm_elem = StaticNormals_ModelElement(
                                 sector=sector,
                                 ghg=ghg,
                                 nir_scale_key=nir_elem.scale_key,
                                 nir_ca_key=nir_elem.ca_key,
-                                nir_pt_keys=nir_elem.pt_keys)
+                                nir_pt_keys=nir_elem.pt_keys,
+                                fit_to_data=fit_to_data)
                     self.add_element(snorm_elem, mcmc_group=mcmc_group)
                     sector_ghg_subtotal_keys[sector][ghg] = snorm_elem.ktCO2e_ca_key
                     for pt in PT:
@@ -187,18 +205,34 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                             continue
                         dd = sector_region_ghg_subtotal_keys.setdefault((sector, pt), {})
                         dd[ghg] = snorm_elem.ktCO2e_pt_keys[pt]
+
         self.add_element(
                 SectorTotalEmissionsElement(
                     sector_ghg_subtotal_keys=sector_ghg_subtotal_keys,
                     expect_all_sectors=(sectors==IPCC_Sector),
                     ),
                 mcmc_group=None)
+
         self.add_element(
                 RegionalTotalEmissionsElement(
                     sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
                     expect_all_sectors=(sectors==IPCC_Sector),
                     ),
                 mcmc_group=None)
+
+    # NIR_ScenarioModel requirement
+    def ktCO2e_var_key_sector_ghg_region(self, sector, ghg, pt) -> GeneralKey:
+        elem_id = StaticNormals_ModelElement.element_identifier(sector, ghg)
+        model_elem = self.model_elements[elem_id]
+        if isinstance(model_elem, StaticNormals_ModelElement):
+            if isinstance(pt, PT):
+                return model_elem.ktCO2e_pt_keys[pt]
+            elif isinstance(pt, PseudoRegion) and pt == PseudoRegion.NationalTotal:
+                return model_elem.ktCO2e_ca_key
+            else:
+                raise NotImplementedError(pt)
+        else:
+            raise NotImplementedError()
 
 
 def loglik_NIR_Normal(

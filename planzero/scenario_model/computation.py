@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import warnings
 from typing import TypeAlias
 
 import jax.numpy as jnp
@@ -356,7 +357,8 @@ def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist
             numpyro.factor(
                     comp.sample_site(var_key),
                     -neg_expected_log_prob_plus_const.sum())
-            comp._dist_d[var_key] = dist
+            comp._dist_d[var_key] = dist  # dist is prior
+
         else:
             raise NotImplementedError(
                     'observation of both values and distribution')
@@ -634,8 +636,11 @@ class Computation:
     def get_ndarray(self, var_key:VarKey, sample_if_necessary) -> jnp.ndarray:
         try:
             return self._ndarray_d[var_key]
-        except KeyError:
+        except KeyError as err:
             if (var_key not in self._dist_d or not sample_if_necessary):
+                err.add_note(f'var_key in dist_d = {var_key in self._dist_d}')
+                err.add_note(f'sample_if_necessary = {sample_if_necessary}')
+                err.add_note(f'phase = {self.phase}')
                 raise
         self.set_ndarray_from_dist(var_key)
         return self._ndarray_d[var_key]
@@ -801,7 +806,12 @@ class Computation:
             var_key = rlookup[key_str]
             assert len(grouped_sample.shape) >= 2
             (n_groups, n_saved_samples) = grouped_sample.shape[:2]
-            assert n_saved_samples * n_groups == self.n_mcmc
+            assert n_groups == 1
+            assert n_saved_samples >= self.n_mcmc
+            if n_saved_samples >= self.n_mcmc:
+                warnings.warn(f"truncating grouped_sample to {self.n_mcmc}"
+                              f" samples (key={key_str}")
+                grouped_sample = grouped_sample[:, :self.n_mcmc]
 
             #
             # Posterior calculations are carried out with trailing mcmc dimension.
@@ -1394,16 +1404,34 @@ def compute_model(
         ) -> Computation:
     if isinstance(seed_or_key, int):
         seed_or_key = jrandom.key(seed_or_key)
-    raise NotImplementedError()
-    seed_or_key, key = jrandom.split(seed_or_key)
-    mcmc = run_mcmc(model, seed=key)
-    grouped_samples = mcmc.get_samples(group_by_chain=True)
-    comp = Computation(
+    mcmc_submodels = model.mcmc_submodels()
+
+    comp_prior = Computation(model=model, rng_key=jrandom.key(1))
+    comp_prior.run()
+
+    if len(mcmc_submodels) > 1:
+        raise NotImplementedError()
+    else:
+        saved_sample_sites = {}
+        all_grouped_samples = {}
+        for mcmc_group, mcmc_model in mcmc_submodels.items():
+            seed_or_key, key = jrandom.split(seed_or_key)
+            mcmc = run_mcmc(model, seed=key)
+            grouped_samples = mcmc.get_samples(group_by_chain=True)
+            for var_key, sample_site in comp_prior.sample_sites.items():
+                if sample_site in grouped_samples:
+                    saved_sample_sites[var_key] = sample_site
+            assert len(saved_sample_sites) == len(grouped_samples)
+            all_grouped_samples.update(grouped_samples)
+            print(grouped_samples)
+    comp_posterior = Computation(
             model=model,
             rng_key=seed_or_key)
-    comp.load_grouped_samples(
+    comp_posterior.set_phase_posterior(
             n_mcmc=model.num_samples,
-            grouped_samples=grouped_samples)
-    return comp
+            sample_sites=saved_sample_sites,
+            grouped_samples=all_grouped_samples)
+    comp_posterior.run()
+    return comp_posterior
 
 from .workspace import Workspace
