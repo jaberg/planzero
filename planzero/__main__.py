@@ -92,7 +92,7 @@ def main_inference_prep(args):
 
 
 def main_inference_work(args):
-    return completed_prob_registry()[args.model].main_inference_work()
+    completed_prob_registry()[args.model].registry_compute_model()
 
 
 def main_generate_assets(args):

@@ -340,7 +340,7 @@ def kl_divergence(p:SymmetricBlendedLogNormal, q:dist.Normal) -> jnp.ndarray:  #
                 p,
                 q_mu=jnp.array(q.loc)[(None,) * n_missing_dims],
                 q_sigma=jnp.array(q.scale)[(None,) * n_missing_dims],
-                n_quad=16,
+                n_quad=64,
                 )
         assert rval.shape == p.batch_shape
         return rval

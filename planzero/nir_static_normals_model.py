@@ -1,14 +1,18 @@
 import datetime
 
 import jax.numpy as jnp
+import numpy as np
 import numpyro.distributions as dist
 
 from .enums import GHG, PT, IPCC_Sector
 from .nir2025 import (
+    idx_of_sector,
+    idx_of_ghg,
+    ktCO2e_dense_w_nan,
     near_zero_sector_ghgs,
 )
 from .nir2025_model import NIR2025_ModelElement
-from .nir_model import NIR_ScenarioModel, PseudoRegion, PseudoSector
+from .nir_model import NIR_ScenarioModel, PseudoRegion
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
     GeneralKey,
@@ -20,6 +24,7 @@ from .scenario_model import (
 )
 from .sector_total_emissions_element import SectorTotalEmissionsElement
 
+n_regions = 13
 
 class StaticNormals_ModelElement(ModelElement):
     sector: IPCC_Sector
@@ -71,7 +76,11 @@ class StaticNormals_ModelElement(ModelElement):
     @property
     def version_id(self):
         if self._fit_to_data:
-            return (1, self._fit_to_data, 1.2)
+            return (1,
+                    self._fit_to_data,
+                    # 1.2, accidentally using whole arr_ca rms not just sector/ghg
+                    1.3,
+                    )
         else:
             return (1, self._fit_to_data)
 
@@ -91,16 +100,31 @@ class StaticNormals_ModelElement(ModelElement):
     def ktCO2e_pt_keys(self) -> dict[PT, GeneralKey]:
         return self._ktCO2e_pt_keys
 
-    @define('mu', prior_shape=[13])
-    @define('sigma_pt', prior_shape=[13])
+    @define('mu', prior_shape=[n_regions])
+    @define('sigma_pt', prior_shape=[n_regions])
     @define('sigma_ca', prior_shape=[])
     @define(unit_ca_key, prior_shape=[])
     @define(unit_pt_keys, prior_shape=[])
     @define(ktCO2e_ca_key, prior_shape=[years_dim])
     @define(ktCO2e_pt_keys, prior_shape=[years_dim])
     def model_element_postprocess(self, ws:Workspace):
-        n_regions = 13
         assert n_regions == len(self.unit_pt_keys)
+
+        arr_pt, arr_ca = ktCO2e_dense_w_nan()
+        emission_scale = np.sqrt(
+                np.mean(
+                    arr_ca[idx_of_sector[self.sector],
+                           idx_of_ghg[self.ghg],
+                           ] ** 2))
+        if 1:
+            print(emission_scale)
+            pt_mean = np.nanmean(
+                    arr_pt[idx_of_sector[self.sector],
+                           idx_of_ghg[self.ghg],
+                           ],
+                    axis=1) / emission_scale
+            assert pt_mean.shape == (n_regions,), pt_mean.shape
+            print(pt_mean)
 
         ws.dist.general['mu'] = dist.Normal(0.0, 1.0).expand((n_regions,))
         ws.dist.general['sigma_pt'] = dist.LogNormal(-1.0, 0.7).expand((n_regions,))
@@ -108,7 +132,10 @@ class StaticNormals_ModelElement(ModelElement):
 
         mu_ca = ws.val.general['mu'].sum(axis=0) # over regions
 
-        emission_scale = ws.val.general[self.nir_scale_key]
+        # emission_scale = ws.val.general[self.nir_scale_key]
+
+        #print(scale)
+        #ws.val.general[self.scale_key] = jnp.array(scale)
 
         squish = dist.transforms.AffineTransform(loc=0, scale=1/emission_scale)
         as_years = jnp.ones((ws.n_years,) + ws.mcmc_broadcast_shape)
@@ -171,7 +198,7 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                 first_year=1990,
                 n_prior_years=last_observed_nir_year + 1 - 1990,
                 n_posterior_years=last_forecast_year + 1 - 1990,
-                num_warmup=150,
+                num_warmup=250,
                 num_samples=250,
                 )
         sector_ghg_subtotal_keys = {sector: {} for sector in IPCC_Sector}

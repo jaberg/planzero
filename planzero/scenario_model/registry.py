@@ -165,6 +165,8 @@ def registry_compute_model(
 
     os.makedirs(model_root(model_name), exist_ok=True)
 
+    # TODO: multiprocessing Pool.map
+
     # It should be possible to run this loop concurrently e.g. vmap
     saved_sample_sites = {}
     for mcmc_group, submodel in submodels.items():

@@ -1,5 +1,3 @@
-import jax.numpy as jnp
-
 from .enums import GHG, PT, IPCC_Sector
 from .nir2025 import (
     ktCO2e_numpyro_dist_pt_ca_years,
@@ -48,7 +46,7 @@ class NIR2025_ModelElement(ModelElement):
 
     @property
     def version_id(self):
-        return (1,)
+        return (2,)
 
     @property
     def ca_key(self) -> GeneralKey:
@@ -77,7 +75,6 @@ class NIR2025_ModelElement(ModelElement):
         ws.dist.general[self.ca_key] = ws.mcmc_expand(ca_dist)
         for pt, key in self.pt_keys.items():
             ws.dist.general[key] = ws.mcmc_expand(pt_dists_by_pt[pt])
-        ws.val.general[self.scale_key] = jnp.max(ca_dist.mu)
 
 
 class NIR2025_ScenarioModel(NIR_ScenarioModel):

@@ -348,7 +348,10 @@ def ktCO2e_numpyro_dist_pt_ca_years(
     unc = np.maximum(unc, 0.01)
     unc = np.where(np.isnan(unc), 1.0, unc)  # (n_years,)
 
-    eps = 1
+    eps = 10 # ktCO2e as a rounding error
+    # TODO: consider eps being set relative to sector/ghg combo
+    # to be e.g. 0.5%, because it might help with numeric stability
+    # in mcmc, and allow lower n_quad to be sufficient.
 
     # params for near-zeros
     pnz = { 'mu': .5 * eps,

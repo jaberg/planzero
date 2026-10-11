@@ -224,9 +224,6 @@ class Static_Normals_2024_12_31(SiteModel):
         scenario_model = StaticNormals_ScenarioModel(
                 data_cutoff=data_cutoff,
                 last_forecast_year=2050,
-                sectors=[IPCC_Sector.Forest_Land,
-                         IPCC_Sector.SCS__Public_Electricity_and_Heat,
-                         ],
                 )
         super().__init__(
                 scenario_model_registry_name=registry_name,
