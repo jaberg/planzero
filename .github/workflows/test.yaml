@@ -61,26 +61,22 @@ jobs:
 
       # Static Normals 2024-12-31
 
-      - name: Cache key for Static_Normals_2024_12_31
-        id: cache_key_static_normals_2024_12_31
-        run: echo "model_id=$(python -m planzero model_id --model=Static_Normals_2024_12_31)" >> "$GITHUB_OUTPUT"
-
       - name: Restore inference cache for Static_Normals_2024_12_31
         uses: actions/cache/restore@v6
-        id: cache_restore_static_normals_2024_12_31
+        # id: cache_restore_static_normals_2024_12_31
         with:
-          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
-          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
+          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/Static_Normals_2024_12_31
+          key: Static_Normals_2024_12_31
 
       - name: Perform Static Normals inference
         run: python -m planzero inference_work --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
-        if: steps.cache_restore_static_normals_2024_12_31.outputs.cache-hit != 'true'
+        # if: steps.cache_restore_static_normals_2024_12_31.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
-          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.model_id }}
+          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/Static_Normals_2024_12_31
+          key: Static_Normals_2024_12_31
 
       # TODO: cache this when it stabilizes
       - name: Infer cattle population and emission factors for scaling ablation study
