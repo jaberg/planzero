@@ -154,8 +154,6 @@ def compute_posterior(
 
 _registry_mem_cache:dict[str, Computation] = {}
 
-multiprocessing.set_start_method('forkserver')
-
 def registry_compute_model(
         model:ScenarioModel,
         model_name:str,
