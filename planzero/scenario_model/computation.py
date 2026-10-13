@@ -808,7 +808,7 @@ class Computation:
             (n_groups, n_saved_samples) = grouped_sample.shape[:2]
             assert n_groups == 1
             assert n_saved_samples >= self.n_mcmc
-            if n_saved_samples >= self.n_mcmc:
+            if n_saved_samples >  self.n_mcmc:
                 warnings.warn(f"truncating grouped_sample to {self.n_mcmc}"
                               f" samples (key={key_str}")
                 grouped_sample = grouped_sample[:, :self.n_mcmc]

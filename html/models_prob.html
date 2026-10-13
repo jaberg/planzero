@@ -156,7 +156,7 @@ Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
 	    <tr>
 		    <td><a href="/models/prob/{{ident}}/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
 		    {% for ghg in planzero.enums.GHG %}
-		    <td>{% if ghg_KLs[ghg] > 0 %}{{ "%.2f"|format(ghg_KLs[ghg]) }}{% endif %}</td>
+		    <td>{% if ghg in ghg_KLs and ghg_KLs[ghg] > 0 %}{{ "%.2f"|format(ghg_KLs[ghg]) }}{% endif %}</td>
 		    {% endfor %}
 	    </tr>
 	    {% endfor %}

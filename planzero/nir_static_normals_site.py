@@ -213,7 +213,7 @@ class Static_Normals_2024_12_31(SiteModel):
 
 
     def __init__(self):
-        data_cutoff = datetime.date(year=2024, month=12, day=31)
+        self.data_cutoff = datetime.date(year=2024, month=12, day=31)
         # registry_name = (
         #         f'StaticNormals_data-cutoff'
         #         f'-{data_cutoff.year}'
@@ -222,7 +222,7 @@ class Static_Normals_2024_12_31(SiteModel):
         #         '_lfy-2050')
         registry_name = 'Static_Normals_2024_12_31'
         scenario_model = StaticNormals_ScenarioModel(
-                data_cutoff=data_cutoff,
+                data_cutoff=self.data_cutoff,
                 last_forecast_year=2050,
                 )
         super().__init__(
@@ -236,39 +236,23 @@ class Static_Normals_2024_12_31(SiteModel):
     def show_on_models_page(self) -> bool:
         return True
 
-    def __TODO_prediction_scores_prenir_2025_m04(self):
-        assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
-        weighted_div, _, KLs = weighted_KL_score(
-                year=2023, model_id=self.model_id)
-        scores_ca = {}
-        scores_pt = {}
-        for ii, sector in enumerate(IPCC_Sector):
-            scores_ca[sector] = dict(zip(GHG, KLs[ii, :, 13]))
-            for jj, pt in enumerate(PT):
-                if pt == PT.XX:
-                    continue
-                scores_pt[sector, pt] = dict(zip(GHG, KLs[ii, :, :13]))
-        rval = {
-                'weighted_divergence': weighted_div,
-                'scores_ca': scores_ca,
-                'scores_pt': scores_pt,
-                }
-        return rval
-
     def __TODO_challenge_netzero_2050(self):
         return p_emissions_below_thresh_ex_LULUCF(
                 model_id=self.model_id,
                 thresh_ktCO2e=0)
 
-    def __TODO_show_prediction_quality(self):
-        assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
+    def prediction_scores_prenir_2025_m04(self):
+        return self.scenario_model.prediction_scores_prenir_2025_m04(self.comp)
+
+    def show_prediction_quality(self):
+        assert self.scenario_model.data_cutoff == datetime.date(year=2024, month=12, day=31)
         return True
 
     def __TODO_challenge_result_url(self, challenge_name) -> str:
-        return ''
         if challenge_name in (
                 'PreNIR_2025_m04',
-                'NetZero_2050'):
+                #'NetZero_2050',
+                ):
             return f'/models/prob/{self.model_id}/#{challenge_name}'
         else:
             return ''

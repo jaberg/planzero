@@ -1,5 +1,7 @@
 import jax.numpy as jnp
+import numpy as np
 
+from .nir2025 import near_zero_sector_ghgs
 from .enums import GHG, PT, IPCC_Sector
 from .regional_total_emissions_element import PseudoRegion, RegionalTotalEmissionsVarKey
 from .scenario_model import Computation, GeneralKey, ScenarioModel
@@ -80,3 +82,32 @@ class NIR_ScenarioModel(ScenarioModel):
                         self.ktCO2e_var_key_sector_ghg_region(sector, ghg, region)]
                     for region in regions})
         return ktCO2e_sample
+
+    # PRE-NIR
+
+    def prenir_2025_m04_total_key(self) -> GeneralKey:
+        raise NotImplementedError()
+
+    def prenir_2025_m04_sector_ghg_key(self, sector:IPCC_Sector, ghg:GHG) -> GeneralKey:
+        raise NotImplementedError()
+
+    def prediction_scores_prenir_2025_m04(self, comp:Computation):
+        scores_ca = {}
+        near_zero = near_zero_sector_ghgs()
+        for sector in IPCC_Sector:
+            scores_ca[sector] = {}
+            for ghg in GHG:
+                if (sector, ghg) not in near_zero:
+                    sector_ghg_key = self.prenir_2025_m04_sector_ghg_key(sector, ghg)
+                    sector_ghg_val = np.asarray(comp.ndarray_d[sector_ghg_key])
+                    # remove the mcmc dim
+                    assert sector_ghg_val.shape == (1,)
+                    scores_ca[sector][ghg] = float(sector_ghg_val[0])
+        total_key = self.prenir_2025_m04_total_key()
+        total_val = comp.ndarray_d[total_key]
+        assert total_val.shape == (1,)
+        rval = {
+                'weighted_divergence': float(total_val[0]),
+                'scores_ca': scores_ca,
+                }
+        return rval

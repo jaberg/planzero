@@ -135,3 +135,23 @@ def test_shape_understanding():
     assert p.shape() == (2,)
     assert p.batch_shape == (2,)
     assert p.event_shape == ()
+
+
+def test_int_basic_indexing():
+    p = SymmetricBlendedLogNormal.rolloff_relerr(
+            mu=jnp.array([10, 20, 30, 40]),
+            rolloff=3, relerr=.2)
+    p0 = p[0]
+    p3 = p[3]
+
+    try:
+        p[4]
+        assert 0
+    except IndexError:
+        pass
+
+    p3alt = p[-1]
+
+    assert p0.mu == 10
+    assert p3.mu == 40
+    assert p3alt.mu == 40

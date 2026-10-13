@@ -6,13 +6,14 @@ import numpyro.distributions as dist
 
 from .enums import GHG, PT, IPCC_Sector
 from .nir2025 import (
-    idx_of_sector,
     idx_of_ghg,
+    idx_of_sector,
     ktCO2e_dense_w_nan,
     near_zero_sector_ghgs,
 )
 from .nir2025_model import NIR2025_ModelElement
 from .nir_model import NIR_ScenarioModel, PseudoRegion
+from .prenir_element import PreNIR_ModelElement
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
     GeneralKey,
@@ -22,7 +23,7 @@ from .scenario_model import (
     define,
     years_dim,
 )
-from .sector_total_emissions_element import SectorTotalEmissionsElement
+from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsElement
 
 n_regions = 13
 
@@ -110,32 +111,18 @@ class StaticNormals_ModelElement(ModelElement):
     def model_element_postprocess(self, ws:Workspace):
         assert n_regions == len(self.unit_pt_keys)
 
-        arr_pt, arr_ca = ktCO2e_dense_w_nan()
+        _, arr_ca = ktCO2e_dense_w_nan()
         emission_scale = np.sqrt(
                 np.mean(
                     arr_ca[idx_of_sector[self.sector],
                            idx_of_ghg[self.ghg],
                            ] ** 2))
-        if 1:
-            print(emission_scale)
-            pt_mean = np.nanmean(
-                    arr_pt[idx_of_sector[self.sector],
-                           idx_of_ghg[self.ghg],
-                           ],
-                    axis=1) / emission_scale
-            assert pt_mean.shape == (n_regions,), pt_mean.shape
-            print(pt_mean)
 
         ws.dist.general['mu'] = dist.Normal(0.0, 1.0).expand((n_regions,))
         ws.dist.general['sigma_pt'] = dist.LogNormal(-1.0, 0.7).expand((n_regions,))
         ws.dist.general['sigma_ca'] = dist.LogNormal(-1.0, 0.7)
 
         mu_ca = ws.val.general['mu'].sum(axis=0) # over regions
-
-        # emission_scale = ws.val.general[self.nir_scale_key]
-
-        #print(scale)
-        #ws.val.general[self.scale_key] = jnp.array(scale)
 
         squish = dist.transforms.AffineTransform(loc=0, scale=1/emission_scale)
         as_years = jnp.ones((ws.n_years,) + ws.mcmc_broadcast_shape)
@@ -201,10 +188,13 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                 num_warmup=250,
                 num_samples=250,
                 )
+        self.data_cutoff = data_cutoff
         sector_ghg_subtotal_keys = {sector: {} for sector in IPCC_Sector}
         sector_region_ghg_subtotal_keys = {
                 (sector, pt): {}
                 for sector in IPCC_Sector for pt in PT if PT != PT.XX}
+        sector_ghg_nir_keys:dict = {}
+        nir_years_key = None
         for sector in IPCC_Sector:
             for ghg in GHG:
                 if (sector, ghg) not in near_zero_sector_ghgs():
@@ -213,6 +203,7 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                             sector=sector,
                             ghg=ghg,
                             n_years=self.n_prior_years)
+                    nir_years_key = nir_elem.years_key
                     self.add_element(nir_elem, mcmc_group=mcmc_group)
                     if isinstance(sectors, list) and sector not in sectors:
                         fit_to_data = False
@@ -227,11 +218,15 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                                 fit_to_data=fit_to_data)
                     self.add_element(snorm_elem, mcmc_group=mcmc_group)
                     sector_ghg_subtotal_keys[sector][ghg] = snorm_elem.ktCO2e_ca_key
+
+                    nir_d = sector_ghg_nir_keys[sector, ghg] = {}
+                    nir_d[PseudoRegion.NationalTotal] = nir_elem.ca_key
                     for pt in PT:
                         if pt == PT.XX:
                             continue
                         dd = sector_region_ghg_subtotal_keys.setdefault((sector, pt), {})
                         dd[ghg] = snorm_elem.ktCO2e_pt_keys[pt]
+                        nir_d[pt] = nir_elem.pt_keys[pt]
 
         self.add_element(
                 SectorTotalEmissionsElement(
@@ -247,6 +242,19 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                     ),
                 mcmc_group=None)
 
+        self.add_element(
+                PreNIR_ModelElement(
+                    nir_year=2025,
+                    months_ahead=4,
+                    nir_years_key=nir_years_key,
+                    sector_ghg_nir_keys=sector_ghg_nir_keys,
+                    sector_ghg_subtotal_keys=sector_ghg_subtotal_keys,
+                    sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
+                    expect_all_sectors=(sectors==IPCC_Sector),
+                    ),
+                mcmc_group=None)
+
+
     # NIR_ScenarioModel requirement
     def ktCO2e_var_key_sector_ghg_region(self, sector, ghg, pt) -> GeneralKey:
         elem_id = StaticNormals_ModelElement.element_identifier(sector, ghg)
@@ -261,26 +269,22 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
         else:
             raise NotImplementedError()
 
+    def prenir_2025_m04_total_key(self) -> GeneralKey:
+        return PreNIR_ModelElement.SubtotalVarKey(
+                elem_id=PreNIR_ModelElement.element_identifier(2025, 4),
+                name="subtotal",
+                sector=PseudoSector.Total_with_LULUCF,
+                ghg=None,
+                region=PseudoRegion.NationalTotal,
+                nir_year=2025,
+                months_ahead=4)
 
-def loglik_NIR_Normal(
-    component_id,
-    NIR_year,
-    emission_year,
-    ):
-    raise NotImplementedError()
-
-def loglik_NIR_BayesianNormal(
-    component_id,
-    NIR_year,
-    emission_year,
-    ):
-    raise NotImplementedError()
-
-def weighted_KL_score(year, model_id):
-    raise NotImplementedError()
-
-def p_emissions_below_thresh_ex_LULUCF(
-        model_id:str,
-        thresh_ktCO2e:float,
-        ) -> float:
-    raise NotImplementedError()
+    def prenir_2025_m04_sector_ghg_key(self, sector:IPCC_Sector, ghg:GHG) -> GeneralKey:
+        return PreNIR_ModelElement.SubtotalVarKey(
+                elem_id=PreNIR_ModelElement.element_identifier(2025, 4),
+                name="subtotal",
+                sector=sector,
+                ghg=ghg,
+                region=PseudoRegion.NationalTotal,
+                nir_year=2025,
+                months_ahead=4)

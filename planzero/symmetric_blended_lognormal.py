@@ -85,6 +85,20 @@ class SymmetricBlendedLogNormal(Distribution):
             batch_shape=batch_shape,
             validate_args=validate_args)
 
+    def __getitem__(self, item):
+        # Select a single (or slice of) batch element. Parameters may have
+        # shapes that are only broadcastable to ``batch_shape``, so broadcast
+        # each one to the full batch shape before indexing.
+        batch_shape = self.batch_shape
+        kwargs = {}
+        for name in self.arg_constraints:
+            arr = getattr(self, name)
+            broadcasted = jnp.broadcast_to(jnp.asarray(arr), batch_shape) \
+                if batch_shape else jnp.asarray(arr)
+            kwargs[name] = broadcasted[item]
+        kwargs["validate_args"] = self._validate_args
+        return type(self)(**kwargs)
+
     def _get_log_weights(self):
         # Create logits that shift dominance based on the sign and magnitude of mu
         logit_neg = jnp.where(
