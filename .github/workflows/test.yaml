@@ -63,7 +63,6 @@ jobs:
 
       - name: Restore inference cache for Static_Normals_2024_12_31
         uses: actions/cache/restore@v6
-        # id: cache_restore_static_normals_2024_12_31
         with:
           path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/Static_Normals_2024_12_31
           key: Static_Normals_2024_12_31
@@ -72,7 +71,6 @@ jobs:
         run: python -m planzero inference_work --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
-        # if: steps.cache_restore_static_normals_2024_12_31.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/Static_Normals_2024_12_31
