@@ -9,7 +9,11 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+print("app.py: loaded 3rd party imports")
+
 app = FastAPI()
+
+print("app.py: created FastAPI handle")
 
 htmlroot = 'html'
 
@@ -22,6 +26,8 @@ templates = Jinja2Templates(
         loader=jinja2.FileSystemLoader(htmlroot),
         ))
 
+print("app.py: mounted template resources")
+
 import planzero.blog
 import planzero.enums
 import planzero.est_nir
@@ -30,6 +36,8 @@ import planzero.ipcc_canada
 import planzero.ipcc_home
 import planzero.singleton_registry
 import planzero.ureg
+
+print("app.py: completed planzero imports")
 
 u = planzero.ureg.ureg
 
@@ -41,6 +49,8 @@ try:
     import diskcache
 except ImportError:
     diskcache = None
+
+print("app.py: imported diskcache")
 
 APP_CACHE_DIR = os.environ['PLANZERO_APP_CACHE_DIR']
 USE_DISK_CACHE = (os.environ['PLANZERO_USE_DISK_CACHE'] == '1')
@@ -604,10 +614,12 @@ async def get_index(
 
 
 def get_context(title:str, **kwargs):
+    print("app.py: get_context loading planzero packages")
     import planzero.blog
     import planzero.glossary
     import planzero.html
     import planzero.ipcc_canada
+    print("app.py: get_context finished loading planzero packages")
 
     rval = {'title': title,
             'int': int,
@@ -647,3 +659,5 @@ def get_context(title:str, **kwargs):
     }
     rval.update(kwargs)
     return rval
+
+print("app.py: bottom of file")
