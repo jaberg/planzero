@@ -11,13 +11,13 @@ from .base import (
     InitialCarry,
     NextCarry,
 )
-from .computation import Computation, Model, run_mcmc
+from .computation import Computation, ScenarioModel, run_mcmc
 from .example_population import Example_Population
 
 
 @pytest.fixture
 def model():
-    model = Model(
+    model = ScenarioModel(
             first_year=1990,
             n_prior_years=7,
             n_posterior_years=9,

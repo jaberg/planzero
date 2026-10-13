@@ -1,4 +1,5 @@
 import hashlib
+import multiprocessing
 import os
 import pickle
 
@@ -10,6 +11,9 @@ from .base import GroupedPosterior, VarKey
 from .computation import Computation, ScenarioModel, hash_version_id, run_mcmc
 
 MODEL_REGISTRY_ROOT = os.environ.get('PLANZERO_MODEL_REGISTRY_ROOT')
+
+N_MCMC_WORKERS = int(os.environ.get('PLANZERO_N_MCMC_WORKERS', '3'))
+assert N_MCMC_WORKERS > 0
 
 # filenames shouldn't be ridiculously long
 MAX_NAME_LEN = 100
@@ -118,6 +122,10 @@ def compute_mcmc_submodel(
     return saved_sample_sites
 
 
+def compute_mcmc_submodel_map(x):
+    return compute_mcmc_submodel(*x)
+
+
 def compute_posterior(
         model_name:str,
         model:ScenarioModel,
@@ -165,16 +173,18 @@ def registry_compute_model(
 
     os.makedirs(model_root(model_name), exist_ok=True)
 
-    # TODO: multiprocessing Pool.map
-
     # It should be possible to run this loop concurrently e.g. vmap
-    saved_sample_sites = {}
+    map_args = []
     for mcmc_group, submodel in submodels.items():
         # for saving MCMC re-sampling of sample sites
         rng_key, tmp_key = jrandom.split(rng_key)
-        submodel_sample_sites = compute_mcmc_submodel(
-                model_name, mcmc_group, submodel,
-                rng_key=tmp_key)
+        map_args.append((model_name, mcmc_group, submodel, tmp_key))
+    pool = multiprocessing.Pool(N_MCMC_WORKERS)
+    saved_sites_list = pool.map(compute_mcmc_submodel_map, map_args)
+
+    saved_sample_sites = {}
+    for ((mcmc_group, submodel), submodel_sample_sites) in zip(
+            submodels.items(), saved_sites_list):
         for key, site in submodel_sample_sites.items():
             assert key not in saved_sample_sites, key
             saved_sample_sites[key] = site

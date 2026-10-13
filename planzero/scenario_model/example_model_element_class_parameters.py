@@ -16,8 +16,8 @@ import numpyro.distributions as dist
 
 from .computation import (
     ElementGeneralKey,
-    Model,
     ModelElement,
+    ScenarioModel,
     Workspace,
     define,
 )
@@ -69,8 +69,8 @@ class PropertyModelElement(ModelElement):
             # ws.val.general[var_key] # don't draw sample
 
 
-def property_model() -> Model:
-    model = Model(
+def property_model() -> ScenarioModel:
+    model = ScenarioModel(
             first_year=0,
             n_prior_years=1,
             n_posterior_years=1,
