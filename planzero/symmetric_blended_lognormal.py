@@ -350,11 +350,14 @@ def kl_divergence(p:dist.TransformedDistribution, q:dist.Normal) -> jnp.ndarray:
 def kl_divergence(p:SymmetricBlendedLogNormal, q:dist.Normal) -> jnp.ndarray:  # noqa: F811
     if q.batch_shape == ():
         n_missing_dims = 1 + len(p.batch_shape)
+        # n_quad=32 got almost all the way through static normals inference
+        #           with 10 ktCO2e as near-zero in nir2025 file
+        # n_quad=64 gets all the way through, but takes too long
         rval = kl_divergence_uniform_normal_mixture(
                 p,
                 q_mu=jnp.array(q.loc)[(None,) * n_missing_dims],
                 q_sigma=jnp.array(q.scale)[(None,) * n_missing_dims],
-                n_quad=32,  # 64 gave no divergences with 10ktCO2e as small
+                n_quad=48,
                 )
         assert rval.shape == p.batch_shape
         return rval
