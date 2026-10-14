@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 import numpyro
-from jax.typing import ArrayLike
 from numpyro.distributions.distribution import Distribution
 
 from .base import (
@@ -10,16 +9,13 @@ from .base import (
     ElementCarryKey,
     ElementGeneralKey,
     InitialCarry,
-    NdarrayDim,
     NextCarry,
     Observation,
     ObservationValid,
     ObservationWeight,
     Phase,
     Subphase,
-    VarKey,
     scan_step_ii_key,
-    years_dim,
 )
 from .computation import Computation, ScanStorage, ScenarioModel
 
@@ -328,6 +324,48 @@ class DistGeneral:
             raise NotImplementedError(self.attr)
 
 
+class DistAnnual:
+
+    ws: Workspace
+    attr: str
+
+    def __init__(self, ws:Workspace, attr:str):
+        self.ws = ws
+        self.attr = attr
+
+    def __getitem__(self, item:str|ElementAnnualKey) -> Distribution:
+        if isinstance(item, str):
+            var_key = self.ws._annual_key(item)
+        else:
+            var_key = item
+        del item
+
+        if self.attr == 'dist':
+            # handles syntax: ws.obs.annual[item] = dist
+            return self.ws.comp.dist_d[var_key]
+        elif self.attr == 'obs_dist':
+            # handles syntax: ws.obs_dist.annual[item]
+            return self.ws.comp.dist_d[Observation(prior_var_key=var_key)]
+        else:
+            raise NotImplementedError(self.attr)
+
+    def __setitem__(self, item:str|ElementAnnualKey, dist:Distribution) -> None:
+        if isinstance(item, str):
+            var_key = self.ws._annual_key(item)
+        else:
+            var_key = item
+        del item
+
+        if self.attr == 'dist':
+            # handles syntax: ws.obs.annual[item] = dist
+            self.ws.comp.dist_d[var_key] = dist
+        elif self.attr == 'obs_dist':
+            # handles syntax: ws.obs_dist.annual[item] = dist
+            self.ws.comp.dist_d[Observation(prior_var_key=var_key)] = dist
+        else:
+            raise NotImplementedError(self.attr)
+
+
 class DistInitialCarry:
 
     ws: Workspace
@@ -536,6 +574,10 @@ class WorkspaceAttrDist:
         return DistGeneral(self.ws, self.attr)
 
     @property
+    def annual(self) -> DistAnnual:
+        return DistAnnual(self.ws, self.attr)
+
+    @property
     def initial_carry(self) -> DistInitialCarry:
         return DistInitialCarry(self.ws, self.attr)
 
@@ -658,7 +700,6 @@ class Workspace:
             return padded.expand(dist.shape() + (self.n_mcmc,))
 
 
-
 def right_pad_universal(dist):
     """
     Right-pads ANY NumPyro distribution's batch_shape with (1,).
@@ -683,139 +724,3 @@ def right_pad_universal(dist):
     # Because we are calling the constructor anew, NumPyro will automatically
     # calculate and set the correct _batch_shape for us!
     return type(dist)(**new_params)
-
-class WorkSpacePrep_Dist_InitialCarry:
-    """object to represent `ws.dist.initial_carry`"""
-
-    def __setitem__(self, item:ElementCarryKey|str, dist:Distribution) -> None:
-        if isinstance(item, str):
-            var_key = self.wsd.ws._carry_key(item)
-        else:
-            var_key = item
-        ic_key = InitialCarry(carry_key=var_key)
-        obs = self.comp.storage_nd.get(observation(ic_key))
-        obs_valid = self.comp.storage_nd.get(
-                observation_valid(observation(ic_key)))
-
-        if self.comp.phase == Phase.Prior:
-            if obs is None and obs_valid is None:
-                # TODO: check that the shape is correct
-                self.comp.storage_dist[ic_key] = dist
-
-                # Assume, for now, that we need the sampled value
-                # because otherwise we won't know until inside the scan logic
-                # at which time it is too late.
-                # If this assumption is violated, add an argument to
-                # @define_carry e.g. sample=False
-                self.comp.storage_nd[ic_key] = numpyro.sample(
-                        self.comp.sample_site(ic_key),
-                        fn=dist,
-                        rng_key=self.comp._split_rng_key(),
-                        )
-            else:
-                raise NotImplementedError()
-        else:
-            assert self.comp.phase == Phase.Posterior
-            if obs is None and obs_valid is None:
-                # don't define the distribution this time
-                # because the provided distribution was the prior.
-
-                assert ic_key in self.comp.storage_nd
-                # TODO: check that the shape is correct
-                #       the shape should be [n_mcmc] + [var shape]
-            else:
-                raise NotImplementedError()
-
-
-
-class WorkSpacePrep_Val_InitialCarry:
-    """object to represent `ws.val.initial_carry`"""
-
-    def __setitem__(self, item:ElementCarryKey|str, value:jnp.ndarray) -> None:
-        # TODO: check if the element, subphase defines item
-        # TODO: check that the shape is correct
-        if isinstance(item, str):
-            var_key = self.wsv.ws._carry_key(item)
-        else:
-            var_key = item
-        ic_key = InitialCarry(carry_key=var_key)
-        ndm = self.comp.model.mv.carry_nd[ic_key].definition_metadata
-        assert value.shape == tuple(ndm.value_type.shape)
-        self.comp.storage_nd[ic_key] = value
-
-
-class WorkSpacePrep_ObsDist_General:
-
-    def __setitem__(self, item:VarKey, obs_dist:Distribution) -> None:
-
-        if self.comp.phase == Phase.Prior:
-            assert item not in self.comp.storage_nd
-            assert observation(item) not in self.comp.storage_nd
-            assert observation_valid(observation(item)) not in self.comp.storage_nd
-            # TODO: assignments of ^^ should also
-            # raise errors if storage_dist[observation(item)] is set,
-            # as I believe they are mathematically mutually exclusive
-
-            self.comp.storage_dist[observation(item)] = obs_dist
-
-            # must be defined already
-            prior_dist = self.comp.storage_dist[item]
-            obs_weight = self.comp.storage_nd[observation_weight(observation(item))]
-
-            expected_log_prob_plus_const = -kl_divergence(obs_dist, prior_dist)
-            numpyro.factor(self.comp.sample_site(item),
-                           obs_weight * expected_log_prob_plus_const)
-        else:
-            pass
-
-
-class WorkSpacePrep_ObsWeight_Attr:
-
-    ws_od: WorkSpaceProc_ObsWeight
-    comp: Computation
-
-    def __init__(self, ws_od:WorkSpaceProc_ObsWeight):
-        self.ws_od = ws_od
-        self.comp = self.ws_od.ws.comp
-
-
-class WorkSpacePrep_ObsWeight_General:
-
-    def __setitem__(self, item:VarKey, obs_weight:ArrayLike) -> None:
-        self.comp.storage_nd[observation_weight(observation(item))] = obs_weight
-
-
-class WorkSpacePrep_Shape_General:
-
-    def __getitem__(self, item:str|ElementGeneralKey) -> list[int|NdarrayDim]:
-        if isinstance(item, str):
-            var_key = self.ws_shp.ws._general_key(item)
-        else:
-            var_key = item
-        del item
-        vm = self.comp.model.mv.general_nd[var_key]
-        prior_shape = vm.definition_metadata.value_type.shape
-        if self.comp.phase == Phase.Prior:
-            rval = []
-            for shape_ii in prior_shape:
-                if isinstance(shape_ii, int):
-                    rval.append(shape_ii)
-                elif shape_ii == years_dim:
-                    rval.append(self.comp.n_years)
-                else:
-                    raise NotImplementedError(shape_ii)
-            return rval
-        else:
-            assert self.comp.phase == Phase.Posterior
-            # shape could be same as prior shape
-            # or left-extended with 1 for broadcasting over mcmc dim
-            # or left-extended with mcmc_dim
-            # ... it might be worth offering a way to provide a hint
-            # in the @define because otherwise I don't think it's knowable
-            # prior to having the actual value to check.
-            if var_key in self.comp.storage_nd:
-                return list(self.comp.storage_nd[var_key].shape)
-            else:
-                raise NotImplementedError(var_key)
-
-

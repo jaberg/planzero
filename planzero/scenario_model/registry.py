@@ -180,8 +180,11 @@ def registry_compute_model(
         rng_key, tmp_key = jrandom.split(rng_key)
         map_args.append((model_name, mcmc_group, submodel, tmp_key))
 
-    with multiprocessing.Pool(N_MCMC_WORKERS) as pool:
-        saved_sites_list = pool.map(compute_mcmc_submodel_map, map_args)
+    if N_MCMC_WORKERS > 1:
+        with multiprocessing.Pool(N_MCMC_WORKERS) as pool:
+            saved_sites_list = pool.map(compute_mcmc_submodel_map, map_args)
+    else:
+        saved_sites_list = [compute_mcmc_submodel_map(args) for args in map_args]
 
     saved_sample_sites = {}
     for ((mcmc_group, submodel), submodel_sample_sites) in zip(

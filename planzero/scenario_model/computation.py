@@ -1019,6 +1019,7 @@ def define(
     def deco(f):
         if not hasattr(f, _deco_attr_define):
             setattr(f, _deco_attr_define, {})
+        # doesn't work for property, which won't have resolved yet
         assert var_key not in f.model_element_define
         ndm = NdarrayDefinitionMetadata_w_Properties(
                 value_type=NdarrayType_w_Properties(
@@ -1033,13 +1034,14 @@ def define(
 _deco_attr_annual = 'model_element_annual_step'
 
 def define_annual(
-        var_key:str|VarKey, *,
+        var_key:str|VarKey|property, *,
         annual_shape:list[int|NdarrayDim],
         dtype:str='float64',
         ):
     def deco(f):
         if not hasattr(f, _deco_attr_annual):
             setattr(f, _deco_attr_annual, {})
+        # doesn't work for property, which won't have resolved yet
         assert var_key not in f.model_element_annual_step
         ndm = NdarrayDefinitionMetadata(
                 value_type=NdarrayType(
@@ -1096,6 +1098,13 @@ class ModelElement:
                 elem_id=self.identifier,
                 name=name)
 
+    def annual_key(self, name:str) -> ElementAnnualKey:
+        if name == "":
+            raise NotImplementedError("name should not be empty")
+        return ElementAnnualKey(
+                elem_id=self.identifier,
+                name=name)
+
     @property
     def version_id(self) -> VersionID:
         raise NotImplementedError(self)
@@ -1146,6 +1155,7 @@ def _resolve_properties_ndarray_definition(
         return NdarrayType(
                 shape=shape_fn(value_type.shape),
                 dtype=value_type.dtype)
+
     return NdarrayDefinitionMetadata(
             value_type=value_type_fn(ndmp.value_type),
             subphase=ndmp.subphase)
@@ -1238,10 +1248,12 @@ class ScenarioModel:
                 raise NotImplementedError(var_key)
 
 
-    def _add_define_annual_d(self, element_id, defining_subphase, annual_d):
+    def _add_define_annual_d(self, element:ModelElement, defining_subphase, annual_d):
+        element_id = element.identifier
         def add_var_key_ndm(var_key:ElementAnnualKey, ndm):
             self.mv.general_nd[var_key] = NdarrayVariableMetadata(
-                    definition_metadata=ndm,
+                    definition_metadata=_resolve_properties_ndarray_definition(
+                        element_id, ndm),
                     defining_element_id=element_id,
                     defining_subphase=defining_subphase)
 
@@ -1266,6 +1278,18 @@ class ScenarioModel:
                             elem_id=element_id,
                             name=var_key),
                         ndm)
+            elif isinstance(var_key, property):
+                var_key_prop = var_key.__get__(element, type(element))
+                if isinstance(var_key_prop, ElementAnnualKey):
+                    add_var_key_ndm(var_key_prop, ndm)
+                elif isinstance(var_key_prop, dict):
+                    for int_key in var_key_prop.values():
+                        if isinstance(int_key, ElementAnnualKey):
+                            add_var_key_ndm(int_key, ndm)
+                        else:
+                            raise NotImplementedError(int_key)
+                else:
+                    raise NotImplementedError(var_key_prop)
             else:
                 raise NotImplementedError(var_key)
 
@@ -1323,6 +1347,8 @@ class ScenarioModel:
         assert element.identifier not in self.model_elements, element.identifier
         self.model_elements[element.identifier] = element
         self.mcmc_group_by_elemid[element.identifier] = mcmc_group
+
+        # general variables, not annual, not carry
         self._add_define_d(
                 element,
                 Subphase.Prep,
@@ -1337,6 +1363,7 @@ class ScenarioModel:
                 Subphase.Proc,
                 getattr(element.model_element_postprocess_posterior_only, _deco_attr_define, {}))
 
+        # carry variables
         self._add_define_carry_d(
                 element.identifier,
                 getattr(element.model_element_prepare, _deco_attr_carry, {}))
@@ -1344,20 +1371,21 @@ class ScenarioModel:
         assert not hasattr(element.model_element_postprocess, _deco_attr_carry)
         assert not hasattr(element.model_element_postprocess_posterior_only, _deco_attr_carry)
 
+        # scan-length annual timeseries
         self._add_define_annual_d(
-                element.identifier,
+                element,
                 Subphase.Prep,
                 getattr(element.model_element_prepare, _deco_attr_annual, {}))
         self._add_define_annual_d(
-                element.identifier,
+                element,
                 Subphase.Step,
                 getattr(element.model_element_annual_step, _deco_attr_annual, {}))
         self._add_define_annual_d(
-                element.identifier,
+                element,
                 Subphase.Proc,
                 getattr(element.model_element_postprocess, _deco_attr_annual, {}))
         self._add_define_annual_d(
-                element.identifier,
+                element,
                 Subphase.Proc,
                 getattr(element.model_element_postprocess_posterior_only, _deco_attr_annual, {}))
 

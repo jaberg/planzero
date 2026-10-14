@@ -1,10 +1,12 @@
 import jax.numpy as jnp
 import numpy as np
 
-from .nir2025 import near_zero_sector_ghgs
 from .enums import GHG, PT, IPCC_Sector
+from .nir2025 import near_zero_sector_ghgs
+from .p_emissions_below_thresh import PEmissionsBelowThresh
+from .prenir_element import PreNIR_ModelElement
 from .regional_total_emissions_element import PseudoRegion, RegionalTotalEmissionsVarKey
-from .scenario_model import Computation, GeneralKey, ScenarioModel
+from .scenario_model import AnnualKey, Computation, GeneralKey, ScenarioModel
 from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsVarKey
 
 
@@ -35,14 +37,14 @@ class NIR_ScenarioModel(ScenarioModel):
             sector:IPCC_Sector,
             ghg:GHG,
             pt:PT|PseudoRegion,
-            ) -> GeneralKey:
+            ) -> AnnualKey|GeneralKey:
         raise NotImplementedError()
 
     def ktCO2e_var_key_sector_region(
             self,
             sector:IPCC_Sector,
             region:PT|PseudoRegion,
-            ) -> GeneralKey:
+            ) -> AnnualKey|GeneralKey:
         return regional_total_emissions_var_key(sector, region)
 
     def ktCO2e_var_key_sector(
@@ -111,3 +113,22 @@ class NIR_ScenarioModel(ScenarioModel):
                 'scores_ca': scores_ca,
                 }
         return rval
+
+    def add_element_prenir_2025_m04(self, **kwargs):
+        self.add_element(
+                PreNIR_ModelElement(
+                    nir_year=2025,
+                    months_ahead=4,
+                    **kwargs),
+                mcmc_group=None)
+
+
+    # P-Emissions-Below-Thresh
+
+    def add_element_p_net_zero_2050(self, **kwargs):
+        self.add_element(
+                PEmissionsBelowThresh(
+                    prediction_year=2050,
+                    thresh_ktCO2e=0.0,
+                    **kwargs),
+                mcmc_group=None)

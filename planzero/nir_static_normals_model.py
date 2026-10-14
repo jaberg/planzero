@@ -13,15 +13,15 @@ from .nir2025 import (
 )
 from .nir2025_model import NIR2025_ModelElement
 from .nir_model import NIR_ScenarioModel, PseudoRegion
-from .prenir_element import PreNIR_ModelElement
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
+    AnnualKey,
     GeneralKey,
     ModelElement,
     Phase,
     Workspace,
     define,
-    years_dim,
+    define_annual,
 )
 from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsElement
 
@@ -32,8 +32,8 @@ class StaticNormals_ModelElement(ModelElement):
     ghg: GHG
     _unit_ca_key: GeneralKey
     _unit_pt_keys: dict[PT, GeneralKey]
-    _ktCO2e_ca_key: GeneralKey
-    _ktCO2e_pt_keys: dict[PT, GeneralKey]
+    _ktCO2e_ca_key: AnnualKey
+    _ktCO2e_pt_keys: dict[PT, AnnualKey]
     _fit_to_data:bool
 
     def __init__(self,
@@ -57,10 +57,10 @@ class StaticNormals_ModelElement(ModelElement):
                     f'unit_{self.sector.value}_{self.ghg.value}_{pt.value}')
                 for pt in PT if pt != PT.XX}
 
-        self._ktCO2e_ca_key = self.general_key(
+        self._ktCO2e_ca_key = self.annual_key(
                 f'ktCO2e_{self.sector.value}_{self.ghg.value}_ca')
         self._ktCO2e_pt_keys = {
-                pt: self.general_key(
+                pt: self.annual_key(
                     f'ktCO2e_{self.sector.value}_{self.ghg.value}_{pt.value}')
                 for pt in PT if pt != PT.XX}
 
@@ -95,19 +95,19 @@ class StaticNormals_ModelElement(ModelElement):
         return self._unit_pt_keys
 
     @property
-    def ktCO2e_ca_key(self) -> GeneralKey:
+    def ktCO2e_ca_key(self) -> AnnualKey:
         return self._ktCO2e_ca_key
 
     @property
-    def ktCO2e_pt_keys(self) -> dict[PT, GeneralKey]:
+    def ktCO2e_pt_keys(self) -> dict[PT, AnnualKey]:
         return self._ktCO2e_pt_keys
 
     @define('mu', prior_shape=[n_regions])
     @define('sigma_pt', prior_shape=[n_regions])
     @define(unit_ca_key, prior_shape=[])
     @define(unit_pt_keys, prior_shape=[])
-    @define(ktCO2e_ca_key, prior_shape=[years_dim])
-    @define(ktCO2e_pt_keys, prior_shape=[years_dim])
+    @define_annual(ktCO2e_ca_key, annual_shape=[])
+    @define_annual(ktCO2e_pt_keys, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         assert n_regions == len(self.unit_pt_keys)
 
@@ -143,7 +143,7 @@ class StaticNormals_ModelElement(ModelElement):
 
             if ws.phase == Phase.Posterior:
                 # predictions for future years
-                ws.dist.general[self.ktCO2e_pt_keys[pt]] = dist.Normal(
+                ws.dist.annual[self.ktCO2e_pt_keys[pt]] = dist.Normal(
                         as_years * emission_scale * ws.val.general['mu'][ii],
                         as_years * emission_scale * ws.val.general['sigma_pt'][ii])
 
@@ -159,7 +159,7 @@ class StaticNormals_ModelElement(ModelElement):
             # which are distinct rather than scaled random variables
             # relative to the unit_ca_key, because unit_ca_key
             # refers to previous, observed years' emissions
-            ws.dist.general[self.ktCO2e_ca_key] = dist.Normal(
+            ws.dist.annual[self.ktCO2e_ca_key] = dist.Normal(
                     as_years * emission_scale * mu_ca,
                     as_years * emission_scale * sigma_ca)
 
@@ -192,6 +192,7 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                 (sector, pt): {}
                 for sector in IPCC_Sector for pt in PT if PT != PT.XX}
         sector_ghg_nir_keys:dict = {}
+        pbt_keys:dict = {}
         nir_years_key = None
         for sector in IPCC_Sector:
             for ghg in GHG:
@@ -216,6 +217,7 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                                 fit_to_data=fit_to_data)
                     self.add_element(snorm_elem, mcmc_group=mcmc_group)
                     sector_ghg_subtotal_keys[sector][ghg] = snorm_elem.ktCO2e_ca_key
+                    pbt_keys[sector, ghg] = snorm_elem.ktCO2e_ca_key
 
                     nir_d = sector_ghg_nir_keys[sector, ghg] = {}
                     nir_d[PseudoRegion.NationalTotal] = nir_elem.ca_key
@@ -240,21 +242,21 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                     ),
                 mcmc_group=None)
 
-        self.add_element(
-                PreNIR_ModelElement(
-                    nir_year=2025,
-                    months_ahead=4,
-                    nir_years_key=nir_years_key,
-                    sector_ghg_nir_keys=sector_ghg_nir_keys,
-                    sector_ghg_subtotal_keys=sector_ghg_subtotal_keys,
-                    sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
-                    expect_all_sectors=(sectors==IPCC_Sector),
-                    ),
-                mcmc_group=None)
+        self.add_element_prenir_2025_m04(
+                nir_years_key=nir_years_key,
+                sector_ghg_nir_keys=sector_ghg_nir_keys,
+                sector_ghg_subtotal_keys=sector_ghg_subtotal_keys,
+                sector_region_ghg_subtotal_keys=sector_region_ghg_subtotal_keys,
+                expect_all_sectors=(sectors==IPCC_Sector),
+                )
+
+        self.add_element_p_net_zero_2050(
+                ktCO2e_normal_keys_by_sector_ghg=pbt_keys,
+                )
 
 
     # NIR_ScenarioModel requirement
-    def ktCO2e_var_key_sector_ghg_region(self, sector, ghg, pt) -> GeneralKey:
+    def ktCO2e_var_key_sector_ghg_region(self, sector, ghg, pt) -> AnnualKey:
         elem_id = StaticNormals_ModelElement.element_identifier(sector, ghg)
         model_elem = self.model_elements[elem_id]
         if isinstance(model_elem, StaticNormals_ModelElement):
