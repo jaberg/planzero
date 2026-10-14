@@ -13,6 +13,7 @@ env:
   GITHUB_WORKSPACE: "${{ github.workspace }}"  # used for glossary code lookup
   JAX_ENABLE_X64: "1"
   JAX_CHECK_STATIC_INDICES: "1"
+  MKL_NUM_THREADS: "1"
   OMP_NUM_THREADS: "1"
   OPENBLAS_NUM_THREADS: "1"
   PLANZERO_APP_CACHE_DIR: "${{ github.workspace }}/_planzero_app_cache"
@@ -64,7 +65,7 @@ jobs:
       - name: Restore inference cache for Static_Normals_2024_12_31
         uses: actions/cache/restore@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/Static_Normals_2024_12_31
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/Static_Normals_2024_12_31
           key: Static_Normals_2024_12_31
 
       - name: Perform Static Normals inference
@@ -73,7 +74,7 @@ jobs:
       - name: Save inference cache for Static_Normals_2024_12_31
         uses: actions/cache/save@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_CACHE_ROOT }}/Static_Normals_2024_12_31
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/Static_Normals_2024_12_31
           key: Static_Normals_2024_12_31
 
       # TODO: cache this when it stabilizes
