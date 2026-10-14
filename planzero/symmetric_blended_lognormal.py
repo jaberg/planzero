@@ -69,7 +69,7 @@ class SymmetricBlendedLogNormal(Distribution):
 
     def __init__(self, mu=0, scale_neg=.1, scale_norm=1.0, scale_pos=.1,
                  transition_rate=1.0, norm_dominance=10.0, deadzone=1,
-                 validate_args=None):
+                 validate_args=None, dtype=jnp.float64):
         """mu is the mean of the distribution """
 
         # transition_rate dictates how sharply the mixture switches
@@ -77,8 +77,13 @@ class SymmetricBlendedLogNormal(Distribution):
         (self.mu, self.scale_neg, self.scale_norm, self.scale_pos,
          self.transition_rate, self.norm_dominance, self.deadzone) = \
             promote_shapes(
-                mu, scale_neg, scale_norm, scale_pos,
-                transition_rate, norm_dominance, deadzone)
+                jnp.array(mu, dtype=dtype),
+                jnp.array(scale_neg, dtype=dtype),
+                jnp.array(scale_norm, dtype=dtype),
+                jnp.array(scale_pos, dtype=dtype),
+                jnp.array(transition_rate, dtype=dtype),
+                jnp.array(norm_dominance, dtype=dtype),
+                jnp.array(deadzone, dtype=dtype))
 
         batch_shape = jnp.shape(self.mu)
         super().__init__(
@@ -98,6 +103,44 @@ class SymmetricBlendedLogNormal(Distribution):
             kwargs[name] = broadcasted[item]
         kwargs["validate_args"] = self._validate_args
         return type(self)(**kwargs)
+
+    @property
+    def variance(self) -> jnp.ndarray:
+        # Analytic mixture variance of the three components. This mirrors the
+        # moment calculation used by the mixture, including the log-normal
+        # component moments (which depend on each component's own scale, not
+        # only on the active-log-normal loc).
+        log_weights = self._get_log_weights()
+        weights = jnp.exp(log_weights)  # batch_shape + (3,)
+
+        log_loc = self._active_lognormal_mu()
+
+        # Negative log-normal component (negated).
+        mean_neg = -jnp.exp(log_loc + 0.5 * self.scale_neg ** 2)
+        var_neg = (jnp.exp(self.scale_neg ** 2) - 1.0) * jnp.exp(
+            2.0 * log_loc + self.scale_neg ** 2)
+
+        # Normal component.
+        mean_norm = self.mu
+        var_norm = self.scale_norm ** 2
+
+        # Positive log-normal component.
+        mean_pos = jnp.exp(log_loc + 0.5 * self.scale_pos ** 2)
+        var_pos = (jnp.exp(self.scale_pos ** 2) - 1.0) * jnp.exp(
+            2.0 * log_loc + self.scale_pos ** 2)
+
+        comp_means = jnp.stack([mean_neg, mean_norm, mean_pos], axis=-1)
+        comp_second_moments = jnp.stack(
+            [var_neg + mean_neg ** 2,
+             var_norm + mean_norm ** 2,
+             var_pos + mean_pos ** 2],
+            axis=-1)
+
+        mix_mean = jnp.sum(weights * comp_means, axis=-1)
+        mix_second = jnp.sum(weights * comp_second_moments, axis=-1)
+        eps = 0 # 1e-20
+        raw_rval = mix_second - mix_mean ** 2
+        return jnp.where(raw_rval > eps, raw_rval, eps)
 
     def _get_log_weights(self):
         # Create logits that shift dominance based on the sign and magnitude of mu
@@ -246,7 +289,7 @@ def _uniform_normal_mixture_log_prob(
 
 
 @jax.jit(static_argnames=['n_quad'])
-def kl_divergence_uniform_normal_mixture(
+def kl_divergence_uniform_normal_mixture_quad_q(
         p,  # SymmetricBlendedLogNormal, with 
         q_mu,  # (M,) + p.batch_shape mixture component means
         q_sigma,  # (M,) + p.batch_shape mixture component scales
@@ -255,11 +298,12 @@ def kl_divergence_uniform_normal_mixture(
     """Deterministic estimate of KL divergence from P to a uniform mixture
     of normals Q(x) = (1/M) * sum_m N(x | q_mu[m], q_sigma[m]).
 
-    Instead of a Monte-Carlo estimate, the KL is decomposed exactly over P's
-    three mixture components,
+    Instead of a Monte-Carlo estimate, the KL divergence,
 
         KL[P || Q] = sum_c w_c * E_{C_c}[ log P - log Q ],
 
+    is decomposed over P's
+    three mixture components
     and each expectation is evaluated with Gauss-Hermite quadrature on the
     component's natural coordinates:
         - normal component:        x = mu + scale_norm * t
@@ -325,6 +369,73 @@ def kl_divergence_uniform_normal_mixture(
     return rval
 
 
+def _uniform_normal_mixture_variance(q_mu, q_sigma):
+    q_mu = jnp.asarray(q_mu)
+    q_sigma = jnp.asarray(q_sigma)
+    mix_mean = jnp.mean(q_mu, axis=0)
+    mix_second = jnp.mean(q_sigma ** 2 + q_mu ** 2, axis=0)
+    return mix_second - mix_mean ** 2
+
+
+def kl_divergence_uniform_normal_mixture_quad_p(
+        p,
+        q_mu,
+        q_sigma,
+        n_quad: int = 64,
+        ) -> jnp.ndarray:
+    # An alternate quadrature route that approximates the expectation over P
+    # by a single moment-matched Gaussian with P's mixture mean and variance.
+    # This is useful when the SBLN is the more concentrated distribution and
+    # component-tailored nodes may not cover the relevant region well.
+    p_shape = p.batch_shape
+    v_nodes, v_weights = _gauss_hermite(n_quad)
+
+    # Moment-match P.
+    p_mean = p.mu
+    p_std = jnp.sqrt(p.variance)
+
+    nodes = v_nodes.reshape((-1,) + (1,) * len(p_shape))
+    weights_arr = v_weights.reshape((-1,) + (1,) * len(p_shape))
+    x = p_mean + p_std * nodes
+
+    # Re-weight the Gauss-Hermite nodes according to the ratio of the density
+    # of P to the density of the Gaussian approximation used by the nodes.
+    # Without this factor, the quadrature approximates an expectation under
+    # the approximating Gaussian instead of under P.
+    t_nodes = v_nodes.reshape((-1,) + (1,) * len(p_shape))
+    std_normal_log_prob = -0.5 * (t_nodes ** 2) - 0.5 * jnp.log(2.0 * jnp.pi)
+    log_ratio = p.log_prob(x) - std_normal_log_prob
+    importance_weights_unnorm = weights_arr * jnp.exp(log_ratio)
+    importance_weights = importance_weights_unnorm / importance_weights_unnorm.sum()
+
+    def f(xval):
+        return p.log_prob(xval) - _uniform_normal_mixture_log_prob(
+            jnp.asarray(q_mu), jnp.asarray(q_sigma), xval)
+
+    integrand = f(x)
+    kl = (importance_weights * integrand).sum(axis=0)
+    rval = jnp.maximum(kl, 0.0)
+    assert rval.shape == p_shape
+    return rval
+
+
+def kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad: int = 64):
+    kl_q = kl_divergence_uniform_normal_mixture_quad_q(
+        p, q_mu, q_sigma, n_quad=n_quad)
+    kl_p = kl_divergence_uniform_normal_mixture_quad_p(
+        p, q_mu, q_sigma, n_quad=n_quad)
+    p_var = p.variance
+    q_var = _uniform_normal_mixture_variance(q_mu, q_sigma)
+    # smoothly transition between the two implementations
+    indicator = p_var - q_var / (p_var + q_var)
+    coef = jnp.tanh(indicator) / 2 + .5
+    rval = (
+        coef * kl_q # when p is broader, use points in q
+        + (1 - coef) * kl_p # otherwise use kl from points in p
+        )
+    return rval
+
+
 @kl.dispatch(dist.TransformedDistribution, dist.Normal)
 def kl_divergence(p:dist.TransformedDistribution, q:dist.Normal) -> jnp.ndarray:
     if (len(p.transforms) == 1
@@ -357,7 +468,7 @@ def kl_divergence(p:SymmetricBlendedLogNormal, q:dist.Normal) -> jnp.ndarray:  #
                 p,
                 q_mu=jnp.array(q.loc)[(None,) * n_missing_dims],
                 q_sigma=jnp.array(q.scale)[(None,) * n_missing_dims],
-                n_quad=48,
+                n_quad=32,
                 )
         assert rval.shape == p.batch_shape
         return rval

@@ -12,7 +12,7 @@ from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions import Distribution, kl
-from numpyro.infer import MCMC, NUTS
+from numpyro.infer import MCMC, NUTS, init_to_sample
 
 from .base import (
     ElementAnnualKey,
@@ -966,7 +966,10 @@ def run_mcmc(
     else:
         rng_key = seed
     mcmc = MCMC(
-            NUTS(trace_fn),
+            NUTS(trace_fn,
+                 target_accept_prob=0.95,
+                 init_strategy=init_to_sample,
+                 ),
             num_warmup=model.num_warmup,
             thinning=model.thinning,
             num_samples=model.num_samples,

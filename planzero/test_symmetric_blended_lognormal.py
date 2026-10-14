@@ -6,6 +6,8 @@ import numpyro.distributions as dist
 from .symmetric_blended_lognormal import (
     SymmetricBlendedLogNormal,
     kl_divergence_uniform_normal_mixture,
+    kl_divergence_uniform_normal_mixture_quad_p,
+    kl_divergence_uniform_normal_mixture_quad_q,
 )
 
 
@@ -56,13 +58,15 @@ def test_kl_converges_with_quadrature_order():
     p = SymmetricBlendedLogNormal.rolloff_relerr(
             mu=50, rolloff=5, relerr=.2)
     q_mu = jnp.array([30.0, 50.0, 70.0, 90.0])
-    q_sigma = jnp.array([12.0, 12.0, 12.0, 12.0])
+    q_sigma = jnp.array([1.0, 12.0, 12.0, 120.0])
+    kl_16 = kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad=16)
     kl_32 = kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad=32)
     kl_64 = kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad=64)
     kl_128 = kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad=128)
     assert bool(jnp.all(jnp.isfinite(jnp.stack([kl_32, kl_64, kl_128]))))
-    assert float(jnp.abs(kl_64 - kl_128)) < 1e-6, (kl_64, kl_128)
-    assert float(jnp.abs(kl_32 - kl_64)) < 1e-3, (kl_32, kl_64)
+    assert float(jnp.abs(kl_64 - kl_128)) < 1e-11, (kl_64, kl_128)
+    assert float(jnp.abs(kl_32 - kl_64)) < 1e-10, (kl_32, kl_64)
+    assert float(jnp.abs(kl_16 - kl_32)) < 1e-8, (kl_16, kl_32)
 
 
 def test_kl_agrees_with_monte_carlo():
@@ -73,7 +77,9 @@ def test_kl_agrees_with_monte_carlo():
     q_mu = jnp.array([15.0, 30.0, 45.0])
     q_sigma = jnp.array([16.0, 16.0, 16.0])
 
-    kl = kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad=128)
+    kl_q = kl_divergence_uniform_normal_mixture_quad_q(p, q_mu, q_sigma, n_quad=128)
+    kl_p = kl_divergence_uniform_normal_mixture_quad_p(p, q_mu, q_sigma, n_quad=128)
+    kl_blend = kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad=128)
 
     x = p.sample(rng_key, sample_shape=(1_000_000,))
     log_p = p.log_prob(x)
@@ -82,9 +88,10 @@ def test_kl_agrees_with_monte_carlo():
     log_q = jax.nn.logsumexp(log_q, axis=0) - jnp.log(M)
     kl_mc = (log_p - log_q).mean()
 
-    assert jnp.isfinite(kl) and jnp.isfinite(kl_mc)
-    assert float(jnp.abs(kl - kl_mc)) < 0.02, (kl, kl_mc)
-    assert 1.85 < kl < 1.86
+    for kl in [kl_p, kl_q, kl_blend]:
+        assert jnp.isfinite(kl) and jnp.isfinite(kl_mc)
+        assert float(jnp.abs(kl - kl_mc)) < 0.02, (kl, kl_mc)
+        assert 1.85 < kl < 1.86
 
 
 def test_affine_dispatch():

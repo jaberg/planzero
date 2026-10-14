@@ -81,7 +81,10 @@ class StaticNormals_ModelElement(ModelElement):
                     self._fit_to_data,
                     # 1.2, accidentally using whole arr_ca rms not just sector/ghg
                     #1.3, # mcmc works using larger 10ktCO2e "near zero" nir2025
-                    1.4, # no more sigma_ca, relate it to sigma_pt
+                    #1.4, # no more sigma_ca, relate it to sigma_pt
+                    # 1.5, # n_quad=16 with quad_p and quad_q blend
+                    # 1.6, # n_quad=16 with just quad_p
+                    1.8, # centered priors, 1000 warmup steps
                     )
         else:
             return (1, self._fit_to_data)
@@ -111,18 +114,54 @@ class StaticNormals_ModelElement(ModelElement):
     def model_element_postprocess(self, ws:Workspace):
         assert n_regions == len(self.unit_pt_keys)
 
-        _, arr_ca = ktCO2e_dense_w_nan()
+        # it's cheating to use data here, but
+        # the scales are so wildly different it's hard to avoid
+        # sharp curvatures without putting each PT on its own scale
+        arr_pt, arr_ca = ktCO2e_dense_w_nan()
+
+        # TODO: we don't even use emission_scale anymore
         emission_scale = np.sqrt(
                 np.mean(
                     arr_ca[idx_of_sector[self.sector],
                            idx_of_ghg[self.ghg],
                            ] ** 2))
+        pt_mean = np.nanmean(
+                arr_pt[idx_of_sector[self.sector], idx_of_ghg[self.ghg]],
+                dtype=np.float64,
+                axis=1)
+        pt_var = np.nanvar(
+                arr_pt[idx_of_sector[self.sector], idx_of_ghg[self.ghg]],
+                dtype=np.float64,
+                axis=1)
+        assert pt_var.shape == (n_regions,)
+        relative_pt_mean = []
+        relative_pt_scale = []
+        for pt_var_ii, pt_mean_ii in zip(pt_var, pt_mean):
+            if np.isfinite(pt_var_ii):
+                relative_pt_scale.append(
+                        max(np.sqrt(pt_var_ii), 5)
+                        / emission_scale)
+                relative_pt_mean.append(pt_mean_ii / emission_scale)
+            else:
+                relative_pt_scale.append(5 / emission_scale)
+                relative_pt_mean.append(5 / emission_scale)
 
-        ws.dist.general['mu'] = dist.Normal(0.0, 1.0).expand((n_regions,))
-        ws.dist.general['sigma_pt'] = dist.LogNormal(-1.0, 0.7).expand((n_regions,))
-        sigma_ca = jnp.sqrt((ws.val.general['sigma_pt'] ** 2).sum(axis=0))
+        ws.dist.general['mu'] = dist.Normal().expand_by((n_regions,))
+        ws.dist.general['sigma_pt'] = dist.LogNormal().expand_by((n_regions,))
 
-        mu_ca = ws.val.general['mu'].sum(axis=0) # over regions
+        jnp_rel_pt_loc = jnp.array(relative_pt_mean, dtype=jnp.float64).reshape(
+                (n_regions,) + ws.mcmc_broadcast_shape)
+        jnp_rel_pt_scale = jnp.array(relative_pt_scale, dtype=jnp.float64).reshape(
+                (n_regions,) + ws.mcmc_broadcast_shape)
+
+        emission_scale_mu = (
+                ws.val.general['mu'] * jnp_rel_pt_scale
+                + jnp_rel_pt_loc)
+        emission_scale_sigma = (
+                ws.val.general['sigma_pt'] * jnp_rel_pt_scale)
+
+        sigma_ca = jnp.sqrt((emission_scale_sigma ** 2).sum(axis=0))
+        mu_ca = emission_scale_mu.sum(axis=0)
 
         squish = dist.transforms.AffineTransform(loc=0, scale=1/emission_scale)
         as_years = jnp.ones((ws.n_years,) + ws.mcmc_broadcast_shape)
@@ -138,14 +177,14 @@ class StaticNormals_ModelElement(ModelElement):
                         squish)
 
             ws.dist.general[unit_key] = dist.Normal(
-                    ws.val.general['mu'][ii],
-                    ws.val.general['sigma_pt'][ii])
+                    emission_scale_mu[ii],
+                    emission_scale_sigma[ii])
 
             if ws.phase == Phase.Posterior:
                 # predictions for future years
                 ws.dist.annual[self.ktCO2e_pt_keys[pt]] = dist.Normal(
-                        as_years * emission_scale * ws.val.general['mu'][ii],
-                        as_years * emission_scale * ws.val.general['sigma_pt'][ii])
+                        as_years * emission_scale * emission_scale_mu[ii],
+                        as_years * emission_scale * emission_scale_sigma[ii])
 
         if self._fit_to_data:
             ws.obs_weight.general[self.unit_ca_key] = obs_weight
@@ -183,8 +222,8 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                 first_year=1990,
                 n_prior_years=last_observed_nir_year + 1 - 1990,
                 n_posterior_years=last_forecast_year + 1 - 1990,
-                num_warmup=250,
-                num_samples=250,
+                num_warmup=1500,
+                num_samples=1000,
                 )
         self.data_cutoff = data_cutoff
         sector_ghg_subtotal_keys = {sector: {} for sector in IPCC_Sector}
