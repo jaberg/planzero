@@ -80,7 +80,8 @@ class StaticNormals_ModelElement(ModelElement):
             return (1,
                     self._fit_to_data,
                     # 1.2, accidentally using whole arr_ca rms not just sector/ghg
-                    1.3,
+                    #1.3, # mcmc works using larger 10ktCO2e "near zero" nir2025
+                    1.4, # no more sigma_ca, relate it to sigma_pt
                     )
         else:
             return (1, self._fit_to_data)
@@ -103,7 +104,6 @@ class StaticNormals_ModelElement(ModelElement):
 
     @define('mu', prior_shape=[n_regions])
     @define('sigma_pt', prior_shape=[n_regions])
-    @define('sigma_ca', prior_shape=[])
     @define(unit_ca_key, prior_shape=[])
     @define(unit_pt_keys, prior_shape=[])
     @define(ktCO2e_ca_key, prior_shape=[years_dim])
@@ -120,7 +120,7 @@ class StaticNormals_ModelElement(ModelElement):
 
         ws.dist.general['mu'] = dist.Normal(0.0, 1.0).expand((n_regions,))
         ws.dist.general['sigma_pt'] = dist.LogNormal(-1.0, 0.7).expand((n_regions,))
-        ws.dist.general['sigma_ca'] = dist.LogNormal(-1.0, 0.7)
+        sigma_ca = jnp.sqrt((ws.val.general['sigma_pt'] ** 2).sum(axis=0))
 
         mu_ca = ws.val.general['mu'].sum(axis=0) # over regions
 
@@ -152,9 +152,7 @@ class StaticNormals_ModelElement(ModelElement):
             ws.obs_dist.general[self.unit_ca_key] = dist.TransformedDistribution(
                     ws.dist.general[self.nir_ca_key],
                     squish)
-        ws.dist.general[self.unit_ca_key] = dist.Normal(
-                mu_ca,
-                ws.val.general['sigma_ca'])
+        ws.dist.general[self.unit_ca_key] = dist.Normal(mu_ca, sigma_ca)
 
         if ws.phase == Phase.Posterior:
             # predictions for future years
@@ -163,7 +161,7 @@ class StaticNormals_ModelElement(ModelElement):
             # refers to previous, observed years' emissions
             ws.dist.general[self.ktCO2e_ca_key] = dist.Normal(
                     as_years * emission_scale * mu_ca,
-                    as_years * emission_scale * ws.val.general['sigma_ca'])
+                    as_years * emission_scale * sigma_ca)
 
 
 class StaticNormals_ScenarioModel(NIR_ScenarioModel):

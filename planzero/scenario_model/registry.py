@@ -101,11 +101,12 @@ def compute_mcmc_submodel(
                 )
     version_hash:str = hash_version_id(submodel_version_id)
     if not sentinel_present(model_name, 'mcmc', mcmc_group, version_hash):
-        print('collecting sample sites for', model_name, mcmc_group, version_hash)
         comp = Computation(model=submodel, rng_key=jrandom.key(1))
         comp.run()
         print('running mcmc for', model_name, mcmc_group, version_hash)
-        mcmc = run_mcmc(submodel, seed=rng_key)
+        mcmc = run_mcmc(submodel,
+                        seed=rng_key,
+                        progress_bar=(N_MCMC_WORKERS==1))
         grouped_samples = mcmc.get_samples(group_by_chain=True)
         saved_sample_sites = {}
         for var_key, sample_site in comp.sample_sites.items():
