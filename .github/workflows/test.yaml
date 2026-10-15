@@ -20,7 +20,7 @@ env:
   PLANZERO_CACHE_DIR: "${{ github.workspace }}/_planzero_cache"
   PLANZERO_DATA: "${{ github.workspace }}/data"
   PLANZERO_MODEL_CACHE_ROOT: "_model_cache"
-  PLANZERO_MODEL_REGISTRY_ROOT: "_model_registry"
+  PLANZERO_MODEL_REGISTRY_ROOT: "${{ github.workspace }}/_model_registry"
   PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
   PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
   PLANZERO_USE_DISK_CACHE: "1"
@@ -65,7 +65,7 @@ jobs:
       - name: Restore inference cache for Static_Normals_2024_12_31
         uses: actions/cache/restore@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/Static_Normals_2024_12_31
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/model_Static_Normals_2024_12_31
           key: Static_Normals_2024_12_31
 
       - parallel:
@@ -81,7 +81,7 @@ jobs:
       - name: Save inference cache for Static_Normals_2024_12_31
         uses: actions/cache/save@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/Static_Normals_2024_12_31
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/model_Static_Normals_2024_12_31
           key: Static_Normals_2024_12_31
 
       # TODO: cache this when it stabilizes
