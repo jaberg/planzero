@@ -1,5 +1,5 @@
+import filelock
 import hashlib
-import multiprocessing
 import os
 import pickle
 
@@ -11,9 +11,6 @@ from .base import GroupedPosterior, VarKey
 from .computation import Computation, ScenarioModel, hash_version_id, run_mcmc
 
 MODEL_REGISTRY_ROOT = os.environ.get('PLANZERO_MODEL_REGISTRY_ROOT')
-
-N_MCMC_WORKERS = int(os.environ.get('PLANZERO_N_MCMC_WORKERS', '3'))
-assert N_MCMC_WORKERS > 0
 
 # filenames shouldn't be ridiculously long
 MAX_NAME_LEN = 100
@@ -107,7 +104,7 @@ def compute_mcmc_submodel(
         try:
             mcmc = run_mcmc(submodel,
                             seed=rng_key,
-                            progress_bar=(N_MCMC_WORKERS==1))
+                            progress_bar=True)
         except Exception as err:
             err.add_note(f'model_name {model_name}')
             err.add_note(f'mcmc_group {mcmc_group}')
@@ -128,8 +125,28 @@ def compute_mcmc_submodel(
     return saved_sample_sites
 
 
-def compute_mcmc_submodel_map(x):
-    return compute_mcmc_submodel(*x)
+def maybe_compute_mcmc_submodel(
+        model_name:str,
+        mcmc_group:str,
+        submodel:ScenarioModel,
+        rng_key:ArrayLike,
+        timeout:float,
+        ):
+    this_subsystem_version = 1.1
+    submodel_version_id = (
+            this_subsystem_version,
+            tuple(
+                [(elem_id, elem.version_id)
+                 for elem_id, elem in sorted(submodel.model_elements.items())]),
+                )
+    version_hash:str = hash_version_id(submodel_version_id)
+    lockpath = sentinel_path(model_name, 'mcmc', mcmc_group, version_hash)
+    lock = filelock.FileLock(lockpath + ".lock", timeout=timeout)
+    with lock:
+        return compute_mcmc_submodel(model_name=model_name,
+                                     mcmc_group=mcmc_group,
+                                     submodel=submodel,
+                                     rng_key=rng_key)
 
 
 def compute_posterior(
@@ -178,23 +195,40 @@ def registry_compute_model(
 
     os.makedirs(model_root(model_name), exist_ok=True)
 
-    # It should be possible to run this loop concurrently e.g. vmap
-    map_args = []
+    args_by_mcmc_group = {}
     for mcmc_group, submodel in submodels.items():
         # for saving MCMC re-sampling of sample sites
         rng_key, tmp_key = jrandom.split(rng_key)
-        map_args.append((model_name, mcmc_group, submodel, tmp_key))
+        args_by_mcmc_group[mcmc_group] = (model_name, mcmc_group, submodel, tmp_key)
 
-    if N_MCMC_WORKERS > 1:
-        with multiprocessing.Pool(N_MCMC_WORKERS) as pool:
-            saved_sites_list = pool.map(compute_mcmc_submodel_map, map_args)
-    else:
-        saved_sites_list = [compute_mcmc_submodel_map(args) for args in map_args]
+    saved_sites_d = {}
+    for passnum in range(10):
+        n_timeouts = 0
+        for mcmc_group, args in args_by_mcmc_group.items():
+            if mcmc_group not in saved_sites_d:
+                try:
+                    submodel_saved_sample_sites = maybe_compute_mcmc_submodel(
+                            *args,
+                            timeout=0)
+                    saved_sites_d[mcmc_group] = submodel_saved_sample_sites
+                except filelock.Timeout:
+                    n_timeouts += 1
+        if n_timeouts == 0:
+            # saved_sites_d is complete
+            break
+
+    # final pass where we wait for completion
+    # and timeouts are errors
+    for mcmc_group, args in args_by_mcmc_group.items():
+        if mcmc_group not in saved_sites_d:
+            submodel_saved_sample_sites = maybe_compute_mcmc_submodel(
+                    *args,
+                    timeout=-1)
+            saved_sites_d[mcmc_group] = submodel_saved_sample_sites
 
     saved_sample_sites = {}
-    for ((mcmc_group, submodel), submodel_sample_sites) in zip(
-            submodels.items(), saved_sites_list):
-        for key, site in submodel_sample_sites.items():
+    for submodel_saved_sample_sites in saved_sites_d.values():
+        for key, site in submodel_saved_sample_sites.items():
             assert key not in saved_sample_sites, key
             saved_sample_sites[key] = site
 

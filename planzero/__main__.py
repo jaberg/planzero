@@ -92,8 +92,6 @@ def main_inference_prep(args):
 
 
 def main_inference_work(args):
-    import multiprocessing
-    multiprocessing.set_start_method('spawn', force=True)
     completed_prob_registry()[args.model].registry_compute_model()
 
 

@@ -22,9 +22,8 @@ def nir2025_ca_quantile_bounds(sector:IPCC_Sector|PseudoSector, q):
 def nir2025_pt_quantile_bounds(sector:IPCC_Sector, ghg:GHG|None, q) -> dict[PT|PseudoRegion, dict[float, np.ndarray]]:
     site_model = NIR2025()
     comp = site_model.comp
-    regions = [pt for pt in PT if pt != PT.XX] + [PseudoRegion.NationalTotal]
     rval = {}
-    for region in regions:
+    for region in [pt for pt in PT if pt != PT.XX]:
         if ghg is None:
             var_key = site_model.scenario_model.ktCO2e_var_key_sector_region(
                     sector, region)
@@ -33,6 +32,13 @@ def nir2025_pt_quantile_bounds(sector:IPCC_Sector, ghg:GHG|None, q) -> dict[PT|P
                     sector, ghg, region)
         ktCO2e = comp.ndarray_d[var_key]
         rval[region] = dict(zip(q, np.quantile(ktCO2e, q=q, axis=1)))
+    if ghg is None:
+        var_key = site_model.scenario_model.ktCO2e_var_key_sector(sector)
+    else:
+        var_key = site_model.scenario_model.ktCO2e_var_key_sector_ghg_region(
+                sector, ghg, PseudoRegion.NationalTotal)
+    ktCO2e = comp.ndarray_d[var_key]
+    rval[PseudoRegion.NationalTotal] = dict(zip(q, np.quantile(ktCO2e, q=q, axis=1)))
     return rval
 
 

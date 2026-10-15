@@ -68,8 +68,15 @@ jobs:
           path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/Static_Normals_2024_12_31
           key: Static_Normals_2024_12_31
 
-      - name: Perform Static Normals inference
-        run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+      - parallel:
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+
+        - name: Perform Static Normals inference
+          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
         uses: actions/cache/save@v6
