@@ -129,6 +129,8 @@ def compute_mcmc_submodel(
         assert len(saved_sample_sites) == len(grouped_samples)
         sentinel_save(model_name, 'mcmc', mcmc_group, version_hash, saved_sample_sites)
     else:
+        if msg_prefix:
+            print(msg_prefix, 'skipping mcmc for', model_name, mcmc_group, version_hash)
         saved_sample_sites = sentinel_load(model_name, 'mcmc', mcmc_group, version_hash)
     return saved_sample_sites
 

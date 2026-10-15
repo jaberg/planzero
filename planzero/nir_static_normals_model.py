@@ -275,8 +275,10 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                 n_prior_years=last_observed_nir_year + 1 - 1990,
                 n_posterior_years=last_forecast_year + 1 - 1990,
                 num_warmup=1500,
-                num_samples=1000,
+                num_samples=500,
                 )
+        # num samples can be larger if scenario_model/computation.py
+        # can free some memory as it goes... as of writing, it does not.
         self.data_cutoff = data_cutoff
         sector_ghg_subtotal_keys = {sector: {} for sector in IPCC_Sector}
         sector_region_ghg_subtotal_keys = {
