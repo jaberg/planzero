@@ -97,7 +97,14 @@ def compute_mcmc_submodel(
                  for elem_id, elem in sorted(submodel.model_elements.items())]),
                 )
     version_hash:str = hash_version_id(submodel_version_id)
-    if not sentinel_present(model_name, 'mcmc', mcmc_group, version_hash):
+    do_mcmc = (
+        not sentinel_present(model_name, 'mcmc', mcmc_group, version_hash)
+        #or ('Fishing' in mcmc_group)
+        #or ('Black' in mcmc_group)
+        #or ('Ammonia' in mcmc_group)
+        #or ('Nitric' in mcmc_group)
+        )
+    if do_mcmc:
         comp = Computation(model=submodel, rng_key=jrandom.key(1))
         comp.run()
         print('running mcmc for', model_name, mcmc_group, version_hash)

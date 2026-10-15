@@ -13,6 +13,7 @@ from .nir2025 import (
 )
 from .nir2025_model import NIR2025_ModelElement
 from .nir_model import NIR_ScenarioModel, PseudoRegion
+from .prenir_element import PreNIR_ModelElement
 from .regional_total_emissions_element import RegionalTotalEmissionsElement
 from .scenario_model import (
     AnnualKey,
@@ -85,7 +86,10 @@ class StaticNormals_ModelElement(ModelElement):
                     # 1.5, # n_quad=16 with quad_p and quad_q blend
                     # 1.6, # n_quad=16 with just quad_p
                     #1.8, # centered priors, 1000 warmup steps
-                    1.9, # tweaked logic here, new ktCO2e dists, init_uniform, target_accept_prob way up at .995
+                    #1.9, # tweaked logic here, new ktCO2e dists, init_uniform, target_accept_prob way up at .995
+                    1.91, # <-- tweaked epsilon for fishing emissions
+                    # and also empirical_prior for nationally reported sectors
+
                     # Idea: if some PT contribs are too tiny, then just
                     #       cut their contribution to the national total
                     #       which may help remove divergences at default
@@ -110,38 +114,38 @@ class StaticNormals_ModelElement(ModelElement):
     def ktCO2e_pt_keys(self) -> dict[PT, AnnualKey]:
         return self._ktCO2e_pt_keys
 
-    @define('mu', prior_shape=[n_regions])
-    @define('sigma_pt', prior_shape=[n_regions])
-    @define(unit_ca_key, prior_shape=[])
-    @define(unit_pt_keys, prior_shape=[])
-    @define_annual(ktCO2e_ca_key, annual_shape=[])
-    @define_annual(ktCO2e_pt_keys, annual_shape=[])
-    def model_element_postprocess(self, ws:Workspace):
-        assert n_regions == len(self.unit_pt_keys)
+    def _empirical_prior_for_only_nationally_reported(self, ws):
+        # This different algorithm is used to get priors for
+        # sectors that are evidently not reported provincially.
+        # The provincial reports are all zero, no attempt to add up to
+        # national total.
+        _, arr_ca = ktCO2e_dense_w_nan()
+        ca_totals = arr_ca[idx_of_sector[self.sector], idx_of_ghg[self.ghg]]
 
+        ca_mean = np.mean(ca_totals)
+
+        # yes, return location and scale as same number
+        return (jnp.array(ca_mean / 13 / 2),
+                jnp.array(ca_mean / 13 / 2))
+
+    def _default_empirical_prior(self, ws):
         # it's cheating to use data here, but
         # the scales are so wildly different it's hard to avoid
         # sharp curvatures without putting each PT on its own scale
         arr_pt, arr_ca = ktCO2e_dense_w_nan()
 
         # TODO: we don't even use emission_scale anymore
-        if 0:
-            _emission_scale = np.sqrt(
-                    np.mean(
-                        arr_ca[idx_of_sector[self.sector],
-                               idx_of_ghg[self.ghg],
-                               ] ** 2))
-        emission_scale = 1
-        if 0:
+        debug = False # and ws.phase == Phase.Prior
+
+        if debug:
             print('arr_ca', arr_ca[idx_of_sector[self.sector],
                                idx_of_ghg[self.ghg],
                                ])
 
             from .nir2025 import (
                 ktCO2e_numpyro_dist_pt_ca_years,
-                near_zero_sector_ghgs,
             )
-            ca_dist, pt_dists_by_pt = ktCO2e_numpyro_dist_pt_ca_years(
+            ca_dist, _ = ktCO2e_numpyro_dist_pt_ca_years(
                     self.sector, self.ghg,
                     year_0=ws.year_0,
                     n_years=34)
@@ -169,34 +173,55 @@ class StaticNormals_ModelElement(ModelElement):
 
             if np.isfinite(pt_var_ii):
                 relative_pt_scale.append(
-                        np.sqrt(.0001 + pt_var_ii + variance_baseline))
+                        np.sqrt(1e-12 + pt_var_ii + variance_baseline))
             else:
-                relative_pt_scale.append(.0001 + variance_baseline)
-
-        ws.dist.general['mu'] = dist.Normal().expand_by((n_regions,))
-        ws.dist.general['sigma_pt'] = dist.LogNormal().expand_by((n_regions,))
+                relative_pt_scale.append(1e-12 + variance_baseline)
 
         jnp_rel_pt_loc = jnp.array(relative_pt_mean, dtype=jnp.float64).reshape(
                 (n_regions,) + ws.mcmc_broadcast_shape)
         jnp_rel_pt_scale = jnp.array(relative_pt_scale, dtype=jnp.float64).reshape(
                 (n_regions,) + ws.mcmc_broadcast_shape)
 
-        if 0:
+        if debug:
             print('pt_var', pt_var)
             print('pt_mean', pt_mean)
             print('rel_loc', jnp_rel_pt_loc)
             print('rel_scale', jnp_rel_pt_scale)
 
-        emission_scale_mu = (
-                ws.val.general['mu'] * jnp_rel_pt_scale
-                + jnp_rel_pt_loc)
-        emission_scale_sigma = (
-                ws.val.general['sigma_pt'] * jnp_rel_pt_scale)
+        return jnp_rel_pt_loc, jnp_rel_pt_scale
 
-        sigma_ca = jnp.sqrt((emission_scale_sigma ** 2).sum(axis=0))
-        mu_ca = emission_scale_mu.sum(axis=0)
+    def _empirical_prior(self, ws):
+        if (self.sector in (
+                IPCC_Sector.Ammonia_Production,
+                IPCC_Sector.Nitric_Acid_Production,
+                IPCC_Sector.Petrochemical_and_Carbon_Black_Production,
+                )
+            ):
+            return self._empirical_prior_for_only_nationally_reported(ws)
+        else:
+            return self._default_empirical_prior(ws)
 
-        squish = dist.transforms.AffineTransform(loc=0, scale=1/emission_scale)
+
+    @define('mu', prior_shape=[n_regions])
+    @define('sigma_pt', prior_shape=[n_regions])
+    @define(unit_ca_key, prior_shape=[]) # unit is mis-nomer, now means "prior years"
+    @define(unit_pt_keys, prior_shape=[])
+    @define_annual(ktCO2e_ca_key, annual_shape=[])
+    @define_annual(ktCO2e_pt_keys, annual_shape=[])
+    def model_element_postprocess(self, ws:Workspace):
+        assert n_regions == len(self.unit_pt_keys)
+
+        ws.dist.general['mu'] = dist.Normal().expand_by((n_regions,))
+        ws.dist.general['sigma_pt'] = dist.LogNormal(-1, 0.7).expand_by((n_regions,))
+
+        pt_loc, pt_scale = self._empirical_prior(ws)
+
+        ktCO2e_mu = ws.val.general['mu'] * pt_scale + pt_loc
+        ktCO2e_sigma = ws.val.general['sigma_pt'] * pt_scale
+
+        ktCO2e_sigma_ca = jnp.sqrt((ktCO2e_sigma ** 2).sum(axis=0))
+        ktCO2e_mu_ca = ktCO2e_mu.sum(axis=0)
+
         as_years = jnp.ones((ws.n_years,) + ws.mcmc_broadcast_shape)
 
         obs_weight = jnp.array(1.0)
@@ -205,26 +230,20 @@ class StaticNormals_ModelElement(ModelElement):
 
             if self._fit_to_data:
                 ws.obs_weight.general[unit_key] = obs_weight
-                ws.obs_dist.general[unit_key] = dist.TransformedDistribution(
-                        ws.dist.general[self.nir_pt_keys[pt]],
-                        squish)
+                ws.obs_dist.general[unit_key] = ws.dist.general[self.nir_pt_keys[pt]]
 
-            ws.dist.general[unit_key] = dist.Normal(
-                    emission_scale_mu[ii],
-                    emission_scale_sigma[ii])
+            ws.dist.general[unit_key] = dist.Normal(ktCO2e_mu[ii], ktCO2e_sigma[ii])
 
             if ws.phase == Phase.Posterior:
                 # predictions for future years
                 ws.dist.annual[self.ktCO2e_pt_keys[pt]] = dist.Normal(
-                        as_years * emission_scale * emission_scale_mu[ii],
-                        as_years * emission_scale * emission_scale_sigma[ii])
+                        as_years * ktCO2e_mu[ii],
+                        as_years * ktCO2e_sigma[ii])
 
         if self._fit_to_data:
             ws.obs_weight.general[self.unit_ca_key] = obs_weight
-            ws.obs_dist.general[self.unit_ca_key] = dist.TransformedDistribution(
-                    ws.dist.general[self.nir_ca_key],
-                    squish)
-        ws.dist.general[self.unit_ca_key] = dist.Normal(mu_ca, sigma_ca)
+            ws.obs_dist.general[self.unit_ca_key] = ws.dist.general[self.nir_ca_key]
+        ws.dist.general[self.unit_ca_key] = dist.Normal(ktCO2e_mu_ca, ktCO2e_sigma_ca)
 
         if ws.phase == Phase.Posterior:
             # predictions for future years
@@ -232,8 +251,8 @@ class StaticNormals_ModelElement(ModelElement):
             # relative to the unit_ca_key, because unit_ca_key
             # refers to previous, observed years' emissions
             ws.dist.annual[self.ktCO2e_ca_key] = dist.Normal(
-                    as_years * emission_scale * mu_ca,
-                    as_years * emission_scale * sigma_ca)
+                    as_years * ktCO2e_mu_ca,
+                    as_years * ktCO2e_sigma_ca)
 
 
 class StaticNormals_ScenarioModel(NIR_ScenarioModel):

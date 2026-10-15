@@ -67,17 +67,18 @@ def test_smoke_sector_ghg(
 
     comp = compute_model(model, seed_or_key=1)
 
-    print("sigma pt")
-    sample = comp.ndarray_d[
-            GroupedPosterior(
-                prior_var_key=snorm_elem.general_key('sigma_pt'))]
-    print(sample[0, :, 0])
+    if 0:
+        print("sigma pt")
+        sample = comp.ndarray_d[
+                GroupedPosterior(
+                    prior_var_key=snorm_elem.general_key('sigma_pt'))]
+        print(sample[0, :, 0])
 
-    print("mu")
-    sample = comp.ndarray_d[
-            GroupedPosterior(
-                prior_var_key=snorm_elem.general_key('mu'))]
-    print(sample[0, :, 0])
+        print("mu")
+        sample = comp.ndarray_d[
+                GroupedPosterior(
+                    prior_var_key=snorm_elem.general_key('mu'))]
+        print(sample[0, :, 0])
     #assert abs(jnp.max(sample[0, :, 0])) < 0.1
 
 def test_smoke_mining_n2o():
@@ -89,3 +90,8 @@ def test_smoke_pulp_paper_ch4():
     test_smoke_sector_ghg(
             sector=IPCC_Sector.SCS__Manufacturing__Pulp_and_Paper,
             ghg=GHG.CH4)
+
+def test_smoke_fishing_CO2():
+    test_smoke_sector_ghg(
+            sector=IPCC_Sector.Transport__Marine__Fishing,
+            ghg=GHG.CO2)

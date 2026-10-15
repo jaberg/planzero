@@ -174,14 +174,6 @@ class PreNIR_ModelElement(ModelElement):
             else:
                 raise NotImplementedError(self.prediction_year, nir_years)
 
-            model_years = ws.val.general[years_key]
-            for ii, model_year in enumerate(list(model_years)):
-                if model_year == self.prediction_year:
-                    model_idx_of_prediction_year = ii
-                    break
-            else:
-                raise NotImplementedError(self.prediction_year, model_years)
-
             for key in self.kl_keys.values():
                 assert isinstance(key.sector, IPCC_Sector)
                 assert key.ghg is not None
@@ -215,31 +207,42 @@ class PreNIR_ModelElement(ModelElement):
 
                 if isinstance(pred_key, GeneralKey):
                     pred_dist = ws.dist.general[pred_key]
-                    if isinstance(pred_dist, dists.Normal):
-                        pred_mu = pred_dist.loc
-                        pred_sigma_pt = pred_dist.scale
-                        mu_pred_year = pred_mu[model_idx_of_prediction_year]
-                        sigma_pred_year = pred_sigma_pt[model_idx_of_prediction_year]
-                        assert mu_pred_year.shape == (ws.n_mcmc,)
-                        assert sigma_pred_year.shape == (ws.n_mcmc,)
-                        assert nir_dist.shape() == ()
-                        kl = kl_divergence_uniform_normal_mixture(
-                                nir_dist,
-                                q_mu=mu_pred_year,
-                                q_sigma=sigma_pred_year)
-                        assert jnp.isfinite(kl), (
-                                key, mu_pred_year, sigma_pred_year)
-                        assert kl.shape == ()
-                        assert weight.shape == ()
-                        ws.val.general[key] = kl
-                        prenir_score += kl * weight
-                    else:
-                        raise NotImplementedError(pred_dist)
+                    prenir_score += self._helper(ws, key, weight, nir_dist, pred_dist)
                 elif isinstance(pred_key, AnnualKey):
-                    raise NotImplementedError()
+                    pred_dist = ws.dist.annual[pred_key]
+                    prenir_score += self._helper(ws, key, weight, nir_dist, pred_dist)
                 else:
                     raise NotImplementedError(pred_key)
 
             ws.val.general[self.prenir_score_key] = prenir_score
         else:
             raise NotImplementedError(ws.phase)
+
+    def _helper(self, ws, key, weight, nir_dist, pred_dist):
+        model_years = ws.val.general[years_key]
+        match_mask = model_years == self.prediction_year
+        if jnp.any(match_mask):
+            model_idx_of_prediction_year = jnp.argmax(match_mask)
+        else:
+            raise NotImplementedError(self.prediction_year)
+
+        if isinstance(pred_dist, dists.Normal):
+            pred_mu = pred_dist.loc
+            pred_sigma_pt = pred_dist.scale
+            mu_pred_year = pred_mu[model_idx_of_prediction_year]
+            sigma_pred_year = pred_sigma_pt[model_idx_of_prediction_year]
+            assert mu_pred_year.shape == (ws.n_mcmc,)
+            assert sigma_pred_year.shape == (ws.n_mcmc,)
+            assert nir_dist.shape() == ()
+            kl = kl_divergence_uniform_normal_mixture(
+                    nir_dist,
+                    q_mu=mu_pred_year,
+                    q_sigma=sigma_pred_year)
+            assert jnp.isfinite(kl), (
+                    key, mu_pred_year, sigma_pred_year)
+            assert kl.shape == ()
+            assert weight.shape == ()
+            ws.val.general[key] = kl
+            return kl * weight
+        else:
+            raise NotImplementedError(pred_dist)

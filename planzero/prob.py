@@ -87,21 +87,8 @@ class SiteInference:
             return rval
 
     @property
-    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        # TODO: guard this with a classvar check that e.g. this model makes predictions
-        helper = SparklineEChartHelper(
-                div_id=None,
-                model_name='Static_Normals',
-                v_unit='Mt_CO2e')
-        helper.load_data(self.model_id)
-        sector = PseudoSector.Total_with_LULUCF
-        rval = (helper.data_by_sector[sector]['lbound'],
-                helper.data_by_sector[sector]['ubound'])
-        return rval
-
-    @property
     def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
-        low, high = self.predicted_emissions_2050_MtCO2e_bounds_ul
+        low, high = self.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(self.comp)
         rval = f"{low:.1f} - {high:.1f} Mt{html_by_ghg[GHG.CO2]}e"
         return rval
 

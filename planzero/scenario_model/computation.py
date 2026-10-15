@@ -297,7 +297,10 @@ def set_dist_ElementGeneralKey_posterior_obs_valid(
     comp._ndarray_d[var_key] = updated_sample
 
 
-def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist:Distribution):
+def set_dist_ElementGeneralKey(
+        comp:Computation,
+        var_key:ElementGeneralKey|ElementAnnualKey,
+        dist:Distribution):
     obs_var_key = Observation(prior_var_key=var_key)
     obsvalid_var_key = ObservationValid(obs_var_key=obs_var_key)
     obsweight_var_key = ObservationWeight(obs_var_key=obs_var_key)
@@ -398,10 +401,14 @@ def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist
             # draw a sample, but then mix it with the observations
             # according to obs_valid. (Subroutine because there is
             # some special-casing based on shapes.)
-            set_dist_ElementGeneralKey_posterior_obs_valid(
-                    comp, var_key, dist,
-                    obs_val=obs,
-                    obs_valid=obs_valid)
+            if isinstance(var_key, ElementGeneralKey):
+                set_dist_ElementGeneralKey_posterior_obs_valid(
+                        comp, var_key, dist,
+                        obs_val=obs,
+                        obs_valid=obs_valid)
+            else:
+                # could be fine, haven't checked
+                raise NotImplementedError()
 
         elif have_obs_dist and have_obs_valid:
             raise NotImplementedError()
@@ -415,6 +422,10 @@ def set_dist_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, dist
                     'observation of both values and distribution')
     else:
         raise NotImplementedError(comp.phase)
+
+
+def set_dist_ElementAnnualKey(comp:Computation, var_key:ElementAnnualKey, dist:Distribution):
+    return set_dist_ElementGeneralKey(comp, var_key, dist)
 
 
 def set_dist_Observation(

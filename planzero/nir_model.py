@@ -6,7 +6,7 @@ from .nir2025 import near_zero_sector_ghgs
 from .p_emissions_below_thresh import PEmissionsBelowThresh
 from .prenir_element import PreNIR_ModelElement
 from .regional_total_emissions_element import PseudoRegion, RegionalTotalEmissionsVarKey
-from .scenario_model import AnnualKey, Computation, GeneralKey, ScenarioModel
+from .scenario_model import AnnualKey, Computation, GeneralKey, ScenarioModel, years_key
 from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsVarKey
 
 
@@ -84,6 +84,26 @@ class NIR_ScenarioModel(ScenarioModel):
                         self.ktCO2e_var_key_sector_ghg_region(sector, ghg, region)]
                     for region in regions})
         return ktCO2e_sample
+
+    def predicted_emissions_2050_MtCO2e_bounds_95(
+            self,
+            comp:Computation,
+            ) -> tuple[float, float]:
+        ktCO2e_sample = comp.ndarray_d[
+                sector_total_emissions_var_key(PseudoSector.Total_with_LULUCF)]
+        model_years = np.asarray(comp.ndarray_d[years_key])
+        match_mask = (model_years == 2050)
+        if np.any(match_mask):
+            model_idx_of_prediction_year = np.argmax(match_mask)
+        else:
+            raise NotImplementedError('no prediction for 2050')
+        ktCO2e_2050 = ktCO2e_sample[model_idx_of_prediction_year]
+        n_mcmc, = ktCO2e_2050.shape
+        assert n_mcmc > 100
+        unit_conversion = 1 / 1000
+        lower, upper = np.quantile(ktCO2e_2050, [0.025, 0.975]) * unit_conversion
+        return lower, upper
+
 
     # PRE-NIR
 
