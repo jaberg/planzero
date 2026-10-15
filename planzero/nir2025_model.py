@@ -48,7 +48,12 @@ class NIR2025_ModelElement(ModelElement):
 
     @property
     def version_id(self):
-        return (2,)
+        # there's no inference in this model element, but the values
+        # are used to train other model elemets, so this version
+        # should be changed when the values change.
+        return (#2,
+                3, # new def of ktCO2e_numpyro_dist_pt_ca_years fn
+                )
 
     @property
     def ca_key(self) -> GeneralKey:

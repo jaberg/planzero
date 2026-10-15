@@ -393,32 +393,19 @@ def ktCO2e_numpyro_dist_pt_ca_years(
     real_pt_idx = np.asarray([idx_of_pt[pt] for pt in real_pts])  # (13,)
     ktco2e_pt = arr_pt[sr, gh, real_pt_idx[:, None], yr_ii[None, :]]  # (13, n_years)
 
-    # case 1: negligible emissions (mask)
-    case1 = (
-        (np.abs(ktco2e_ca) <= 1)
-        | ((sector, ghg) in near_zero_sector_ghgs())
-        )  # (n_years,)
-
     pc_unc_2023 = uncertainty_percent_by_IPCC_Sector_GHG_2023().get(
-        (sector, ghg), float('nan'))
+        (sector, ghg), 100.0)
     pc_unc_1990 = uncertainty_percent_by_IPCC_Sector_GHG_1990().get(
-        (sector, ghg), float('nan'))
+        (sector, ghg), 100.0)
+    if not np.isfinite(pc_unc_2023):
+        pc_unc_2023 = 100.0
+    if not np.isfinite(pc_unc_1990):
+        pc_unc_1990 = 100.0
     unc = np.interp(
         years,
         [1990., 2023.],
         [pc_unc_1990, pc_unc_2023]) / 100.
     unc = np.maximum(unc, 0.01)
-    unc = np.where(np.isnan(unc), 1.0, unc)  # (n_years,)
-
-    eps = 10 # ktCO2e as a rounding error
-    # TODO: consider eps being set relative to sector/ghg combo
-    # to be e.g. 0.5%, because it might help with numeric stability
-    # in mcmc, and allow lower n_quad to be sufficient.
-
-    # params for near-zeros
-    pnz = { 'mu': .5 * eps,
-            'rolloff': .01 * eps,
-            'relerr': .5}
 
     # can-be-negative bool
     # some provinces sometimes have negative settlement emissions
@@ -430,64 +417,18 @@ def ktCO2e_numpyro_dist_pt_ca_years(
         ]
 
     if can_neg:
-        # case 2: sectors that can be negative or positive
-        mu_ca = ktco2e_ca
-        rolloff_ca = np.full((n_years,), 100.)  # kt CO2e
+        mu_ca, rolloff_ca, relerr_ca, mu_pt, roll_pt, rel_pt\
+                = _ktCO2e_numpyro_dist_pt_ca_years_real(
+                    ktco2e_ca,
+                    ktco2e_pt,
+                    unc)
+
     else:
-        # case 3: sectors that cannot be negative
-        pos_ktco2e_ca = np.maximum(ktco2e_ca, 0.1)
-        mu_ca = pos_ktco2e_ca
-        rolloff_ca = pos_ktco2e_ca * .1 + eps
-
-    # case 1 years: positive near-zero for the national total too
-    mu_ca = np.where(case1, pnz['mu'], mu_ca)
-    rolloff_ca = np.where(case1, pnz['rolloff'], rolloff_ca)
-    relerr_ca = np.where(case1, pnz['relerr'], unc)
-
-    nanmean_over_time = np.nanmean(arr_pt[sr, gh, real_pt_idx, :], axis=1)  # (13,)
-    k_nan = np.isnan(ktco2e_pt)
-    k_small = ~k_nan & (ktco2e_pt < eps)
-    row_pt_idx = real_pt_idx[:, None]
-    k_nu_early = (row_pt_idx == idx_of_pt[PT.NU]) & (years <= 1998)[None, :]  # Nunavut created in 1999
-    k_ognt_early = (
-        (row_pt_idx == idx_of_pt[PT.NT])
-        & (years < 1999)[None, :]
-        & (sector == IPCC_Sector.SCS__Oil_and_Gas_Extraction)
-        & k_nan # human judgement: no oil & gas sector in NT at this time
-        )
-    k_nanmean_nan = np.isnan(nanmean_over_time)[:, None]
-
-    if can_neg:
-        # case 2: sectors that can be negative or positive
-        mu2 = np.where(k_nan, 0., ktco2e_pt)
-        roll2 = np.full((len(real_pts), n_years), 100.)  # kt CO2e
-        rel2 = np.where(k_nan, np.maximum(unc, 1.0), unc)
-        mu_pt, roll_pt, rel_pt = mu2, roll2, rel2
-    else:
-        # case 3: sectors that cannot be negative
-        nanmean_mu = np.maximum(nanmean_over_time[:, None], eps)
-        mu3 = np.where(
-            k_nan, nanmean_mu,
-            np.where(k_small, pnz['mu'], ktco2e_pt))
-        roll3 = np.where(
-            k_nan, nanmean_mu * .1,
-            np.where(k_small, pnz['rolloff'], ktco2e_pt * .1))
-        rel3 = np.where(
-            k_nan, 0.7,
-            np.where(k_small, pnz['relerr'], unc))
-        k_pnz_pt = k_nu_early | k_ognt_early | (k_nan & k_nanmean_nan)
-        mu3 = np.where(k_pnz_pt, pnz['mu'], mu3)
-        roll3 = np.where(k_pnz_pt, pnz['rolloff'], roll3)
-        rel3 = np.where(k_pnz_pt, pnz['relerr'], rel3)
-        mu_pt, roll_pt, rel_pt = mu3, roll3, rel3
-
-        if np.any(~case1):
-            assert np.nanmin(ktco2e_pt[:, ~case1]) >= 0, (sector, ghg)
-
-    # case 1 years: positive near-zero for every region
-    mu_pt = np.where(case1[None, :], pnz['mu'], mu_pt)
-    roll_pt = np.where(case1[None, :], pnz['rolloff'], roll_pt)
-    rel_pt = np.where(case1[None, :], pnz['relerr'], rel_pt)
+        mu_ca, rolloff_ca, relerr_ca, mu_pt, roll_pt, rel_pt\
+                = _ktCO2e_numpyro_dist_pt_ca_years_nonneg(
+                    ktco2e_ca,
+                    ktco2e_pt,
+                    unc)
 
     ca_dist = SymmetricBlendedLogNormal.rolloff_relerr(
         mu=mu_ca,
