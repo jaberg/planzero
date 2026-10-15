@@ -626,6 +626,8 @@ class Computation:
     def set_dist(self, var_key:VarKey, dist:Distribution):
         if isinstance(var_key, ElementGeneralKey):
             set_dist_ElementGeneralKey(self, var_key, dist)
+        elif isinstance(var_key, ElementAnnualKey):
+            set_dist_ElementAnnualKey(self, var_key, dist)
         elif isinstance(var_key, InitialCarry):
             set_dist_InitialCarry(self, var_key, dist)
         elif isinstance(var_key, Observation):
@@ -967,8 +969,8 @@ def run_mcmc(
         rng_key = seed
     mcmc = MCMC(
             NUTS(trace_fn,
-                 target_accept_prob=0.95,
-                 init_strategy=init_to_sample,
+                 target_accept_prob=0.995,
+                 #init_strategy=init_to_sample,
                  ),
             num_warmup=model.num_warmup,
             thinning=model.thinning,

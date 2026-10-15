@@ -84,7 +84,12 @@ class StaticNormals_ModelElement(ModelElement):
                     #1.4, # no more sigma_ca, relate it to sigma_pt
                     # 1.5, # n_quad=16 with quad_p and quad_q blend
                     # 1.6, # n_quad=16 with just quad_p
-                    1.8, # centered priors, 1000 warmup steps
+                    #1.8, # centered priors, 1000 warmup steps
+                    1.9, # tweaked logic here, new ktCO2e dists, init_uniform, target_accept_prob way up at .995
+                    # Idea: if some PT contribs are too tiny, then just
+                    #       cut their contribution to the national total
+                    #       which may help remove divergences at default
+                    #       target_accept_prob?
                     )
         else:
             return (1, self._fit_to_data)
@@ -120,11 +125,29 @@ class StaticNormals_ModelElement(ModelElement):
         arr_pt, arr_ca = ktCO2e_dense_w_nan()
 
         # TODO: we don't even use emission_scale anymore
-        emission_scale = np.sqrt(
-                np.mean(
-                    arr_ca[idx_of_sector[self.sector],
-                           idx_of_ghg[self.ghg],
-                           ] ** 2))
+        if 0:
+            _emission_scale = np.sqrt(
+                    np.mean(
+                        arr_ca[idx_of_sector[self.sector],
+                               idx_of_ghg[self.ghg],
+                               ] ** 2))
+        emission_scale = 1
+        if 0:
+            print('arr_ca', arr_ca[idx_of_sector[self.sector],
+                               idx_of_ghg[self.ghg],
+                               ])
+
+            from .nir2025 import (
+                ktCO2e_numpyro_dist_pt_ca_years,
+                near_zero_sector_ghgs,
+            )
+            ca_dist, pt_dists_by_pt = ktCO2e_numpyro_dist_pt_ca_years(
+                    self.sector, self.ghg,
+                    year_0=ws.year_0,
+                    n_years=34)
+            print('mu', ca_dist.mu)
+
+            # print('emission scale', emission_scale)
         pt_mean = np.nanmean(
                 arr_pt[idx_of_sector[self.sector], idx_of_ghg[self.ghg]],
                 dtype=np.float64,
@@ -137,14 +160,18 @@ class StaticNormals_ModelElement(ModelElement):
         relative_pt_mean = []
         relative_pt_scale = []
         for pt_var_ii, pt_mean_ii in zip(pt_var, pt_mean):
+            if np.isfinite(pt_mean_ii):
+                relative_pt_mean.append(pt_mean_ii)
+                variance_baseline = (relative_pt_mean[-1] * .1) ** 2
+            else:
+                relative_pt_mean.append(10) # a small-ish amount?
+                variance_baseline = (relative_pt_mean[-1] * .8) ** 2
+
             if np.isfinite(pt_var_ii):
                 relative_pt_scale.append(
-                        max(np.sqrt(pt_var_ii), 5)
-                        / emission_scale)
-                relative_pt_mean.append(pt_mean_ii / emission_scale)
+                        np.sqrt(.0001 + pt_var_ii + variance_baseline))
             else:
-                relative_pt_scale.append(5 / emission_scale)
-                relative_pt_mean.append(5 / emission_scale)
+                relative_pt_scale.append(.0001 + variance_baseline)
 
         ws.dist.general['mu'] = dist.Normal().expand_by((n_regions,))
         ws.dist.general['sigma_pt'] = dist.LogNormal().expand_by((n_regions,))
@@ -153,6 +180,12 @@ class StaticNormals_ModelElement(ModelElement):
                 (n_regions,) + ws.mcmc_broadcast_shape)
         jnp_rel_pt_scale = jnp.array(relative_pt_scale, dtype=jnp.float64).reshape(
                 (n_regions,) + ws.mcmc_broadcast_shape)
+
+        if 0:
+            print('pt_var', pt_var)
+            print('pt_mean', pt_mean)
+            print('rel_loc', jnp_rel_pt_loc)
+            print('rel_scale', jnp_rel_pt_scale)
 
         emission_scale_mu = (
                 ws.val.general['mu'] * jnp_rel_pt_scale

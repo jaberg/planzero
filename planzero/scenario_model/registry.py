@@ -104,9 +104,14 @@ def compute_mcmc_submodel(
         comp = Computation(model=submodel, rng_key=jrandom.key(1))
         comp.run()
         print('running mcmc for', model_name, mcmc_group, version_hash)
-        mcmc = run_mcmc(submodel,
-                        seed=rng_key,
-                        progress_bar=(N_MCMC_WORKERS==1))
+        try:
+            mcmc = run_mcmc(submodel,
+                            seed=rng_key,
+                            progress_bar=(N_MCMC_WORKERS==1))
+        except Exception as err:
+            err.add_note(f'model_name {model_name}')
+            err.add_note(f'mcmc_group {mcmc_group}')
+            raise
         grouped_samples = mcmc.get_samples(group_by_chain=True)
         saved_sample_sites = {}
         for var_key, sample_site in comp.sample_sites.items():

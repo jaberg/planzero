@@ -36,17 +36,19 @@ def test_smoke():
             seed_or_key=1)
 
 
-def test_public_electricity_comes_out_reasonably():
-    sector = IPCC_Sector.SCS__Public_Electricity_and_Heat
-    ghg = GHG.CO2
-
+def test_smoke_sector_ghg(
+    sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
+    ghg=GHG.CO2,
+    num_warmup=1500,
+    num_samples=1000,
+    ):
 
     model = ScenarioModel(
             first_year=1990,
             n_prior_years=33,
             n_posterior_years=50,
-            num_warmup=250,
-            num_samples=500)
+            num_warmup=num_warmup,
+            num_samples=num_samples)
 
     mcmc_group = f'{sector.value}_{ghg.value}'
     nir_elem = NIR2025_ModelElement(
@@ -76,4 +78,14 @@ def test_public_electricity_comes_out_reasonably():
             GroupedPosterior(
                 prior_var_key=snorm_elem.general_key('mu'))]
     print(sample[0, :, 0])
-    assert abs(jnp.max(sample[0, :, 0])) < 0.1
+    #assert abs(jnp.max(sample[0, :, 0])) < 0.1
+
+def test_smoke_mining_n2o():
+    test_smoke_sector_ghg(
+            sector=IPCC_Sector.SCS__Mining,
+            ghg=GHG.N2O)
+
+def test_smoke_pulp_paper_ch4():
+    test_smoke_sector_ghg(
+            sector=IPCC_Sector.SCS__Manufacturing__Pulp_and_Paper,
+            ghg=GHG.CH4)

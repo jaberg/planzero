@@ -389,49 +389,79 @@ def kl_divergence_uniform_normal_mixture_quad_p(
     # component-tailored nodes may not cover the relevant region well.
     p_shape = p.batch_shape
     v_nodes, v_weights = _gauss_hermite(n_quad)
+    # print(v_nodes)
 
     # Moment-match P.
     p_mean = p.mu
     p_std = jnp.sqrt(p.variance)
+    assert p_mean.dtype == jnp.float64, p_mean.dtype
+    assert p_std.dtype == jnp.float64
+    assert q_mu.dtype == jnp.float64
+    assert q_sigma.dtype == jnp.float64
 
     nodes = v_nodes.reshape((-1,) + (1,) * len(p_shape))
     weights_arr = v_weights.reshape((-1,) + (1,) * len(p_shape))
     x = p_mean + p_std * nodes
+    # x shape: (n_quad,) + p.batch_shape
+    # print(x.shape)
+    # print(x[:, 0])
 
     # Re-weight the Gauss-Hermite nodes according to the ratio of the density
     # of P to the density of the Gaussian approximation used by the nodes.
     # Without this factor, the quadrature approximates an expectation under
     # the approximating Gaussian instead of under P.
-    t_nodes = v_nodes.reshape((-1,) + (1,) * len(p_shape))
-    std_normal_log_prob = -0.5 * (t_nodes ** 2) - 0.5 * jnp.log(2.0 * jnp.pi)
+    std_normal_log_prob = -0.5 * (nodes ** 2) - 0.5 * jnp.log(2.0 * jnp.pi)
     log_ratio = p.log_prob(x) - std_normal_log_prob
     importance_weights_unnorm = weights_arr * jnp.exp(log_ratio)
     importance_weights = importance_weights_unnorm / importance_weights_unnorm.sum()
 
-    def f(xval):
-        return p.log_prob(xval) - _uniform_normal_mixture_log_prob(
-            jnp.asarray(q_mu), jnp.asarray(q_sigma), xval)
+    # print('importance', importance_weights)
 
-    integrand = f(x)
+    # print('q_mu', q_mu)
+    # print('q_sigma', q_sigma)
+    # q_logp = _uniform_normal_mixture_log_prob(jnp.asarray(q_mu), jnp.asarray(q_sigma), x)
+    # print('q logp_0', q_logp.shape, q_logp[:, 0])
+    # print('q logp_1', q_logp.shape, q_logp[:, 1])
+    # print('q logp_2', q_logp.shape, q_logp[:, 2])
+    # p_logp = p.log_prob(x)
+    # print('p logp_0', p_logp.shape, p_logp[:, 0])
+    # print('p logp_1', p_logp.shape, p_logp[:, 1])
+    # print('p logp_2', p_logp.shape, p_logp[:, 2])
+
+    integrand = (
+            p.log_prob(x)
+            - _uniform_normal_mixture_log_prob(
+                jnp.asarray(q_mu), jnp.asarray(q_sigma), x))
+    # print('integrand', integrand)
     kl = (importance_weights * integrand).sum(axis=0)
+    return kl
+    # print('kl', kl)
     rval = jnp.maximum(kl, 0.0)
     assert rval.shape == p_shape
     return rval
 
 
 def kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad: int = 64):
-    kl_q = kl_divergence_uniform_normal_mixture_quad_q(
-        p, q_mu, q_sigma, n_quad=n_quad)
     kl_p = kl_divergence_uniform_normal_mixture_quad_p(
         p, q_mu, q_sigma, n_quad=n_quad)
+    return kl_p
+    kl_q = kl_divergence_uniform_normal_mixture_quad_q(
+        p, q_mu, q_sigma, n_quad=n_quad)
+    p_mean = p.mu
     p_var = p.variance
+    q_mean = jnp.mean(q_mu)
     q_var = _uniform_normal_mixture_variance(q_mu, q_sigma)
-    # smoothly transition between the two implementations
-    indicator = p_var - q_var / (p_var + q_var)
+
+    # if q_mean is far from from p_mean
+    # smoothly transition between the two implementations,
+    # but unless they're nearly identical rely almost entirely on
+    # kl_q or kl_p, because it's only when the variances match
+    # that they can be trusted to have nearly the same value.
+    indicator = (p_mean - q_mean) / jnp.sqrt(1e-20 + p_var + q_var)
     coef = jnp.tanh(indicator) / 2 + .5
     rval = (
-        coef * kl_q # when p is broader, use points in q
-        + (1 - coef) * kl_p # otherwise use kl from points in p
+        coef * kl_q # when p is broader, estimate with points in q
+        + (1 - coef) * kl_p # when q is broader estimate with from points in p
         )
     return rval
 
