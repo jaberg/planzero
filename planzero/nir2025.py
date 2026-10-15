@@ -300,6 +300,68 @@ def ktCO2e_numpyro_dist_pt_ca(sector:IPCC_Sector, ghg:GHG, year:int):
 
     return ca_dist, pt_dists
 
+def _ktCO2e_numpyro_dist_pt_ca_years_real(
+        ktco2e_ca,
+        ktco2e_pt,
+        unc,
+        ):
+    n_real_pts, n_years = ktco2e_pt.shape
+    mu_ca = ktco2e_ca
+    rolloff_ca = np.full((n_years,), 100.)  # kt CO2e
+
+    # case 2: sectors that can be negative or positive
+    k_nan = np.isnan(ktco2e_pt)
+    mu_pt = np.where(k_nan, 0., ktco2e_pt)
+    roll_pt = np.full((n_real_pts, n_years), 10.)  # kt CO2e
+    rel_pt = np.where(k_nan, np.maximum(unc, 1.0), unc)
+
+    return mu_ca, rolloff_ca, unc, mu_pt, roll_pt, rel_pt
+
+
+def _ktCO2e_numpyro_dist_pt_ca_years_nonneg(
+        ktco2e_ca,
+        ktco2e_pt,
+        unc,
+        ):
+    # This function returns parameters of SymmetricBlendedLogNormal
+    # distributions.
+    # The catch is that sometimes emissions are missing (nan)
+    # and sometimes they are precisely zero, isn't currently
+    # supported via e.g. spike & slab mixture modelling.
+
+    n_real_pts, _ = ktco2e_pt.shape
+
+    assert ktco2e_ca.min() >= 0
+
+    # shift zeros to small positive numbers
+    mu_ca = np.maximum(ktco2e_ca, 1)
+
+    small_scale = np.maximum(mu_ca.max() / 1000, 1 / n_real_pts)
+    mu_pt_w_nan = np.maximum(ktco2e_pt, small_scale)
+    rel_pt = np.full_like(mu_pt_w_nan, unc)
+
+    # assign entirely nan rows to be near-zero
+    nanmean_over_time = np.nanmean(mu_pt_w_nan, axis=1)  # (13,)
+    mu_pt_w_nan[np.isnan(nanmean_over_time)] = small_scale
+    rel_pt[np.isnan(nanmean_over_time)] = 10  # 1000% uncertainty
+
+    # fill in remaining nan elements
+    mu_pt = np.where(np.isfinite(mu_pt_w_nan),
+                     mu_pt_w_nan,
+                     nanmean_over_time[:, None])
+    rel_pt[~np.isfinite(mu_pt_w_nan)] = 2 # 200% uncertainty
+
+    # minimum uncertainty for Nunavut for years prior to creation
+    rel_pt[idx_of_pt[PT.NU]][:idx_of_year[1999]] = 0.01
+
+    assert np.all(np.isfinite(mu_pt))
+
+    # make these distributions nearly log-normal
+    rolloff_ca = mu_ca / 1000
+    roll_pt = mu_pt / 1000
+
+    return mu_ca, rolloff_ca, unc, mu_pt, roll_pt, rel_pt
+
 
 def ktCO2e_numpyro_dist_pt_ca_years(
         sector:IPCC_Sector,
