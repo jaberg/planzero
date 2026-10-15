@@ -54,11 +54,12 @@ class SiteInference:
     def scenario_model(self) -> NIR_ScenarioModel:
         return self._scenario_model
 
-    def registry_compute_model(self) -> Computation:
+    def registry_compute_model(self, compute_posterior=True) -> Computation:
         return registry_compute_model(
                 model=self._scenario_model,
                 model_name=self._scenario_model_registry_name,
-                cache_posterior=True,
+                cache_posterior=compute_posterior,
+                run_compute_posterior=compute_posterior,
                 seed_or_key=42)
 
     @property

@@ -88,6 +88,7 @@ def compute_mcmc_submodel(
         mcmc_group:str,
         submodel:ScenarioModel,
         rng_key:ArrayLike,
+        msg_prefix:str="",
         ):
     this_subsystem_version = 1.1
     submodel_version_id = (
@@ -107,7 +108,7 @@ def compute_mcmc_submodel(
     if do_mcmc:
         comp = Computation(model=submodel, rng_key=jrandom.key(1))
         comp.run()
-        print('running mcmc for', model_name, mcmc_group, version_hash)
+        print(msg_prefix, 'running mcmc for', model_name, mcmc_group, version_hash)
         try:
             mcmc = run_mcmc(submodel,
                             seed=rng_key,
@@ -138,6 +139,7 @@ def maybe_compute_mcmc_submodel(
         submodel:ScenarioModel,
         rng_key:ArrayLike,
         timeout:float,
+        msg_prefix:str,
         ):
     this_subsystem_version = 1.1
     submodel_version_id = (
@@ -153,7 +155,8 @@ def maybe_compute_mcmc_submodel(
         return compute_mcmc_submodel(model_name=model_name,
                                      mcmc_group=mcmc_group,
                                      submodel=submodel,
-                                     rng_key=rng_key)
+                                     rng_key=rng_key,
+                                     msg_prefix=msg_prefix)
 
 
 def compute_posterior(
@@ -161,6 +164,7 @@ def compute_posterior(
         model:ScenarioModel,
         rng_key:ArrayLike,
         saved_sample_sites:dict[VarKey, str],
+        run_computation:bool=True,
         ) -> Computation:
     grouped_samples = {}
     for var_key, sample_site in saved_sample_sites.items():
@@ -178,7 +182,8 @@ def compute_posterior(
             n_mcmc=model.num_samples,
             sample_sites=saved_sample_sites,
             grouped_samples=grouped_samples)
-    comp.run()
+    if run_computation:
+        comp.run()
     return comp
 
 
@@ -189,6 +194,7 @@ def registry_compute_model(
         model_name:str,
         cache_posterior:bool,  # True will save it in memory by model_name, and return from memory if possible
         seed_or_key:int|ArrayLike,
+        run_compute_posterior:bool=True,
         ) -> Computation:
     if cache_posterior and model_name in _registry_mem_cache:
         return _registry_mem_cache[model_name]
@@ -209,6 +215,8 @@ def registry_compute_model(
         args_by_mcmc_group[mcmc_group] = (model_name, mcmc_group, submodel, tmp_key)
 
     saved_sites_d = {}
+    n_groups_total = len(args_by_mcmc_group)
+    n_groups_done = 0
     for passnum in range(10):
         n_timeouts = 0
         for mcmc_group, args in args_by_mcmc_group.items():
@@ -216,8 +224,10 @@ def registry_compute_model(
                 try:
                     submodel_saved_sample_sites = maybe_compute_mcmc_submodel(
                             *args,
+                            msg_prefix=f'{n_groups_done}/{n_groups_total}',
                             timeout=0)
                     saved_sites_d[mcmc_group] = submodel_saved_sample_sites
+                    n_groups_done += 1
                 except filelock.Timeout:
                     n_timeouts += 1
         if n_timeouts == 0:
@@ -230,16 +240,25 @@ def registry_compute_model(
         if mcmc_group not in saved_sites_d:
             submodel_saved_sample_sites = maybe_compute_mcmc_submodel(
                     *args,
+                    msg_prefix=f'{n_groups_done}/{n_groups_total}',
                     timeout=-1)
             saved_sites_d[mcmc_group] = submodel_saved_sample_sites
+            n_groups_done += 1
 
+    assert n_groups_done == n_groups_total
     saved_sample_sites = {}
     for submodel_saved_sample_sites in saved_sites_d.values():
         for key, site in submodel_saved_sample_sites.items():
             assert key not in saved_sample_sites, key
             saved_sample_sites[key] = site
 
-    comp = compute_posterior(model_name, model, rng_key=rng_key, saved_sample_sites=saved_sample_sites)
+    comp = compute_posterior(
+            model_name,
+            model,
+            rng_key=rng_key,
+            saved_sample_sites=saved_sample_sites,
+            run_computation=run_compute_posterior,
+            )
 
     if cache_posterior:
         _registry_mem_cache[model_name] = comp
