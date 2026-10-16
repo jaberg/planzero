@@ -125,9 +125,16 @@ class StaticNormals_ModelElement(ModelElement):
 
         ca_mean = np.mean(ca_totals)
 
-        # yes, return location and scale as same number
-        return (jnp.array(ca_mean / 13 / 2),
-                jnp.array(ca_mean / 13 / 2))
+        # without the floor (element 3)
+        # there is a problem in the prior specification, which
+        # allows strongly multimodal solution of a single random region
+        # being solely reponsible for national total, and the rest confidently zero
+        return (jnp.array(ca_mean / 13),
+                jnp.array(ca_mean * 2 / 13),
+                (jnp.array(ca_mean * 0.2)
+                 if self.sector == IPCC_Sector.Nitric_Acid_Production
+                 else jnp.array(ca_mean / 13))
+                )
 
     def _default_empirical_prior(self, ws):
         # it's cheating to use data here, but
@@ -189,7 +196,7 @@ class StaticNormals_ModelElement(ModelElement):
             print('rel_loc', jnp_rel_pt_loc)
             print('rel_scale', jnp_rel_pt_scale)
 
-        return jnp_rel_pt_loc, jnp_rel_pt_scale
+        return jnp_rel_pt_loc, jnp_rel_pt_scale, 0
 
     def _empirical_prior(self, ws):
         if (self.sector in (
@@ -201,7 +208,6 @@ class StaticNormals_ModelElement(ModelElement):
             return self._empirical_prior_for_only_nationally_reported(ws)
         else:
             return self._default_empirical_prior(ws)
-
 
     @define('mu', prior_shape=[n_regions])
     @define('sigma_pt', prior_shape=[n_regions])
@@ -215,10 +221,10 @@ class StaticNormals_ModelElement(ModelElement):
         ws.dist.general['mu'] = dist.Normal().expand_by((n_regions,))
         ws.dist.general['sigma_pt'] = dist.LogNormal(-1, 0.7).expand_by((n_regions,))
 
-        pt_loc, pt_scale = self._empirical_prior(ws)
+        pt_loc, pt_scale, pt_scale_floor = self._empirical_prior(ws)
 
         ktCO2e_mu = ws.val.general['mu'] * pt_scale + pt_loc
-        ktCO2e_sigma = ws.val.general['sigma_pt'] * pt_scale
+        ktCO2e_sigma = ws.val.general['sigma_pt'] * pt_scale + pt_scale_floor
 
         ktCO2e_sigma_ca = jnp.sqrt((ktCO2e_sigma ** 2).sum(axis=0))
         ktCO2e_mu_ca = ktCO2e_mu.sum(axis=0)
@@ -242,7 +248,7 @@ class StaticNormals_ModelElement(ModelElement):
                         as_years * ktCO2e_sigma[ii])
 
         if self._fit_to_data:
-            ws.obs_weight.general[self.unit_ca_key] = obs_weight
+            ws.obs_weight.general[self.unit_ca_key] = obs_weight * n_regions
             ws.obs_dist.general[self.unit_ca_key] = ws.dist.general[self.nir_ca_key]
         ws.dist.general[self.unit_ca_key] = dist.Normal(ktCO2e_mu_ca, ktCO2e_sigma_ca)
 

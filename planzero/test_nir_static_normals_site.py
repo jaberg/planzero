@@ -53,3 +53,10 @@ def test_p_net_zero():
     p_net_zero = site_model.scenario_model.p_net_zero_2050(site_model.comp)
 
     assert 1e-24 < p_net_zero < 1e-22
+
+
+def test_predicted_emissions():
+    site_model = Static_Normals_2024_12_31()
+    low, high = site_model.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(
+            site_model.comp)
+    assert 600 < low < high < 1000

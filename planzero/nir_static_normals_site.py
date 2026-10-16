@@ -211,7 +211,6 @@ class Static_Normals_2024_12_31(SiteModel):
 
     include_in_registry:bool = True
 
-
     def __init__(self):
         self.data_cutoff = datetime.date(year=2024, month=12, day=31)
         # registry_name = (
@@ -248,10 +247,10 @@ class Static_Normals_2024_12_31(SiteModel):
         assert self.scenario_model.data_cutoff == datetime.date(year=2024, month=12, day=31)
         return True
 
-    def __TODO_challenge_result_url(self, challenge_name) -> str:
+    def challenge_result_url(self, challenge_name) -> str:
         if challenge_name in (
                 'PreNIR_2025_m04',
-                #'NetZero_2050',
+                'NetZero_2050',
                 ):
             return f'/models/prob/{self.model_id}/#{challenge_name}'
         else:
