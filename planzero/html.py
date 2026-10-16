@@ -59,14 +59,18 @@ class HTML_Math_Latex(HTML_element):
         return mathml
 
 
+def latex(latex, display='inline'): # display inline or block
+    return HTML_Math_Latex(latex=latex, display=display).as_html()
+
+
 html_by_ghg = {
-    GHG.CO2:HTML_Math_Latex(latex=r'\mathrm{CO}_2').as_html(),
-    GHG.CH4:HTML_Math_Latex(latex=r'\mathrm{CH}_4').as_html(),
-    GHG.N2O:HTML_Math_Latex(latex=r"\mathrm N_2 \mathrm O").as_html(),
+    GHG.CO2:latex(r'\mathrm{CO}_2'),
+    GHG.CH4:latex(r'\mathrm{CH}_4'),
+    GHG.N2O:latex(r"\mathrm N_2 \mathrm O"),
     GHG.HFCs:'HFCs',
     GHG.PFCs:'PFCs',
-    GHG.SF6:HTML_Math_Latex(latex=r'\mathrm{SF}_6').as_html(),
-    GHG.NF3:HTML_Math_Latex(latex=r'\mathrm{NF}_3').as_html(),
+    GHG.SF6:latex(r'\mathrm{SF}_6'),
+    GHG.NF3:latex(r'\mathrm{NF}_3'),
 }
 
 class HTML_Matplotlib_Figure(HTML_element):
@@ -426,9 +430,9 @@ class UncertainSparklineMatrixEChart(HTML_element):
         """
 
 
-
 import inspect
 GITHUB_WORKSPACE = os.environ.get('GITHUB_WORKSPACE')
+
 
 def coderef_filepath(obj):
     file_path = inspect.getsourcefile(obj)

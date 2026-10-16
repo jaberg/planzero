@@ -1,24 +1,31 @@
 from functools import cache as memcache
 
-from pydantic import Field, computed_field
-import numpy as np
+import jax.numpy as jnp
+import jax.random as jrandom
 import matplotlib.pyplot as plt
-try:
-    from sklearn.linear_model import RidgeCV
-    from sklearn.metrics import mean_absolute_error, root_mean_squared_error
-except ImportError:
-    pass
+import numpy as np
+from pydantic import computed_field
+from sklearn.linear_model import RidgeCV
+from sklearn.metrics import mean_absolute_error, root_mean_squared_error
 
-from .ureg import u
-from .enums import IPCC_Sector, PT, GHG
-from . import sts
+from . import nir2025, sts
+from .annual_emission_results import (
+    aer_key_normal_mu_ca,
+    aer_key_normal_sigma_ca,
+    aer_result_key,
+)
 from .barriers import Barrier
-
+from .challenge import PreNIR_2025_m04
 from .eccc_nir_annex3p4 import table_A3p4_11
+from .enums import GHG, PT, Activity, IPCC_Sector
 from .sc_3210013001 import (
-    FarmType, Livestock, Livestock_nonsums, SurveyDate,
-    number_of_cattle_by_class_and_farm_type_combined_surveys)
-
+    FarmType,
+    Livestock,
+    Livestock_nonsums,
+    number_of_cattle_by_class_and_farm_type_combined_surveys,
+)
+from .symmetric_blended_lognormal import kl_divergence_uniform_normal_mixture
+from .ureg import u
 
 feature_mask_by_farmtype = {
     FarmType.Dairy: [lt not in [Livestock.BeefCows] for lt in Livestock_nonsums],
@@ -390,17 +397,28 @@ class Bovaer_Adoption_Limit(Barrier):
     def max_increase_rate(self) -> object:
         return 5.0 * u.percent / u.year
 
+    @property
+    def prob_max_increase_rate(self) -> tuple[float, float]:
+        return (
+                self.max_increase_rate.magnitude / 2,
+                self.max_increase_rate.magnitude * 2)
+
     @computed_field
     def short_description(self) -> str:
         return f"Assume Bovaer will only be adopted by, at most, {self.max_increase_rate} of cattle operations, up to a maximum of {(1 - self.organic_fraction) * 100:.1f}%"
 
     @computed_field
     def description(self) -> str:
+        low, high = self.prob_max_increase_rate
         return f"""Assume that no more than {self.max_increase_rate} of
         farmers will switch to administering Bovaer
         in any given year, but that adoption
         can ultimately rise to {(1 - self.organic_fraction) * 100:.1f}%,
         the remainder of whom are organic farmers who won't adopt it.
+        </p>
+        When used in probabilistic models, assume instead that
+        {low}-{high}% of farmers will switch to Bovaer in any given year.
+        <p>
         """
 
     @computed_field
@@ -435,21 +453,55 @@ class Bovaer_Adoption_Limit(Barrier):
         # Apparently Bovaer is not allowed as part of organic production.
         return state.t_now + 1 * u.years
 
-# TODO: there will be a cost for monitoring
-# https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
-# It can apparently be done pretty well with drones
-# There are approximately 70_000 cattle operations in Canada
-# Monitoring might cost 10-20 million / year?
+    def annual_scan_init(self, initial_carry, xs, years, constants, jrkey):
+        n_samples = constants['sigma_ca'].shape[0]
+        initial_carry.setdefault('bovine_population_fraction_on_bovaer', jnp.zeros(n_samples))
+        initial_carry['max_fraction_of_cattle_on_bovaer'] = jnp.zeros(n_samples)
+        initial_carry['BAL_key'] = jrandom.key(934)
 
-# TODO: Market mechanism in simulation to determine prices based on supply and demand
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        n_samples = constants['sigma_ca'].shape[0]
+        new_carry['BAL_key'], key = jrandom.split(carry['BAL_key'])
+        low, high = self.prob_max_increase_rate
+        y['max_increase_fraction'] = jrandom.uniform(
+                key, (n_samples,), 'float64', low / 100, high / 100)
+        if 'bovine_population_fraction_on_bovaer' in outputs:
+            new_carry['bovine_population_fraction_on_bovaer'] \
+                    = carry['bovine_population_fraction_on_bovaer']
+        new_carry['max_fraction_of_cattle_on_bovaer'] = jnp.minimum(
+                (carry['bovine_population_fraction_on_bovaer']
+                 + y['max_increase_fraction']),
+                (1 - self.organic_fraction))
 
-# TODO: Output-based carbon pricing model for agriculture
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']
+
 
 class Bovaer_Production_Emission_Factors(Barrier):
 
     @computed_field
     def short_description(self) -> str:
-        return f"""Suppose that embedded/production emission of Bovaer is {self.rate}."""
+        return f"""Suppose that embedded/production emission of Bovaer is about {self.rate}."""
+
+    @computed_field
+    def description(self) -> str:
+        return f"""In deterministic models, this barrier estimates the
+        production emissions of Bovaer at {self.rate}.
+        </p>
+        <p>
+        In the probabilistic version of this barrier,
+        the logic is based on a "20-50x" reduction in CO2e compared with
+        methane emitted from cattle, as suggested by an LLM-AI chat,
+        which was the original source for the {self.rate} value.
+        For each sampled scenario, a reduction factor
+        is sampled uniformly from 20 to 50.
+        </p>
+        <p>This barrier does not reflect manufacturer or 3rd party
+        estimates of emission rates nor does
+        it include any change in production emission efficiency over time.
+        """
 
     @computed_field
     def rate(self) -> object:
@@ -493,6 +545,18 @@ class Bovaer_Production_Emission_Factors(Barrier):
             * self.rate)
         return state.t_now + 1 * u.year
 
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
+        n_samples = constants['sigma_ca'].shape[0]
+        key = jrandom.key(934)
+        new_carry['bovaer_production_emission_factor'] = jrandom.uniform(
+                key, (n_samples,), 'float64',
+                20,
+                50)
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        new_carry['bovaer_production_emission_factor'] = (
+                carry['bovaer_production_emission_factor'])
+
 
 class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
     """Assume cattle produce methane (less-so if they are fed Bovaer).
@@ -500,6 +564,8 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
     Defines one emission factor time series per livestock type.
     """
 
+    calculate_KL_divergence_PreNIR_2025_m04: bool = False
+    draws_per_posterior_sample:int = 32
 
     @computed_field
     def bovaer_actual_vs_nominal(self) -> float:
@@ -570,6 +636,172 @@ class Cattle_Enteric_Emission_Rates_NIR2025_Bovaer(Barrier):
                 ))
         return state.t_now + 1 * u.year
 
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
+        # from prob_bovaer.py
+        num_samples, num_regions = constants['sigma_pt'].shape
+        jrkey, tmpkey = jrandom.split(jrkey)
+        constants['shift_pt'] = (
+                jrandom.normal(tmpkey, (self.draws_per_posterior_sample, num_samples, num_regions))
+                * constants['sigma_pt']
+                * constants['enteric_ch4_ktCO2e_scale']
+                )
+        jrkey, tmpkey = jrandom.split(jrkey)
+        constants['shift_ca'] = (
+                jrandom.normal(tmpkey, (self.draws_per_posterior_sample, num_samples,))
+                * constants['sigma_ca']
+                * constants['enteric_ch4_ktCO2e_scale']
+                )
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        # (n_samples,)
+        bovaer_fraction = new_carry['bovine_population_fraction_on_bovaer']
+        ef_kg_CH4_per_head = constants['latent_emission_factors']
+        from .ghgvalues import GWP_100
+
+        ef_kt_CO2e = ef_kg_CH4_per_head * GWP_100[GHG.CH4].magnitude / 1_000_000
+
+        methane_reduction_potential = jnp.array([self.bovaer_methane_reduction[lt] for lt in Livestock_nonsums])
+
+        actual = self.bovaer_actual_vs_nominal
+        # (n_samples, n_livestock_types)
+        factor_per_livestock_type = (
+                (1 - bovaer_fraction[:, None]) * 1 # full rate
+                + (bovaer_fraction[:, None]
+                   * (1 - methane_reduction_potential * actual)))
+
+        bovaer_factor_per_livestock_type = (
+                bovaer_fraction[:, None]
+                * (1 - methane_reduction_potential * actual))
+
+        heads = constants['latent_livestock_counts']
+        # broadcast over PTs
+        emissions_by_cattle_type = (
+                heads
+                * (factor_per_livestock_type[:, :, None]
+                   * ef_kt_CO2e[:, :, None])
+                )
+
+        emissions_by_cattle_type_on_bovaer = (
+                heads
+                * (bovaer_factor_per_livestock_type[:, :, None]
+                   * ef_kt_CO2e[:, :, None]))
+
+        # sum over cattle type to get shape (sample_size, PT)
+        # and trim off the PT.XX category because it should have been factored
+        # into the headcounts during inference
+        y['enteric_fermentation_ktCO2e_pt'] = emissions_by_cattle_type.sum(axis=1)[:, :13]
+        y['enteric_fermentation_ktCO2e_ca'] = emissions_by_cattle_type.sum(axis=(1, 2))
+
+        y['enteric_fermentation_ktCO2e_pt_sample'] \
+                = y['enteric_fermentation_ktCO2e_pt'] + constants['shift_pt']
+        y['enteric_fermentation_ktCO2e_ca_sample'] \
+                = y['enteric_fermentation_ktCO2e_ca'] + constants['shift_ca']
+
+        sector = IPCC_Sector.Enteric_Fermentation
+        for ghg in GHG:
+            result_key = aer_result_key(
+                    sector=sector,
+                    ghg=ghg,
+                    activity=Activity.Farming_Cattle
+                    )
+            if ghg == GHG.CH4:
+                y[result_key] = y['enteric_fermentation_ktCO2e_ca_sample'].reshape(-1)
+            else:
+                y[result_key] = jnp.zeros((1,))
+
+        # We're ignoring the variance from sigma_pt and sigma_ca here
+        # I'm not really sure if that's correct or not.
+        emissions_by_cattle_type_on_bovaer_pt \
+                = emissions_by_cattle_type_on_bovaer.sum(axis=1)[:, :13]
+        emissions_by_cattle_type_on_bovaer_ca \
+                = emissions_by_cattle_type_on_bovaer.sum(axis=(1, 2))
+
+        y['bovaer_production_emissions_ktCO2e_ca_sample'] = (
+                emissions_by_cattle_type_on_bovaer_ca
+                / new_carry['bovaer_production_emission_factor'])
+        y['bovaer_production_emissions_ktCO2e_pt_sample'] = (
+                emissions_by_cattle_type_on_bovaer_pt
+                / new_carry['bovaer_production_emission_factor'][:, None])
+
+    def annual_scan_post(self, jrkey, post_vals, final_carry, ys, xs, years, constants):
+        sector = IPCC_Sector.Enteric_Fermentation
+        challenge = PreNIR_2025_m04()
+        for years_idx_of_2023, year in enumerate(years):
+            if year == 2023:
+                break
+        else:
+            raise ValueError('Year 2023 not modelled')
+
+        for years_idx_of_2050, year in enumerate(years):
+            if year == 2050:
+                break
+        else:
+            years_idx_of_2050 = None
+
+        mu_pt_2023 = ys['enteric_fermentation_ktCO2e_pt'][years_idx_of_2023]
+        mu_ca_2023 = ys['enteric_fermentation_ktCO2e_ca'][years_idx_of_2023]
+
+        if years_idx_of_2050 is not None:
+            # mu_pt_2050 = ys['enteric_fermentation_ktCO2e_pt'][years_idx_of_2050]
+            mu_ca_2050 = ys['enteric_fermentation_ktCO2e_ca'][years_idx_of_2050]
+
+        # from prob_bovaer.py
+        sigma_pt = constants['sigma_pt'] * constants['enteric_ch4_ktCO2e_scale']
+        sigma_ca = constants['sigma_ca'] * constants['enteric_ch4_ktCO2e_scale']
+
+        for ghg in GHG:
+            if ghg == GHG.CH4:
+                real_PTs = [pt for pt in PT if pt != PT.XX]
+
+                ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
+                    sector=sector,
+                    ghg=ghg,
+                    year=2023)
+
+                KL_PT = []
+
+                for jj, pt in enumerate(real_PTs):
+                    KL_PT.append(
+                            kl_divergence_uniform_normal_mixture(
+                                p=pt_dists[jj],
+                                q_mu=mu_pt_2023[:, jj],
+                                q_sigma=sigma_pt[:, jj]))
+                KL_CA = kl_divergence_uniform_normal_mixture(
+                        p=ca_dist,
+                        q_mu=mu_ca_2023,
+                        q_sigma=sigma_ca)
+
+                challenge = PreNIR_2025_m04()
+                constants[challenge.key_sector_ghg_pt(sector, ghg)] = jnp.stack(KL_PT)
+                constants[challenge.key_sector_ghg_ca(sector, ghg)] = KL_CA
+
+                if years_idx_of_2050 is not None:
+                    # use "Other" as activity to help ensure that this is the
+                    # only source setting the variable
+                    constants[aer_key_normal_mu_ca(sector, ghg, Activity.Other)] = mu_ca_2050
+                    constants[aer_key_normal_sigma_ca(sector, ghg, Activity.Other)] = sigma_ca
+            else:
+                post_vals[challenge.key_sector_ghg_ca(sector, ghg)] = (
+                        jnp.zeros(()))
+                post_vals[challenge.key_sector_ghg_pt(sector, ghg)] = (
+                        jnp.zeros((13,)))
+
+                if years_idx_of_2050 is not None:
+                    # use "Other" as activity to help ensure that this is the
+                    # only source setting the variable
+                    constants[aer_key_normal_mu_ca(sector, ghg, Activity.Other)] = (
+                            jnp.zeros(()))
+                    constants[aer_key_normal_sigma_ca(sector, ghg, Activity.Other)] = (
+                        jnp.ones(()))
+
+
+
+# TODO: there will be a cost for monitoring
+# https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
+# It can apparently be done pretty well with drones
+# There are approximately 70_000 cattle operations in Canada
+# Monitoring might cost 10-20 million / year?
+
 
 class Bovaer_Monitoring(Barrier):
 
@@ -580,12 +812,25 @@ class Bovaer_Monitoring(Barrier):
     on-site inspection"""
 
     @computed_field
+    def description(self) -> str:
+        return f"""Assume administering and monitoring costs
+    {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for
+    on-site inspection. Furthermore, estimate that these amounts are paid
+    in labour costs, from which income tax is collected back at a rate of
+    {self.income_tax_rate * 100}%.
+    """
+
+    @computed_field
     def paperwork_monitoring(self) -> object:
         return 1000 * u.CAD / u.farm / u.year
 
     @computed_field
     def onsite_monitoring(self) -> object:
         return 3000 * u.CAD / u.farm / u.year
+
+    @property
+    def income_tax_rate(self) -> float:
+        return .25
 
     @computed_field
     def research(self) -> dict[str, str]:
@@ -636,12 +881,42 @@ class Bovaer_Monitoring(Barrier):
             * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
+        pass
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        # num_samples, cattle_types, PT 14
+        heads = constants['latent_livestock_counts']
+        farms_on_bovaer = (
+                heads / 160
+                * new_carry['bovine_population_fraction_on_bovaer'][:, None, None])
+
+        farms_on_bovaer_ca = farms_on_bovaer.sum(axis=(1,2))
+        y['bovaer_monitoring_admin_ca'] = (
+                farms_on_bovaer_ca * self.paperwork_monitoring.magnitude)
+        y['bovaer_monitoring_onsite_ca'] = (
+                farms_on_bovaer_ca * self.onsite_monitoring.magnitude)
+
+        y['bovaer_monitoring_admin_ca_tax'] = (
+                y['bovaer_monitoring_admin_ca'] * self.income_tax_rate)
+        y['bovaer_monitoring_onsite_ca_tax'] = (
+                y['bovaer_monitoring_onsite_ca'] * self.income_tax_rate)
+
 
 class Bovaer_Farm_Subsidy(Barrier):
 
     @computed_field
     def short_description(self) -> str:
         return f"""Pay farmers {self.subsidy_rate} to administer Bovaer."""
+
+    @computed_field
+    def description(self) -> str:
+        return f"""Model a tax-funded government subsidy program to pay
+        cattle farmers {self.subsidy_rate} to administer Bovaer to all
+        cattle on their farms, and comply with monitoring protocols.
+        It is assumed that this subsidy amount is deductible, not
+        subject to income tax.
+        """
 
     @computed_field
     def subsidy_rate(self) -> object:
@@ -678,6 +953,34 @@ class Bovaer_Farm_Subsidy(Barrier):
             * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
 
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
+        n_samples = constants['sigma_ca'].shape[0]
+        new_carry['bovine_population_fraction_on_bovaer'] = jnp.zeros(n_samples)
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        try:
+            have_money = carry['tax_funded_budget_for_bovaer'] > 0
+        except KeyError:
+            have_money = False
+        new_carry['bovine_population_fraction_on_bovaer'] = jnp.where(
+                have_money,
+                new_carry['max_fraction_of_cattle_on_bovaer'],
+                carry['bovine_population_fraction_on_bovaer'])
+
+        # num_samples, cattle_types, PT 14
+        heads = constants['latent_livestock_counts']
+        cattle_per_farm = 160 # look this up somewhere
+        subsidy_per_head = self.subsidy_rate.magnitude / cattle_per_farm
+
+        bovaer_heads_pt = (
+                heads.sum(axis=1)
+                * new_carry['bovine_population_fraction_on_bovaer'][:, None])
+
+        y['bovaer_farm_subsidy_pt'] = subsidy_per_head * bovaer_heads_pt[:, :13]
+        y['bovaer_farm_subsidy_ca'] = subsidy_per_head * bovaer_heads_pt.sum(axis=1)
+
+        y['bovaer_farm_subsidy_pt_tax'] = y['bovaer_farm_subsidy_pt'] * .2
+        y['bovaer_farm_subsidy_ca_tax'] = y['bovaer_farm_subsidy_ca'] * .2
 
 class Bovaer_Purchase_Cost(Barrier):
     """
@@ -731,6 +1034,23 @@ class Bovaer_Purchase_Cost(Barrier):
             sts_key = f'bovaer_cost_{livestock.value}'
             setattr(current, sts_key, cost * current.bovine_population_fraction_on_bovaer)
         return state.t_now + 1 * u.year
+
+    def annual_scan_init(self, new_carry, xs, years, constants, jrkey):
+        pass
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        # num_samples, cattle_types, PT 14
+        heads = constants['latent_livestock_counts']
+
+        daily_bovaer_cost = [self.bovaer_cost[lt].magnitude for lt in Livestock_nonsums]
+        annual_bovaer_cost = jnp.array(daily_bovaer_cost) * 365
+
+        bovaer_costs_pt = (
+                (heads * annual_bovaer_cost[:, None]).sum(axis=1)
+                * new_carry['bovine_population_fraction_on_bovaer'][:, None])
+
+        y['bovaer_cost_pt'] = bovaer_costs_pt[:, :13]
+        y['bovaer_cost_ca'] = bovaer_costs_pt.sum(axis=1)
 
 
 from .strategies.strategy2 import Scale_Bovaer

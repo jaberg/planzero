@@ -9,10 +9,19 @@ import numpy as np
 import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
+from pydantic import computed_field
 from scipy.special import logsumexp
 
 from . import model_db, my_functools, nir2025
-from .enums import GHG, PT, IPCC_Sector
+from .annual_emission_results import (
+    aer_key_normal_mu_ca,
+    aer_key_normal_sigma_ca,
+    aer_result_key,
+)
+from .barriers import Barrier
+from .challenge import PreNIR_2025_m04
+from .enums import GHG, PT, Activity, IPCC_Sector, LULUCF_Sectors
+from .symmetric_blended_lognormal import kl_divergence_uniform_normal_mixture
 
 model_family = 'StaticNormal'
 model_version = 2
@@ -68,6 +77,13 @@ def touch_model(data_cutoff):
                 )
 
 
+def component_id_fn(model_id, ghg, sector):
+    rval = 'comp_{}'.format(
+            model_db.stable_hash(str(
+                (model_id, GHG(ghg).value, IPCC_Sector(sector).value,))))
+    return rval
+
+
 def touch_components(data_cutoff):
     model_id = model_id_from_data_cutoff(data_cutoff)
     arr_pt, arr_ca = nir2025.ktCO2e_dense_w_nan()
@@ -76,8 +92,7 @@ def touch_components(data_cutoff):
         cursor = conn.cursor()
         for sector in IPCC_Sector:
             for ghg in GHG:
-                component_id='comp_{}'.format(model_db.stable_hash(str(
-                    (model_id, ghg.value, sector.value,))))
+                component_id=component_id_fn(model_id, ghg, sector)
                 try:
                     model_db.by_id('ComponentType', component_id=component_id)
                     print('Found component', component_id, model_id, ghg.value, sector.value, 'skipping')
@@ -208,21 +223,16 @@ def entrypoint_static_normals_inference(payload, model_db=model_db):
     # the first column of samples with the actual data means.
     NIR_emission_sample_size = 100
 
-    weights = jnp.array([1.0 / NIR_emission_sample_size] * NIR_emission_sample_size)
-
-    ca_sample = np.empty((NIR_emission_sample_size, n_training_years))
-    pt_sample = np.empty((NIR_emission_sample_size, n_training_years, 13,))
     real_PTs = [pt for pt in PT if pt != PT.XX]
-    for ii, year in enumerate(range(1990, 1990 + n_training_years)):
-        ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
+    nir_rng_key, pt_sample, ca_sample = nir2025.sample_pt_ca(
+            nir_rng_key,
+            NIR_emission_sample_size,
+            years=range(1990, 1990 + n_training_years),
+            PTs=real_PTs,
             sector=params['sector'],
-            ghg=params['ghg'],
-            year=year)
-        nir_rng_key, rng_key_ = jrandom.split(nir_rng_key)
-        ca_sample[:, ii] = ca_dist.sample(rng_key_, (NIR_emission_sample_size,))
-        for jj, pt in enumerate(real_PTs):
-            nir_rng_key, rng_key_ = jrandom.split(nir_rng_key)
-            pt_sample[:, ii, jj,] = pt_dists[jj].sample(rng_key_, (NIR_emission_sample_size,))
+            ghg=params['ghg'])
+
+    weights = jnp.array([1.0 / NIR_emission_sample_size] * NIR_emission_sample_size)
 
     scaled_ca = jnp.array(ca_sample / params['scale'])
     scaled_pt = jnp.array(pt_sample / params['scale'])
@@ -325,7 +335,6 @@ def loglik_NIR_Normal(
     logprob_X = float(np.sum(pt_log_probs[valid_mask[:13]])
                       + (ca_log_prob if valid_mask[13] else 0))
 
-    #print('ll_Normal', logprob_X)
     assert np.isfinite(logprob_X)
     return logprob_X
 
@@ -388,10 +397,21 @@ def loglik_NIR_BayesianNormal(
 
     return logprob_X
 
-def _mixture_log_prob(q_mu, q_sigma, x):
-    """x: 1D, samples from P
-    q_mu: 1D, mixture component means
-    q_sigma: 1D, mixture component std devs
+
+# TODO: uncomment these type hints and use
+# jaxtyping
+# and maybe beartype
+# but check if they work with jax pint unit arrays because
+# that's more important... probably.
+def uniform_normal_mixture_log_prob(
+        q_mu, # Float[jnp.ndarray, "M"]
+        q_sigma, # Float[jnp.ndarray, "M"]
+        x, # Float[jnp.ndarray, "N"]
+        ) -> jnp.ndarray:  # Float[jnp.ndarray, "N"]
+    """
+    q_mu: mixture component normal means
+    q_sigma: mixture component normal scales
+    x: samples from reference distribution P
     """
     N, = x.shape
     chain_len, = q_mu.shape
@@ -409,7 +429,6 @@ def _KL_NIR_BayesianNormal(
     comp_d,
     NIR_year, # target
     emission_year, # target
-    rng_key,
     model_db=model_db,
     ):
     """Return a vector of 14 numbers: real PTs first, then Canada total.
@@ -439,10 +458,6 @@ def _KL_NIR_BayesianNormal(
     eval_sigma[:, 13] = post_samples['sigma_ca']
     eval_sigma *= comp_d['scale']
 
-    # estimate KL empirically over this many samples
-    # TODO: estimate in closed form
-    NIR_emission_sample_size = 100
-
     real_PTs = [pt for pt in PT if pt != PT.XX]
     ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
         sector=sector,
@@ -450,26 +465,20 @@ def _KL_NIR_BayesianNormal(
         year=emission_year)
 
     for jj, pt in enumerate(real_PTs):
-        rng_key, tmp_key = jrandom.split(rng_key)
-        pt_sample = pt_dists[jj].sample(tmp_key, (NIR_emission_sample_size,))
-        log_p = pt_dists[jj].log_prob(pt_sample)
-        assert np.all(np.isfinite(log_p))
-        log_q = _mixture_log_prob(eval_mu[:, jj], eval_sigma[:, jj], pt_sample)
-        assert np.all(np.isfinite(log_q))
-        rval[jj] = max((log_p - log_q).mean(), 0)
+        rval[jj] = kl_divergence_uniform_normal_mixture(
+                p=pt_dists[jj],
+                q_mu=eval_mu[:, jj],
+                q_sigma=eval_sigma[:, jj])
 
-    rng_key, tmp_key = jrandom.split(rng_key)
-    ca_sample = ca_dist.sample(tmp_key, (NIR_emission_sample_size,))
-    log_p = ca_dist.log_prob(ca_sample)
-    assert np.all(np.isfinite(log_p))
-    log_q = _mixture_log_prob(eval_mu[:, 13], eval_sigma[:, 13], ca_sample)
-    assert np.all(np.isfinite(log_q))
-    rval[13] = max((log_p - log_q).mean(), 0)
+    rval[13] = kl_divergence_uniform_normal_mixture(
+            p=ca_dist,
+            q_mu=eval_mu[:, 13],
+            q_sigma=eval_sigma[:,13])
     return rval
 
 
 @my_functools.cache
-def weighted_KL_score(year, model_id, seed_int=1234):
+def weighted_KL_score(year, model_id):
     abs_ktCO2e = np.zeros((len(IPCC_Sector),
                         len(GHG),
                         len(PT)))
@@ -482,20 +491,197 @@ def weighted_KL_score(year, model_id, seed_int=1234):
     abs_ktCO2e[:] = abs_m_sgt[:, :, None]
 
     # zero-out the tiny sector-gas combinations
-    for ii in range(abs_ktCO2e.shape[2]):
-        abs_ktCO2e[ abs_ktCO2e < 1 ] = 0
+    abs_ktCO2e[ abs_ktCO2e < 1 ] = 0
 
     KL_values = np.zeros_like(abs_ktCO2e)
 
-    rng_key = jrandom.key(seed_int)
     # now estimate the sector-gas KL divergences
     for (sector, ghg), comp_d in BNs_by_sector_ghg(model_id).items():
         KL_sg = _KL_NIR_BayesianNormal(
                 model_id,
                 sector=sector, ghg=ghg, comp_d=comp_d,
-                NIR_year=2025, emission_year=year,
-                rng_key=rng_key)
+                NIR_year=2025,
+                emission_year=year)
         KL_values[nir2025.idx_of_sector[sector], nir2025.idx_of_ghg[ghg]] = KL_sg
 
     weighted_divergence = (abs_ktCO2e * KL_values).sum() / abs_ktCO2e.sum()
     return weighted_divergence, abs_ktCO2e, KL_values
+
+@my_functools.cache
+def p_emissions_below_thresh_ex_LULUCF(
+        model_id:str,
+        thresh_ktCO2e:float,
+        ) -> float:
+    n_samples = 500
+    mu = np.zeros((n_samples,))
+    sigma_squared = np.zeros((n_samples,))
+
+    n_contribs = 0
+    for (sector, ghg), comp_d in BNs_by_sector_ghg(model_id).items():
+        if sector in LULUCF_Sectors:
+            continue
+        samples = model_db.load_ndarray_group(
+                model_id=model_id,
+                component_id=comp_d['component_id'],
+                group_id='grouped_samples')
+        n_chains, n_samples_, n_regions = samples['mu'].shape
+        assert n_samples == n_samples_
+        assert n_chains == 1
+        assert n_regions == 13
+        mu[:] += comp_d['scale'] * samples['mu'].sum(axis=2)[0] # sum regions for national mean
+        sigma_squared[:] += (comp_d['scale'] * samples['sigma_ca'][0]) ** 2
+        n_contribs += 1
+
+    normal = dist.Normal(loc=mu, scale=jnp.sqrt(sigma_squared))
+    p_below_thresh = normal.cdf(thresh_ktCO2e)
+    assert p_below_thresh.shape == (n_samples,)
+    rval = p_below_thresh.mean()
+    return rval
+
+
+class NIR_Sector_Static_Normal_Barrier(Barrier):
+
+    sector: IPCC_Sector
+
+    data_cutoff: datetime.date
+
+    draws_per_posterior_sample: int = 32
+
+    calculate_KL_divergence_PreNIR_2025_m04: bool = False
+
+    @computed_field
+    def short_description(self) -> str | None:
+        return f"""
+        A-priori, a static normal distribution to approximate
+        emissions in the "{self.sector.value}" NIR sector
+        during the period from 1990 - {self.data_cutoff.year}.
+        """
+        #The posterior distribution represented by this barrier element
+        #is not necessarily normal.
+
+    @computed_field
+    def description(self) -> str | None:
+        return f"""
+        A-priori, a static normal distribution to approximate
+        emissions in the "{self.sector.value}" NIR sector
+        during the period from 1990 - {self.data_cutoff.year}.
+        The posterior distribution represented by this barrier element
+        is not necessarily normal.
+        """
+
+    @computed_field
+    def pretty_name(self) -> str:
+        return f'Static Normal Sector Estimate for {self.sector.value})'
+
+    @property
+    def model_id(self) -> str:
+        model_id = model_id_from_data_cutoff(self.data_cutoff)
+        return model_id
+
+    def component_id(self, ghg) -> str:
+        component_id = component_id_fn(self.model_id, sector=self.sector, ghg=ghg)
+        return component_id
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['StaticNormals']
+
+    def annual_scan_init(self, initial_carry, xs, years, constants, jrkey=None):
+        model_id = self.model_id
+        for ghg in GHG:
+            component_id = self.component_id(ghg)
+            try:
+                comp_d, = model_db.params_BayesianNormal(component_id)
+            except model_db.NoRecord:
+                comp_d = None
+
+            if comp_d:
+                grouped_samples = model_db.load_ndarray_group(
+                        model_id, component_id, 'grouped_samples')
+                post_samples = post_samples_from_grouped_samples(grouped_samples)
+                assert model_id == comp_d['model_id']
+                assert self.sector == comp_d['sector']
+                assert ghg == comp_d['ghg']
+                assert self.data_cutoff == comp_d['data_cutoff']
+
+                if jrkey is None:
+                    jrkey = jrandom.key(78324)
+
+                mu = post_samples['mu'] # (n_samples, 13)
+                n_samples, thirteen = mu.shape
+                assert thirteen == 13
+                mu_ca = mu.sum(axis=1) # (n_samples,)
+
+                eval_mu = np.zeros((n_samples, 14))
+                eval_mu[:, :13] = mu
+                eval_mu[:, 13] = mu_ca
+                eval_mu *= comp_d['scale']
+
+                eval_sigma = np.zeros((n_samples, 14))
+                eval_sigma[:, :13] = post_samples['sigma_pt'][0]
+                eval_sigma[:, 13] = post_samples['sigma_ca']
+                eval_sigma *= comp_d['scale']
+
+                constants[aer_key_normal_mu_ca(self.sector, ghg, Activity.Other)] = (
+                        eval_mu[:, 13])
+                constants[aer_key_normal_sigma_ca(self.sector, ghg, Activity.Other)] = (
+                        eval_sigma[:, 13])
+
+                if n_samples == constants['n_samples']:
+                    jrkey, tmpkey = jrandom.split(jrkey)
+                    constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
+                            jrandom.normal(tmpkey, (
+                                self.draws_per_posterior_sample, n_samples))
+                            * eval_sigma[:,13]
+                            + eval_mu[:, 13]
+                            ).reshape(1, -1)
+                else:
+                    # some logic to e.g. loop over posterior samples drawing
+                    # samples until we've drawn enough
+                    raise NotImplementedError()
+
+                if self.calculate_KL_divergence_PreNIR_2025_m04:
+                    assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
+                    real_PTs = [pt for pt in PT if pt != PT.XX]
+
+                    ca_dist, pt_dists = nir2025.ktCO2e_numpyro_dist_pt_ca(
+                        sector=self.sector,
+                        ghg=ghg,
+                        year=2023)
+
+                    KL_PT = []
+
+                    for jj, pt in enumerate(real_PTs):
+                        KL_PT.append(
+                                kl_divergence_uniform_normal_mixture(
+                                    p=pt_dists[jj],
+                                    q_mu=eval_mu[:, jj],
+                                    q_sigma=eval_sigma[:, jj]))
+                    KL_CA = kl_divergence_uniform_normal_mixture(
+                            p=ca_dist,
+                            q_mu=eval_mu[:, 13],
+                            q_sigma=eval_sigma[:, 13])
+
+                    challenge = PreNIR_2025_m04()
+                    constants[challenge.key_sector_ghg_pt(self.sector, ghg)] = jnp.stack(KL_PT)
+                    constants[challenge.key_sector_ghg_ca(self.sector, ghg)] = KL_CA
+
+            else: # no comp_d, this is an irrelevant (sector, ghg)
+                constants[aer_result_key(self.sector, ghg, Activity.Other)] = (
+                        jnp.zeros((1, 1)))
+
+                if self.calculate_KL_divergence_PreNIR_2025_m04:
+                    challenge = PreNIR_2025_m04()
+                    constants[challenge.key_sector_ghg_ca(self.sector, ghg)] = (
+                            jnp.zeros(()))
+                    constants[challenge.key_sector_ghg_pt(self.sector, ghg)] = (
+                            jnp.zeros((13,)))
+
+                constants[aer_key_normal_mu_ca(self.sector, ghg, Activity.Other)] = (
+                        jnp.zeros(()))
+                constants[aer_key_normal_sigma_ca(self.sector, ghg, Activity.Other)] = (
+                        jnp.ones(()))
+
+
+    def annual_scan_step(self, new_carry, y, x, year, carry, constants, outputs):
+        pass

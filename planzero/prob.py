@@ -1,61 +1,75 @@
 """
 BaseModels for Probabilistic Models
-
-Analog to sim.py for Simulation-based models.
 """
 
-from typing import ClassVar
-
-from pydantic import BaseModel, computed_field
-
+from . import ablation
+from .annual_emission_results import AnnualEmissionResults
+from .enums import GHG
+from .html import html_by_ghg
+from .nir2025 import near_zero_sector_ghgs
+from .nir_model import NIR_ScenarioModel
+from .scenario_model import Computation, registry_compute_model
 from .singleton_registry import SingletonRegistry
+from .sparkline_echart_helper import (
+    national_emissions_by_sector_echart_from_sample,
+    sectoral_emissions_by_region_echart_from_sample,
+)
 
 registry = SingletonRegistry()
 
 
-# TODO Is this class used?
-class InferenceResult(BaseModel):
-
-    inference_name: str
-
-    # these can be large, should be str->memory-mapped file
-    post_samples: dict[str, object]
-
-
-site_inferences = registry # TODO: deprecate alais
-
-class SiteInference(BaseModel):
+class SiteInference:
     """A specific simulation (no caller configuration, all pre-loaded)
     to be listed on the site's simulation page.
     """
 
-    include_in_registry: ClassVar[bool] = False
+    # include this object in the registry of models to show on the site
+    # e.g. on the models/ page
+    # This should be over-ridden with a derived class class variable
+    include_in_registry: bool
 
-    def main_model_id(self) -> int:
-        # if model corresponds to a model in model_db, print model_id to
-        # stdout and return 0
-        print()
-        return 1
+    # str if if this SiteInference is an ablated model
+    # None if this SiteInference is not an ablated model
+    strategy_id: str|None
 
-    def main_inference_cache_key(self):
-        # called via e.g. __main__.py
-        # e.g. GH Actions will be used to cache a directory based on this key
-        pass
+    _scenario_model_registry_name: str
+    _scenario_model: NIR_ScenarioModel
 
-    def main_inference_prep(self):
-        # called via e.g. __main__.py
-        # The required samples files may be cached, but the model_db is
-        # under construction. It should be built as if from scratch.
-        pass
+    def __init__(self, *,
+                 scenario_model_registry_name:str,
+                 scenario_model:NIR_ScenarioModel,
+                 strategy_id:str|None=None,
+                 ):
+        self._scenario_model_registry_name = scenario_model_registry_name
+        self._scenario_model = scenario_model
+        self.strategy_id = strategy_id
 
-    def main_inference_work(self):
-        # called via e.g. __main__.py
-        # post-condition: all inferences required for the model have been
-        # computed and cached in local file system
-        #
-        # The required files may be cached, workers should check for completed
-        # files and assume they are correct if they are present.
-        pass
+    @property
+    def scenario_model_registry_name(self) -> str:
+        # this is attribute is used by GitHub workflow via
+        # __main__.py to manage the artifact cache
+        raise NotImplementedError()
+
+    @property
+    def scenario_model(self) -> NIR_ScenarioModel:
+        return self._scenario_model
+
+    def registry_compute_model(
+            self,
+            compute_posterior=True,
+            quiet=True,
+            ) -> Computation:
+        return registry_compute_model(
+                model=self._scenario_model,
+                model_name=self._scenario_model_registry_name,
+                cache_posterior=compute_posterior,
+                run_compute_posterior=compute_posterior,
+                quiet=quiet,
+                seed_or_key=42)
+
+    @property
+    def comp(self) -> Computation:
+        return self.registry_compute_model()
 
     @classmethod
     def __init_subclass__(cls):
@@ -63,11 +77,14 @@ class SiteInference(BaseModel):
         if getattr(cls, 'include_in_registry', False):
             registry.add_class(cls)
 
-    @computed_field
+    @property
     def show_on_models_page(self) -> bool:
         return True
 
-    @computed_field
+    def one_line_description(self) -> str:
+        raise NotImplementedError()
+
+    @property
     def short_description(self) -> str:
         rval = self.__class__.__doc__
         if rval is None:
@@ -75,9 +92,11 @@ class SiteInference(BaseModel):
         else:
             return rval
 
-    @computed_field
-    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        return (float('nan'), float('nan'))
+    @property
+    def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
+        low, high = self.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(self.comp)
+        rval = f"{low:.1f} - {high:.1f} Mt{html_by_ghg[GHG.CO2]}e"
+        return rval
 
     def prediction_scores_prenir_2025_06(self) -> dict:
         raise NotImplementedError()
@@ -85,11 +104,11 @@ class SiteInference(BaseModel):
     def challenge_result_url(self, challenge_name) -> str:
         return ''
 
-    @computed_field
+    @property
     def show_prediction_quality(self) -> bool:
         return False
 
-    @computed_field
+    @property
     def pretty_name(self) -> str:
         return self.__class__.__name__.replace(' ', '_')
 
@@ -97,7 +116,86 @@ class SiteInference(BaseModel):
     def posts_developing_this_page(self) -> list[str]:
         return []
 
+    @property
+    def strategy_ids(self) -> list[str]:
+        as_id = self.ablation_study_id
+        if as_id is None:
+            return []
+        else:
+            return ablation.registry[as_id].strategy_ids
 
-from . import nir2025_site
-from . import nir_static_normals_site
-from . import nir_ar2_site
+    @property
+    def affected_sectors_by_strategy(self) -> dict:
+        raise NotImplementedError()
+
+    @property
+    def strategies(self) -> dict:
+        if self.ablation_study is None:
+            rval = {}
+        else:
+            assert None not in self.ablation_study.strategies
+            rval = {
+                    key: val
+                    for key, val in self.ablation_study.strategies.items()
+                    if key != self.strategy_id
+                    }
+        return rval
+
+    @property
+    def barriers(self) -> dict:
+        if self.ablation_study is None:
+            return {}
+        else:
+            return self.ablation_study.barriers
+
+    @property
+    def ablation_study_id(self) -> str|None:
+        return None
+
+    @property
+    def ablation_study(self) -> ablation.AblationStudy | None:
+        as_id = self.ablation_study_id
+        if as_id is None:
+            return None
+        else:
+            return ablation.registry[as_id]
+
+    def emission_results(self) -> AnnualEmissionResults:
+        raise NotImplementedError()
+
+    def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
+        # TODO: make it work, then move to base class
+        ktCO2e_sample = self.scenario_model.all_sector_echart_ktCO2e_sample(self.comp)
+
+        rval = national_emissions_by_sector_echart_from_sample(
+                ktCO2e_sample=ktCO2e_sample,
+                year_0=self.comp.model.mv.year_0,
+                n_years=self.comp.n_years,
+                n_samples=self.comp.n_mcmc,
+                div_id=div_id,
+                v_unit=v_unit,
+                model_name=self.__class__.__name__,
+                )
+        return rval
+
+    def sector_echart(self, sector, ghg:GHG|None, v_unit):
+        ktCO2e_sample = self.scenario_model.per_sector_echart_ktCO2e_sample(
+                comp=self.comp, sector=sector, ghg=ghg)
+        return sectoral_emissions_by_region_echart_from_sample(
+                ktCO2e_sample=ktCO2e_sample,
+                year_0=1990,
+                n_years=34,
+                n_samples=self.comp.n_mcmc,
+                sector=sector,
+                ghg=ghg,
+                div_id=(f'{self.__class__.__name__}'
+                        f'_regional_sparkline_echart'
+                        f'_{ghg.value if ghg else "all"}'),
+                v_unit=v_unit)
+
+    # called by e.g. models/prob/foo/sectors/bar
+    # to determine which GHGs to show
+    def GHGs_for_sector(self, sector):
+        near_zeros = near_zero_sector_ghgs()
+        rval = [ghg for ghg in GHG if (sector, ghg) not in near_zeros]
+        return rval

@@ -12,14 +12,6 @@
 <p>
 As of this post, PlanZero incorporates uncertainty estimates from {{siteref("NIR", "NIR-2025")}}
 into a new kind of model in PlanZero, a probabilistic model.
-The emissions estimates in NIR-2025 were meant to be interpreted in
-a probabilistic framework,
-and interpreting reported emissions this way makes it possible to
-show them more completely, and evaluate NIR predictions
-relative to confidence in their estimated values.
-</p>
-
-<p>
 The NIR-2025 follows IPCC-2006 reporting guidance in defining uncertainty as <i>lack of knowledge of the true
 value of a variable, that can be described as a probability density function</i>.
 Probability density functions, in this context,
@@ -31,7 +23,7 @@ this post includes a primer on probability density functions, distributions, and
 </p>
 
 <p>
-The density functions used to model per-sector-region-gas-year emissions in the NIR-2025 model are custom parametric density functions,
+The density functions used to model per-sector-region-gas-year emissions in the NIR-2025 model are custom PlanZero-defined parametric density functions,
 which this post dubs "Symmetric Blended Log-Normal" (SBLN) distributions.
 These distributions are used to blend Normal and Log-Normal distributions so that
 all sectors can be modelled with the same type of distribution, regardless of whether the sector
@@ -53,11 +45,12 @@ The details of how the parameters of the SBLN distribution were set in all cases
 <p>
 The probabilistic NIR-2025 model introduced here is intended to support the evaluation of future work on
 {{siteref("Predictive_Model", "predictive models")|safe}},
-whose job (in future posts) will be to predict emission amounts before they are published.
+whose job will be to predict emission amounts before they are published.
 <a href="#appendix-evaluating">Appendix 4</a>
-describes a method for evaluating predictive models quantitatively on the basis of the probabilistic NIR-2025 model,
-such that a score of zero corresponds to perfect distributional prediction across all sector-gas-region-year combinations,
-and anything else represents a magnitude-weighted KL-divergence from the NIR-2025 model.
+describes a method for evaluating predictive models on the basis of
+the probabilistic NIR-2025 model,
+using a statistical tool called <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence">KL-divergence</a>.
+[edit: this method is now used for e.g. the "<a href="/metrics/#PreNIR_2025_m04">Pre-NIR-2025-m04</a>" evaluation metric in the <a href="/metrics/">Metrics section</a>.]
 </p>
 
 <p>
@@ -80,7 +73,7 @@ shown at the bottom of the graphic among other sectors for land-use, land-use ch
 Finally, this post also brings a procedural change, introducing
 "<a href="/about/#planned-status">Planned</a>" as an earlier-stage status for posts.
 The purpose of planned posts is to communicate a roadmap.
-When a planned post is no longer missing content, then it will be marked instead as a Draft.
+When a planned post is no longer missing content, then it will be marked as a Draft.
 Relatedly, the Overview / Appendix format used in this post breaks with the Introduction / Content / Conclusion pattern used to date
 for two reasons:
 (1) the Overview / Appendix format is better for communicating

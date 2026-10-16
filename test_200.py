@@ -1,23 +1,29 @@
-import pytest
 import re
+import time
+import warnings
 from urllib.parse import urljoin
+
+import pytest
 from fastapi.testclient import TestClient
+
 import app
-import planzero
+import warmup
 
 client = TestClient(app.app)
 
 
-@pytest.mark.parametrize("endpoint", planzero.endpoints.endpoints())
-def test_endpoints(endpoint):
-    response = client.get(endpoint)
-    assert response.status_code == 200
-
-
 _checked_links = set()
 
+@pytest.mark.parametrize("endpoint", warmup.cached_endpoints())
+def test_endpoints(
+        endpoint,
+        ):
+    response = client.get(endpoint)
+    assert response.status_code == 200
+    _checked_links.add(endpoint)
 
-@pytest.mark.parametrize("endpoint", planzero.endpoints.endpoints())
+
+@pytest.mark.parametrize("endpoint", warmup.cached_endpoints())
 def test_internal_links(endpoint):
     response = client.get(endpoint)
     assert response.status_code == 200
@@ -26,6 +32,8 @@ def test_internal_links(endpoint):
     html = response.text
     links = re.findall(r'href=["\']([^"\'#?]+)["\']', html)
     assert 'StrictUndefined' not in html
+    assert 'TODO' not in html
+    assert 'XXX' not in html
 
     for link in set(links):
         # Skip external protocols
@@ -44,6 +52,6 @@ def test_internal_links(endpoint):
 
 
 def test_blog_404():
-    url = f"/blog/not-an-actual-blog/"
+    url = "/blog/not-an-actual-blog/"
     response = client.get(url)
     assert response.status_code == 404
