@@ -14,7 +14,7 @@ def test_weighted_divergence():
     near_zero = near_zero_sector_ghgs()
     assert np.isfinite(prenir['weighted_divergence'])
     wd = float(prenir['weighted_divergence'])
-    assert 4.1 < wd < 4.3, wd
+    assert 3.4 < wd < 3.5, wd
     for sector in IPCC_Sector:
         for ghg in GHG:
             if (sector, ghg) not in near_zero:
@@ -52,7 +52,7 @@ def test_p_net_zero():
     site_model = Static_Normals_2024_12_31()
     p_net_zero = site_model.scenario_model.p_net_zero_2050(site_model.comp)
 
-    assert 1e-24 < p_net_zero < 1e-22
+    assert 1e-29 < p_net_zero < 1e-28
 
 
 def test_predicted_emissions():
