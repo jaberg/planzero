@@ -288,85 +288,6 @@ def _uniform_normal_mixture_log_prob(
     return rval
 
 
-@jax.jit(static_argnames=['n_quad'])
-def kl_divergence_uniform_normal_mixture_quad_q(
-        p,  # SymmetricBlendedLogNormal, with 
-        q_mu,  # (M,) + p.batch_shape mixture component means
-        q_sigma,  # (M,) + p.batch_shape mixture component scales
-        n_quad: int = 64,  # Gauss-Hermite quadrature points per component
-        ) -> jnp.ndarray:  # p.batch_shape, KL[P || Q], clamped >= 0
-    """Deterministic estimate of KL divergence from P to a uniform mixture
-    of normals Q(x) = (1/M) * sum_m N(x | q_mu[m], q_sigma[m]).
-
-    Instead of a Monte-Carlo estimate, the KL divergence,
-
-        KL[P || Q] = sum_c w_c * E_{C_c}[ log P - log Q ],
-
-    is decomposed over P's
-    three mixture components
-    and each expectation is evaluated with Gauss-Hermite quadrature on the
-    component's natural coordinates:
-        - normal component:        x = mu + scale_norm * t
-        - negative lognormal:      x = -exp(log_loc + scale_neg * t)
-        - positive lognormal:      x =  exp(log_loc + scale_pos * t)
-
-    This converges much faster and more accurately than Monte-Carlo sampling,
-    and is deterministic.
-    """
-    assert q_sigma.shape == q_mu.shape
-    # assert all(s > 0 for s in q_sigma), q_sigma  ## messes up jit
-
-    q_shape = q_mu.shape
-    p_shape = p.batch_shape
-    try:
-        assert len(q_shape) >= len(p_shape)
-        if len(p_shape):
-            qp_shape = q_shape[-len(p_shape):]
-
-            assert len(qp_shape) == len(p_shape)
-            for qpsi, psi in zip(qp_shape, p_shape):
-                assert qpsi == psi or qpsi == 1
-    except AssertionError as err:
-        err.add_note('q_shape must explicitly include p_shape dims for broadcasting')
-        err.add_note(f'p_shape={p_shape}')
-        err.add_note(f'q_shape={q_shape}')
-        raise
-
-    def f(x):
-        return p.log_prob(x) - _uniform_normal_mixture_log_prob(q_mu, q_sigma, x)
-
-    # arrays of shape (n_quad,)
-    v_nodes, v_weights = _gauss_hermite(n_quad)
-    # arrays that will broadcast over batch_shape
-    nodes = v_nodes.reshape((-1,) + (1,) * len(p_shape))
-    weights = v_weights.reshape((-1,) + (1,) * len(p_shape))
-    if isinstance(p, SymmetricBlendedLogNormal):
-        # batch_shape + (3,) in order [neg, norm, pos]
-        log_weights = p._get_log_weights()
-        mixture_weights = jnp.exp(log_weights)
-
-        log_loc = p._active_lognormal_mu()
-        assert log_loc.shape == mixture_weights.shape[:-1]
-        assert mixture_weights.shape[-1] == 3
-
-        e_norm = (weights * f(p.mu + p.scale_norm * nodes)).sum(axis=0)
-        e_neg = (weights * f(-jnp.exp(log_loc + p.scale_neg * nodes))).sum(axis=0)
-        e_pos = (weights * f(jnp.exp(log_loc + p.scale_pos * nodes))).sum(axis=0)
-
-        kl = (mixture_weights[..., 1] * e_norm
-              + mixture_weights[..., 0] * e_neg
-              + mixture_weights[..., 2] * e_pos)
-        assert kl.shape == p_shape
-    elif isinstance(p, dist.Normal):
-        if p_shape == ():
-            kl = (weights * f(p.mean + jnp.sqrt(p.variance) * nodes)).sum()
-        else:
-            raise NotImplementedError()
-    else:
-        raise NotImplementedError(p)
-    rval = jnp.maximum(kl, 0.0)
-    assert rval.shape == p_shape
-    return rval
 
 
 def _uniform_normal_mixture_variance(q_mu, q_sigma):
@@ -375,6 +296,70 @@ def _uniform_normal_mixture_variance(q_mu, q_sigma):
     mix_mean = jnp.mean(q_mu, axis=0)
     mix_second = jnp.mean(q_sigma ** 2 + q_mu ** 2, axis=0)
     return mix_second - mix_mean ** 2
+
+
+@jax.jit(static_argnames=['n_quad', 'clip'])
+def kl_P_SBLN_Q_uniform_normal_mixture(
+        p, # batch_shape
+        q_mu, # (N,) + batch_shape
+        q_sigma, # (N,) + batch_shape
+        n_quad: int = 64,
+        clip=True,
+        ) -> jnp.ndarray: # batch_shape
+
+    p_shape = p.batch_shape
+    v_nodes, v_weights = _gauss_hermite(n_quad)
+
+    nodes = v_nodes.reshape((n_quad,) + (1,) * len(p_shape))
+    weights_arr = v_weights.reshape((n_quad,) + (1,) * len(p_shape))
+
+    # parameters of all three components
+    # where Y corresponds to the [positive] log-domain
+    # where X = exp(Y)
+    y_mu = p._active_lognormal_mu()
+    y_sigma_pos = p.scale_pos
+    y_sigma_neg = p.scale_neg
+    x_sigma = p.scale_norm
+
+    # y_nodes: hermite points for positive mixture component
+    # (note that the values of y_nodes may be negative numbers)
+    y_nodes = nodes * y_sigma_pos + y_mu
+
+    # hermite points for middle term
+    x_nodes = nodes * x_sigma + p.mu
+
+    exp_y_nodes = jnp.exp(y_nodes)
+
+    integrand_neg = (
+            dist.LogNormal(y_mu, y_sigma_neg).log_prob(exp_y_nodes)
+            - _uniform_normal_mixture_log_prob(
+                jnp.asarray(q_mu), jnp.asarray(q_sigma), -exp_y_nodes))
+
+    integrand_mid = (
+            dist.Normal(p.mu, x_sigma).log_prob(x_nodes)
+            - _uniform_normal_mixture_log_prob(
+                jnp.asarray(q_mu), jnp.asarray(q_sigma), x_nodes))
+
+    integrand_pos = (
+            dist.LogNormal(y_mu, y_sigma_pos).log_prob(exp_y_nodes)
+            - _uniform_normal_mixture_log_prob(
+                jnp.asarray(q_mu), jnp.asarray(q_sigma), exp_y_nodes))
+
+    # batch_shape + (3,)
+    integrand = jnp.stack([
+        (integrand_neg * weights_arr).sum(axis=0),
+        (integrand_mid * weights_arr).sum(axis=0),
+        (integrand_pos * weights_arr).sum(axis=0),
+        ], axis=-1)
+
+    # batch_shape + (3,)
+    mixture_weights = jnp.exp(p._get_log_weights())
+
+    raw_kl = (integrand * mixture_weights).sum(axis=-1)
+    if clip:
+        return jnp.maximum(0, raw_kl)
+    else:
+        return raw_kl
 
 
 def kl_divergence_uniform_normal_mixture_quad_p(
@@ -402,9 +387,6 @@ def kl_divergence_uniform_normal_mixture_quad_p(
     nodes = v_nodes.reshape((-1,) + (1,) * len(p_shape))
     weights_arr = v_weights.reshape((-1,) + (1,) * len(p_shape))
     x = p_mean + p_std * nodes
-    # x shape: (n_quad,) + p.batch_shape
-    # print(x.shape)
-    # print(x[:, 0])
 
     # Re-weight the Gauss-Hermite nodes according to the ratio of the density
     # of P to the density of the Gaussian approximation used by the nodes.
@@ -415,54 +397,85 @@ def kl_divergence_uniform_normal_mixture_quad_p(
     importance_weights_unnorm = weights_arr * jnp.exp(log_ratio)
     importance_weights = importance_weights_unnorm / importance_weights_unnorm.sum()
 
-    # print('importance', importance_weights)
-
-    # print('q_mu', q_mu)
-    # print('q_sigma', q_sigma)
-    # q_logp = _uniform_normal_mixture_log_prob(jnp.asarray(q_mu), jnp.asarray(q_sigma), x)
-    # print('q logp_0', q_logp.shape, q_logp[:, 0])
-    # print('q logp_1', q_logp.shape, q_logp[:, 1])
-    # print('q logp_2', q_logp.shape, q_logp[:, 2])
-    # p_logp = p.log_prob(x)
-    # print('p logp_0', p_logp.shape, p_logp[:, 0])
-    # print('p logp_1', p_logp.shape, p_logp[:, 1])
-    # print('p logp_2', p_logp.shape, p_logp[:, 2])
-
     integrand = (
             p.log_prob(x)
             - _uniform_normal_mixture_log_prob(
                 jnp.asarray(q_mu), jnp.asarray(q_sigma), x))
-    # print('integrand', integrand)
-    kl = (importance_weights * integrand).sum(axis=0)
-    return kl
-    # print('kl', kl)
-    rval = jnp.maximum(kl, 0.0)
+    raw_kl = (importance_weights * integrand).sum(axis=0)
+    if raw_kl.shape == ():
+        if raw_kl < -1e-6:
+            print('x', x)
+            print('p.log_prob(x)', p.log_prob(x))
+            print('q.log_prob(x)', _uniform_normal_mixture_log_prob(
+                jnp.asarray(q_mu), jnp.asarray(q_sigma), x))
+            print('importance_weights', importance_weights)
+            print('p log_weights', p._get_log_weights())
+
+        if raw_kl < -1e-6:
+            for ac in p.arg_constraints:
+                print('p', ac, getattr(p, ac))
+            print('p_mean', p_mean)
+            print('p_std', p_std)
+            print('q_mu', ", ".join(str(x) for x in list(q_mu[:20])))
+            print('q_sigma', ", ".join(str(x) for x in list(q_sigma[:20])))
+        assert float(raw_kl) > -1e-6
+
+    rval = jnp.maximum(raw_kl, 0.0)
     assert rval.shape == p_shape
     return rval
 
 
-def kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad: int = 64):
-    kl_p = kl_divergence_uniform_normal_mixture_quad_p(
-        p, q_mu, q_sigma, n_quad=n_quad)
-    return kl_p
-    kl_q = kl_divergence_uniform_normal_mixture_quad_q(
-        p, q_mu, q_sigma, n_quad=n_quad)
-    p_mean = p.mu
-    p_var = p.variance
-    q_mean = jnp.mean(q_mu)
-    q_var = _uniform_normal_mixture_variance(q_mu, q_sigma)
+@jax.jit(static_argnames=['n_quad'])
+def kl_P_normal_Q_uniform_normal_mixture(p:dist.Normal,
+                                         q_mu, q_sigma,
+                                         n_quad: int = 64):
+    # arrays of shape (n_quad,)
+    v_nodes, v_weights = _gauss_hermite(n_quad)
 
-    # if q_mean is far from from p_mean
-    # smoothly transition between the two implementations,
-    # but unless they're nearly identical rely almost entirely on
-    # kl_q or kl_p, because it's only when the variances match
-    # that they can be trusted to have nearly the same value.
-    indicator = (p_mean - q_mean) / jnp.sqrt(1e-20 + p_var + q_var)
-    coef = jnp.tanh(indicator) / 2 + .5
-    rval = (
-        coef * kl_q # when p is broader, estimate with points in q
-        + (1 - coef) * kl_p # when q is broader estimate with from points in p
-        )
+    # arrays that will broadcast over batch_shape
+    p_shape = p.batch_shape
+    nodes = v_nodes.reshape((-1,) + (1,) * len(p_shape))
+    weights = v_weights.reshape((-1,) + (1,) * len(p_shape))
+
+    def f(x):
+        return p.log_prob(x) - _uniform_normal_mixture_log_prob(q_mu, q_sigma, x)
+
+    if p_shape == ():
+        kl = (weights * f(p.mean + jnp.sqrt(p.variance) * nodes)).sum()
+    else:
+        raise NotImplementedError()
+    return kl
+
+
+def kl_divergence_uniform_normal_mixture(p, q_mu, q_sigma, n_quad: int = 64):
+    assert q_sigma.shape == q_mu.shape
+    # assert all(s > 0 for s in q_sigma), q_sigma  ## messes up jit
+
+    q_shape = q_mu.shape
+    p_shape = p.batch_shape
+    try:
+        assert len(q_shape) >= len(p_shape)
+        if len(p_shape):
+            qp_shape = q_shape[-len(p_shape):]
+
+            assert len(qp_shape) == len(p_shape)
+            for qpsi, psi in zip(qp_shape, p_shape):
+                assert qpsi == psi or qpsi == 1
+    except AssertionError as err:
+        err.add_note('q_shape must explicitly include p_shape dims for broadcasting')
+        err.add_note(f'p_shape={p_shape}')
+        err.add_note(f'q_shape={q_shape}')
+        raise
+
+    if isinstance(p, SymmetricBlendedLogNormal):
+        rval = kl_P_SBLN_Q_uniform_normal_mixture(
+            p, q_mu, q_sigma, n_quad=n_quad)
+    elif isinstance(p, dist.Normal):
+        rval = kl_P_normal_Q_uniform_normal_mixture(
+            p, q_mu, q_sigma, n_quad=n_quad)
+    else:
+        raise NotImplementedError(p)
+
     return rval
 
 

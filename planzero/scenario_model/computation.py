@@ -564,6 +564,9 @@ class ComputationDistD:
     def __setitem__(self, item:VarKey, value:Distribution):
         self.comp.set_dist(item, value)
 
+    def items(self):
+        return self.comp._dist_d.items()
+
 
 class ComputationNdarrayD:
     """Dict-like access by key for all ndarrays in a Computation
@@ -585,6 +588,9 @@ class ComputationNdarrayD:
 
     def __setitem__(self, item:VarKey, value:jnp.ndarray):
         self.comp.set_ndarray(item, value)
+
+    def items_no_sample_if_necessary(self):
+        return self.comp._ndarray_d.items()
 
 
 class Computation:

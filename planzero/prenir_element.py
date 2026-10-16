@@ -242,6 +242,8 @@ class PreNIR_ModelElement(ModelElement):
                     key, mu_pred_year, sigma_pred_year)
             assert kl.shape == ()
             assert weight.shape == ()
+            assert float(kl) >= 0
+            assert float(weight) >= 0
             ws.val.general[key] = kl
             return kl * weight
         else:

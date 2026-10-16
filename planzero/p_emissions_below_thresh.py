@@ -91,8 +91,7 @@ class PEmissionsBelowThresh(ModelElement):
             p_below_thresh = total_normal.cdf(self.thresh_ktCO2e)
             assert p_below_thresh.shape == (ws.n_mcmc,)
             rval = p_below_thresh.mean()
-            return rval
-
+            # rval will still get (1,) shape in mcmc dim
             ws.val.general[self.prob_key] = rval
         else:
             raise NotImplementedError(ws.phase)

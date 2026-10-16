@@ -93,6 +93,7 @@ def main_inference_prep(args):
 
 def main_inference_work(args):
     completed_prob_registry()[args.model].registry_compute_model(
+            quiet=False,
             compute_posterior=False)
 
 

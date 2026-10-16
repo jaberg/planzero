@@ -144,6 +144,14 @@ class NIR_ScenarioModel(ScenarioModel):
 
 
     # P-Emissions-Below-Thresh
+    def p_net_zero_2050(self, comp:Computation) -> float:
+        elem = PEmissionsBelowThresh(
+            prediction_year=2050,
+            thresh_ktCO2e=0.0,
+            ktCO2e_normal_keys_by_sector_ghg={})
+        pnz = comp.ndarray_d[elem.prob_key]
+        assert pnz.shape == (1,)
+        return float(pnz[0])
 
     def add_element_p_net_zero_2050(self, **kwargs):
         self.add_element(

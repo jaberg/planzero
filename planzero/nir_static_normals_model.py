@@ -87,8 +87,9 @@ class StaticNormals_ModelElement(ModelElement):
                     # 1.6, # n_quad=16 with just quad_p
                     #1.8, # centered priors, 1000 warmup steps
                     #1.9, # tweaked logic here, new ktCO2e dists, init_uniform, target_accept_prob way up at .995
-                    1.91, # <-- tweaked epsilon for fishing emissions
+                    # 1.91, # <-- tweaked epsilon for fishing emissions
                     # and also empirical_prior for nationally reported sectors
+                    1.92, # new KL quadrature implementation
 
                     # Idea: if some PT contribs are too tiny, then just
                     #       cut their contribution to the national total

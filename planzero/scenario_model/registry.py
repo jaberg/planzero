@@ -197,6 +197,7 @@ def registry_compute_model(
         cache_posterior:bool,  # True will save it in memory by model_name, and return from memory if possible
         seed_or_key:int|ArrayLike,
         run_compute_posterior:bool=True,
+        quiet:bool=True, # only print if mcmc work is happening
         ) -> Computation:
     if cache_posterior and model_name in _registry_mem_cache:
         return _registry_mem_cache[model_name]
@@ -224,9 +225,13 @@ def registry_compute_model(
         for mcmc_group, args in args_by_mcmc_group.items():
             if mcmc_group not in saved_sites_d:
                 try:
+                    if quiet:
+                        msg_prefix = ''
+                    else:
+                        msg_prefix = f'{n_groups_done}/{n_groups_total}'
                     submodel_saved_sample_sites = maybe_compute_mcmc_submodel(
                             *args,
-                            msg_prefix=f'{n_groups_done}/{n_groups_total}',
+                            msg_prefix=msg_prefix,
                             timeout=0)
                     saved_sites_d[mcmc_group] = submodel_saved_sample_sites
                     n_groups_done += 1
