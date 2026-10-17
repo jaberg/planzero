@@ -5,7 +5,11 @@ from .enums import GHG, PT, IPCC_Sector
 from .nir2025 import near_zero_sector_ghgs
 from .p_emissions_below_thresh import PEmissionsBelowThresh
 from .prenir_element import PreNIR_ModelElement
-from .regional_total_emissions_element import PseudoRegion, RegionalTotalEmissionsVarKey
+from .regional_total_emissions_element import (
+    PseudoRegion,
+    RegionalTotalEmissionsElement,  # noqa: F401
+    RegionalTotalEmissionsVarKey,
+)
 from .scenario_model import AnnualKey, Computation, GeneralKey, ScenarioModel, years_key
 from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsVarKey
 

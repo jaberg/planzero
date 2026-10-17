@@ -12,7 +12,7 @@ from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions import Distribution, kl
-from numpyro.infer import MCMC, NUTS, init_to_sample
+from numpyro.infer import MCMC, NUTS
 
 from .base import (
     ElementAnnualKey,
@@ -35,6 +35,7 @@ from .base import (
     Phase,
     Subphase,
     VarKey,
+    mcmc_dim,
     rng_var_key,
     scan_step_ii_key,
     years_dim,
@@ -202,7 +203,7 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
             # ensure that it is broadcastable
             for obs_shape_ii, prior_shape_ii in zip(padded_obs_shape, metadata_prior_shape):
                 if isinstance(prior_shape_ii, int):
-                    assert obs_shape_ii in (1, prior_shape_ii)
+                    assert obs_shape_ii in (1, prior_shape_ii), (obs_shape_ii, prior_shape_ii)
             return False
 
         elif comp.phase == Phase.Posterior:
@@ -289,10 +290,11 @@ def set_dist_ElementGeneralKey_posterior_obs_valid(
         right_extradim = jnp.moveaxis(left_extradim, 0, -1)
         mcmc_right = right_extradim[..., 0, :]
     else:
-        raise NotImplementedError(dist_shape, prior_shape)
+        raise NotImplementedError(dist_shape, prior_shape, var_key)
 
-    assert obs_valid.ndim == obs_val.ndim == mcmc_right.ndim, (
-            obs_valid.shape, obs_val.shape, mcmc_right.shape)
+    assert obs_valid.ndim == obs_val.ndim, (
+            obs_valid.shape, obs_val.shape)
+    assert obs_val.ndim >= mcmc_right.ndim
     updated_sample = jnp.where(obs_valid, obs_val, mcmc_right)
     comp._ndarray_d[var_key] = updated_sample
 
@@ -337,6 +339,10 @@ def set_dist_ElementGeneralKey(
                     )
 
         elif have_obs_val and have_obs_valid:
+            # think carefully before storing
+            # either the distribution in _dist_d
+            # *or* drawn / observed values in _ndarray_d
+            #
             # don't define the distribution if the observation
             # is provided, because it no longer makes sense
             # mask the distribution
@@ -348,7 +354,12 @@ def set_dist_ElementGeneralKey(
             # ... obs_mask parameter should *not* be used with MCMC
             # ... so think about what this model needs in terms of
             # .... symantics.
-            raise NotImplementedError()
+            numpyro.sample(
+                    comp.sample_site(var_key),
+                    fn=dist.mask(obs_valid),
+                    rng_key=comp._split_rng_key(),
+                    obs=obs,
+                    )
 
         elif have_obs_dist and have_obs_valid:
             # ... some type of masking should be done?
@@ -627,7 +638,10 @@ class Computation:
         self.phase = Phase.Prior
         self.has_run = False
         self.sample_sites = {}
-        self.ndarray_dim_d = {}
+        self.ndarray_dim_d = {
+                years_dim: model.n_prior_years,
+                mcmc_dim: model.num_samples,
+                }
 
     @property
     def dist_d(self) -> ComputationDistD:
@@ -820,6 +834,7 @@ class Computation:
                 val: key
                 for key, val in self.sample_sites.items()}
         assert len(rlookup) == len(self.sample_sites)
+        self.ndarray_dim_d[years_dim] = self.model.n_posterior_years
 
         for key_str, grouped_sample in grouped_samples.items():
             var_key = rlookup[key_str]

@@ -5,7 +5,7 @@ from typing import ClassVar
 import jax.numpy as jnp
 import numpy as np
 
-from . import cattle, model_db, nir2025_site, prob
+from . import cattle, model_db, prob
 from .ablation import AblationStudy
 from .annual_emission_results import (
     AnnualEmissionResults,

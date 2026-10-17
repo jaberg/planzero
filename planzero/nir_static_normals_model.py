@@ -12,9 +12,12 @@ from .nir2025 import (
     near_zero_sector_ghgs,
 )
 from .nir2025_model import NIR2025_ModelElement
-from .nir_model import NIR_ScenarioModel, PseudoRegion
-from .prenir_element import PreNIR_ModelElement
-from .regional_total_emissions_element import RegionalTotalEmissionsElement
+from .nir_model import (
+    NIR_ScenarioModel,
+    PreNIR_ModelElement,
+    PseudoRegion,
+    RegionalTotalEmissionsElement,
+)
 from .scenario_model import (
     AnnualKey,
     GeneralKey,
