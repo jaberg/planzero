@@ -11,7 +11,11 @@ from .regional_total_emissions_element import (
     RegionalTotalEmissionsVarKey,
 )
 from .scenario_model import AnnualKey, Computation, GeneralKey, ScenarioModel, years_key
-from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsVarKey
+from .sector_total_emissions_element import (
+    PseudoSector,
+    SectorTotalEmissionsElement,  # noqa: F401
+    SectorTotalEmissionsVarKey,
+)
 
 
 def sector_total_emissions_var_key(

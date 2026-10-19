@@ -37,7 +37,7 @@ class Example_Population(ModelElement):
                 + 0.5 * ws.val.this_carry['y_prev']
                 )
         ws.val.next_carry['y_prev'] = ws.val.this_carry['y_curr']
-        ws.val.this_Y['mu'] = ws.val.this_carry['y_curr'] * 1000
+        ws.val.this_annual['mu'] = ws.val.this_carry['y_curr'] * 1000
 
     @define('generated_data', prior_shape=[years_dim])
     def model_element_postprocess(self, ws:Workspace):

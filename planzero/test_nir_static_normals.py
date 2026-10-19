@@ -1,7 +1,5 @@
 import datetime
 
-import jax.numpy as jnp
-
 from .enums import GHG, IPCC_Sector
 from .nir_static_normals_model import (
     NIR2025_ModelElement,

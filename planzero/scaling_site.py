@@ -27,6 +27,7 @@ from .prob_bovaer import (
     batch_rollout_barriers,
     cached_inference,
 )
+from .scaling_model import Scaling_ScenarioModel
 from .sparkline_echart_helper import (
     RegionalSparklineEChartHelperBase,
     SparklineEChartHelperBase,
@@ -328,12 +329,24 @@ class ScalingSiteInference(prob.SiteInference):
 
     include_in_registry:bool = False
 
-    data_cutoff:datetime.date = datetime.date(year=2024, month=12, day=31)
-
-    rollout_nbytes_budget:int = 200_000_000
-
     def __init__(self):
-        raise NotImplementedError()
+        data_cutoff = datetime.date(year=2024, month=12, day=31)
+        # registry_name = (
+        #         f'StaticNormals_data-cutoff'
+        #         f'-{data_cutoff.year}'
+        #         f'-{data_cutoff.month}'
+        #         f'-{data_cutoff.day}'
+        #         '_lfy-2050')
+        registry_name = 'Scaling_2024_12_31'
+        registry_fallbacks = ['Static_Normals_2024_12_31']
+        scenario_model = Scaling_ScenarioModel(
+                data_cutoff=data_cutoff,
+                last_forecast_year=2050,
+                )
+        super().__init__(
+                scenario_model_registry_name=registry_name,
+                scenario_model_registry_fallbacks=registry_fallbacks,
+                scenario_model=scenario_model)
 
     @property
     def ablation_study_id(self) -> str|None:

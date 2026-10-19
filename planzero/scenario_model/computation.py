@@ -54,25 +54,45 @@ def hash_version_id(version_id: VersionID, n_chars=16) -> str:
     return hashlib.shake_128(encoded_data).hexdigest(n_chars)
 
 
+class ScanStorage_ThisY_NdarrayD:
+    """Dict-like access by key for ndarrays in a scan
+    """
+    scanstor: ScanStorage
+
+    def __init__(self, scanstor:ScanStorage):
+        self.scanstor = scanstor
+
+    def __getitem__(self, item:VarKey) -> jnp.ndarray:
+        return self.scanstor.this_Y_get_ndarray(item, sample_if_necessary=True)
+
+    def __setitem__(self, item:VarKey, value:jnp.ndarray):
+        self.scanstor.this_Y_set_ndarray(item, value)
+
+
+
 class ScanStorage:
 
     this_carry_d: dict[VarKey, jnp.ndarray]
     this_X_d: dict[VarKey, jnp.ndarray]
     next_carry_d: dict[VarKey, jnp.ndarray]
-    this_Y_d: dict[VarKey, jnp.ndarray]
-
     next_carry_dist_d: dict[VarKey, Distribution]
+
+    _this_Y_ndarray_d: dict[VarKey, jnp.ndarray]
+    this_Y_d: ScanStorage_ThisY_NdarrayD
     this_Y_dist_d: dict[VarKey, Distribution]
 
-    def __init__(self, this_carry_d, this_X_d):
+    def __init__(self, this_carry_d, this_X_d, sample_site_fn):
         self.this_carry_d = this_carry_d
         self.this_X_d = this_X_d
 
         self.next_carry_d = {}
-        self.this_Y_d = {}
-
         self.next_carry_dist_d = {}
+
+        self._this_Y_ndarray_d = {}
+        self.this_Y_d = ScanStorage_ThisY_NdarrayD(scanstor=self)
         self.this_Y_dist_d = {}
+
+        self.sample_site_fn = sample_site_fn
 
     def carry_rng(self):
         if rng_var_key not in self.next_carry_d:
@@ -82,6 +102,50 @@ class ScanStorage:
         self.next_carry_d[rng_var_key], rval = jrandom.split(
                 self.next_carry_d[rng_var_key])
         return rval
+
+    def this_Y_get_ndarray(self, var_key:VarKey, sample_if_necessary:bool) -> jnp.ndarray:
+        try:
+            return self._this_Y_ndarray_d[var_key]
+        except KeyError as err:
+            if (var_key not in self.this_Y_dist_d or not sample_if_necessary):
+                err.add_note(f'var_key in dist_d = {var_key in self.this_Y_dist_d}')
+                err.add_note(f'sample_if_necessary = {sample_if_necessary}')
+                raise
+        self.this_Y_set_ndarray_from_dist(var_key)
+        return self._this_Y_ndarray_d[var_key]
+
+    def this_Y_set_ndarray(self, var_key:VarKey, value:jnp.ndarray) -> None:
+        self._this_Y_ndarray_d[var_key] = value
+
+    def this_Y_set_ndarray_from_dist(self, var_key:VarKey) -> None:
+        assert var_key in self.this_Y_dist_d
+        if var_key in self._this_Y_ndarray_d:
+            # if it's already set, this method can't promise it's
+            # set to the right distribution
+            raise NotImplementedError()
+
+        # accessing an undefined value of a general key after the dist
+        # has been set for that key, triggers sampling.
+
+        obs_var_key = Observation(prior_var_key=var_key)
+        obs_val = self._this_Y_ndarray_d.get(obs_var_key)
+        obs_dist = self.this_Y_dist_d.get(obs_var_key)
+
+        if obs_val or obs_dist:
+            raise NotImplementedError()
+
+        dist = self.this_Y_dist_d[var_key]
+
+        dist_sample = numpyro.sample(
+                self.sample_site_fn(var_key),
+                fn=dist,
+                rng_key=self._split_rng_key(),
+                )
+        if isinstance(dist_sample, jnp.ndarray):
+            self.this_Y_set_ndarray(var_key, dist_sample)
+        else:
+            raise NotImplementedError(dist_sample)
+
 
 def build_general_prior_shape(comp:Computation, var_key:VarKey, val_shape:tuple) -> list[int]:
     metadata_shape = comp.model.mv.general_nd[var_key].definition_metadata.value_type.shape
@@ -936,7 +1000,7 @@ class Computation:
     def _run_step(self):
 
         def scan_step(this_carry_d, this_X_d):
-            scan_storage = ScanStorage(this_carry_d, this_X_d)
+            scan_storage = ScanStorage(this_carry_d, this_X_d, self.sample_site)
             scan_storage.carry_rng()
             for elem_id, elem in self._elem_items():
                 try:
@@ -945,7 +1009,7 @@ class Computation:
                 except Exception as err:
                     err.add_note(f'element_id={elem_id}')
                     raise
-            return scan_storage.next_carry_d, scan_storage.this_Y_d
+            return scan_storage.next_carry_d, scan_storage._this_Y_ndarray_d
 
         self._sample_from_dists_that_might_be_accessed()
 
@@ -1041,7 +1105,6 @@ def access_val(
         f.model_element_access_val.setdefault(subphase, {})[var_key] = {}
         return f
     return deco
-
 
 
 _deco_attr_define = 'model_element_define'

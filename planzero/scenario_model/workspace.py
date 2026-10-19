@@ -514,6 +514,42 @@ class ValThisY:
             raise NotImplementedError(self.attr)
 
 
+class DistThisY:
+
+    ws: Workspace
+    attr: str
+
+    def __init__(self, ws:Workspace, attr:str):
+        self.ws = ws
+        self.attr = attr
+
+    def __getitem__(self, item:str|ElementAnnualKey) -> Distribution:
+        if isinstance(item, str):
+            var_key = self.ws._annual_key(item)
+        else:
+            var_key = item
+        del item
+        assert self.ws.scan_storage is not None
+
+        if self.attr == 'dist':
+            return self.ws.scan_storage.this_Y_dist_d[var_key]
+        else:
+            raise NotImplementedError(self.attr)
+
+    def __setitem__(self, item:str|ElementAnnualKey, dist:Distribution):
+        if isinstance(item, str):
+            var_key = self.ws._annual_key(item)
+        else:
+            var_key = item
+        del item
+        assert self.ws.scan_storage is not None
+
+        if self.attr == 'dist':
+            self.ws.scan_storage.this_Y_dist_d[var_key] = dist
+        else:
+            raise NotImplementedError(self.attr)
+
+
 class WorkspaceAttrVal:
 
     ws: Workspace
@@ -588,6 +624,15 @@ class WorkspaceAttrDist:
         else:
             raise AttributeError(
                     f"next_carry not available in subphase {self.ws.subphase}")
+
+    @property
+    def this_Y(self) -> ValThisY:
+        if self.ws.subphase == Subphase.Step:
+            return DistThisY(self.ws, self.attr)
+        else:
+            raise AttributeError(
+                    f"this_Y not available in subphase {self.ws.subphase}")
+
 
 
 class Workspace:

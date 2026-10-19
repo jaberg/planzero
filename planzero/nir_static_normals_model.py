@@ -16,7 +16,9 @@ from .nir_model import (
     NIR_ScenarioModel,
     PreNIR_ModelElement,
     PseudoRegion,
+    PseudoSector,
     RegionalTotalEmissionsElement,
+    SectorTotalEmissionsElement,
 )
 from .scenario_model import (
     AnnualKey,
@@ -27,7 +29,6 @@ from .scenario_model import (
     define,
     define_annual,
 )
-from .sector_total_emissions_element import PseudoSector, SectorTotalEmissionsElement
 
 n_regions = 13
 
