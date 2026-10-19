@@ -55,7 +55,7 @@ def dist_scan_set_next(comp:Computation, scan_storage:ScanStorage, var_key:Eleme
             # which is typically informed by time-invariant
             # posterior samples.
 
-            this_idx_ = scan_storage.this_X_d[scan_step_ii_key]
+            this_idx_ = scan_storage.this_annual_input_d[scan_step_ii_key]
             assert this_idx_.shape == (1,)
             this_idx = this_idx_[0]
             n_prior_years = comp.model.mv.n_prior_years
@@ -478,7 +478,7 @@ class ValNextCarry:
             raise NotImplementedError(f'{self.attr}_scan_set_this')
 
 
-class ValThisY:
+class ValThisAnnual:
 
     ws: Workspace
     attr: str
@@ -496,7 +496,7 @@ class ValThisY:
         assert self.ws.scan_storage is not None
 
         if self.attr == 'val':
-            return self.ws.scan_storage.this_Y_d[var_key]
+            return self.ws.scan_storage.this_annual_d[var_key]
         else:
             raise NotImplementedError(self.attr)
 
@@ -509,12 +509,12 @@ class ValThisY:
         assert self.ws.scan_storage is not None
 
         if self.attr == 'val':
-            self.ws.scan_storage.this_Y_d[var_key] = value
+            self.ws.scan_storage.this_annual_d[var_key] = value
         else:
             raise NotImplementedError(self.attr)
 
 
-class DistThisY:
+class DistThisAnnual:
 
     ws: Workspace
     attr: str
@@ -532,7 +532,8 @@ class DistThisY:
         assert self.ws.scan_storage is not None
 
         if self.attr == 'dist':
-            return self.ws.scan_storage.this_Y_dist_d[var_key]
+            self._check_step_defined(var_key)
+            return self.ws.scan_storage.this_annual_dist_d[var_key]
         else:
             raise NotImplementedError(self.attr)
 
@@ -545,9 +546,18 @@ class DistThisY:
         assert self.ws.scan_storage is not None
 
         if self.attr == 'dist':
-            self.ws.scan_storage.this_Y_dist_d[var_key] = dist
+            self._check_step_defined(var_key)
+            self.ws.scan_storage.this_annual_dist_d[var_key] = dist
         else:
             raise NotImplementedError(self.attr)
+
+    def _check_step_defined(self, var_key:ElementAnnualKey) -> None:
+        if var_key in self.ws.scan_storage.this_annual_input_d:
+            raise NotImplementedError(
+                    f'{var_key} is an annual variable defined prior to the scan'
+                    ' (define_annual on model_element_prepare), so it has no'
+                    ' scan-step distribution. Define/read its distribution'
+                    ' during prepare via ws.dist.annual.')
 
 
 class WorkspaceAttrVal:
@@ -588,12 +598,12 @@ class WorkspaceAttrVal:
                     f"next_carry not available in subphase {self.ws.subphase}")
 
     @property
-    def this_Y(self) -> ValThisY:
+    def this_annual(self) -> ValThisAnnual:
         if self.ws.subphase == Subphase.Step:
-            return ValThisY(self.ws, self.attr)
+            return ValThisAnnual(self.ws, self.attr)
         else:
             raise AttributeError(
-                    f"this_Y not available in subphase {self.ws.subphase}")
+                    f"this_annual not available in subphase {self.ws.subphase}")
 
 
 class WorkspaceAttrDist:
@@ -626,12 +636,12 @@ class WorkspaceAttrDist:
                     f"next_carry not available in subphase {self.ws.subphase}")
 
     @property
-    def this_Y(self) -> ValThisY:
+    def this_annual(self) -> DistThisAnnual:
         if self.ws.subphase == Subphase.Step:
-            return DistThisY(self.ws, self.attr)
+            return DistThisAnnual(self.ws, self.attr)
         else:
             raise AttributeError(
-                    f"this_Y not available in subphase {self.ws.subphase}")
+                    f"this_annual not available in subphase {self.ws.subphase}")
 
 
 

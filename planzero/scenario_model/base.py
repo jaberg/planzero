@@ -30,8 +30,7 @@ class VariableRole(str, enum.Enum):
     """
     General = 'General'
     AnnualCarry = 'AnnualCarry'
-    AnnualX = 'AnnualX'
-    AnnualY = 'AnnualY'
+    Annual = 'Annual'
     PosteriorCache = 'PosteriorCache'
 
 
@@ -217,6 +216,13 @@ class ModelVariables(BaseModel):
 
     carry_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
+    # Annual variables declared with the define_annual decorator.
+    # The metadata's defining_subphase determines the role of the variable
+    # during the annual scan:
+    # - Subphase.Prep: defined prior to the scan, and fed into the scan
+    #   as a per-step input (the input side of this_annual).
+    # - Subphase.Step: defined by the scan itself, one value per step
+    #   (the output side of this_annual).
     annual_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
     year_0:int

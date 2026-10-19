@@ -54,8 +54,12 @@ def hash_version_id(version_id: VersionID, n_chars=16) -> str:
     return hashlib.shake_128(encoded_data).hexdigest(n_chars)
 
 
-class ScanStorage_ThisY_NdarrayD:
-    """Dict-like access by key for ndarrays in a scan
+class ScanStorage_ThisAnnual_NdarrayD:
+    """Dict-like access by key for annual ndarrays in a scan.
+
+    Covers both kinds of annual variable declared with define_annual:
+    inputs defined prior to the scan (on model_element_prepare) and
+    outputs defined by the scan step itself (on model_element_annual_step).
     """
     scanstor: ScanStorage
 
@@ -63,34 +67,44 @@ class ScanStorage_ThisY_NdarrayD:
         self.scanstor = scanstor
 
     def __getitem__(self, item:VarKey) -> jnp.ndarray:
-        return self.scanstor.this_Y_get_ndarray(item, sample_if_necessary=True)
+        return self.scanstor.this_annual_get_ndarray(item, sample_if_necessary=True)
 
     def __setitem__(self, item:VarKey, value:jnp.ndarray):
-        self.scanstor.this_Y_set_ndarray(item, value)
+        self.scanstor.this_annual_set_ndarray(item, value)
 
 
 
 class ScanStorage:
 
     this_carry_d: dict[VarKey, jnp.ndarray]
-    this_X_d: dict[VarKey, jnp.ndarray]
     next_carry_d: dict[VarKey, jnp.ndarray]
     next_carry_dist_d: dict[VarKey, Distribution]
 
-    _this_Y_ndarray_d: dict[VarKey, jnp.ndarray]
-    this_Y_d: ScanStorage_ThisY_NdarrayD
-    this_Y_dist_d: dict[VarKey, Distribution]
+    # Annual variables at this scan step, i.e. this_annual. Both dicts hold
+    # one value per variable for the current step only.
+    #
+    # - this_annual_input_d: annual variables defined prior to the scan with
+    #   define_annual on model_element_prepare. The scan slices these and
+    #   feeds them in one step at a time.
+    # - this_annual_output_d: annual variables defined by the scan step
+    #   itself with define_annual on model_element_annual_step. The scan
+    #   stacks these into full timeseries.
+    this_annual_input_d: dict[VarKey, jnp.ndarray]
+    this_annual_output_d: dict[VarKey, jnp.ndarray]
 
-    def __init__(self, this_carry_d, this_X_d, sample_site_fn):
+    this_annual_d: ScanStorage_ThisAnnual_NdarrayD
+    this_annual_dist_d: dict[VarKey, Distribution]
+
+    def __init__(self, this_carry_d, this_annual_input_d, sample_site_fn):
         self.this_carry_d = this_carry_d
-        self.this_X_d = this_X_d
+        self.this_annual_input_d = this_annual_input_d
 
         self.next_carry_d = {}
         self.next_carry_dist_d = {}
 
-        self._this_Y_ndarray_d = {}
-        self.this_Y_d = ScanStorage_ThisY_NdarrayD(scanstor=self)
-        self.this_Y_dist_d = {}
+        self.this_annual_output_d = {}
+        self.this_annual_d = ScanStorage_ThisAnnual_NdarrayD(scanstor=self)
+        self.this_annual_dist_d = {}
 
         self.sample_site_fn = sample_site_fn
 
@@ -103,23 +117,35 @@ class ScanStorage:
                 self.next_carry_d[rng_var_key])
         return rval
 
-    def this_Y_get_ndarray(self, var_key:VarKey, sample_if_necessary:bool) -> jnp.ndarray:
+    def this_annual_get_ndarray(self, var_key:VarKey, sample_if_necessary:bool) -> jnp.ndarray:
+        if var_key in self.this_annual_input_d:
+            # annual variable defined prior to the scan: its value at this
+            # step is the input slice.
+            return self.this_annual_input_d[var_key]
+
+        # annual variable defined by the scan step itself.
         try:
-            return self._this_Y_ndarray_d[var_key]
+            return self.this_annual_output_d[var_key]
         except KeyError as err:
-            if (var_key not in self.this_Y_dist_d or not sample_if_necessary):
-                err.add_note(f'var_key in dist_d = {var_key in self.this_Y_dist_d}')
+            if (var_key not in self.this_annual_dist_d or not sample_if_necessary):
+                err.add_note(f'var_key in dist_d = {var_key in self.this_annual_dist_d}')
                 err.add_note(f'sample_if_necessary = {sample_if_necessary}')
                 raise
-        self.this_Y_set_ndarray_from_dist(var_key)
-        return self._this_Y_ndarray_d[var_key]
+        self.this_annual_set_ndarray_from_dist(var_key)
+        return self.this_annual_output_d[var_key]
 
-    def this_Y_set_ndarray(self, var_key:VarKey, value:jnp.ndarray) -> None:
-        self._this_Y_ndarray_d[var_key] = value
+    def this_annual_set_ndarray(self, var_key:VarKey, value:jnp.ndarray) -> None:
+        if var_key in self.this_annual_input_d:
+            raise NotImplementedError(
+                    f'{var_key} is an annual variable defined prior to the scan'
+                    ' (define_annual on model_element_prepare); it cannot be'
+                    ' assigned during a scan step.'
+                    ' Assign it during prepare via ws.val.annual.')
+        self.this_annual_output_d[var_key] = value
 
-    def this_Y_set_ndarray_from_dist(self, var_key:VarKey) -> None:
-        assert var_key in self.this_Y_dist_d
-        if var_key in self._this_Y_ndarray_d:
+    def this_annual_set_ndarray_from_dist(self, var_key:VarKey) -> None:
+        assert var_key in self.this_annual_dist_d
+        if var_key in self.this_annual_output_d:
             # if it's already set, this method can't promise it's
             # set to the right distribution
             raise NotImplementedError()
@@ -128,13 +154,13 @@ class ScanStorage:
         # has been set for that key, triggers sampling.
 
         obs_var_key = Observation(prior_var_key=var_key)
-        obs_val = self._this_Y_ndarray_d.get(obs_var_key)
-        obs_dist = self.this_Y_dist_d.get(obs_var_key)
+        obs_val = self.this_annual_output_d.get(obs_var_key)
+        obs_dist = self.this_annual_dist_d.get(obs_var_key)
 
         if obs_val or obs_dist:
             raise NotImplementedError()
 
-        dist = self.this_Y_dist_d[var_key]
+        dist = self.this_annual_dist_d[var_key]
 
         dist_sample = numpyro.sample(
                 self.sample_site_fn(var_key),
@@ -142,7 +168,7 @@ class ScanStorage:
                 rng_key=self._split_rng_key(),
                 )
         if isinstance(dist_sample, jnp.ndarray):
-            self.this_Y_set_ndarray(var_key, dist_sample)
+            self.this_annual_set_ndarray(var_key, dist_sample)
         else:
             raise NotImplementedError(dist_sample)
 
@@ -877,9 +903,9 @@ class Computation:
         self.set_ndarray(var_key, transposed)
 
         # and a separate pull_from_sample_mask array of shape [n_years]
-        # and these both need to be set up as Xs for the scan
+        # and these both need to be set up as annual inputs for the scan
         # and then the ws.dist.next_carry __setitem__ needs to
-        # put either the this_X from the sample or the random draw
+        # put either the this_annual input from the sample or the random draw
         # into the scan_storage.next_carry_d, depending on the
         # pull_from_sample_mask.
         # ... and that's all assuming that these dists are not observed,
@@ -978,7 +1004,11 @@ class Computation:
                 and var_key not in self._ndarray_d): # hasn't beens sampled yet
                 self.set_ndarray_from_dist(var_key)
 
-    def _X_d(self) -> dict[VarKey, jnp.ndarray]:
+    def _annual_input_d(self) -> dict[VarKey, jnp.ndarray]:
+        """Annual variables defined prior to the scan: one value per
+        variable per year, to be sliced and fed into the scan one step
+        at a time.
+        """
         rval = {
                 var_key: self._ndarray_d[var_key]
                 for var_key, nvm in self.model.mv.annual_nd.items()
@@ -999,8 +1029,8 @@ class Computation:
 
     def _run_step(self):
 
-        def scan_step(this_carry_d, this_X_d):
-            scan_storage = ScanStorage(this_carry_d, this_X_d, self.sample_site)
+        def scan_step(this_carry_d, this_annual_input_d):
+            scan_storage = ScanStorage(this_carry_d, this_annual_input_d, self.sample_site)
             scan_storage.carry_rng()
             for elem_id, elem in self._elem_items():
                 try:
@@ -1009,21 +1039,23 @@ class Computation:
                 except Exception as err:
                     err.add_note(f'element_id={elem_id}')
                     raise
-            return scan_storage.next_carry_d, scan_storage._this_Y_ndarray_d
+            return scan_storage.next_carry_d, scan_storage.this_annual_output_d
 
         self._sample_from_dists_that_might_be_accessed()
 
         initial_carry_d = self._initial_carry_d()
         initial_carry_d[rng_var_key] = self._split_rng_key()
-        X_d = self._X_d()
+        annual_input_d = self._annual_input_d()
 
         if self.phase == Phase.Prior:
-            final_carry_d, Y_d = numpyro_scan(scan_step, initial_carry_d, X_d)
+            final_carry_d, annual_d = numpyro_scan(
+                    scan_step, initial_carry_d, annual_input_d)
         else:
-            final_carry_d, Y_d = jax_scan(scan_step, initial_carry_d, X_d)
+            final_carry_d, annual_d = jax_scan(
+                    scan_step, initial_carry_d, annual_input_d)
 
         # TODO: check for collisions
-        self._ndarray_d.update(Y_d)
+        self._ndarray_d.update(annual_d)
         # TODO: store all of the final_carry_d and final_carry_dist_d
         self.rng_key = final_carry_d[rng_var_key]
 
@@ -1129,24 +1161,37 @@ def define(
     return deco
 
 
-_deco_attr_annual = 'model_element_annual_step'
+_deco_attr_annual = 'model_element_define_annual'
 
 def define_annual(
         var_key:str|VarKey|property, *,
         annual_shape:list[int|NdarrayDim],
         dtype:str='float64',
         ):
+    """Declare an annual (timeseries) variable, i.e. one value per scan step.
+
+    The decorated method determines the role of the variable, as reflected
+    by ws.this_annual during a scan step:
+
+    - on model_element_prepare: the variable is defined prior to the scan.
+      The whole timeseries is computed during prepare, and the scan feeds
+      it in one step at a time (readable as ws.val.this_annual during
+      a step).
+    - on model_element_annual_step: the variable is defined by the scan
+      step itself (readable/writable as ws.val.this_annual, and its
+      distribution as ws.dist.this_annual, during a step).
+    """
     def deco(f):
         if not hasattr(f, _deco_attr_annual):
             setattr(f, _deco_attr_annual, {})
         # doesn't work for property, which won't have resolved yet
-        assert var_key not in f.model_element_annual_step
+        assert var_key not in getattr(f, _deco_attr_annual)
         ndm = NdarrayDefinitionMetadata(
                 value_type=NdarrayType(
                     shape=[years_dim] + list(annual_shape),
                     dtype=dtype),
                 subphase=_subphase_from_f(f))
-        f.model_element_annual_step[var_key] = ndm
+        getattr(f, _deco_attr_annual)[var_key] = ndm
         return f
     return deco
 
@@ -1349,14 +1394,17 @@ class ScenarioModel:
     def _add_define_annual_d(self, element:ModelElement, defining_subphase, annual_d):
         element_id = element.identifier
         def add_var_key_ndm(var_key:ElementAnnualKey, ndm):
+            # full timeseries metadata, with a leading years_dim
             self.mv.general_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=_resolve_properties_ndarray_definition(
-                        element_id, ndm),
+                        element, ndm),
                     defining_element_id=element_id,
                     defining_subphase=defining_subphase)
 
             if defining_subphase in (Subphase.Prep, Subphase.Step):
-                this_ndm = NdarrayVariableMetadata(
+                # per-scan-step metadata, with the years_dim dropped,
+                # for this_annual access during a scan step
+                step_ndm = NdarrayVariableMetadata(
                         definition_metadata=NdarrayDefinitionMetadata(
                             value_type=NdarrayType(
                                 shape=ndm.value_type.shape[1:],
@@ -1365,7 +1413,7 @@ class ScenarioModel:
                             ),
                         defining_element_id=element_id,
                         defining_subphase=defining_subphase)
-                self.mv.annual_nd[var_key] = this_ndm
+                self.mv.annual_nd[var_key] = step_ndm
 
         for var_key, ndm in annual_d.items():
             if isinstance(var_key, ElementAnnualKey):
