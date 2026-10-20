@@ -15,6 +15,7 @@ from .base import (
     ObservationWeight,
     Phase,
     Subphase,
+    VarKey,
     scan_step_ii_key,
 )
 from .computation import Computation, ScanStorage, ScenarioModel
@@ -120,7 +121,10 @@ class ValGeneral:
                 sample_if_necessary = False
             else:
                 raise NotImplementedError(self.ws.subphase)
-            return self.ws.comp.get_ndarray(var_key, sample_if_necessary)
+            return self.ws.comp.get_ndarray(
+                    var_key,
+                    sample_if_necessary,
+                    default=self.ws._access_default(var_key))
         elif self.attr == 'obs_val':
             obs_key = Observation(prior_var_key=var_key)
             if self.ws.subphase in (Subphase.Prep, Subphase.Proc):
@@ -190,7 +194,10 @@ class ValAnnual:
                 sample_if_necessary = False
             else:
                 raise NotImplementedError(self.ws.subphase)
-            return self.ws.comp.get_ndarray(var_key, sample_if_necessary)
+            return self.ws.comp.get_ndarray(
+                    var_key,
+                    sample_if_necessary,
+                    default=self.ws._access_default(var_key))
         else:
             raise NotImplementedError(self.attr)
 
@@ -496,7 +503,10 @@ class ValThisAnnual:
         assert self.ws.scan_storage is not None
 
         if self.attr == 'val':
-            return self.ws.scan_storage.this_annual_d[var_key]
+            return self.ws.scan_storage.this_annual_get_ndarray(
+                    var_key,
+                    sample_if_necessary=True,
+                    default=self.ws._access_default(var_key))
         else:
             raise NotImplementedError(self.attr)
 
@@ -684,6 +694,9 @@ class Workspace:
 
     def _annual_key(self, name:str) -> ElementAnnualKey:
         return ElementAnnualKey(elem_id=self.elem_id, name=name)
+
+    def _access_default(self, var_key:VarKey) -> jnp.ndarray|None:
+        return self.comp.access_default(self.elem_id, self.subphase, var_key)
 
     @property
     def dist(self) -> WorkspaceAttrDist:

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import enum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -207,6 +207,16 @@ class NdarrayVariableMetadata(VariableMetadata):
 ElementID = str
 
 
+class AccessMetadata(BaseModel):
+    """A value read declared with access_val or access_annual."""
+
+    elem_id: ElementID
+    subphase: Subphase
+    var_key: VarKey
+    # ndarray returned when no element in the model defines var_key.
+    default: Any = None
+
+
 class ModelVariables(BaseModel):
     """
     Things known about a model from just the add_element calls.
@@ -231,4 +241,6 @@ class ModelVariables(BaseModel):
 
     n_posterior_years:int
 
-    accesses_val: list[tuple[ElementID, Subphase, VarKey]] = []
+    # Value reads declared with access_val / access_annual, used to order
+    # model elements so that definers run before readers.
+    accesses: list[AccessMetadata] = []
