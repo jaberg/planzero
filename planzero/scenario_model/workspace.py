@@ -147,6 +147,7 @@ class ValGeneral:
 
         if self.attr == 'val':
             self.ws.comp.ndarray_d[var_key] = value
+            self.ws.comp._record_assignment(var_key)
 
         elif self.attr == 'obs_val':
             obs_var_key = Observation(prior_var_key=var_key)
@@ -212,6 +213,7 @@ class ValAnnual:
 
         if self.attr == 'val':
             self.ws.comp.ndarray_d[var_key] = value
+            self.ws.comp._record_assignment(var_key)
         elif self.attr == 'obs_val':
             obs_key = Observation(prior_var_key=var_key)
             self.ws.comp.ndarray_d[obs_key] = value
@@ -248,7 +250,9 @@ class ValInitialCarry:
         del item
 
         if self.attr == 'val':
-            self.ws.comp.ndarray_d[InitialCarry(carry_key=var_key)] = value
+            ic_key = InitialCarry(carry_key=var_key)
+            self.ws.comp.ndarray_d[ic_key] = value
+            self.ws.comp._record_assignment(ic_key)
         else:
             raise NotImplementedError(self.attr)
 
@@ -324,6 +328,7 @@ class DistGeneral:
         if self.attr == 'dist':
             # ws.obs.general[item] = dist
             self.ws.comp.dist_d[var_key] = dist
+            self.ws.comp._record_assignment(var_key)
         elif self.attr == 'obs_dist':
             # ws.obs_dist.general[item] = dist
             self.ws.comp.dist_d[Observation(prior_var_key=var_key)] = dist
@@ -366,6 +371,7 @@ class DistAnnual:
         if self.attr == 'dist':
             # handles syntax: ws.obs.annual[item] = dist
             self.ws.comp.dist_d[var_key] = dist
+            self.ws.comp._record_assignment(var_key)
         elif self.attr == 'obs_dist':
             # handles syntax: ws.obs_dist.annual[item] = dist
             self.ws.comp.dist_d[Observation(prior_var_key=var_key)] = dist
@@ -402,7 +408,9 @@ class DistInitialCarry:
         del item
 
         if self.attr == 'dist':
-            self.ws.comp.dist_d[InitialCarry(carry_key=var_key)] = dist
+            ic_key = InitialCarry(carry_key=var_key)
+            self.ws.comp.dist_d[ic_key] = dist
+            self.ws.comp._record_assignment(ic_key)
         else:
             raise NotImplementedError(self.attr)
 
@@ -443,6 +451,7 @@ class DistNextCarry:
                 raise NotImplementedError()
             else:
                 dist_scan_set_next(self.ws.comp, self.ws.scan_storage, var_key, dist)
+                self.ws.comp._record_assignment(var_key)
         else:
             raise NotImplementedError(f'{self.attr}_scan_set_this')
 
@@ -481,6 +490,7 @@ class ValNextCarry:
 
         if self.attr == 'val':
             self.ws.scan_storage.next_carry_d[var_key] = value
+            self.ws.comp._record_assignment(var_key)
         else:
             raise NotImplementedError(f'{self.attr}_scan_set_this')
 
@@ -520,6 +530,7 @@ class ValThisAnnual:
 
         if self.attr == 'val':
             self.ws.scan_storage.this_annual_d[var_key] = value
+            self.ws.comp._record_assignment(var_key)
         else:
             raise NotImplementedError(self.attr)
 
@@ -558,6 +569,7 @@ class DistThisAnnual:
         if self.attr == 'dist':
             self._check_step_defined(var_key)
             self.ws.scan_storage.this_annual_dist_d[var_key] = dist
+            self.ws.comp._record_assignment(var_key)
         else:
             raise NotImplementedError(self.attr)
 

@@ -39,6 +39,7 @@ class VarKey(BaseModel, frozen=True):
                           'GroupedPosterior',
                           'NamedKey',
                           'InitialCarry',
+                          'ThisCarry',
                           'NextCarry',
                           'FinalCarry',
                           'Observation',
@@ -81,6 +82,11 @@ class GroupedPosterior(VarKey, frozen=True):
 
 class InitialCarry(VarKey, frozen=True):
     var_key_type: Literal['InitialCarry'] = "InitialCarry"
+    carry_key: ElementCarryKey
+
+
+class ThisCarry(VarKey, frozen=True):
+    var_key_type: Literal['ThisCarry'] = "ThisCarry"
     carry_key: ElementCarryKey
 
 
@@ -167,6 +173,9 @@ class DefinitionMetadata(BaseModel):
 
     #observation: VarKey|None = None
     subphase:Subphase = Subphase.Unknown
+    # If True, this definition is only required to be assigned during
+    # Phase.Posterior. The check is skipped during Phase.Prior.
+    posterior_only:bool = False
 
 
 class NdarrayDefinitionMetadata(DefinitionMetadata):
@@ -190,6 +199,11 @@ class NdarrayDefinitionMetadata_w_Properties(DefinitionMetadata):
 
 
 class DefinitionError(Exception):
+    pass
+
+
+class UnassignedDefinitionError(DefinitionError):
+    """A method declared a key with @define* but did not assign it."""
     pass
 
 

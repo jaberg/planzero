@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import heapq
 import warnings
-from typing import TypeAlias
+from typing import TypeAlias, Literal
 
 import jax.numpy as jnp
 import jax.random as jrandom
@@ -38,6 +38,8 @@ from .base import (
     ObservationWeight,
     Phase,
     Subphase,
+    ThisCarry,
+    UnassignedDefinitionError,
     VarKey,
     mcmc_dim,
     rng_var_key,
@@ -738,6 +740,7 @@ class Computation:
         self.model = model
         self._dist_d = {}
         self._ndarray_d = {}
+        self._assigned_keys:set[VarKey] = set()
         if isinstance(rng_key, int):
             self.rng_key = jrandom.key(rng_key)
         else:
@@ -1048,7 +1051,13 @@ class Computation:
             elif ic_key in self._dist_d:
                 self.set_ndarray_from_dist(ic_key)
             else:
-                raise NotImplementedError(key_var)
+                nvm = self.model.mv.general_nd[ic_key]
+                if (self.phase == Phase.Prior
+                        and nvm.definition_metadata.posterior_only):
+                    # no initial carry is required during Phase.Prior
+                    pass
+                else:
+                    raise NotImplementedError(key_var)
 
         for access in self.model.mv.accesses:
             if (access.subphase == Subphase.Step
@@ -1072,10 +1081,78 @@ class Computation:
         for elem_id in self.model.element_order(subphase):
             yield elem_id, self.model.model_elements[elem_id]
 
+    def _reset_assignments(self) -> None:
+        self._assigned_keys.clear()
+
+    def _record_assignment(self, var_key:VarKey) -> None:
+        self._assigned_keys.add(var_key)
+
+    def _expected_defined_keys(
+            self,
+            element:ModelElement,
+            subphase:Subphase,
+            ) -> list[tuple[VarKey, NdarrayVariableMetadata]]:
+        """Definitions this element is expected to write in this subphase.
+
+        Keys are resolved once by add_element, so using the model metadata
+        automatically handles string, property, and dict-property declarations.
+        """
+        elem_id = element.identifier
+        if subphase == Subphase.Prep:
+            return [
+                    (var_key, nvm)
+                    for var_key, nvm in self.model.mv.general_nd.items()
+                    if nvm.defining_element_id == elem_id
+                    and nvm.defining_subphase == Subphase.Prep]
+        elif subphase == Subphase.Step:
+            return (
+                    [(var_key, nvm)
+                     for var_key, nvm in self.model.mv.annual_nd.items()
+                     if nvm.defining_element_id == elem_id
+                     and nvm.defining_subphase == Subphase.Step]
+                    + [(var_key, nvm)
+                       for var_key, nvm in self.model.mv.carry_nd.items()
+                       if nvm.defining_element_id == elem_id])
+        elif subphase == Subphase.Proc:
+            # FinalCarry has no writable workspace accessor yet.
+            return [
+                    (var_key, nvm)
+                    for var_key, nvm in self.model.mv.general_nd.items()
+                    if nvm.defining_element_id == elem_id
+                    and nvm.defining_subphase == Subphase.Proc
+                    and not isinstance(var_key, FinalCarry)]
+        else:
+            raise NotImplementedError(subphase)
+
+    def _check_defined_assignments(
+            self,
+            element:ModelElement,
+            subphase:Subphase,
+            ) -> None:
+        missing = []
+        for var_key, nvm in self._expected_defined_keys(element, subphase):
+            if (self.phase == Phase.Prior
+                    and nvm.definition_metadata.posterior_only):
+                continue
+            if var_key not in self._assigned_keys:
+                missing.append(var_key)
+        if missing:
+            method_name = {
+                    Subphase.Prep: 'model_element_prepare',
+                    Subphase.Step: 'model_element_annual_step',
+                    Subphase.Proc: 'model_element_postprocess',
+                    }[subphase]
+            names = ', '.join(sorted(str(key) for key in missing))
+            raise UnassignedDefinitionError(
+                    f'{element.identifier}: {method_name} did not assign'
+                    f' declared key(s): {names}')
+
     def _run_prep(self):
         for elem_id, elem in self._elem_items(Subphase.Prep):
             try:
+                self._reset_assignments()
                 elem.model_element_prepare(self._workspace(elem_id, Subphase.Prep))
+                self._check_defined_assignments(elem, Subphase.Prep)
             except Exception as err:
                 err.add_note(f'element_id={elem_id}')
                 raise
@@ -1090,7 +1167,9 @@ class Computation:
             for elem_id, elem in step_elem_items:
                 try:
                     ws = self._workspace(elem_id, Subphase.Step, scan_storage)
+                    self._reset_assignments()
                     elem.model_element_annual_step(ws)
+                    self._check_defined_assignments(elem, Subphase.Step)
                 except Exception as err:
                     err.add_note(f'element_id={elem_id}')
                     raise
@@ -1118,9 +1197,9 @@ class Computation:
         for elem_id, elem in self._elem_items(Subphase.Proc):
             try:
                 ws = self._workspace(elem_id, Subphase.Proc)
+                self._reset_assignments()
                 elem.model_element_postprocess(ws)
-                if self.phase == Phase.Posterior:
-                    elem.model_element_postprocess_posterior_only(ws)
+                self._check_defined_assignments(elem, Subphase.Proc)
             except Exception as err:
                 err.add_note(f'element_id={elem_id}')
                 raise
@@ -1171,9 +1250,7 @@ def _subphase_from_f(f):
         return Subphase.Prep
     elif f.__name__ == 'model_element_annual_step':
         return Subphase.Step
-    elif f.__name__ in (
-            'model_element_postprocess',
-            'model_element_postprocess_posterior_only'):
+    elif f.__name__ == 'model_element_postprocess':
         return Subphase.Proc
     else:
         raise NotImplementedError(f)
@@ -1181,6 +1258,8 @@ def _subphase_from_f(f):
 
 _deco_attr_access_val = 'model_element_access_val'
 _deco_attr_access_annual = 'model_element_access_annual'
+_deco_attr_access_this_carry = 'model_element_access_this_carry'
+_deco_attr_access_next_carry = 'model_element_access_next_carry'
 
 
 def _access_deco(
@@ -1229,6 +1308,7 @@ def access_val(
 def access_annual(
         var_key:str|VarKey|property,
         *,
+        annual_shape:list[int|NdarrayDim]|None=None,
         default:ArrayLike|None=None,
         ):
     """Declare that a model element reads an annual value or distribution.
@@ -1252,12 +1332,67 @@ def access_annual(
             deco_attr=_deco_attr_access_annual)
 
 
+def access_next_carry(
+        var_key:str|VarKey|property,
+        *,
+        shape:list[int|NdarrayDim]|None=None,
+        default:ArrayLike|None=None,
+        ):
+    """Declare that a model element reads a carry value or distribution.
+
+    Analogous to access_val, but the string form of var_key resolves to an
+    ElementAnnualKey, and the declaration may name an carry variable defined
+    either before the scan or by the scan step itself.
+
+    If default is not None, it is returned when the key has no definer
+    anywhere in the ScenarioModel. Defaults apply to value reads
+    (ws.val.this_carry and ws.val.next_carry) only, not to distribution reads.
+    During a scan step the default is returned literally as the value for
+    that step, so it should have the per-step shape. If some element does
+    define the key, the default is ignored and a missing value still raises.
+    All defaults declared for one key in a model must broadcast to a common
+    shape and be numerically equal there.
+    """
+    return _access_deco(
+            var_key,
+            default=default,
+            deco_attr=_deco_attr_access_next_carry)
+
+
+def access_this_carry(
+        var_key:str|VarKey|property,
+        *,
+        shape:list[int|NdarrayDim]|None=None,
+        default:ArrayLike|None=None,
+        ):
+    """Declare that a model element reads a carry value or distribution.
+
+    Analogous to access_val, but the string form of var_key resolves to an
+    ElementAnnualKey, and the declaration may name an carry variable defined
+    either before the scan or by the scan step itself.
+
+    If default is not None, it is returned when the key has no definer
+    anywhere in the ScenarioModel. Defaults apply to value reads
+    (ws.val.this_carry and ws.val.next_carry) only, not to distribution reads.
+    During a scan step the default is returned literally as the value for
+    that step, so it should have the per-step shape. If some element does
+    define the key, the default is ignored and a missing value still raises.
+    All defaults declared for one key in a model must broadcast to a common
+    shape and be numerically equal there.
+    """
+    return _access_deco(
+            var_key,
+            default=default,
+            deco_attr=_deco_attr_access_this_carry)
+
+
 _deco_attr_define = 'model_element_define'
 
 def define(
         var_key:str|VarKey|property, *,
         prior_shape:list[int|NdarrayDim|property],
         dtype:str='float64',
+        posterior_only:bool=False,
         ):
     def deco(f):
         if not hasattr(f, _deco_attr_define):
@@ -1268,7 +1403,8 @@ def define(
                 value_type=NdarrayType_w_Properties(
                     shape=prior_shape,
                     dtype=dtype),
-                subphase=_subphase_from_f(f))
+                subphase=_subphase_from_f(f),
+                posterior_only=posterior_only)
         f.model_element_define[var_key] = ndm
         return f
     return deco
@@ -1280,6 +1416,7 @@ def define_annual(
         var_key:str|VarKey|property, *,
         annual_shape:list[int|NdarrayDim],
         dtype:str='float64',
+        posterior_only:bool=False,
         ):
     """Declare an annual (timeseries) variable, i.e. one value per scan step.
 
@@ -1303,7 +1440,8 @@ def define_annual(
                 value_type=NdarrayType(
                     shape=[years_dim] + list(annual_shape),
                     dtype=dtype),
-                subphase=_subphase_from_f(f))
+                subphase=_subphase_from_f(f),
+                posterior_only=posterior_only)
         getattr(f, _deco_attr_annual)[var_key] = ndm
         return f
     return deco
@@ -1311,26 +1449,29 @@ def define_annual(
 _deco_attr_carry = 'model_element_define_carry'
 
 def define_carry(
-        var_key:str|VarKey, *,
+        var_key:str|VarKey|property, *,
         shape:list[int|NdarrayDim],
         dtype:str='float64',
+        posterior_only:bool=False,
         ):
     def deco(f):
         if not hasattr(f, _deco_attr_carry):
             setattr(f, _deco_attr_carry, {})
+        # doesn't work for property, which won't have resolved yet
         assert var_key not in f.model_element_define_carry
         initial_ndm = NdarrayDefinitionMetadata(
                 value_type=NdarrayType(
                     shape=shape,
                     dtype=dtype),
-                subphase=_subphase_from_f(f))
+                subphase=_subphase_from_f(f),
+                posterior_only=posterior_only)
         next_ndm = NdarrayDefinitionMetadata(
                 value_type=NdarrayType(
                     shape=shape,
                     dtype=dtype),
-                subphase=_subphase_from_f(f))
-        f.model_element_define_carry[var_key] = (
-                initial_ndm, next_ndm)
+                subphase=_subphase_from_f(f),
+                posterior_only=posterior_only)
+        getattr(f, _deco_attr_carry)[var_key] = (initial_ndm, next_ndm)
         return f
     return deco
 
@@ -1361,6 +1502,13 @@ class ModelElement:
                 elem_id=self.identifier,
                 name=name)
 
+    def carry_key(self, name:str) -> ElementCarryKey:
+        if name == "":
+            raise NotImplementedError("name should not be empty")
+        return ElementCarryKey(
+                elem_id=self.identifier,
+                name=name)
+
     @property
     def version_id(self) -> VersionID:
         raise NotImplementedError(self)
@@ -1372,9 +1520,6 @@ class ModelElement:
         pass
 
     def model_element_postprocess(self, ws:Workspace):
-        pass
-
-    def model_element_postprocess_posterior_only(self, ws:Workspace):
         pass
 
 
@@ -1414,7 +1559,8 @@ def _resolve_properties_ndarray_definition(
 
     return NdarrayDefinitionMetadata(
             value_type=value_type_fn(ndmp.value_type),
-            subphase=ndmp.subphase)
+            subphase=ndmp.subphase,
+            posterior_only=ndmp.posterior_only)
 
 
 def _check_default_consistency(
@@ -1575,6 +1721,7 @@ class ScenarioModel:
                                 shape=ndm.value_type.shape[1:],
                                 dtype=ndm.value_type.dtype),
                             subphase=defining_subphase,
+                            posterior_only=ndm.posterior_only,
                             ),
                         defining_element_id=element_id,
                         defining_subphase=defining_subphase)
@@ -1604,13 +1751,15 @@ class ScenarioModel:
             else:
                 raise NotImplementedError(var_key)
 
-    def _add_define_carry_d(self, element_id, carry_d):
+    def _add_define_carry_d(self, element:ModelElement, carry_d):
+        element_id = element.identifier
         def add_var_key_ndm(var_key:ElementCarryKey, initial_ndm, next_ndm):
             self._check_new_var_key(var_key, element_id, Subphase.Step)
             self.mv.carry_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=NdarrayDefinitionMetadata(
                         value_type=initial_ndm.value_type,
                         subphase=Subphase.Step,
+                        posterior_only=initial_ndm.posterior_only,
                         ),
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Step)
@@ -1632,54 +1781,98 @@ class ScenarioModel:
         for var_key, (initial_ndm, next_ndm) in carry_d.items():
             if isinstance(var_key, ElementCarryKey):
                 add_var_key_ndm(var_key, initial_ndm, next_ndm)
+
             elif isinstance(var_key, str):
                 add_var_key_ndm(
                         ElementCarryKey(
                             elem_id=element_id,
                             name=var_key),
                         initial_ndm, next_ndm)
+
+            elif isinstance(var_key, property):
+                var_key_prop = var_key.__get__(element, type(element))
+                if isinstance(var_key_prop, ElementCarryKey):
+                    add_var_key_ndm(var_key_prop, initial_ndm, next_ndm)
+                elif isinstance(var_key_prop, dict):
+                    for int_key in var_key_prop.values():
+                        if isinstance(int_key, ElementCarryKey):
+                            add_var_key_ndm(int_key, initial_ndm, next_ndm)
+                        else:
+                            raise NotImplementedError(int_key)
+                else:
+                    raise NotImplementedError(var_key_prop)
             else:
                 raise NotImplementedError(var_key)
 
-    def _process_access_d(self, element:ModelElement, avd, annual:bool):
+    def _process_access_d(
+            self,
+            element:ModelElement,
+            avd,
+            annual:bool,
+            carry:bool=False,
+            which_carry:Literal['this', 'next']='this'):
         for subphase, var_key_d in avd.items():
-            for var_key, metadata in var_key_d.items():
+            for maybe_var_key, metadata in var_key_d.items():
                 default = metadata['default']
 
                 def add_access(var_key_:VarKey):
-                    if annual and not isinstance(var_key_, ElementAnnualKey):
-                        raise TypeError(
-                                f'access_annual requires an ElementAnnualKey,'
-                                f' got {var_key_}')
-                    if not annual and isinstance(var_key_, ElementAnnualKey):
+                    if isinstance(var_key_, ElementAnnualKey) and not annual:
                         raise TypeError(
                                 f'access_val cannot read the annual key'
                                 f' {var_key_}; use access_annual instead')
+                    if (not isinstance(var_key_, ElementAnnualKey)
+                            and annual and not carry):
+                        raise TypeError(
+                                f'access_annual requires an AnnualKey,'
+                                f' got {var_key_}')
+                    if annual:
+                        assert not carry
+                        accessed_vk = var_key_
+                    elif carry:
+                        assert not annual
+                        if not isinstance(var_key_, ElementCarryKey):
+                            raise TypeError(
+                                    'access_carry requires a CarryKey,'
+                                    f' got {var_key_}')
+                        if which_carry == 'this':
+                            accessed_vk = ThisCarry(carry_key=var_key_)
+                        elif which_carry == 'next':
+                            accessed_vk = NextCarry(carry_key=var_key_)
+                        else:
+                            raise NotImplementedError(which_carry)
+                    else:
+                        accessed_vk = var_key_
+
                     if default is not None:
-                        existing = self._default_by_var_key.get(var_key_)
+                        existing = self._default_by_var_key.get(accessed_vk)
                         if existing is None:
-                            self._default_by_var_key[var_key_] = default
+                            self._default_by_var_key[accessed_vk] = default
                         else:
                             _check_default_consistency(
-                                    var_key_, existing, default)
+                                    accessed_vk, existing, default)
                     self.mv.accesses.append(AccessMetadata(
                         elem_id=element.identifier,
                         subphase=subphase,
-                        var_key=var_key_,
+                        var_key=accessed_vk,
                         default=default))
 
-                if isinstance(var_key, VarKey):
-                    add_access(var_key)
-                elif isinstance(var_key, str):
+                if isinstance(maybe_var_key, VarKey):
+                    add_access(maybe_var_key)
+                elif isinstance(maybe_var_key, str):
                     if annual:
+                        assert not carry
                         var_key_ = ElementAnnualKey(
-                                elem_id=element.identifier, name=var_key)
+                                elem_id=element.identifier, name=maybe_var_key)
+                    elif carry:
+                        assert not annual
+                        var_key_ = ElementCarryKey(
+                                elem_id=element.identifier, name=maybe_var_key)
                     else:
                         var_key_ = ElementGeneralKey(
-                                elem_id=element.identifier, name=var_key)
+                                elem_id=element.identifier, name=maybe_var_key)
                     add_access(var_key_)
-                elif isinstance(var_key, property):
-                    var_key_prop = var_key.__get__(element, type(element))
+                elif isinstance(maybe_var_key, property):
+                    var_key_prop = maybe_var_key.__get__(element, type(element))
                     if isinstance(var_key_prop, VarKey):
                         add_access(var_key_prop)
                     elif isinstance(var_key_prop, dict):
@@ -1688,12 +1881,12 @@ class ScenarioModel:
                     else:
                         raise NotImplementedError(var_key_prop)
                 else:
-                    raise NotImplementedError(var_key)
+                    raise NotImplementedError(maybe_var_key)
 
     def add_element(
             self,
             element:ModelElement,
-            mcmc_group:str|None="default_mcmc_group"):
+            mcmc_group:str|None="default_mcmc_group") ->ModelElement:
         assert element.identifier
         assert element.identifier not in self.model_elements, element.identifier
         self.model_elements[element.identifier] = element
@@ -1710,18 +1903,13 @@ class ScenarioModel:
                 element,
                 Subphase.Proc,
                 getattr(element.model_element_postprocess, _deco_attr_define, {}))
-        self._add_define_d(
-                element,
-                Subphase.Proc,
-                getattr(element.model_element_postprocess_posterior_only, _deco_attr_define, {}))
 
         # carry variables
         self._add_define_carry_d(
-                element.identifier,
+                element,
                 getattr(element.model_element_prepare, _deco_attr_carry, {}))
         assert not hasattr(element.model_element_annual_step, _deco_attr_carry)
         assert not hasattr(element.model_element_postprocess, _deco_attr_carry)
-        assert not hasattr(element.model_element_postprocess_posterior_only, _deco_attr_carry)
 
         # scan-length annual timeseries
         self._add_define_annual_d(
@@ -1736,17 +1924,12 @@ class ScenarioModel:
                 element,
                 Subphase.Proc,
                 getattr(element.model_element_postprocess, _deco_attr_annual, {}))
-        self._add_define_annual_d(
-                element,
-                Subphase.Proc,
-                getattr(element.model_element_postprocess_posterior_only, _deco_attr_annual, {}))
 
         # access_val and access_annual
         for subphase_method in (
                 element.model_element_prepare,
                 element.model_element_annual_step,
-                element.model_element_postprocess,
-                element.model_element_postprocess_posterior_only):
+                element.model_element_postprocess):
             self._process_access_d(
                     element,
                     getattr(subphase_method, _deco_attr_access_val, {}),
@@ -1755,6 +1938,20 @@ class ScenarioModel:
                     element,
                     getattr(subphase_method, _deco_attr_access_annual, {}),
                     annual=True)
+            self._process_access_d(
+                    element,
+                    getattr(subphase_method, _deco_attr_access_this_carry, {}),
+                    annual=False,
+                    carry=True,
+                    which_carry='this')
+            self._process_access_d(
+                    element,
+                    getattr(subphase_method, _deco_attr_access_next_carry, {}),
+                    annual=False,
+                    carry=True,
+                    which_carry='next')
+
+        return element
 
     def _definitions_for_subphase(self, subphase:Subphase) -> dict[VarKey, ElementID]:
         """var_key -> defining element, for keys defined in this subphase."""

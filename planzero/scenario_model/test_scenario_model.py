@@ -2,6 +2,7 @@
 import jax.numpy as jnp
 import jax.random as jrandom
 import numpy as np
+import numpyro.distributions as dist_module
 import pytest
 
 from .base import (
@@ -12,7 +13,9 @@ from .base import (
     FinalCarry,
     InitialCarry,
     NextCarry,
+    Phase,
     Subphase,
+    UnassignedDefinitionError,
     scan_step_ii_key,
     years_key,
 )
@@ -24,6 +27,7 @@ from .computation import (
     access_val,
     define,
     define_annual,
+    define_carry,
     run_mcmc,
 )
 from .example_population import Example_Population
@@ -644,3 +648,248 @@ def test_duplicate_key_definition_raises():
     model = _annual_test_model(DupA())
     with pytest.raises(DefinitionError):
         model.add_element(DupB())
+
+
+
+def test_annual_definition_via_step():
+
+    class Foo(ModelElement):
+        @define_annual('a', annual_shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            ws.val.annual['a'] = jnp.arange(ws.n_years)
+
+
+        @access_annual('a')
+        @define_annual('b', annual_shape=[])
+        def model_element_annual_step(self, ws:Workspace):
+            ws.val.this_annual['b'] = ws.val.this_annual['a'] + ws.val.annual['a'].sum()
+
+        @access_annual('a')
+        @access_annual('b')
+        @define_annual('c', annual_shape=[])
+        def model_element_postprocess(self, ws:Workspace):
+            ws.val.annual['c'] = ws.val.annual['a'] + ws.val.annual['b']
+
+
+    model = _annual_test_model(Foo())
+    comp = Computation(model, rng_key=1)
+    comp.run()
+    a = ElementAnnualKey(elem_id='Foo', name='a')
+    b = ElementAnnualKey(elem_id='Foo', name='b')
+    c = ElementAnnualKey(elem_id='Foo', name='c')
+    assert jnp.all(comp._ndarray_d[a] == jnp.arange(4))
+    assert jnp.all(comp._ndarray_d[b] == jnp.arange(4) + jnp.arange(4).sum())
+    assert jnp.all(comp._ndarray_d[c] == 2 * jnp.arange(4) + jnp.arange(4).sum())
+
+
+def _posterior_comp(model:ScenarioModel) -> Computation:
+    comp = Computation(model=model, rng_key=jrandom.key(1))
+    comp.set_phase_posterior(
+            n_mcmc=2,
+            sample_sites={},
+            grouped_samples={})
+    return comp
+
+
+def test_missing_prepare_definition_raises():
+
+    class MissingPrep(ModelElement):
+        @define('out', prior_shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            pass
+
+    comp = Computation(model=_annual_test_model(MissingPrep()), rng_key=1)
+    with pytest.raises(UnassignedDefinitionError) as excinfo:
+        comp.run()
+    assert 'MissingPrep' in str(excinfo.value)
+    assert 'model_element_prepare' in str(excinfo.value)
+    assert 'out' in str(excinfo.value)
+
+
+def test_missing_step_definition_raises():
+
+    class MissingStep(ModelElement):
+        @define_annual('out', annual_shape=[])
+        def model_element_annual_step(self, ws:Workspace):
+            pass
+
+    comp = Computation(model=_annual_test_model(MissingStep()), rng_key=1)
+    with pytest.raises(UnassignedDefinitionError) as excinfo:
+        comp.run()
+    assert 'model_element_annual_step' in str(excinfo.value)
+    assert 'out' in str(excinfo.value)
+
+
+def test_missing_proc_definition_raises():
+
+    class MissingProc(ModelElement):
+        @define('out', prior_shape=[])
+        def model_element_postprocess(self, ws:Workspace):
+            pass
+
+    comp = Computation(model=_annual_test_model(MissingProc()), rng_key=1)
+    with pytest.raises(UnassignedDefinitionError) as excinfo:
+        comp.run()
+    assert 'model_element_postprocess' in str(excinfo.value)
+    assert 'out' in str(excinfo.value)
+
+
+def test_missing_initial_carry_raises():
+
+    class MissingInitialCarry(ModelElement):
+        @define_carry('c', shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            pass
+
+        def model_element_annual_step(self, ws:Workspace):
+            ws.val.next_carry['c'] = ws.val.this_carry['c']
+
+    comp = Computation(model=_annual_test_model(MissingInitialCarry()),
+                       rng_key=1)
+    with pytest.raises(UnassignedDefinitionError) as excinfo:
+        comp.run()
+    assert 'model_element_prepare' in str(excinfo.value)
+    assert 'InitialCarry' in str(excinfo.value)
+
+
+def test_missing_next_carry_raises():
+
+    class MissingNextCarry(ModelElement):
+        @define_carry('c', shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            ws.val.initial_carry['c'] = jnp.array(0.0)
+
+        def model_element_annual_step(self, ws:Workspace):
+            pass
+
+    comp = Computation(model=_annual_test_model(MissingNextCarry()),
+                       rng_key=1)
+    with pytest.raises(UnassignedDefinitionError) as excinfo:
+        comp.run()
+    assert 'model_element_annual_step' in str(excinfo.value)
+    assert 'c' in str(excinfo.value)
+
+
+def test_definitions_assigned_via_value_or_dist_pass():
+
+    class AssignedVal(ModelElement):
+        @define('a', prior_shape=[])
+        @define_annual('c', annual_shape=[])
+        @define_carry('carry', shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            ws.val.general['a'] = jnp.array(1.0)
+            ws.val.annual['c'] = jnp.arange(ws.n_years)
+            ws.val.initial_carry['carry'] = jnp.array(0.0)
+
+        @define_annual('d', annual_shape=[])
+        def model_element_annual_step(self, ws:Workspace):
+            ws.val.this_annual['d'] = jnp.array(2.0)
+            ws.val.next_carry['carry'] = jnp.array(0.0)
+
+        @define('e', prior_shape=[])
+        @define_annual('f', annual_shape=[])
+        def model_element_postprocess(self, ws:Workspace):
+            ws.val.general['e'] = jnp.array(3.0)
+            ws.val.annual['f'] = jnp.arange(ws.n_years)
+
+    comp = Computation(model=_annual_test_model(AssignedVal()), rng_key=1)
+    comp.run()
+
+
+def test_definitions_assigned_via_general_dist_pass():
+
+    class AssignedDist(ModelElement):
+        @define('b', prior_shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            ws.dist.general['b'] = dist_module.Normal().expand_by(
+                    ws.mcmc_broadcast_shape)
+
+    comp = Computation(model=_annual_test_model(AssignedDist()), rng_key=1)
+    comp.run()
+
+
+def test_observation_only_write_does_not_satisfy_definition():
+
+    class ObsOnly(ModelElement):
+        @define('out', prior_shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            ws.obs_val.general['out'] = jnp.array(1.0)
+
+    comp = Computation(model=_annual_test_model(ObsOnly()), rng_key=1)
+    with pytest.raises(UnassignedDefinitionError):
+        comp.run()
+
+
+def test_all_missing_definitions_reported_together():
+
+    class TwoMissing(ModelElement):
+        @define('a', prior_shape=[])
+        @define('b', prior_shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            ws.val.general['a'] = jnp.array(1.0)
+
+    comp = Computation(model=_annual_test_model(TwoMissing()), rng_key=1)
+    with pytest.raises(UnassignedDefinitionError) as excinfo:
+        comp.run()
+    assert 'b' in str(excinfo.value)
+
+
+def test_posterior_only_proc_definition_skipped_in_prior():
+
+    class PosteriorOnlyProc(ModelElement):
+        @define('out', prior_shape=[], posterior_only=True)
+        def model_element_postprocess(self, ws:Workspace):
+            if ws.phase == Phase.Posterior:
+                ws.val.general['out'] = jnp.array(1.0)
+
+    model = _annual_test_model(PosteriorOnlyProc())
+    Computation(model=model, rng_key=1).run()
+
+    comp = _posterior_comp(_annual_test_model(PosteriorOnlyProc()))
+    comp.run()
+
+
+def test_posterior_only_proc_definition_required_in_posterior():
+
+    class PosteriorOnlyProc(ModelElement):
+        @define('out', prior_shape=[], posterior_only=True)
+        def model_element_postprocess(self, ws:Workspace):
+            pass
+
+    comp = _posterior_comp(_annual_test_model(PosteriorOnlyProc()))
+    with pytest.raises(UnassignedDefinitionError):
+        comp.run()
+
+
+def test_posterior_only_step_definition_skipped_in_prior():
+
+    class PosteriorOnlyStep(ModelElement):
+        @define_annual('out', annual_shape=[], posterior_only=True)
+        def model_element_annual_step(self, ws:Workspace):
+            if ws.phase == Phase.Posterior:
+                ws.val.this_annual['out'] = jnp.array(1.0)
+
+    model = _annual_test_model(PosteriorOnlyStep())
+    Computation(model=model, rng_key=1).run()
+
+    comp = _posterior_comp(_annual_test_model(PosteriorOnlyStep()))
+    comp.run()
+
+
+def test_posterior_only_carry_check_directly():
+    """The check itself skips posterior_only keys in Prior, requires in Posterior."""
+
+    class PosteriorOnlyCarry(ModelElement):
+        @define_carry('c', shape=[], posterior_only=True)
+        def model_element_prepare(self, ws:Workspace):
+            pass
+
+    model = _annual_test_model(PosteriorOnlyCarry())
+    comp = Computation(model=model, rng_key=1)
+    elem = model.model_elements['PosteriorOnlyCarry']
+    comp._reset_assignments()
+    comp.phase = Phase.Prior
+    comp._check_defined_assignments(elem, Subphase.Prep)
+    comp.phase = Phase.Posterior
+    with pytest.raises(UnassignedDefinitionError):
+        comp._check_defined_assignments(elem, Subphase.Prep)
