@@ -12,6 +12,8 @@ from .base import (
     ElementGeneralKey,
     FinalCarry,
     InitialCarry,
+    NdarrayDefinitionDeclaration,
+    NdarrayDefinitionMetadata,
     NextCarry,
     Phase,
     Subphase,
@@ -80,6 +82,55 @@ def test_add_inference_add_vars(model):
     assert model.mv.annual_nd[
             ElementAnnualKey(elem_id=elem_id, name='mu')
             ].defining_subphase == Subphase.Step
+
+
+def test_definition_decorators_create_declarations():
+    """@define* metadata is unresolved and exists before instantiation."""
+
+    class DeclarationElement(ModelElement):
+        @define('general', prior_shape=[])
+        @define_annual('annual', annual_shape=[])
+        @define_carry('carry', shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            pass
+
+    prepare = DeclarationElement.model_element_prepare
+    general_ndm = prepare.model_element_define['general']
+    annual_ndm = prepare.model_element_define_annual['annual']
+    initial_ndm, next_ndm = prepare.model_element_define_carry['carry']
+
+    for ndm in (general_ndm, annual_ndm, initial_ndm, next_ndm):
+        assert isinstance(ndm, NdarrayDefinitionDeclaration)
+        assert ndm.declaration_subphase == Subphase.Prep
+
+
+def test_declaration_and_defining_subphases_are_distinct():
+    """One carry declaration registers keys available in different subphases."""
+
+    class CarryElement(ModelElement):
+        @define_carry('c', shape=[])
+        def model_element_prepare(self, ws:Workspace):
+            ws.val.initial_carry['c'] = jnp.array(0.0)
+
+        def model_element_annual_step(self, ws:Workspace):
+            ws.val.next_carry['c'] = jnp.array(0.0)
+
+    model = _annual_test_model(CarryElement())
+    elem_id = 'CarryElement'
+    carry_key = ElementCarryKey(elem_id=elem_id, name='c')
+    initial_key = InitialCarry(carry_key=carry_key)
+    final_key = FinalCarry(carry_key=carry_key)
+
+    for nvm in (
+            model.mv.carry_nd[carry_key],
+            model.mv.general_nd[initial_key],
+            model.mv.general_nd[final_key]):
+        assert isinstance(nvm.definition_metadata, NdarrayDefinitionMetadata)
+        assert nvm.definition_metadata.declaration_subphase == Subphase.Prep
+
+    assert model.mv.carry_nd[carry_key].defining_subphase == Subphase.Step
+    assert model.mv.general_nd[initial_key].defining_subphase == Subphase.Prep
+    assert model.mv.general_nd[final_key].defining_subphase == Subphase.Proc
 
 
 def test_add_inference_run_smoke(model):

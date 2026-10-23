@@ -13,13 +13,9 @@ class Phase(str, enum.Enum):
 
 
 class Subphase(str, enum.Enum):
-    Unknown = 'Unknown'
-    Prep = 'Prep'
-    Internal_Between_Prep_and_Step = 'Internal Subphase between Prep and Step'
-    Step = 'Step'
-    Internal_Between_Step_and_Post = 'Internal Subphase between Step and Post'
-    Proc = 'Proc'
-    Internal_After_Post = 'Internal Subphase after Post'
+    Prep = 'Prep'  # preparation for scan
+    Step = 'Step'  # step during scan
+    Proc = 'Proc'  # post-processing after scan
 
 
 class VariableRole(str, enum.Enum):
@@ -170,30 +166,55 @@ class NdarrayType(ValType, frozen=True):
 
 
 class DefinitionMetadata(BaseModel):
+    """Declarative metadata for a definition made by a @define* decorator.
+
+    The declaration is captured at decoration time, before the ModelElement is
+    instantiated, so it cannot contain instance-specific state such as the
+    element identifier. `declaration_subphase` records which ModelElement
+    method carried the decorator; it is not necessarily the subphase in which
+    the resulting keys become available (see VariableMetadata).
+
+    The decorator-time form is NdarrayDefinitionDeclaration because it may
+    still contain property references. add_element resolves it into
+    NdarrayDefinitionMetadata, which is embedded in the registration record.
+    """
+
+    model_config = ConfigDict(frozen=True)
 
     #observation: VarKey|None = None
-    subphase:Subphase = Subphase.Unknown
+    declaration_subphase:Subphase
+
     # If True, this definition is only required to be assigned during
     # Phase.Posterior. The check is skipped during Phase.Prior.
     posterior_only:bool = False
 
 
 class NdarrayDefinitionMetadata(DefinitionMetadata):
+    """A resolved ndarray definition, stored in NdarrayVariableMetadata.
+
+    Property-based keys and shapes have already been resolved against the
+    ModelElement instance by add_element.
+    """
 
     value_type: NdarrayType
 
 
 class NdarrayType_w_Properties(ValType, frozen=True):
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     shape: list[int|NdarrayDim|property]
     dtype: str = 'float64'
 
 
-class NdarrayDefinitionMetadata_w_Properties(DefinitionMetadata):
+class NdarrayDefinitionDeclaration(DefinitionMetadata):
+    """Unresolved ndarray metadata created by a @define* decorator.
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    This is the declaration-time form. Its shape may contain property
+    references that cannot be resolved until a ModelElement instance exists.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     value_type: NdarrayType_w_Properties
 
@@ -204,16 +225,32 @@ class DefinitionError(Exception):
 
 class UnassignedDefinitionError(DefinitionError):
     """A method declared a key with @define* but did not assign it."""
-    pass
 
 
 class VariableMetadata(BaseModel):
+    """Registration metadata created when a ModelElement is added to a model.
+
+    This object exists only after ModelElement instantiation. It records which
+    element registered the key and the subphase in which that registered key
+    becomes available.
+
+    `defining_subphase` is distinct from the embedded definition's
+    `declaration_subphase`: one decorator can produce registrations that
+    become available in different subphases. For example, a carry declared on
+    model_element_prepare produces an InitialCarry available in Prep, a
+    carry value available in Step, and a FinalCarry available in Proc.
+    """
+
+    model_config = ConfigDict(frozen=True)
 
     defining_element_id: str
-    defining_subphase: Subphase = Subphase.Unknown
+    defining_subphase: Subphase
 
 
 class NdarrayVariableMetadata(VariableMetadata):
+    """A registered ndarray variable: registration identity plus its resolved
+    definition contract.
+    """
 
     definition_metadata: NdarrayDefinitionMetadata
 
@@ -232,8 +269,11 @@ class AccessMetadata(BaseModel):
 
 
 class ModelVariables(BaseModel):
-    """
-    Things known about a model from just the add_element calls.
+    """Registration state accumulated from add_element calls.
+
+    Each key maps to NdarrayVariableMetadata: registration identity plus the
+    resolved definition contract. Decorator declarations are not stored here
+    until an element is added to the model.
     """
 
     general_nd: dict[VarKey, NdarrayVariableMetadata] = {}

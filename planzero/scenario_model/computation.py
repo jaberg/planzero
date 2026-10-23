@@ -25,8 +25,8 @@ from .base import (
     GroupedPosterior,
     InitialCarry,
     ModelVariables,
+    NdarrayDefinitionDeclaration,
     NdarrayDefinitionMetadata,
-    NdarrayDefinitionMetadata_w_Properties,
     NdarrayDim,
     NdarrayType,
     NdarrayType_w_Properties,
@@ -320,9 +320,29 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
             return False
         else:
             raise NotImplementedError(comp.phase)
-
         # The observation should not have mcmc dimension in Posterior phase
         # it should be automatically right-padded by the storage_nd_set
+
+    elif isinstance(prior_var_key, ElementAnnualKey):
+        # the observation can have fewer, equal, or more dimensions than the
+        # observed variable. If there are more, they represent multiple observations
+        # If there are fewer, they represent broadcast observations.
+        metadata_prior_shape = comp.model.mv.annual_nd[prior_var_key].definition_metadata.value_type.shape
+        if comp.phase == Phase.Prior:
+            # why isn't this followed yet?
+            # it is because an annual variable had no data observations
+            # but MCMC samples are installed as observations by set_phase_posterior
+            raise NotImplementedError()
+
+        elif comp.phase == Phase.Posterior:
+            n_obs_dim = len(obs_shape)
+            if n_obs_dim == len(metadata_prior_shape) + 1:
+                # TODO
+                raise NotImplementedError()
+            else:
+                raise NotImplementedError(prior_var_key, metadata_prior_shape, obs_shape)
+        else:
+            raise NotImplementedError()
     else:
         raise NotImplementedError(prior_var_key)
 
@@ -984,17 +1004,42 @@ class Computation:
         assert transposed.shape[-1] == self.n_mcmc
         assert transposed.shape[1:-1] == tuple(annual_shape)
 
+        nvm = self.model.mv.annual_nd[var_key]
+
         # an annual value can be defined in essentially two ways:
         # 1. all at once in either of model_element_prepare or model_element_postprocess
         # 2. stepwise in a model_element_annual_step
         #
-        # If this annual value has been defined all at once, then `transposed`
-        # should be used as if the following appeared prior to its definition
-        # ws.obs_valid.annual[var_key] = year_idxs < n_prior_years
-        # ws.obs_val.annual[var_key] = jnp.where( year_idxs < n_prior_years, transposed, 0)
-        #
-        # If this annual value has been defined stepwise, then the
-        # technique used in _load_nextcarry_grouped_sample can be adapted.
+        if nvm.defining_subphase in (Subphase.Prep, Subphase.Proc):
+
+            # If this annual value has been defined all at once, then `transposed`
+            # should be used as if the following appeared prior to its definition
+            # ws.obs_valid.annual[var_key] = year_idxs < n_prior_years
+            # ws.obs_val.annual[var_key] = jnp.where( year_idxs < n_prior_years, transposed, 0)
+
+            # don't lookup scan_step_ii_key because it isn't defined yet
+            scan_step_ii = jnp.arange(self.model.n_posterior_years)
+            expanded_mask = jnp.reshape(
+                    scan_step_ii < self.model.n_prior_years,
+                    (self.model.n_posterior_years,) + (1,) * (transposed.ndim - 1))
+            self.set_ndarray(
+                    ObservationValid(
+                        obs_var_key=Observation(
+                            prior_var_key=var_key)),
+                    expanded_mask)
+            self.set_ndarray(
+                    Observation(prior_var_key=var_key),
+                    jnp.where(
+                        expanded_mask,
+                        transposed,
+                        0))
+        elif nvm.defining_subphase == Subphase.Step:
+            # If this annual value has been defined stepwise, then the
+            # technique used in _load_nextcarry_grouped_sample can be adapted.
+            raise NotImplementedError()
+        else:
+            raise NotImplementedError(nvm.defining_subphase)
+
         raise NotImplementedError('tomorrow')
 
     def set_phase_posterior(
@@ -1431,11 +1476,11 @@ def define(
             setattr(f, _deco_attr_define, {})
         # doesn't work for property, which won't have resolved yet
         assert var_key not in f.model_element_define
-        ndm = NdarrayDefinitionMetadata_w_Properties(
+        ndm = NdarrayDefinitionDeclaration(
                 value_type=NdarrayType_w_Properties(
                     shape=prior_shape,
                     dtype=dtype),
-                subphase=_subphase_from_f(f),
+                declaration_subphase=_subphase_from_f(f),
                 posterior_only=posterior_only)
         f.model_element_define[var_key] = ndm
         return f
@@ -1446,7 +1491,7 @@ _deco_attr_annual = 'model_element_define_annual'
 
 def define_annual(
         var_key:str|VarKey|property, *,
-        annual_shape:list[int|NdarrayDim],
+        annual_shape:list[int|NdarrayDim|property],
         dtype:str='float64',
         posterior_only:bool=False,
         ):
@@ -1468,11 +1513,11 @@ def define_annual(
             setattr(f, _deco_attr_annual, {})
         # doesn't work for property, which won't have resolved yet
         assert var_key not in getattr(f, _deco_attr_annual)
-        ndm = NdarrayDefinitionMetadata(
-                value_type=NdarrayType(
+        ndm = NdarrayDefinitionDeclaration(
+                value_type=NdarrayType_w_Properties(
                     shape=[years_dim] + list(annual_shape),
                     dtype=dtype),
-                subphase=_subphase_from_f(f),
+                declaration_subphase=_subphase_from_f(f),
                 posterior_only=posterior_only)
         getattr(f, _deco_attr_annual)[var_key] = ndm
         return f
@@ -1482,7 +1527,7 @@ _deco_attr_carry = 'model_element_define_carry'
 
 def define_carry(
         var_key:str|VarKey|property, *,
-        shape:list[int|NdarrayDim],
+        shape:list[int|NdarrayDim|property],
         dtype:str='float64',
         posterior_only:bool=False,
         ):
@@ -1491,17 +1536,17 @@ def define_carry(
             setattr(f, _deco_attr_carry, {})
         # doesn't work for property, which won't have resolved yet
         assert var_key not in f.model_element_define_carry
-        initial_ndm = NdarrayDefinitionMetadata(
-                value_type=NdarrayType(
+        initial_ndm = NdarrayDefinitionDeclaration(
+                value_type=NdarrayType_w_Properties(
                     shape=shape,
                     dtype=dtype),
-                subphase=_subphase_from_f(f),
+                declaration_subphase=_subphase_from_f(f),
                 posterior_only=posterior_only)
-        next_ndm = NdarrayDefinitionMetadata(
-                value_type=NdarrayType(
+        next_ndm = NdarrayDefinitionDeclaration(
+                value_type=NdarrayType_w_Properties(
                     shape=shape,
                     dtype=dtype),
-                subphase=_subphase_from_f(f),
+                declaration_subphase=_subphase_from_f(f),
                 posterior_only=posterior_only)
         getattr(f, _deco_attr_carry)[var_key] = (initial_ndm, next_ndm)
         return f
@@ -1572,7 +1617,7 @@ class ModelBuiltIns(ModelElement):
 
 def _resolve_properties_ndarray_definition(
         element,
-        ndmp:NdarrayDefinitionMetadata_w_Properties,
+        ndmp:NdarrayDefinitionDeclaration,
         ) -> NdarrayDefinitionMetadata:
 
     def shape_elem_fn(shape_elem:int|NdarrayDim|property) -> int|NdarrayDim:
@@ -1591,7 +1636,7 @@ def _resolve_properties_ndarray_definition(
 
     return NdarrayDefinitionMetadata(
             value_type=value_type_fn(ndmp.value_type),
-            subphase=ndmp.subphase,
+            declaration_subphase=ndmp.declaration_subphase,
             posterior_only=ndmp.posterior_only)
 
 
@@ -1737,10 +1782,10 @@ class ScenarioModel:
         def add_var_key_ndm(var_key:ElementAnnualKey, ndm):
             self._check_new_var_key(
                     var_key, element_id, defining_subphase)
+            resolved_ndm = _resolve_properties_ndarray_definition(element, ndm)
             # full timeseries metadata, with a leading years_dim
             self.mv.general_nd[var_key] = NdarrayVariableMetadata(
-                    definition_metadata=_resolve_properties_ndarray_definition(
-                        element, ndm),
+                    definition_metadata=resolved_ndm,
                     defining_element_id=element_id,
                     defining_subphase=defining_subphase)
 
@@ -1750,10 +1795,11 @@ class ScenarioModel:
                 step_ndm = NdarrayVariableMetadata(
                         definition_metadata=NdarrayDefinitionMetadata(
                             value_type=NdarrayType(
-                                shape=ndm.value_type.shape[1:],
-                                dtype=ndm.value_type.dtype),
-                            subphase=defining_subphase,
-                            posterior_only=ndm.posterior_only,
+                                shape=resolved_ndm.value_type.shape[1:],
+                                dtype=resolved_ndm.value_type.dtype),
+                            declaration_subphase=(
+                                resolved_ndm.declaration_subphase),
+                            posterior_only=resolved_ndm.posterior_only,
                             ),
                         defining_element_id=element_id,
                         defining_subphase=defining_subphase)
@@ -1786,27 +1832,28 @@ class ScenarioModel:
     def _add_define_carry_d(self, element:ModelElement, carry_d):
         element_id = element.identifier
         def add_var_key_ndm(var_key:ElementCarryKey, initial_ndm, next_ndm):
+            resolved_initial = _resolve_properties_ndarray_definition(
+                    element, initial_ndm)
+            resolved_next = _resolve_properties_ndarray_definition(
+                    element, next_ndm)
+
             self._check_new_var_key(var_key, element_id, Subphase.Step)
             self.mv.carry_nd[var_key] = NdarrayVariableMetadata(
-                    definition_metadata=NdarrayDefinitionMetadata(
-                        value_type=initial_ndm.value_type,
-                        subphase=Subphase.Step,
-                        posterior_only=initial_ndm.posterior_only,
-                        ),
+                    definition_metadata=resolved_initial,
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Step)
 
             initial_key = InitialCarry(carry_key=var_key)
             self._check_new_var_key(initial_key, element_id, Subphase.Prep)
             self.mv.general_nd[initial_key] = NdarrayVariableMetadata(
-                    definition_metadata=initial_ndm,
+                    definition_metadata=resolved_initial,
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Prep)
 
             final_key = FinalCarry(carry_key=var_key)
             self._check_new_var_key(final_key, element_id, Subphase.Proc)
             self.mv.general_nd[final_key] = NdarrayVariableMetadata(
-                    definition_metadata=next_ndm,
+                    definition_metadata=resolved_next,
                     defining_element_id=element_id,
                     defining_subphase=Subphase.Proc)
 
