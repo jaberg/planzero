@@ -1,0 +1,140 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>{{ barrier_obj.pretty_name }} ({{ site_inference.pretty_name }} Model)</h1>
+        <!--<p>Scenario: </p>-->
+    </header>
+<p>
+This page visualizes some of the key time series of the
+<strong>{{ barrier_obj.pretty_name }}</strong> barrier
+in the <strong>{{ site_inference.pretty_name }}</strong> model.
+</p>
+
+<h2>Description</h2>
+<p>
+{{ barrier_obj.description }}
+</p>
+<p>
+Link to code: <a href="{{ coderef_url(barrier_obj.__class__) }}">{{ barrier_obj.__class__.__name__ }}</a>.
+</p>
+<!--
+<p>
+Parameterization of modelling element: {{ str(barrier_obj) }}
+</p>
+-->
+
+<h2>Model Variables Defined by this Element</h2>
+
+<h3><a href="/glossary/#Static Variables">Static Variables</a></h3>
+
+{% if site_inference.constants(barrier_name) %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Shape</th>
+            <th>5%</th>
+            <th>50%</th>
+            <th>95%</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+{% for var_name, value in sorted(site_inference.constants(barrier_name).items()) %}
+<tr>
+    <td>{{ var_name[:50] }}</td>
+    <td style="text-align: right;"> {{ value.shape }} </td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.05) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.50) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.95) ).replace("_", " ") }}</td>
+    <td>{{ 'unit unkown' }}</td>
+</tr>
+{% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>This modelling element defines no static variables.</p>
+{% endif %}
+
+
+<h3>Annual Time Series</h3>
+{% if site_inference.full_time_series(barrier_name) %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Shape</th>
+            <th>5%</th>
+            <th>50%</th>
+            <th>95%</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+{% for var_name, value in sorted(site_inference.full_time_series(barrier_name).items()) %}
+<tr>
+    <td>{{ var_name[:50] }}</td>
+    <td style="text-align: right;"> {{ value.shape }} </td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.05) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.50) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.95) ).replace("_", " ") }}</td>
+    <td>{{ 'unit unkown' }}</td>
+</tr>
+{% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>This modelling element defines no annual time series.</p>
+{% endif %}
+
+<h3>Annual Running Statistics at year {{ site_inference.modelled_years[-1] }}</h3>
+{% if site_inference.running_time_series(barrier_name) %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Shape</th>
+            <th>5%</th>
+            <th>50%</th>
+            <th>95%</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+{% for var_name, value in sorted(site_inference.running_time_series(barrier_name, include_rngs=False).items()) %}
+<tr>
+    <td>{{ var_name[:50] }}</td>
+    <td style="text-align: right;"> {{ value.shape }} </td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.05) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.50) ).replace("_", " ") }}</td>
+    <td style="text-align: right;">{{"{:_.3f}".format( np.quantile(value, 0.95) ).replace("_", " ") }}</td>
+    <td>{{ 'unit unkown' }}</td>
+</tr>
+{% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<p>This modelling element defines no annual running statistics.</p>
+{% endif %}
+
+<h2 id="posts">Posts developing this page</h2>
+<ul>
+{% for ident in barrier_obj.posts_developing_this_page %}
+<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
+<ul class="actions special">
+    <li><a href="/models/prob/{{ site_inf_name }}/" class="button">Back to Model Overview</a></li>
+</ul>
+
+</section>
+</div>
+
+{% include "post-main.html" %}

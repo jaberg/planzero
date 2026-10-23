@@ -47,7 +47,8 @@ class StaticNormals(BlogPost):
                 ax0.legend(loc='upper right')
 
                 ax1.set_title("Lognormal")
-                x = np.linspace(0, 1, 100)
+                eps = 1e-6
+                x = np.linspace(0, 1, 100) + eps
                 ax1.plot(x, np.exp(dist.LogNormal(0, 1).log_prob(x)), label=r"$\mu=0, \sigma^2=1$")
                 ax1.plot(x, np.exp(dist.LogNormal(-1, 0.7).log_prob(x)), label=r"$\mu=-1, \sigma^2=0.7$")
                 ax1.legend(loc='upper right')

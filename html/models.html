@@ -15,7 +15,7 @@
 are single scenarios (sometimes with ablations for analysis)
 to illustrate data sets and hypothetical futures.<p>
 
-<table id="gemini-sort-data-table">
+<table class="gemini-sort-data-table">
     <thead>
           <tr>
               <th>
@@ -52,7 +52,7 @@ estimate the probabilities of multiple possible futures.
 They are visualized in terms of the mean, and upper and lower bounds on probable futures.
 <p>
 
-<table id="gemini-sort-data-table">
+<table class="gemini-sort-data-table">
     <thead>
           <tr>
               <th>
@@ -67,14 +67,13 @@ They are visualized in terms of the mean, and upper and lower bounds on probable
           </tr>
     </thead>
     <tbody>
-        {% for ident, obj in planzero.prob.site_inferences.items() if obj.show_on_models_page %}
+        {% for ident, obj in sorted(planzero.prob.registry.items()) if obj.show_on_models_page %}
           <tr>
               <td>
                   <a href="/models/prob/{{ident}}/">{{obj.pretty_name}}</a>
               </td>
               <td>{{obj.short_description}}</td>
-              <td>{{"{:.1f} - {:.1f}".format(*obj.predicted_emissions_2050_MtCO2e_bounds_ul)}}
-                  Mt{{CO2e|safe}}</td>
+              <td>{{obj.predicted_emissions_2050_MtCO2e_bounds_str}}</td>
           </tr>
           {% endfor %}
     </tbody>

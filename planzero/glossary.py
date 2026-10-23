@@ -4,14 +4,19 @@ so that it can import objects throughout the library, and retrieve
 their line numbers for constructing github links.
 """
 import functools
+
 import jinja2
 from pydantic import BaseModel, computed_field
 
+from . import blog, strategies
+from .base import DynamicElement
+from .html import coderef_url, latex
 from .singleton_registry import SingletonRegistry
+from .sts import STS
 
 registry = SingletonRegistry()
 
-class AKA_Registry(object):
+class AKA_Registry:
     def __init__(self):
         self.aliases = {}
 
@@ -41,14 +46,20 @@ def siteref(term, text=None):
         raise exc
 
 
-from .blog import latex
-from . import blog
-from . import barriers
-from . import cattle
-from . import strategies
-from .sts import STS
-from .base import DynamicElement
-from .html import coderef_url
+def template_globals() -> dict[str, object]:
+    def lref(term, text=None):
+        return aka_registry[term].local_ref(text)
+
+    return {
+        'CO2e': latex(r'\mathrm{CO}_2\mathrm e '),
+        'CO2': latex(r'\mathrm{CO}_2'),
+        'CH4': latex(r'\mathrm{CH}_4'),
+        'N2O': latex(r"\mathrm N_2 \mathrm O"),
+        'SF6': latex(r"\mathrm{SF}_6"),
+        'NF3': latex(r"\mathrm{NF}_3"),
+        'degrees': latex(r'^\circ'),
+        'lref': lref,
+    }
 
 
 class GlossaryTerm(BaseModel):
@@ -68,7 +79,7 @@ class GlossaryTerm(BaseModel):
             source = f'<p>{self.definition}</p>'
 
         template = jinja2.Template(source=source)
-        rval = template.render(self.template_globals())
+        rval = template.render(template_globals())
         return rval
 
     @property
@@ -119,21 +130,6 @@ class GlossaryTerm(BaseModel):
         super().__init_subclass__()
         if getattr(cls, 'include_in_registry', True): # default to True for historical reasons
             registry.add_class(cls)
-
-    def template_globals(self) -> dict[str, object]:
-        def lref(term, text=None):
-            return aka_registry[term].local_ref(text)
-
-        return dict(
-            CO2e=latex(r'\mathrm{CO}_2\mathrm e '),
-            CO2=latex(r'\mathrm{CO}_2'),
-            CH4=latex(r'\mathrm{CH}_4'),
-            N2O=latex(r"\mathrm N_2 \mathrm O"),
-            SF6=latex(r"\mathrm{SF}_6"),
-            NF3=latex(r"\mathrm{NF}_3"),
-            degrees=latex(r'^\circ'),
-            lref=lref,
-        )
 
     def local_ref(self, text=None) -> str:
         if text is None:
@@ -304,7 +300,7 @@ class Strategy(GlossaryTerm):
     """<p>A Strategy is a {{lref("Dynamic Element", "dynamic element")|safe}}
     that is meant to represent an inititive that could be undertaken within
     a model.
-    Strategies are optional; they can be omitted without sacrificing the validity of
+    Strategies are optional; they can be omitted without compromising the validity of
     a model.
     Indeed, simulating models with and without a strategy is how
     strategies are evaluated in the Simulations on the PlanZero site.
@@ -344,24 +340,22 @@ class Strategy(GlossaryTerm):
 class Barrier(GlossaryTerm):
     """<p>A Barrier is a 
     {{lref("Dynamic Element", "dynamic element")|safe}}
-    that is not optional, that is, one whose omission would sacrifice the
-    validity of a model.</p>
-    <p>
-    PlanZero terminology may feel a bit cynical in this regard, but in
-    this terminology, all of the following would qualify as barriers:
+    that is not optional, that is, one whose omission would compromise the
+    validity of a model.
+    Barriers comprise most of what you might call "the modelling" in a PlanZero model.
+    The following would all qualify as barriers in PlanZero, to the reduction
+    of emissions:
     <ul>
     <li>regulations</li>
-    <li>the life cycle of assets</li>
-    <li>consumer behaviour</li>
-    <li>the length of research and development cycles</li>
-    <li>return on investment requirements</li>
+    <li>investor behaviour (e.g. to require certain rates of return)</li>
+    <li>consumer behaviour (especially habits and traditions that currently entail fossil fuel combustion)</li>
+    <li>the life cycle of assets (especially large, expensive, high-emission facilities)</li>
+    <li>the duration of research and development cycles</li>
     <li>the predictions of climate models</li>
     <li>the laws of physics</li>
     </ul>
     </p>
-    <p>I borrow the term from {{lref("EGFS")|safe}} but its
-    use in a computational modelling framework is, admittedly, a stretch.
-    </p>
+    <p>The term is adapted from {{lref("EGFS")|safe}}.</p>
     """ 
 
     @computed_field
@@ -374,6 +368,8 @@ class Barrier(GlossaryTerm):
 
     @property
     def code_refs(self) -> dict[str, object]:
+        from . import barriers, cattle
+
         return {
             'Barrier base class': barriers.Barrier,
             'Example Barrier class: Bovaer Adoption Limit': cattle.Bovaer_Adoption_Limit,
@@ -383,11 +379,20 @@ class Barrier(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Strategy': 'a dynamic element designed to change the input to one or more barriers',
-            'Model': 'a set of dynamic elements, including barriers, that make a prediction',
+            'Model': 'a set of dynamic elements, including barriers, that supports inference and/or prediction',
             'NIR_Model': "a model of Canada's future emissions",
-            'Simulation': 'the computation of scenarios from models',
             'EGFS': "PlanZero adopts the Barrier term and definition from The Executive Guide to Facilitating Strategy.",
         }
+
+
+class Static_Variable(GlossaryTerm):
+    """A variable in a model simulation that is not indexed by time
+    is called Constant.
+    """
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Constant']
 
 
 class IPCC_Sector_Contribution(GlossaryTerm):
@@ -612,9 +617,15 @@ class NIR_Model(GlossaryTerm):
 
 
 class Model(GlossaryTerm):
-    """A model, in PlanZero, is a set of time series and dynamic elements that
-    can be simulated to generate one or more possible scenarios.
-    A model can be either deterministic or stochastic. 
+    """A model, in PlanZero, is a set of dynamic elements
+    (strategies and barriers).
+    Typically PlanZero models
+    define a probabilistic model of Canada's national emissions.
+    Sometimes a model also defines a probabilistic model of other
+    related quantities such as the factors that drive emissions calculations
+    (e.g. numbers of power plants, cars, trucks, livestock, landfills, etc.)
+    and the financial results (often costs)
+    of implementing emission reduction measures.
     """
 
     @computed_field
@@ -629,17 +640,16 @@ class Model(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'NIR_Model': """Model of Canada's national emissions in the style
-            of the National Inventory Reports submitted to UNFCCC""",
-            'Deterministic_Model': "A model that corresponds to a unique scenario",
-            'Stochastic_Model': "A model that corresponds to a distribution over possible scenarios",
+            #'Deterministic_Model': "A model that corresponds to a unique scenario",
+            "NIR_Model": "A model that generates emission results that are comparable to a National Inventory Report is called a NIR Model. The models features on the Models tab of the PlanZero site are NIR models.",
+            'Stochastic_Model': "A PlanZero model induces a probability distribution over possible scenarios",
             'Simulation': (
-                "Simulation is the building of a scenario with the"
-                " initialization and recurrence logic in a model's dynamic"
-                " elements"),
+                " Simulation is the computation of a set of scenarios according to the"
+                " initialization and recurrence logic of a model's dynamic"
+                " elements; the result is a sample from the model's implicit stochastic model"),
             'Scenario': (
-                'A scenario is the set of time series that results from'
-                ' simulating a model'),
+                "A scenario is single time series that is consistent with the"
+                " initialization and recurrence logic of a model's dynamic elements"),
         }
 
 
@@ -1513,6 +1523,10 @@ class Ablative_Analysis(GlossaryTerm):
     of those elements on the behaviour of the whole model.
     """
 
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Ablation Study']
+
     @property
     def see_also(self) -> dict[str, str]:
         return {
@@ -1719,8 +1733,13 @@ class Posterior_Distribution(GlossaryTerm):
                 'Latent_Variable': 'Unobserved unknown variables in a probabilistic model are called latent variables; a posterior distribution is over latent variables.',
                 }
 
+
 class Latent_Variable(GlossaryTerm):
-    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data. """
+    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data.
+    Each time step in a time series variable is a unique variable,
+    so earlier time steps might be observed and later time steps (especially future time steps)
+    may be latent.
+    """
     @property
     def see_also(self) -> dict[str, str]:
         return {
@@ -1734,7 +1753,21 @@ class Credible_Interval(GlossaryTerm):
     random variable in a probabilistic model might most-credibly take.
     For example, a 95% credible interval is the smallest interval containing
     the 95% most-probable values for the random variable.
+    </p>
+    <p>
+    In PlanZero, Credibility and Confidence are used interchangeably.
+    In the field of statistics, the terms have distinct meanings that apply to
+    Bayesian and frequentist estimators respectively.
+    PlanZero strives to use Bayesian reasoning,
+    but with MCMC methods there can be significant uncertainty due to the
+    limited sample size, which is the the sort of uncertainty that frequentist
+    methods deal with. Candidly I don't honestly know whether either term is
+    more appropriate for the estimates that arise from PlanZero modelling.
     """
+
+    @computed_field
+    def aka(self) -> list[str]:
+        return ['Confidence Interval']
 
     @property
     def see_also(self) -> dict[str, str]:
