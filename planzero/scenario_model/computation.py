@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import heapq
-import warnings
-from typing import TypeAlias, Literal
+from typing import Literal, TypeAlias
 
 import jax.numpy as jnp
 import jax.random as jrandom
@@ -967,6 +966,37 @@ class Computation:
         # .... which I'm sure they will be sometimes! I think that
         # complicates the logic, but doesn't break the approach.
 
+    def _load_annual_grouped_sample(self, var_key:ElementAnnualKey, grouped_sample):
+        self.set_ndarray(GroupedPosterior(prior_var_key=var_key), grouped_sample)
+
+        (n_groups, n_saved_samples, n_prior_years, *annual_shape) \
+                = grouped_sample.shape
+        assert n_prior_years == self.model.mv.n_prior_years
+        # reshape to combine groups and saved samples as if single chain mcmc
+        reshaped = grouped_sample.reshape(
+                [n_groups * n_saved_samples, n_prior_years]
+                + annual_shape)
+        # transpose mcmc dimension to the end
+        transposed = jnp.moveaxis(reshaped, 0, -1)
+
+        # post-conditions:
+        assert transposed.shape[0] == n_prior_years
+        assert transposed.shape[-1] == self.n_mcmc
+        assert transposed.shape[1:-1] == tuple(annual_shape)
+
+        # an annual value can be defined in essentially two ways:
+        # 1. all at once in either of model_element_prepare or model_element_postprocess
+        # 2. stepwise in a model_element_annual_step
+        #
+        # If this annual value has been defined all at once, then `transposed`
+        # should be used as if the following appeared prior to its definition
+        # ws.obs_valid.annual[var_key] = year_idxs < n_prior_years
+        # ws.obs_val.annual[var_key] = jnp.where( year_idxs < n_prior_years, transposed, 0)
+        #
+        # If this annual value has been defined stepwise, then the
+        # technique used in _load_nextcarry_grouped_sample can be adapted.
+        raise NotImplementedError('tomorrow')
+
     def set_phase_posterior(
             self,
             n_mcmc,
@@ -1009,8 +1039,10 @@ class Computation:
                 self._load_general_grouped_sample(var_key, grouped_sample)
             elif isinstance(var_key, NextCarry):
                 self._load_nextcarry_grouped_sample(var_key, grouped_sample)
+            elif isinstance(var_key, ElementAnnualKey):
+                self._load_annual_grouped_sample(var_key, grouped_sample)
             else:
-                raise NotImplementedError(var_key)
+                raise NotImplementedError(var_key, grouped_sample.shape)
 
     def _split_rng_key(self) -> ArrayLike:
         self.rng_key, key = jrandom.split(self.rng_key)

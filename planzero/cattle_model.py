@@ -8,21 +8,22 @@ from .sc_3210013001 import (
     FarmType,
     Livestock,
     Livestock_nonsums,
-    number_of_cattle_by_class_and_farm_type_combined_surveys,
 )
 from .scenario_model import (
     AnnualKey,
+    CarryKey,
     GeneralKey,
     ModelElement,
     Phase,
     Workspace,
+    access_annual,
     define,
     define_annual,
-    years_dim,
 )
 
 n_regions = 13
 n_livestock_types = len(Livestock_nonsums)
+
 
 class Cattle_StaticNormals_ModelElement(ModelElement):
     """This model element makes static normal estimates of cattle populations
@@ -98,10 +99,6 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
             return (1, self._fit_to_data)
 
     @property
-    def static_livestock_counts(self) -> GeneralKey:
-        return self.general_key('static_livestock_counts')
-
-    @property
     def static_emission_factors(self) -> GeneralKey:
         return self.general_key('static_emission_factors')
 
@@ -122,27 +119,30 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
         return self._hist_ktCO2e_pt_keys
 
     @property
-    def bovine_fraction_on_bovaer(self) -> AnnualKey:
-        return self.annual_key('bovine_fraction_on_bovaer')
+    def bovine_fraction_on_bovaer(self) -> CarryKey:
+        return self.carry_key('bovine_fraction_on_bovaer')
 
     @property
     def annual_headcounts(self) -> AnnualKey:
         return self.annual_key('annual_headcounts')
 
-    @access_annual(bovine_fraction_on_bovaer, annual_shape=[], default=0)
-    @define_annual(ktCO2e_ca_key, annual_shape=[])
-    @define_annual(ktCO2e_pt_keys, annual_shape=[])
+    @property
+    def annual_bovaer_fraction(self) -> AnnualKey:
+        return self.annual_key('annual_bovaer_fraction')
+
+    @define_annual(ktCO2e_ca_key, annual_shape=[], posterior_only=True)
+    @define_annual(ktCO2e_pt_keys, annual_shape=[], posterior_only=True)
     @define(hist_ktCO2e_ca_key, prior_shape=[])
     @define(hist_ktCO2e_pt_keys, prior_shape=[])
-    @define(static_livestock_counts, prior_shape=[n_livestock_types, n_regions])
     @define(static_emission_factors, prior_shape=[n_livestock_types])
     @define('headcounts', prior_shape=[n_livestock_types, n_regions])
-    @define(annual_headcounts, annual_shape=[n_livestock_types, n_regions])
+    @define_annual(annual_headcounts, annual_shape=[n_livestock_types, n_regions])
     @define('hist_emission_factors', prior_shape=[n_livestock_types])
     @define('mu_livestock_counts', prior_shape=[n_livestock_types, n_regions])
     @define('sigma_livestock_counts', prior_shape=[n_livestock_types, n_regions])
     @define('emissions_obs_noise_ca', prior_shape=[])
     @define('emissions_obs_noise_pt', prior_shape=[n_regions])
+    @access_annual(annual_bovaer_fraction, annual_shape=[], default=0)
     def model_element_postprocess(self, ws:Workspace):
         ws.dist.general['mu_livestock_counts'] = dist.LogNormal(-1, 2).expand(
                 (n_livestock_types, n_regions,))
@@ -185,6 +185,10 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
                 livestock_scale * ws.val.general['mu_livestock_counts'],
                 livestock_scale * ws.val.general['sigma_livestock_counts'])
 
+        ws.val.general[self.annual_headcounts] = (
+                jnp.zeros((ws.n_years,) + ws.val.general['mu_livestock_counts'].shape)
+                + livestock_scale * ws.val.general['mu_livestock_counts'])
+
     def _model_emission_factors(self, ws):
 
         # cattle data goes way back before 1990.
@@ -197,6 +201,8 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
         # (years, livestock_types)
         nir_emission_factors = cattle.np_emission_factors(self.farm_type)
 
+        # deliberately assigning observations with extra leading shape dimension
+        # as this will be interpreted as multiple observations (over time)
         ws.obs_valid.general['hist_emission_factors'] = ws.mcmc_broadcast_ndarray(
                 valid_year_mask[:, None])
         ws.obs_val.general['hist_emission_factors'] = ws.mcmc_broadcast_ndarray(
@@ -210,34 +216,34 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
 
     def _model_emissions(self, ws, livestock_scale):
 
-        bovine_fraction_on_bovaer = ws.val.annual[self.bovine_fraction_on_bovaer]
+        bovine_fraction_on_bovaer = ws.val.annual[self.annual_bovaer_fraction]
         # broadcast over PTs and MCMC dimension
         actual_methane_reduction = self.bovaer_actual_vs_nominal * jnp.array([
             self.bovaer_methane_reduction[lt]
             for lt in Livestock_nonsums]).reshape(
                     (-1,) + (1,) + ws.mcmc_broadcast_shape)
 
-        # (n_PTs,)
-        PT_emissions_kg_CH4_from_cattle_on_bovaer = (
+        # (years, n_PTs,)
+        annual_PT_emissions_kg_CH4_from_cattle_on_bovaer = (
                 ws.val.general[self.static_emission_factors][:, None]
                 * ws.val.general['mu_livestock_counts']
                 * livestock_scale
-                * bovine_fraction_on_bovaer
+                * bovine_fraction_on_bovaer[:, None, None]
                 * (1 - actual_methane_reduction)
-                ).sum(axis=0) # over livestock types
+                ).sum(axis=1) # over livestock types
 
-        # (n_PTs,)
-        PT_emissions_kg_CH4_from_cattle_not_on_bovaer = (
+        # (years, n_PTs,)
+        annual_PT_emissions_kg_CH4_from_cattle_not_on_bovaer = (
                 ws.val.general[self.static_emission_factors][:, None]
                 * ws.val.general['mu_livestock_counts']
                 * livestock_scale
-                * (1 - bovine_fraction_on_bovaer)
-                ).sum(axis=0) # over livestock types
+                * (1 - bovine_fraction_on_bovaer)[:, None, None]
+                ).sum(axis=1) # over livestock types
 
-        # (n_PTs,)
-        PT_emissions_ktCO2e = (
-                (PT_emissions_kg_CH4_from_cattle_on_bovaer
-                 + PT_emissions_kg_CH4_from_cattle_not_on_bovaer)
+        # (years, n_PTs,)
+        annual_PT_emissions_ktCO2e = (
+                (annual_PT_emissions_kg_CH4_from_cattle_on_bovaer
+                 + annual_PT_emissions_kg_CH4_from_cattle_not_on_bovaer)
                 * (
                     GWP_100[GHG.CH4].magnitude # CH4 -> CO2e
                     / 1_000_000 # kg -> kt
@@ -248,7 +254,6 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
 
         pt_obs_weight = jnp.array(1.0)
         ca_obs_weight = jnp.array(n_regions)
-        as_years = jnp.ones((ws.n_years,) + ws.mcmc_broadcast_shape)
 
         for ii, (pt, hist_key) in enumerate(self.hist_ktCO2e_pt_keys.items()):
             if self._fit_to_data:
@@ -256,14 +261,14 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
                 ws.obs_dist.general[hist_key] = ws.dist.general[self.nir_pt_keys[pt]]
 
             ws.dist.general[hist_key] = dist.Normal(
-                    PT_emissions_ktCO2e[ii],
+                    annual_PT_emissions_ktCO2e[:, ii],
                     ws.val.general['emissions_obs_noise_pt'][ii])
 
         if self._fit_to_data:
             ws.obs_weight.general[self.hist_ktCO2e_ca_key] = ca_obs_weight
             ws.obs_dist.general[self.hist_ktCO2e_ca_key] = ws.dist.general[self.nir_ca_key]
         ws.dist.general[self.hist_ktCO2e_ca_key] = dist.Normal(
-                PT_emissions_ktCO2e.sum(axis=0),
+                annual_PT_emissions_ktCO2e.sum(axis=1),
                 ws.val.general['emissions_obs_noise_ca'])
 
         # predictions for future years
@@ -273,8 +278,8 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
         if ws.phase == Phase.Posterior:
             for ii, (pt, hist_key) in enumerate(self.hist_ktCO2e_pt_keys.items()):
                 ws.dist.annual[self.ktCO2e_pt_keys[pt]] = dist.Normal(
-                        as_years * PT_emissions_ktCO2e[ii],
+                        annual_PT_emissions_ktCO2e[:, ii],
                         ws.val.general['emissions_obs_noise_pt'][ii])
             ws.dist.annual[self.ktCO2e_ca_key] = dist.Normal(
-                    as_years * PT_emissions_ktCO2e.sum(axis=0),
+                    annual_PT_emissions_ktCO2e.sum(axis=1),
                     ws.val.general['emissions_obs_noise_ca'])

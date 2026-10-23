@@ -157,8 +157,8 @@ class PreNIR_ModelElement(ModelElement):
                 ghg=None,
                 region=PseudoRegion.NationalTotal)
 
-    @define(prenir_score_key, prior_shape=[])
-    @define(kl_keys, prior_shape=[])
+    @define(prenir_score_key, prior_shape=[], posterior_only=True)
+    @define(kl_keys, prior_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Prior:
             # don't access the values to avoid sampling and slowing down MCMC

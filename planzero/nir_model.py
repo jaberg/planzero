@@ -112,7 +112,6 @@ class NIR_ScenarioModel(ScenarioModel):
         lower, upper = np.quantile(ktCO2e_2050, [0.025, 0.975]) * unit_conversion
         return lower, upper
 
-
     # PRE-NIR
 
     def prenir_2025_m04_total_key(self) -> GeneralKey:

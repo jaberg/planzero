@@ -772,6 +772,14 @@ class Workspace:
         else:
             return jnp.expand_dims(nd, axis=-1)
 
+    @property
+    def mcmc_broadcast_index(self):
+        # for syntax e.g. foo[:, None, ws.mcmc_broadcast_index]
+        if self.phase == Phase.Prior:
+            return Ellipsis
+        else:
+            return None
+
     def mcmc_expand(self, dist):
         if self.phase == Phase.Prior:
             return dist

@@ -56,9 +56,9 @@ class SectorTotalEmissionsElement(ModelElement):
     def total_without_LULUCF_key(self) -> SectorTotalEmissionsVarKey:
         return SectorTotalEmissionsVarKey(elem_id=self.identifier, name="", sector=PseudoSector.Total_without_LULUCF)
 
-    @define(total_with_LULUCF_key, prior_shape=[years_dim])
-    @define(total_without_LULUCF_key, prior_shape=[years_dim])
-    @define(sector_keys, prior_shape=[years_dim])
+    @define(total_with_LULUCF_key, prior_shape=[years_dim], posterior_only=True)
+    @define(total_without_LULUCF_key, prior_shape=[years_dim], posterior_only=True)
+    @define(sector_keys, prior_shape=[years_dim], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Prior:
             # don't access the values to avoid sampling and slowing down MCMC

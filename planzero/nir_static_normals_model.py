@@ -26,6 +26,7 @@ from .scenario_model import (
     ModelElement,
     Phase,
     Workspace,
+    access_val,
     define,
     define_annual,
 )
@@ -51,8 +52,8 @@ class StaticNormals_ModelElement(ModelElement):
                  ):
         self.sector = sector
         self.ghg = ghg
-        self.nir_ca_key = nir_ca_key
-        self.nir_pt_keys = nir_pt_keys
+        self._nir_ca_key = nir_ca_key
+        self._nir_pt_keys = nir_pt_keys
         self.nir_scale_key = nir_scale_key
 
         self._unit_ca_key = self.general_key(
@@ -70,6 +71,14 @@ class StaticNormals_ModelElement(ModelElement):
                 for pt in PT if pt != PT.XX}
 
         self._fit_to_data = fit_to_data
+
+    @property
+    def nir_ca_key(self) -> GeneralKey:
+        return self._nir_ca_key
+
+    @property
+    def nir_pt_keys(self) -> dict[PT, GeneralKey]:
+        return self._nir_pt_keys
 
     @classmethod
     def element_identifier(cls, sector, ghg):
@@ -213,12 +222,14 @@ class StaticNormals_ModelElement(ModelElement):
         else:
             return self._default_empirical_prior(ws)
 
+    @access_val(nir_ca_key)
+    @access_val(nir_pt_keys)
     @define('mu', prior_shape=[n_regions])
     @define('sigma_pt', prior_shape=[n_regions])
     @define(unit_ca_key, prior_shape=[]) # unit is mis-nomer, now means "prior years"
     @define(unit_pt_keys, prior_shape=[])
-    @define_annual(ktCO2e_ca_key, annual_shape=[])
-    @define_annual(ktCO2e_pt_keys, annual_shape=[])
+    @define_annual(ktCO2e_ca_key, annual_shape=[], posterior_only=True)
+    @define_annual(ktCO2e_pt_keys, annual_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         assert n_regions == len(self.unit_pt_keys)
 

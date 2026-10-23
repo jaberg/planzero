@@ -50,7 +50,7 @@ class PEmissionsBelowThresh(ModelElement):
     def prob_key(self) -> GeneralKey:
         return self.general_key('prob_key')
 
-    @define(prob_key, prior_shape=[])
+    @define(prob_key, prior_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Prior:
             # don't access the values to avoid sampling and slowing down MCMC

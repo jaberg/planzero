@@ -64,7 +64,7 @@ class RegionalTotalEmissionsElement(ModelElement):
         return rval
 
 
-    @define(sector_region_keys, prior_shape=[years_dim])
+    @define(sector_region_keys, prior_shape=[years_dim], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Prior:
             # don't access the values to avoid sampling and slowing down MCMC

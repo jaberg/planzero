@@ -128,12 +128,19 @@ class Bovaer_Production_Emissions(ModelElement):
         it include any change in production emission efficiency over time.
         """
 
-    def __init__(self, annual_headcounts_key, annual_bovaer_fraction):
+    def __init__(
+            self,
+            annual_headcounts_key,
+            annual_bovaer_fraction,
+            baseline_ktCO2e_ca_key,
+            baseline_ktCO2e_pt_keys):
         super().__init__()
         self._ktCO2e_ca_key = self.annual_key('ktCO2e_ca')
         self._ktCO2e_pt_keys = {
                 pt: self.annual_key(f'ktCO2e_{pt.value}')
                 for pt in PT if pt != PT.XX}
+        self._baseline_ktCO2e_ca_key = baseline_ktCO2e_ca_key
+        self._baseline_ktCO2e_pt_keys = baseline_ktCO2e_pt_keys
         self._annual_headcounts_key = annual_headcounts_key
         self._annual_bovaer_fraction = annual_bovaer_fraction
 
@@ -147,11 +154,11 @@ class Bovaer_Production_Emissions(ModelElement):
 
     @property
     def baseline_ktCO2e_ca_key(self) -> AnnualKey:
-        return self._ktCO2e_ca_key
+        return self._baseline_ktCO2e_ca_key
 
     @property
     def baseline_ktCO2e_pt_keys(self) -> dict[PT, AnnualKey]:
-        return self._ktCO2e_pt_keys
+        return self._baseline_ktCO2e_pt_keys
 
     @property
     def annual_headcounts(self) -> AnnualKey:
@@ -166,8 +173,8 @@ class Bovaer_Production_Emissions(ModelElement):
     @access_annual(annual_headcounts)
     @access_annual(annual_bovaer_fraction)
     @define('bovaer_production_emission_factor', prior_shape=[])
-    @define_annual(ktCO2e_ca_key, annual_shape=[])
-    @define_annual(ktCO2e_pt_keys, annual_shape=[])
+    @define_annual(ktCO2e_ca_key, annual_shape=[], posterior_only=True)
+    @define_annual(ktCO2e_pt_keys, annual_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         # in units of kg CH4 / head / year
         ws.dist.general['bovaer_production_emission_factor'] = dists.Uniform(20, 50)
@@ -180,21 +187,22 @@ class Bovaer_Production_Emissions(ModelElement):
 
         kt_per_kg = 1 / 1_000_000
 
-        ws.val.annual[self.ktCO2e_ca_key] = (
-                ws.val.annual[self.baseline_ktCO2e_ca_key]
-                + (heads_ca
-                   * ws.val.annual[self.annual_bovaer_fraction]
-                   * (ws.val.general['bovaer_production_emission_factor']
-                      * kt_per_kg
-                      * float(GWP_100[GHG.CH4]))))
-        for ii, (pt, pt_key) in enumerate(self.baseline_ktCO2e_pt_keys.items()):
-            ws.val.annual[self.ktCO2e_pt_keys[pt]] = (
-                    ws.val.annual[pt_key]
-                    + (heads_pt[:, ii]
+        if ws.phase == Phase.Posterior:
+            ws.val.annual[self.ktCO2e_ca_key] = (
+                    ws.val.annual[self.baseline_ktCO2e_ca_key]
+                    + (heads_ca
                        * ws.val.annual[self.annual_bovaer_fraction]
                        * (ws.val.general['bovaer_production_emission_factor']
                           * kt_per_kg
                           * float(GWP_100[GHG.CH4]))))
+            for ii, (pt, pt_key) in enumerate(self.baseline_ktCO2e_pt_keys.items()):
+                ws.val.annual[self.ktCO2e_pt_keys[pt]] = (
+                        ws.val.annual[pt_key]
+                        + (heads_pt[:, ii]
+                           * ws.val.annual[self.annual_bovaer_fraction]
+                           * (ws.val.general['bovaer_production_emission_factor']
+                              * kt_per_kg
+                              * float(GWP_100[GHG.CH4]))))
 
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
@@ -257,10 +265,10 @@ class Bovaer_Monitoring(ModelElement):
 
     @access_annual(baseline_subsidy_ca_key, annual_shape=[], default=0)
     @access_annual(annual_headcounts_key, annual_shape=[])
-    @define_annual('bovaer_monitoring_admin_ca', annual_shape=[])
-    @define_annual('bovaer_monitoring_onsite_ca', annual_shape=[])
-    @define_annual('bovaer_monitoring_admin_ca_tax', annual_shape=[])
-    @define_annual('bovaer_monitoring_onsite_ca_tax', annual_shape=[])
+    @define_annual('bovaer_monitoring_admin_ca', annual_shape=[], posterior_only=True)
+    @define_annual('bovaer_monitoring_onsite_ca', annual_shape=[], posterior_only=True)
+    @define_annual('bovaer_monitoring_admin_ca_tax', annual_shape=[], posterior_only=True)
+    @define_annual('bovaer_monitoring_onsite_ca_tax', annual_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Prior:
             return
@@ -269,7 +277,7 @@ class Bovaer_Monitoring(ModelElement):
         # (years, maybe mcmc dim)
         farms_on_bovaer_ca = (
                 heads_ca / cattle_per_farm
-                * ws.val.annual[self.bovine_fraction_on_bovaer])
+                * ws.val.annual[self.annual_bovaer_fraction])
         ws.val.annual['bovaer_monitoring_admin_ca'] = (
                 farms_on_bovaer_ca * self.paperwork_monitoring.magnitude)
         ws.val.annual['bovaer_monitoring_onsite_ca'] = (
@@ -345,9 +353,10 @@ class Bovaer_Farm_Subsidy(ModelElement):
                 = ws.val.next_carry[self.bovine_fraction_on_bovaer]
 
     @access_annual(annual_headcounts)
-    @define('bovaer_farm_subsidy_pt', prior_shape=[13])
-    @define('bovaer_farm_subsidy_ca', prior_shape=[])
-    @define('bovine_fraction_on_bovaer', prior_shape=[])
+    @define_annual('bovaer_farm_subsidy_pt', annual_shape=[13])
+    @define_annual('bovaer_farm_subsidy_ca', annual_shape=[])
+    @define_annual('bovaer_farm_subsidy_pt_tax', annual_shape=[13])
+    @define_annual('bovaer_farm_subsidy_ca_tax', annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         # num_samples, cattle_types, PT 14
         subsidy_per_head = self.subsidy_rate.magnitude / cattle_per_farm
@@ -357,7 +366,7 @@ class Bovaer_Farm_Subsidy(ModelElement):
 
         bovaer_heads_pt = (
                 heads_pt
-                * ws.val.annual[self.annual_bovaer_fraction])
+                * ws.val.annual[self.annual_bovaer_fraction][:, None, ...])
 
         ws.val.annual['bovaer_farm_subsidy_pt'] = subsidy_per_head * bovaer_heads_pt[:, :13]
         ws.val.annual['bovaer_farm_subsidy_ca'] = subsidy_per_head * bovaer_heads_pt.sum(axis=1)
@@ -401,18 +410,24 @@ class Bovaer_Purchase_Cost(ModelElement):
 
     @access_annual(annual_bovaer_fraction)
     @access_annual(annual_headcounts)
+    @define_annual('bovaer_cost_pt', annual_shape=[13])
+    @define_annual('bovaer_cost_ca', annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         # num_samples, cattle_types, PT 14
 
-        # sum over livestock types
-        heads_pt = ws.val.annual[self.annual_headcounts].sum(axis=1)
+        # shape (years, livestock_types, PTs, maybe MCMC)
+        heads_pt = ws.val.annual[self.annual_headcounts]
 
-        daily_bovaer_cost = [self.bovaer_cost[lt].magnitude for lt in Livestock_nonsums]
-        annual_bovaer_cost = jnp.array(daily_bovaer_cost) * 365
+        bovaer_cost_per_year = jnp.array(
+                [self.bovaer_cost[lt].magnitude for lt in Livestock_nonsums]
+                ) * 365
 
+        # shape (years, PTs, maybe MCMC)
         bovaer_costs_pt = (
-                (heads_pt * annual_bovaer_cost[:, None]).sum(axis=1)
-                * ws.val.annual[self.annual_bovaer_fraction])
+                (heads_pt
+                 * bovaer_cost_per_year[:, None, ws.mcmc_broadcast_index]
+                 ).sum(axis=1) # livestock types
+                * ws.val.annual[self.annual_bovaer_fraction][:, None, ws.mcmc_broadcast_index])
 
         ws.val.annual['bovaer_cost_pt'] = bovaer_costs_pt[:, :13]
         ws.val.annual['bovaer_cost_ca'] = bovaer_costs_pt.sum(axis=1)

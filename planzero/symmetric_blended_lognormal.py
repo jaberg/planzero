@@ -502,16 +502,32 @@ def kl_divergence(p:dist.TransformedDistribution, q:dist.Normal) -> jnp.ndarray:
 
 @kl.dispatch(SymmetricBlendedLogNormal, dist.Normal)
 def kl_divergence(p:SymmetricBlendedLogNormal, q:dist.Normal) -> jnp.ndarray:  # noqa: F811
+    n_quad = 32 # future env var?
     if q.batch_shape == ():
         n_missing_dims = 1 + len(p.batch_shape)
-        # n_quad=32 got almost all the way through static normals inference
-        #           with 10 ktCO2e as near-zero in nir2025 file
-        # n_quad=64 gets all the way through, but takes too long
         rval = kl_divergence_uniform_normal_mixture(
                 p,
                 q_mu=jnp.array(q.loc)[(None,) * n_missing_dims],
                 q_sigma=jnp.array(q.scale)[(None,) * n_missing_dims],
-                n_quad=32,
+                n_quad=n_quad,
+                )
+        assert rval.shape == p.batch_shape
+        return rval
+    elif q.batch_shape == p.batch_shape:
+        # TODO adapt kl_divergence_uniform_normal_mixture to work on broadcasted q_mu, q_sigma
+        if isinstance(q.loc, (jnp.ndarray, int, float)):
+            q_mu = jnp.zeros_like(p.mu) + q.loc
+        else:
+            raise NotImplementedError(q.loc)
+        if isinstance(q.scale, (jnp.ndarray, int, float)):
+            q_sigma = jnp.zeros_like(p.mu) + q.scale
+        else:
+            raise NotImplementedError(q.loc)
+        rval = kl_divergence_uniform_normal_mixture(
+                p,
+                q_mu=q_mu[None, ...],
+                q_sigma=q_sigma[None, ...],
+                n_quad=n_quad,
                 )
         assert rval.shape == p.batch_shape
         return rval

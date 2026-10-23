@@ -76,7 +76,6 @@ class NIR2025_ModelElement(ModelElement):
         return self.general_key('defined_years')
 
     @define(years_key, prior_shape=[n_years])
-    @define(scale_key, prior_shape=[])
     @define(ca_key, prior_shape=[n_years])
     @define(pt_keys, prior_shape=[n_years])
     def model_element_postprocess(self, ws:Workspace):

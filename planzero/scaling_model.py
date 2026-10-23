@@ -36,8 +36,8 @@ def _add_emissions(self, sector, ghg, nir_elem, elem):
         nir_d[pt] = nir_elem.pt_keys[pt]
 
 
-def _add_static_normals(self, sector, ghg):
-    mcmc_group = f'{sector.value}_{ghg.value}'
+def _add_static_normals(self, sector, ghg, mcmc_group=None):
+    mcmc_group = mcmc_group or f'{sector.value}_{ghg.value}'
     nir_elem = NIR2025_ModelElement(
             sector=sector,
             ghg=ghg,
@@ -67,38 +67,46 @@ def _add_static_normals(self, sector, ghg):
         dd = self._sector_region_ghg_subtotal_keys.setdefault((sector, pt), {})
         dd[ghg] = snorm_elem.ktCO2e_pt_keys[pt]
         nir_d[pt] = nir_elem.pt_keys[pt]
+    return nir_elem, snorm_elem
 
 
-def _add_enteric_fermentation_and_other_product_mfg(self):
-    sector = IPCC_Sector.Enteric_Fermentation
-    ghg = GHG.CH4
-    mcmc_group = f'{sector.value}_{ghg.value}'
+def _add_enteric_fermentation_and_other_product_mfg(self, mcmc_group=None):
 
     def no_mcmc(elem):
         return self.add_element(elem, mcmc_group=None)
 
-    nir_elem = NIR2025_ModelElement(
-            sector=sector,
-            ghg=ghg,
-            n_years=self.n_prior_years)
+    nir_elem_ef = self.add_element(
+        NIR2025_ModelElement(
+            sector=IPCC_Sector.Enteric_Fermentation,
+            ghg=GHG.CH4,
+            n_years=self.n_prior_years),
+        mcmc_group=mcmc_group or f'{IPCC_Sector.Enteric_Fermentation.value}_{GHG.CH4.value}')
 
-    self._nir_years_key = nir_elem.years_key
-    self.add_element(nir_elem, mcmc_group=mcmc_group)
-    if isinstance(self._sectors, list) and sector not in self._sectors:
+    self._nir_years_key = nir_elem_ef.years_key
+    if isinstance(self._sectors, list) and IPCC_Sector.Enteric_Fermentation not in self._sectors:
         fit_to_data = False
     else:
         fit_to_data = True
 
     cattle_elem = self.add_element(
             Cattle_StaticNormals_ModelElement(
-                nir_ca_key=nir_elem.ca_key,
-                nir_pt_keys=nir_elem.pt_keys,
+                nir_ca_key=nir_elem_ef.ca_key,
+                nir_pt_keys=nir_elem_ef.pt_keys,
                 model_headcounts=True,
                 model_emission_factors=True,
                 model_emissions=True,
                 fit_to_data=fit_to_data,
                 ),
-            )
+            mcmc_group=mcmc_group or f'{IPCC_Sector.Enteric_Fermentation.value}_{GHG.CH4.value}')
+
+    # Put this in a separate MCMC group for sampling efficiency, for as long
+    # as the Bovaer model does not contemplate production that should already be
+    # reflected in NIR data.
+    nir_elem_opman, opman_elem = _add_static_normals(
+            self,
+            sector=IPCC_Sector.SCS__Manufacturing__Other,
+            ghg=GHG.CO2,
+            mcmc_group=mcmc_group)
 
     adoption_limit = no_mcmc(
             bovaer_model.Bovaer_Adoption_Limit())
@@ -106,6 +114,8 @@ def _add_enteric_fermentation_and_other_product_mfg(self):
             bovaer_model.Bovaer_Production_Emissions(
                 annual_headcounts_key=cattle_elem.annual_headcounts,
                 annual_bovaer_fraction=cattle_elem.annual_bovaer_fraction,
+                baseline_ktCO2e_ca_key=opman_elem.ktCO2e_ca_key,
+                baseline_ktCO2e_pt_keys=opman_elem.ktCO2e_pt_keys,
                 ))
     monitoring = no_mcmc(
             bovaer_model.Bovaer_Monitoring(
@@ -130,9 +140,9 @@ def _add_enteric_fermentation_and_other_product_mfg(self):
                 ))
 
     _add_emissions(self, IPCC_Sector.Enteric_Fermentation, GHG.CH4,
-                   nir_elem, cattle_elem)
+                   nir_elem_ef, cattle_elem)
     _add_emissions(self, IPCC_Sector.SCS__Manufacturing__Other, GHG.CO2,
-                   nir_elem, production_emissions)
+                   nir_elem_opman, production_emissions)
 
     #_add_subsidies(self, purchase_cost)
     #_add_subsidies(self, monitoring)
@@ -146,6 +156,8 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
                  data_cutoff:datetime.date,
                  last_forecast_year=2050,
                  sectors:type[IPCC_Sector]|list[IPCC_Sector]=IPCC_Sector,
+                 num_warmup=1500,
+                 num_samples=500,
                  ):
         """
         sectors: default to all sectors (site models require all sectors), but subsets can be used in testing
@@ -159,8 +171,8 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
                 first_year=1990,
                 n_prior_years=last_observed_nir_year + 1 - 1990,
                 n_posterior_years=last_forecast_year + 1 - 1990,
-                num_warmup=1500,
-                num_samples=500,
+                num_warmup=num_warmup,
+                num_samples=num_samples,
                 )
         # num samples can be larger if scenario_model/computation.py
         # can free some memory as it goes... as of writing, it does not.
