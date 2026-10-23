@@ -194,7 +194,7 @@ class Bovaer_Production_Emissions(ModelElement):
                        * ws.val.annual[self.annual_bovaer_fraction]
                        * (ws.val.general['bovaer_production_emission_factor']
                           * kt_per_kg
-                          * float(GWP_100[GHG.CH4]))))
+                          * float(GWP_100[GHG.CH4].magnitude))))
             for ii, (pt, pt_key) in enumerate(self.baseline_ktCO2e_pt_keys.items()):
                 ws.val.annual[self.ktCO2e_pt_keys[pt]] = (
                         ws.val.annual[pt_key]
@@ -202,7 +202,7 @@ class Bovaer_Production_Emissions(ModelElement):
                            * ws.val.annual[self.annual_bovaer_fraction]
                            * (ws.val.general['bovaer_production_emission_factor']
                               * kt_per_kg
-                              * float(GWP_100[GHG.CH4]))))
+                              * float(GWP_100[GHG.CH4].magnitude))))
 
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
@@ -426,10 +426,10 @@ class Bovaer_Purchase_Cost(ModelElement):
         bovaer_costs_pt = (
                 (heads_pt
                  * bovaer_cost_per_year[:, None, ws.mcmc_broadcast_index]
-                 ).sum(axis=1) # livestock types
-                * ws.val.annual[self.annual_bovaer_fraction][:, None, ws.mcmc_broadcast_index])
+                 ).sum(axis=1) # livestock types, leaving (years, PT, maybe MCMC)
+                * ws.val.annual[self.annual_bovaer_fraction][:, None])
 
-        ws.val.annual['bovaer_cost_pt'] = bovaer_costs_pt[:, :13]
+        ws.val.annual['bovaer_cost_pt'] = bovaer_costs_pt
         ws.val.annual['bovaer_cost_ca'] = bovaer_costs_pt.sum(axis=1)
 
 

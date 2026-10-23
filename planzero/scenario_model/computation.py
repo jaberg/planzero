@@ -205,6 +205,66 @@ def build_general_prior_shape(comp:Computation, var_key:VarKey, val_shape:tuple)
     return prior_shape_list
 
 
+def build_annual_prior_shape(comp:Computation, var_key:ElementAnnualKey, val_shape:tuple) -> list[int]:
+    """Return the shape of value assigned to var_key after calling `comp.set_ndarray`
+    with an argument (distribution or ndarray) of shape `val_shape`
+    in phase `Phase.Prior`
+    """
+    metadata_annual_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
+    metadata_shape = [comp.model.n_prior_years] + metadata_annual_shape
+    if len(val_shape) < len(metadata_shape):
+        broadcast_val_shape = (1,) * (len(metadata_shape) - len(val_shape)) + val_shape
+    else:
+        broadcast_val_shape = val_shape
+    del val_shape
+
+    prior_shape_list:list[int] = []
+    if len(broadcast_val_shape) == len(metadata_shape):
+        for ii, dim_ii in enumerate(metadata_shape):
+            if isinstance(dim_ii, NdarrayDim):
+                comp.ndarray_dim_d.setdefault(dim_ii, broadcast_val_shape[ii])
+                prior_shape_list.append(comp.ndarray_dim_d[dim_ii])
+            elif isinstance(dim_ii, int):
+                prior_shape_list.append(dim_ii)
+            else:
+                raise NotImplementedError(dim_ii)
+    else:
+        raise ValueError(f"val_shape {broadcast_val_shape} has too many dimensions")
+    return prior_shape_list
+
+
+def build_annual_posterior_shape(comp:Computation, var_key:ElementAnnualKey, val_shape:tuple) -> list[int]:
+    """Return the shape of value assigned to var_key after calling `comp.set_ndarray`
+    with an argument (distribution or ndarray) of shape `val_shape`
+    in phase `Phase.Posterior`
+    """
+    metadata_annual_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
+    metadata_shape = (
+            [comp.model.n_posterior_years]
+            + metadata_annual_shape
+            + [comp.n_mcmc])
+    if len(val_shape) < len(metadata_shape):
+        # broadcast val_shape by left-padding shape with (1,)
+        broadcast_val_shape = (1,) * (len(metadata_shape) - len(val_shape)) + val_shape
+    else:
+        broadcast_val_shape = val_shape
+    del val_shape
+
+    posterior_shape_list:list[int] = []
+    if len(broadcast_val_shape) == len(metadata_shape):
+        for ii, dim_ii in enumerate(metadata_shape):
+            if isinstance(dim_ii, NdarrayDim):
+                comp.ndarray_dim_d.setdefault(dim_ii, broadcast_val_shape[ii])
+                posterior_shape_list.append(comp.ndarray_dim_d[dim_ii])
+            elif isinstance(dim_ii, int):
+                posterior_shape_list.append(dim_ii)
+            else:
+                raise NotImplementedError(dim_ii)
+    else:
+        raise ValueError(f"val_shape {broadcast_val_shape} has too many dimensions")
+    return posterior_shape_list
+
+
 def storage_nd_check_ElementGeneralKey(comp:Computation, var_key:ElementGeneralKey, val:jnp.ndarray) -> bool:
     prior_shape = tuple(build_general_prior_shape(comp, var_key, val.shape))
 
@@ -327,7 +387,7 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
         # the observation can have fewer, equal, or more dimensions than the
         # observed variable. If there are more, they represent multiple observations
         # If there are fewer, they represent broadcast observations.
-        metadata_prior_shape = comp.model.mv.annual_nd[prior_var_key].definition_metadata.value_type.shape
+        metadata_annual_shape = comp.model.mv.annual_nd[prior_var_key].definition_metadata.value_type.shape
         if comp.phase == Phase.Prior:
             # why isn't this followed yet?
             # it is because an annual variable had no data observations
@@ -336,11 +396,17 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
 
         elif comp.phase == Phase.Posterior:
             n_obs_dim = len(obs_shape)
-            if n_obs_dim == len(metadata_prior_shape) + 1:
-                # TODO
-                raise NotImplementedError()
+            if n_obs_dim == 1 + len(metadata_annual_shape) + 1:
+                assert obs_shape[0] == comp.model.n_posterior_years, (
+                        obs_shape, comp.model.n_posterior_years)
+
+                obs_annual_shape = obs_shape[1:-1]
+                # too strict, but works for now
+                # TODO: accept broadcasting
+                assert obs_annual_shape == tuple(metadata_annual_shape), (
+                        obs_annual_shape, metadata_annual_shape)
             else:
-                raise NotImplementedError(prior_var_key, metadata_prior_shape, obs_shape)
+                raise NotImplementedError(prior_var_key, metadata_annual_shape, obs_shape)
         else:
             raise NotImplementedError()
     else:
@@ -425,6 +491,73 @@ def set_dist_ElementGeneralKey_posterior_obs_valid(
     assert obs_val.ndim >= mcmc_right.ndim
     updated_sample = jnp.where(obs_valid, obs_val, mcmc_right)
     comp._ndarray_d[var_key] = updated_sample
+
+
+def set_dist_ElementAnnualKey_posterior_obs_valid(
+        comp:Computation,
+        var_key:ElementAnnualKey,
+        dist:Distribution,
+        obs_val:jnp.ndarray,
+        obs_valid:jnp.ndarray,
+        ):
+    dist_shape = dist.shape()
+    posterior_shape = tuple(build_annual_posterior_shape(comp, var_key, dist_shape))
+    if dist_shape == posterior_shape[:-1]:
+        # this is convenience to the user - they ignore the MCMC
+        # dimension so they can use the same form of parameterization
+        # in both Prior and Posterior phases
+        mcmc_left = numpyro.sample(
+                comp.sample_site(var_key),
+                fn=dist.expand_by((comp.n_mcmc,)),
+                rng_key=comp._split_rng_key())
+        assert isinstance(mcmc_left, jnp.ndarray)
+        mcmc_right = jnp.moveaxis(mcmc_left, 0, -1)
+        assert obs_valid.ndim == obs_val.ndim, (
+                obs_valid.shape, obs_val.shape)
+        assert obs_val.ndim >= mcmc_right.ndim
+        if obs_val.ndim > mcmc_right.ndim:
+            # see long comment below
+            raise NotImplementedError(obs_val.shape, mcmc_right.shape)
+        updated_sample = jnp.where(obs_valid, obs_val, mcmc_right)
+        comp._ndarray_d[var_key] = updated_sample
+
+    elif dist_shape == posterior_shape:
+        mcmc_right = numpyro.sample(
+                comp.sample_site(var_key),
+                fn=dist,
+                rng_key=comp._split_rng_key())
+        assert isinstance(mcmc_right, jnp.ndarray)
+        assert obs_valid.ndim == obs_val.ndim, (
+                obs_valid.shape, obs_val.shape)
+        assert obs_val.ndim >= mcmc_right.ndim
+        if obs_val.ndim > mcmc_right.ndim:
+            # This needs thought.
+            # Is it okay for a random variable element of a dist
+            # to broadcast over observations?
+            # If yes, then what is the value in the posterior of the observed variable?
+            # Maybe a "posterior_valid" mask is required, in order to indicate
+            # the elements of a sample that are not observed. It might be
+            # easy to forget to use the mask unless the posterior were only
+            # accessible as e.g. ws.masked_dist.annual[foo]
+            # and ws.dist_valid.annual[foo]
+            #
+            # If no, then does the number of observations of each variable
+            # need to be entered into the shape metadata?
+            # It doesn't seem practical or necessary.
+            #
+            # Another possibility is to populate the MCMC dimension of observed
+            # values by uniformly sampling from among
+            # observed historical trajectories. This approach is practical
+            # and defensible (at least generalizes the one-observation case),
+            # if not unassailably obviously uniquely correct.
+            #
+            # Whatever the solution, it should work coherently for both numerical
+            # observations, as well as distributional observations (`obs_dist`).
+            raise NotImplementedError(obs_val.shape, mcmc_right.shape)
+        updated_sample = jnp.where(obs_valid, obs_val, mcmc_right)
+        comp._ndarray_d[var_key] = updated_sample
+    else:
+        raise NotImplementedError(dist_shape, posterior_shape, var_key)
 
 
 def set_dist_ElementGeneralKey(
@@ -542,6 +675,11 @@ def set_dist_ElementGeneralKey(
             # some special-casing based on shapes.)
             if isinstance(var_key, ElementGeneralKey):
                 set_dist_ElementGeneralKey_posterior_obs_valid(
+                        comp, var_key, dist,
+                        obs_val=obs,
+                        obs_valid=obs_valid)
+            elif isinstance(var_key, ElementAnnualKey):
+                set_dist_ElementAnnualKey_posterior_obs_valid(
                         comp, var_key, dist,
                         obs_val=obs,
                         obs_valid=obs_valid)
@@ -1027,20 +1165,18 @@ class Computation:
                         obs_var_key=Observation(
                             prior_var_key=var_key)),
                     expanded_mask)
+            padding_years = self.model.n_posterior_years - self.model.n_prior_years
+            assert padding_years >= 0
+            padding = jnp.zeros((padding_years,) + transposed.shape[1:])
             self.set_ndarray(
                     Observation(prior_var_key=var_key),
-                    jnp.where(
-                        expanded_mask,
-                        transposed,
-                        0))
+                    jnp.concatenate([transposed, padding]))
         elif nvm.defining_subphase == Subphase.Step:
             # If this annual value has been defined stepwise, then the
             # technique used in _load_nextcarry_grouped_sample can be adapted.
             raise NotImplementedError()
         else:
             raise NotImplementedError(nvm.defining_subphase)
-
-        raise NotImplementedError('tomorrow')
 
     def set_phase_posterior(
             self,
