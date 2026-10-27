@@ -28,6 +28,7 @@ from .computation import (
 from .example_population import Example_Population
 from .scenario_model import (
     ModelElement,
+    ResolvedAccessMetadata,
     ScenarioModel,
     access_annual,
     access_val,
@@ -184,11 +185,11 @@ def test_posterior_smoke(model):
     assert len({float(foo) for foo in generated_data[7]}) == n_mcmc
 
 
-def _annual_test_model(element:ModelElement, n_years:int=4) -> ScenarioModel:
+def _annual_test_model(element:ModelElement, n_years:int=4, n_posterior_years:int=4) -> ScenarioModel:
     model = ScenarioModel(
             first_year=2000,
             n_prior_years=n_years,
-            n_posterior_years=n_years,
+            n_posterior_years=n_posterior_years,
             num_warmup=1,
             num_samples=1)
     model.add_element(element)
@@ -231,7 +232,9 @@ def test_this_annual_combines_scan_inputs_and_outputs():
 
 def test_this_annual_combines_scan_inputs_and_outputs_posterior():
     n_years = 5
-    model = _annual_test_model(AnnualEcho(), n_years=n_years)
+    model = _annual_test_model(AnnualEcho(),
+                               n_years=3,
+                               n_posterior_years=n_years)
     comp = Computation(model=model, rng_key=jrandom.key(1))
     comp.set_phase_posterior(
             n_mcmc=1,
@@ -426,8 +429,10 @@ def test_access_annual_step_default_when_undefined():
 
 
 def test_access_annual_step_default_when_undefined_posterior():
-    n_years = 3
-    model = _annual_test_model(AnnualStepDefaultReader(), n_years=n_years)
+    n_years = 3 # override default 4
+    model = _annual_test_model(
+            AnnualStepDefaultReader(),
+            n_posterior_years=n_years)
     comp = Computation(model=model, rng_key=jrandom.key(1))
     comp.set_phase_posterior(
             n_mcmc=2,
@@ -604,9 +609,11 @@ _step_shared_key = ElementAnnualKey(elem_id='StepKeyProducer', name='shared')
 
 class StepKeyProducer(ModelElement):
 
+    @access_annual(years_key)
     @define_annual(_step_shared_key, annual_shape=[])
     def model_element_annual_step(self, ws:Workspace):
-        ws.val.this_annual[_step_shared_key] = 2.0
+        ws.val.this_annual[_step_shared_key] = (
+                jnp.array(2.0) + ws.val.this_annual[years_key])
 
 
 class StepKeyConsumer(ModelElement):
@@ -622,13 +629,33 @@ def test_step_dependency_order():
     model = _annual_test_model(StepKeyConsumer(), n_years=n_years)
     model.add_element(StepKeyProducer())
 
-    assert model.element_order(Subphase.Step) == [
-            'ModelBuiltIns', 'StepKeyProducer', 'StepKeyConsumer']
+    accesses = set(model.resolve_accesses())
+    assert len(accesses) == 2
+    for access in accesses:
+        print(access)
+    assert ResolvedAccessMetadata(
+            elem_id='StepKeyConsumer',
+            subphase=Subphase.Step,
+            var_key=ElementAnnualKey(elem_id='StepKeyProducer', name='shared'),
+            default=None,
+            which_carry='neither') in accesses
+    assert ResolvedAccessMetadata(
+            elem_id='StepKeyProducer',
+            subphase=Subphase.Step,
+            var_key=ElementAnnualKey(elem_id='ModelBuiltIns', name='years'),
+            default=None,
+            which_carry='neither') in accesses
+
+    step_order = model.element_order(Subphase.Step)
+
+    assert step_order == ['ModelBuiltIns', 'StepKeyProducer', 'StepKeyConsumer'], (
+            step_order)
 
     comp = Computation(model=model, rng_key=jrandom.key(1))
     comp.run()
     out_key = ElementAnnualKey(elem_id='StepKeyConsumer', name='out')
-    assert np.all(np.asarray(comp._ndarray_d[out_key]) == 3.0)
+    assert np.all(np.asarray(comp._ndarray_d[out_key])
+                  == np.asarray([2003.0, 2004.0, 2005.0, 2006.0]))
 
 
 _proc_shared_key = ElementGeneralKey(elem_id='ProcKeyProducer', name='shared')

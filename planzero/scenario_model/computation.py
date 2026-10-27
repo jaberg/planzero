@@ -189,8 +189,8 @@ def build_annual_prior_shape(comp:Computation, var_key:ElementAnnualKey, val_sha
     with an argument (distribution or ndarray) of shape `val_shape`
     in phase `Phase.Prior`
     """
-    metadata_annual_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
-    metadata_shape = [comp.model.n_prior_years] + metadata_annual_shape
+    metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
+    assert metadata_shape[0] == years_dim
     if len(val_shape) < len(metadata_shape):
         broadcast_val_shape = (1,) * (len(metadata_shape) - len(val_shape)) + val_shape
     else:
@@ -217,11 +217,9 @@ def build_annual_posterior_shape(comp:Computation, var_key:ElementAnnualKey, val
     with an argument (distribution or ndarray) of shape `val_shape`
     in phase `Phase.Posterior`
     """
-    metadata_annual_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
-    metadata_shape = (
-            [comp.model.n_posterior_years]
-            + metadata_annual_shape
-            + [comp.n_mcmc])
+    prior_metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
+    assert prior_metadata_shape[0] == years_dim
+    metadata_shape = prior_metadata_shape + [comp.n_mcmc]
     if len(val_shape) < len(metadata_shape):
         # broadcast val_shape by left-padding shape with (1,)
         broadcast_val_shape = (1,) * (len(metadata_shape) - len(val_shape)) + val_shape
@@ -263,7 +261,7 @@ def storage_nd_check_ElementGeneralKey(comp:Computation, var_key:ElementGeneralK
 
 
 def storage_nd_check_ElementAnnualKey(comp:Computation, var_key:VarKey, val:jnp.ndarray) -> bool:
-    metadata_shape = comp.model.mv.general_nd[var_key].definition_metadata.value_type.shape
+    metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
     general_shape = tuple(
             comp.n_years if dim_ii == years_dim else dim_ii
             for dim_ii in metadata_shape)
@@ -366,26 +364,17 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
         # the observation can have fewer, equal, or more dimensions than the
         # observed variable. If there are more, they represent multiple observations
         # If there are fewer, they represent broadcast observations.
-        metadata_annual_shape = comp.model.mv.annual_nd[prior_var_key].definition_metadata.value_type.shape
         if comp.phase == Phase.Prior:
-            # why isn't this followed yet?
-            # it is because an annual variable had no data observations
-            # but MCMC samples are installed as observations by set_phase_posterior
-            raise NotImplementedError()
+            prior_shape = build_annual_prior_shape( comp, prior_var_key, ())
+            if prior_shape == list(obs_shape):
+                return True
+            else:
+                raise NotImplementedError(prior_shape, obs_shape)
 
         elif comp.phase == Phase.Posterior:
-            n_obs_dim = len(obs_shape)
-            if n_obs_dim == 1 + len(metadata_annual_shape) + 1:
-                assert obs_shape[0] == comp.model.n_posterior_years, (
-                        obs_shape, comp.model.n_posterior_years)
-
-                obs_annual_shape = obs_shape[1:-1]
-                # too strict, but works for now
-                # TODO: accept broadcasting
-                assert obs_annual_shape == tuple(metadata_annual_shape), (
-                        obs_annual_shape, metadata_annual_shape)
-            else:
-                raise NotImplementedError(prior_var_key, metadata_annual_shape, obs_shape)
+            posterior_shape = build_annual_posterior_shape(comp, prior_var_key, ())
+            raise NotImplementedError(
+                    prior_var_key, posterior_shape, obs_shape)
         else:
             raise NotImplementedError()
     else:
@@ -1269,6 +1258,8 @@ class Computation:
         variable per year, to be sliced and fed into the scan one step
         at a time.
         """
+        # TODO: Now that there is self.resolve_accesses
+        # it is possible to include just the necessary variables.
         rval = {
                 var_key: self._ndarray_d[var_key]
                 for var_key, nvm in self.model.mv.annual_nd.items()

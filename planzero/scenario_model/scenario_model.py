@@ -86,11 +86,20 @@ class ModelVariables(BaseModel):
     # Annual variables declared with the define_annual decorator.
     # The metadata's defining_subphase determines the role of the variable
     # during the annual scan:
-    # - Subphase.Prep: defined prior to the scan, and fed into the scan
-    #   as a per-step input (the input side of this_annual).
+    # - Subphase.Prep: defined prior to the scan, available as a per-step
+    #   input to scan step functions
     # - Subphase.Step: defined by the scan itself, one value per step
-    #   (the output side of this_annual).
+    #   (the output side of this_annual). Annual variables defined
+    #   in this way *also* have a per-step NdarrayVariableMetadata in
+    #   self.this_annual_nd.
+    # - Subphase.Proc: defined after to the scan
+    #
+    # Invariant: the first element of the shape is always years_dim
     annual_nd: dict[VarKey, NdarrayVariableMetadata] = {}
+
+    # per-step metadata for annual_nd var_keys defined or potentially accessed
+    # in the annual scan.
+    this_annual_nd: dict[VarKey, NdarrayVariableMetadata] = {}
 
     year_0:int
 
@@ -565,8 +574,9 @@ class ScenarioModel:
             self._check_new_var_key(
                     var_key, element_id, defining_subphase)
             resolved_ndm = _resolve_properties_ndarray_definition(element, ndm)
+            assert resolved_ndm.value_type.shape[0] == years_dim
             # full timeseries metadata, with a leading years_dim
-            self.mv.general_nd[var_key] = NdarrayVariableMetadata(
+            self.mv.annual_nd[var_key] = NdarrayVariableMetadata(
                     definition_metadata=resolved_ndm,
                     defining_element_id=element_id,
                     defining_subphase=defining_subphase)
@@ -585,7 +595,7 @@ class ScenarioModel:
                             ),
                         defining_element_id=element_id,
                         defining_subphase=defining_subphase)
-                self.mv.annual_nd[var_key] = step_ndm
+                self.mv.this_annual_nd[var_key] = step_ndm
 
         for var_key, ndm in annual_d.items():
             if isinstance(var_key, ElementAnnualKey):
@@ -839,34 +849,33 @@ class ScenarioModel:
     def _definitions_for_subphase(self, subphase:Subphase) -> dict[VarKey, ElementID]:
         """var_key -> defining element, for keys defined in this subphase."""
         rval:dict[VarKey, ElementID] = {}
-        for metadata in (self.mv.general_nd, self.mv.carry_nd):
+        for metadata in (self.mv.general_nd, self.mv.annual_nd, self.mv.carry_nd):
             for var_key, nvm in metadata.items():
                 if nvm.defining_subphase == subphase:
                     rval.setdefault(var_key, nvm.defining_element_id)
         return rval
 
-    def _dependency_key(self, var_key:VarKey, subphase:Subphase) -> VarKey|None:
+    def _dependency_key(self, access:ResolvedAccessMetadata) -> VarKey|None:
         """The key whose definer must run before an access of var_key.
 
         Returns None when the access does not imply an ordering edge.
         """
-        if isinstance(var_key, Observation):
-            return self._dependency_key(var_key.prior_var_key, subphase)
-        if isinstance(var_key, (ObservationValid, ObservationWeight)):
-            return self._dependency_key(var_key.obs_var_key, subphase)
-        if isinstance(var_key, ElementCarryKey):
-            if subphase == Subphase.Prep:
-                return InitialCarry(carry_key=var_key)
-            elif subphase == Subphase.Proc:
-                return FinalCarry(carry_key=var_key)
+        if isinstance(access.var_key, ElementCarryKey):
+            if access.subphase == Subphase.Prep:
+                return InitialCarry(carry_key=access.var_key)
+            elif access.subphase == Subphase.Step:
+                if access.which_carry == 'this':
+                    return ThisCarry(carry_key=access.var_key)
+                elif access.which_carry == 'next':
+                    return NextCarry(carry_key=access.var_key)
+                else:
+                    raise NotImplementedError(access.which_carry)
+            elif access.subphase == Subphase.Proc:
+                return FinalCarry(carry_key=access.var_key)
             else:
                 # during a scan step, this_carry is the previous step's value
                 return None
-        if isinstance(var_key, NextCarry):
-            # reading next_carry during a step is reading state written
-            # within the same step; carry reads are not ordering edges.
-            return None
-        return var_key
+        return access.var_key
 
     def element_order(self, subphase:Subphase) -> list[ElementID]:
         """Elements in an order where each definer precedes its readers.
@@ -888,12 +897,11 @@ class ScenarioModel:
         for access in self.resolve_accesses():
             if access.subphase != subphase:
                 continue
-            # TODO: AI wrote this dependency_key business. I don't think it's correect,
-            #       write a test to prove it though.
-            dep_key = self._dependency_key(access.var_key, subphase)
+            dep_key = self._dependency_key(access)
             if dep_key is None:
                 continue
             definer = definition_d.get(dep_key)
+            # definer will be None to use access' default value
             if definer is None or definer == access.elem_id:
                 continue
             if access.elem_id not in successors[definer]:
