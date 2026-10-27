@@ -6,8 +6,8 @@ HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'
 
 def completed_prob_registry() -> singleton_registry.SingletonRegistry:
     from . import (
-            ablation,
-            ablation_study_scaling,  # noqa: F401
+            #ablation,
+            #ablation_study_scaling,  # noqa: F401
             challenge,  # noqa: F401   # HACK to ensure loaded
             nir2025_site,  # noqa: F401
             nir_ar2_site,  # noqa: F401
@@ -29,7 +29,7 @@ def completed_prob_registry() -> singleton_registry.SingletonRegistry:
 
 def endpoints():
     from . import (
-            ablation_study_scaling,  # noqa: F401
+            #ablation_study_scaling,  # noqa: F401
             blog,
             challenge,  # noqa: F401
             ipcc_canada,
