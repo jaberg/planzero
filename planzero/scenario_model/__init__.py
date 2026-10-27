@@ -13,18 +13,21 @@ from .base import (
 )
 from .computation import (
     Computation,
+    compute_model,
+)
+from .registry import registry_compute_model
+from .scenario_model import (
     ModelElement,
     ScenarioModel,
+    VersionID,
     access_annual,
     access_next_carry,
     access_this_carry,
     access_val,
-    compute_model,
     define,
     define_annual,
     define_carry,
 )
-from .registry import registry_compute_model
 from .workspace import Workspace
 
 __all__ = [
@@ -38,6 +41,7 @@ __all__ = [
     "ModelElement",
     "Phase",
     "ScenarioModel",
+    "VersionID",
     "Workspace",
     "access_annual",
     "access_next_carry",

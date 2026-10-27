@@ -217,6 +217,14 @@ class ValAnnual:
         elif self.attr == 'obs_val':
             obs_key = Observation(prior_var_key=var_key)
             self.ws.comp.ndarray_d[obs_key] = value
+        elif self.attr == 'obs_valid':
+            obs_key = Observation(prior_var_key=var_key)
+            obs_valid_key = ObservationValid(obs_var_key=obs_key)
+            self.ws.comp.ndarray_d[obs_valid_key] = value
+        elif self.attr == 'obs_weight':
+            obs_key = Observation(prior_var_key=var_key)
+            obs_weight_key = ObservationWeight(obs_var_key=obs_key)
+            self.ws.comp.ndarray_d[obs_weight_key] = value
         else:
             raise NotImplementedError(self.attr)
 

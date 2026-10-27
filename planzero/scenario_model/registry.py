@@ -1,14 +1,15 @@
-import filelock
 import hashlib
 import os
 import pickle
 
+import filelock
 import jax.random as jrandom
 import numpy as np
 from jax.typing import ArrayLike
 
 from .base import GroupedPosterior, VarKey
-from .computation import Computation, ScenarioModel, hash_version_id, run_mcmc
+from .computation import Computation, run_mcmc
+from .scenario_model import ScenarioModel, hash_version_id
 
 MODEL_REGISTRY_ROOT = os.environ.get('PLANZERO_MODEL_REGISTRY_ROOT')
 

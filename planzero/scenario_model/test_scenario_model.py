@@ -23,6 +23,10 @@ from .base import (
 )
 from .computation import (
     Computation,
+    run_mcmc,
+)
+from .example_population import Example_Population
+from .scenario_model import (
     ModelElement,
     ScenarioModel,
     access_annual,
@@ -30,9 +34,7 @@ from .computation import (
     define,
     define_annual,
     define_carry,
-    run_mcmc,
 )
-from .example_population import Example_Population
 from .workspace import Workspace
 
 
@@ -259,7 +261,7 @@ class WritesPrepareAnnualInStep(ModelElement):
         ws.val.annual['input_series'] = jnp.arange(ws.n_years)
 
     def model_element_annual_step(self, ws:Workspace):
-        ws.val.this_annual['input_series'] = 1.0
+        ws.val.this_annual['input_series'] = jnp.array(1.0)
 
 
 def test_this_annual_prepare_defined_is_read_only_in_step():
@@ -322,8 +324,11 @@ def test_access_decorator_metadata():
     model = _annual_test_model(AccessMetaElement())
     elem_id = 'AccessMetaElement'
 
-    assert len(model.mv.accesses) == 5
-    by_key = {access.var_key: access for access in model.mv.accesses}
+    assert len(model.mv.unresolved_accesses) == 4
+
+    assert len(model.resolve_accesses()) == 5
+    by_key = {access.var_key: access
+              for access in model.resolve_accesses()}
 
     plain = ElementGeneralKey(elem_id=elem_id, name='plain')
     assert by_key[plain].subphase == Subphase.Proc
@@ -342,7 +347,7 @@ def test_access_decorator_metadata():
     assert ElementAnnualKey(elem_id=elem_id, name='b') in by_key
 
 
-def test_access_decorators_check_key_kind():
+def test_access_decorators_check_key_presence():
     annual_key = ElementAnnualKey(elem_id='BadElement', name='x')
 
     class BadAccessVal(ModelElement):
@@ -350,9 +355,12 @@ def test_access_decorators_check_key_kind():
         def model_element_prepare(self, ws:Workspace):
             pass
 
+    model = _annual_test_model(BadAccessVal())
     with pytest.raises(TypeError):
-        _annual_test_model(BadAccessVal())
+        model.resolve_accesses() # nothing defines x
 
+
+def test_access_decorators_check_key_kind():
     general_key = ElementGeneralKey(elem_id='BadElement', name='x')
 
     class BadAccessAnnual(ModelElement):
@@ -360,8 +368,9 @@ def test_access_decorators_check_key_kind():
         def model_element_prepare(self, ws:Workspace):
             pass
 
+    model = _annual_test_model(BadAccessAnnual())
     with pytest.raises(TypeError):
-        _annual_test_model(BadAccessAnnual())
+        model.resolve_accesses()
 
 
 class GeneralDefaultReader(ModelElement):
@@ -504,8 +513,9 @@ class BadDefaultB(ModelElement):
 
 def test_default_consistency_rejects_unequal_values():
     model = _annual_test_model(BadDefaultA())
+    model.add_element(BadDefaultB())
     with pytest.raises(DefinitionError):
-        model.add_element(BadDefaultB())
+        model.resolve_accesses()
 
 
 _shape_bad_default_key = ElementGeneralKey(elem_id='ShapeBadDefaultA', name='shared')
@@ -527,8 +537,9 @@ class ShapeBadDefaultB(ModelElement):
 
 def test_default_consistency_rejects_incompatible_shapes():
     model = _annual_test_model(ShapeBadDefaultA())
+    model.add_element(ShapeBadDefaultB())
     with pytest.raises(DefinitionError):
-        model.add_element(ShapeBadDefaultB())
+        model.resolve_accesses()
 
 
 _nan_default_key = ElementGeneralKey(elem_id='NanDefaultA', name='shared')

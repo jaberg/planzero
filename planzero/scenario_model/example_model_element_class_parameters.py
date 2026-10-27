@@ -14,7 +14,7 @@ import enum
 
 import numpyro.distributions as dist
 
-from .computation import (
+from . import (
     ElementGeneralKey,
     ModelElement,
     ScenarioModel,
