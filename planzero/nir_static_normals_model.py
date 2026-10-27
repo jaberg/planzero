@@ -11,16 +11,13 @@ from .nir2025 import (
     ktCO2e_dense_w_nan,
     near_zero_sector_ghgs,
 )
-from .nir2025_model import NIR2025_ModelElement
 from .nir_model import (
     NIR_ModelElement,
     NIR_ScenarioModel,
 )
 from .scenario_model import (
     AnnualKey,
-    GeneralKey,
     Workspace,
-    access_val,
     define,
     define_annual,
 )
@@ -32,12 +29,10 @@ class StaticNormals_ModelElement(NIR_ModelElement):
     ghg: GHG
     _ktCO2e_ca_key: AnnualKey
     _ktCO2e_pt_keys: dict[PT, AnnualKey]
-    _fit_to_data:bool
 
     def __init__(self,
                  sector:IPCC_Sector,
                  ghg:GHG,
-                 fit_to_data:bool,
                  ):
         self.sector = sector
         self.ghg = ghg
@@ -49,8 +44,6 @@ class StaticNormals_ModelElement(NIR_ModelElement):
                     f'ktCO2e_{self.sector.value}_{self.ghg.value}_{pt.value}')
                 for pt in PT if pt != PT.XX}
 
-        self._fit_to_data = fit_to_data
-
     @classmethod
     def element_identifier(cls, sector, ghg):
         return f'StaticNormals_ModelElement_{sector.value}_{ghg.value}'
@@ -61,27 +54,23 @@ class StaticNormals_ModelElement(NIR_ModelElement):
 
     @property
     def version_id(self):
-        if self._fit_to_data:
-            return (1,
-                    self._fit_to_data,
-                    # 1.2, accidentally using whole arr_ca rms not just sector/ghg
-                    #1.3, # mcmc works using larger 10ktCO2e "near zero" nir2025
-                    #1.4, # no more sigma_ca, relate it to sigma_pt
-                    # 1.5, # n_quad=16 with quad_p and quad_q blend
-                    # 1.6, # n_quad=16 with just quad_p
-                    #1.8, # centered priors, 1000 warmup steps
-                    #1.9, # tweaked logic here, new ktCO2e dists, init_uniform, target_accept_prob way up at .995
-                    # 1.91, # <-- tweaked epsilon for fishing emissions
-                    # and also empirical_prior for nationally reported sectors
-                    1.92, # new KL quadrature implementation
+        return (1,
+                # 1.2, accidentally using whole arr_ca rms not just sector/ghg
+                #1.3, # mcmc works using larger 10ktCO2e "near zero" nir2025
+                #1.4, # no more sigma_ca, relate it to sigma_pt
+                # 1.5, # n_quad=16 with quad_p and quad_q blend
+                # 1.6, # n_quad=16 with just quad_p
+                #1.8, # centered priors, 1000 warmup steps
+                #1.9, # tweaked logic here, new ktCO2e dists, init_uniform, target_accept_prob way up at .995
+                # 1.91, # <-- tweaked epsilon for fishing emissions
+                # and also empirical_prior for nationally reported sectors
+                1.92, # new KL quadrature implementation
 
-                    # Idea: if some PT contribs are too tiny, then just
-                    #       cut their contribution to the national total
-                    #       which may help remove divergences at default
-                    #       target_accept_prob?
-                    )
-        else:
-            return (1, self._fit_to_data)
+                # Idea: if some PT contribs are too tiny, then just
+                #       cut their contribution to the national total
+                #       which may help remove divergences at default
+                #       target_accept_prob?
+                )
 
     @property
     def ktCO2e_ca_key(self) -> AnnualKey:
@@ -244,29 +233,25 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
         sectors: default to all sectors (site models require all sectors), but subsets can be used in testing
         """
         super().__init__(
-                first_year=1990,
-                data_cutoff=data_cutoff,
                 last_forecast_year=last_forecast_year,
+                data_cutoff=data_cutoff,
                 num_warmup=1500,
                 num_samples=500,
                 expect_all_sectors=(sectors==IPCC_Sector),
                 )
         # num samples can be larger if scenario_model/computation.py
         # can free some memory as it goes... as of writing, it does not.
-        self.data_cutoff = data_cutoff
         for sector in IPCC_Sector:
             for ghg in GHG:
                 if (sector, ghg) not in near_zero_sector_ghgs():
-                    mcmc_group = f'{sector.value}_{ghg.value}'
                     if isinstance(sectors, list) and sector not in sectors:
-                        fit_to_data = False
+                        pass
                     else:
-                        fit_to_data = True
-                    snorm_elem = StaticNormals_ModelElement(
-                                sector=sector,
-                                ghg=ghg,
-                                fit_to_data=fit_to_data)
-                    self.add_element(snorm_elem, mcmc_group=mcmc_group)
+                        mcmc_group = f'{sector.value}_{ghg.value}'
+                        snorm_elem = StaticNormals_ModelElement(
+                                    sector=sector,
+                                    ghg=ghg)
+                        self.add_element(snorm_elem, mcmc_group=mcmc_group)
 
         self.add_emissions_sums()
         self.add_element_prenir_2025_m04()

@@ -140,8 +140,8 @@ class Sector_GHG_Observation(ModelElement):
     @access_val(nir_ca_key)
     @access_val(nir_pt_keys)
     @access_annual(_contributors, annual_shape=[])
-    @define_annual(ktCO2e_ca, annual_shape=[], posterior_only=True)
-    @define_annual(ktCO2e_pt, annual_shape=[], posterior_only=True)
+    @define_annual(ktCO2e_ca, annual_shape=[])
+    @define_annual(ktCO2e_pt, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
 
         # nir key
@@ -155,18 +155,22 @@ class Sector_GHG_Observation(ModelElement):
 
             if self.fit_to_data and ws.phase == Phase.Prior:
                 ws.obs_weight.annual[self.ktCO2e_pt[pt]] = obs_weight
-                assert ws.n_years > n_nir_years
-                assert 0
-                ws.obs_valid.annual[self.ktCO2e_pt[pt]] = (
-                        jnp.array([True] * n_nir_years + [False] * (ws.n_years - n_nir_years))[ws.mcmc_broadcast_index])
-                ws.obs_dist.annual[self.ktCO2e_pt[pt]] = (
-                        ws.dist.general[self.nir_pt_keys[pt]].extend_leading_dim_by(ws.n_years - n_nir_years))
+                assert ws.n_years >= n_nir_years, (ws.n_years, n_nir_years)
+                if ws.n_years == n_nir_years:
+                    ws.obs_dist.annual[self.ktCO2e_pt[pt]] = (
+                            ws.dist.general[self.nir_pt_keys[pt]])
+                else:
+                    ws.obs_valid.annual[self.ktCO2e_pt[pt]] = (
+                            jnp.array([True] * n_nir_years
+                                      + [False] * (ws.n_years - n_nir_years)
+                                      )[ws.mcmc_broadcast_index])
+                    raise NotImplementedError('ws.obs_dist.annual[...] = ')
 
             if not keys:
                 raise NotImplementedError()
             elif all(isinstance(ws.dist.annual[key], dists.Normal) for key in keys):
-                loc = custom_sum(ws.dist.annual[key].loc[:n_nir_years] for key in keys)
-                ssq = custom_sum(ws.dist.annual[key].scale[:n_nir_years] ** 2 for key in keys)
+                loc = custom_sum(ws.dist.annual[key].loc for key in keys)
+                ssq = custom_sum(ws.dist.annual[key].scale ** 2 for key in keys)
             else:
                 raise NotImplementedError()
 
@@ -177,7 +181,10 @@ class Sector_GHG_Observation(ModelElement):
 
         if self.fit_to_data and ws.phase == Phase.Prior:
             ws.obs_weight.annual[self.ktCO2e_ca] = obs_weight * n_regions
-            ws.obs_dist.annual[self.ktCO2e_ca] = ws.dist.general[self.nir_ca_key]
+            if ws.n_years == n_nir_years:
+                ws.obs_dist.annual[self.ktCO2e_ca] = ws.dist.general[self.nir_ca_key]
+            else:
+                raise NotImplementedError()
 
         ws.dist.annual[self.ktCO2e_ca] = dists.Normal(loc_sum, jnp.sqrt(ssq_sum))
 
@@ -329,7 +336,7 @@ class NIR_ScenarioModel(ScenarioModel):
         self.sector_sum_over_ghg = {}
         self.sector_ghg_observations = {}
 
-    def _latest_nir_model_element(self, sector, ghg):
+    def _latest_nir_model_element_before_cutoff(self, sector, ghg):
         assert isinstance(self.data_cutoff, datetime.date)
         if self.data_cutoff <= datetime.date(2024, 12, 31):
             from .nir2024_model import NIR2024_ModelElement
@@ -368,7 +375,7 @@ class NIR_ScenarioModel(ScenarioModel):
                 mcmc_group = self.mcmc_group_by_elemid[elem_id]
                 for (sector, ghg), pt_key_d in nme.ktCO2e_emissions_pt.items():
 
-                    nir_elem = self._latest_nir_model_element(sector, ghg)
+                    nir_elem = self._latest_nir_model_element_before_cutoff(sector, ghg)
                     if nir_elem.identifier not in self.model_elements:
                         self.add_element(nir_elem, mcmc_group=mcmc_group)
                     else:
@@ -394,9 +401,6 @@ class NIR_ScenarioModel(ScenarioModel):
                         else:
                             ssog = self.sector_sum_over_ghg[sector]
                         ssog.add_contributor(sgo.ktCO2e_pt, sgo.ktCO2e_ca)
-                        if sector == IPCC_Sector.SCS__Public_Electricity_and_Heat:
-                            print('addcon', ssog._contributors)
-
                     else:
                         sgo = self.sector_ghg_observations[sector, ghg]
 
@@ -531,20 +535,21 @@ class NIR_ScenarioModel(ScenarioModel):
 
     def add_element_prenir_2025_m04(self):
         from .nir2025_model import NIR2025_ModelElement
-
+        nir_years_key = None
         sector_ghg_nir_keys = {}
         real_PTs = [pt for pt in PT if pt != PT.XX]
-        nir_years_key = None
+        for (sector, ghg) in self.sector_ghg_observations:
+            nir_elem = NIR2025_ModelElement(
+                    sector=sector,
+                    ghg=ghg,
+                    report_emissions=False)
+            nir_years_key = nir_elem.years_key
+            self.add_element(nir_elem)
 
-        for elem in self.model_elements.values():
-            if isinstance(elem, NIR2025_ModelElement):
-                nir_elem = elem
-                nir_d = sector_ghg_nir_keys[nir_elem.sector, nir_elem.ghg] = {}
-                nir_d[PseudoRegion.NationalTotal] = nir_elem.ca_key
-                for pt in real_PTs:
-                    nir_d[pt] = nir_elem.pt_keys[pt]
-                nir_years_key = nir_elem.years_key
-                del nir_elem
+            sector_ghg_nir_keys[sector, ghg] = {}
+            sector_ghg_nir_keys[sector, ghg][PseudoRegion.NationalTotal] = nir_elem.ca_key
+            for pt in real_PTs:
+                sector_ghg_nir_keys[sector, ghg][pt] = nir_elem.pt_keys[pt]
 
         assert nir_years_key is not None
         self.add_element(

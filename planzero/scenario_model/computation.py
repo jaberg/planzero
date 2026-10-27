@@ -260,23 +260,26 @@ def storage_nd_check_ElementGeneralKey(comp:Computation, var_key:ElementGeneralK
         raise NotImplementedError(comp.phase)
 
 
-def storage_nd_check_ElementAnnualKey(comp:Computation, var_key:VarKey, val:jnp.ndarray) -> bool:
-    metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
-    general_shape = tuple(
-            comp.n_years if dim_ii == years_dim else dim_ii
-            for dim_ii in metadata_shape)
+def storage_nd_check_ElementAnnualKey(comp:Computation, var_key:ElementAnnualKey, val:jnp.ndarray) -> bool:
+    """Return True if `val` needs right-padding, False if it does not,
+    and raise an exception if `val` is not suitable one way or the other.
+    """
     if comp.phase == Phase.Prior:
-        assert val.shape == general_shape, (
-                val.shape, comp.n_years, general_shape)
+        prior_shape = tuple(
+                build_annual_prior_shape(comp, var_key, val.shape))
+        assert val.shape == prior_shape, (
+                val.shape, comp.n_years, prior_shape)
         return False
     elif comp.phase == Phase.Posterior:
-        if val.shape == general_shape:
-            return True
-        elif (val.shape == general_shape + (1,)
-              or val.shape == general_shape + (comp.n_mcmc,)):
-            return False
+        posterior_shape = tuple(
+                build_annual_posterior_shape(comp, var_key, val.shape))
+        if (val.shape == posterior_shape
+            or val.shape == posterior_shape[:-1] + (1,)):
+            return False # don't pad
+        elif val.shape == posterior_shape[:-1]:
+            return True # pad right
         else:
-            raise NotImplementedError(val.shape)
+            raise NotImplementedError(val.shape, posterior_shape)
     else:
         raise NotImplementedError(comp.phase)
 
@@ -354,7 +357,7 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
         elif comp.phase == Phase.Posterior:
             # it is only okay to pass the same shape as in the prior
             # or the same shape with a (1,) tagged on the end of the shape
-            return False
+            return False # don't pad right
         else:
             raise NotImplementedError(comp.phase)
         # The observation should not have mcmc dimension in Posterior phase
@@ -367,7 +370,7 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
         if comp.phase == Phase.Prior:
             prior_shape = build_annual_prior_shape( comp, prior_var_key, ())
             if prior_shape == list(obs_shape):
-                return True
+                return False # don't pad right
             else:
                 raise NotImplementedError(prior_shape, obs_shape)
 
@@ -703,7 +706,10 @@ def set_dist_Observation(
         # I suspect there is some pytree magic to do this for any distribution
         # but I don't know what it is. I think all of the parameters of the dist
         # must be right-padded.
-        raise NotImplementedError()
+        if comp.phase == Phase.Posterior:
+            raise NotImplementedError('are you sure you want to observe in posterior pass?')
+        else:
+            raise NotImplementedError(prior_var_key, dist.shape())
     comp._dist_d[obs_key] = dist
 
 

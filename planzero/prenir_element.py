@@ -180,6 +180,7 @@ class PreNIR_ModelElement(ModelElement):
                     if self.expect_all_sectors:
                         raise
                     else:
+                        ws.val.general[key] = jnp.zeros(())
                         continue
                 nir_dist_all_years_key = nir_d[key.region]
                 nir_dist_all_years = ws.dist.general[nir_dist_all_years_key]
@@ -221,6 +222,8 @@ class PreNIR_ModelElement(ModelElement):
                     prenir_score += self._helper(ws, key, weight, nir_dist, pred_dist)
                 elif isinstance(pred_key, AnnualKey):
                     pred_dist = ws.dist.annual[pred_key]
+
+                    # assigns ws.val.general[key] = kl
                     prenir_score += self._helper(ws, key, weight, nir_dist, pred_dist)
                 else:
                     raise NotImplementedError(pred_key)

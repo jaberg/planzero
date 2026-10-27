@@ -1,13 +1,12 @@
 import datetime
 
 from .enums import GHG, IPCC_Sector
+from .nir_model import NIR_ScenarioModel
 from .nir_static_normals_model import (
-    NIR2025_ModelElement,
     StaticNormals_ModelElement,
     StaticNormals_ScenarioModel,
 )
 from .scenario_model import (
-    ScenarioModel,
     compute_model,
     registry_compute_model,
 )
@@ -41,28 +40,23 @@ def test_smoke_sector_ghg(
     num_samples=1000,
     ):
 
-    model = ScenarioModel(
-            first_year=1990,
-            n_prior_years=33,
-            n_posterior_years=50,
+    model = NIR_ScenarioModel(
+            data_cutoff=datetime.date(2024, 12, 31),
+            last_forecast_year=2030,
             num_warmup=num_warmup,
-            num_samples=num_samples)
+            num_samples=num_samples,
+            expect_all_sectors=False)
 
-    mcmc_group = f'{sector.value}_{ghg.value}'
-    nir_elem = NIR2025_ModelElement(
-            sector=sector,
-            ghg=ghg,
-            n_years=model.n_prior_years)
-    model.add_element(nir_elem, mcmc_group=mcmc_group)
     snorm_elem = StaticNormals_ModelElement(
                 sector=sector,
-                ghg=ghg,
-                nir_scale_key=nir_elem.scale_key,
-                nir_ca_key=nir_elem.ca_key,
-                nir_pt_keys=nir_elem.pt_keys,
-                fit_to_data=True)
-    model.add_element(snorm_elem, mcmc_group=mcmc_group)
+                ghg=ghg)
+    model.add_element(snorm_elem)
+            #mcmc_group=f'{sector.value}_{ghg.value}')
 
+    model.add_emissions_sums()
+    model.add_element_prenir_2025_m04()
+
+    print(model.mcmc_submodels().keys())
     comp = compute_model(model, seed_or_key=1)
 
     if 0:
