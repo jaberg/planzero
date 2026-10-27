@@ -2,8 +2,9 @@ import jax.numpy as jnp
 import numpyro.distributions as dist
 
 from . import cattle
-from .enums import GHG, PT
+from .enums import GHG, PT, IPCC_Sector
 from .ghgvalues import GWP_100
+from .nir_model import NIR_ModelElement
 from .sc_3210013001 import (
     FarmType,
     Livestock,
@@ -13,7 +14,6 @@ from .scenario_model import (
     AnnualKey,
     CarryKey,
     GeneralKey,
-    ModelElement,
     Phase,
     Workspace,
     access_annual,
@@ -25,7 +25,7 @@ n_regions = 13
 n_livestock_types = len(Livestock_nonsums)
 
 
-class Cattle_StaticNormals_ModelElement(ModelElement):
+class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
     """This model element makes static normal estimates of cattle populations
     and enteric fermentation emission factors to explain three
     things:
@@ -38,8 +38,6 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
     and each province and territory.
     """
     _fit_to_data:bool
-    nir_ca_key: GeneralKey
-    nir_pt_keys: dict[PT, GeneralKey]
     farm_type = FarmType.AllCattle
     model_headcounts:bool
     model_emission_factors:bool
@@ -47,16 +45,10 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
 
     def __init__(
             self,
-            nir_ca_key:GeneralKey,
-            nir_pt_keys:dict[PT, GeneralKey],
-            fit_to_data:bool=True,
             model_headcounts:bool=True,
             model_emission_factors:bool=True,
             model_emissions:bool=True,
             ):
-        self.nir_ca_key = nir_ca_key
-        self.nir_pt_keys = nir_pt_keys
-        self._fit_to_data = fit_to_data
         self.model_headcounts = model_headcounts
         self.model_emission_factors = model_emission_factors
         self.model_emissions = model_emissions
@@ -111,14 +103,6 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
         return self._ktCO2e_pt_keys
 
     @property
-    def hist_ktCO2e_ca_key(self) -> GeneralKey:
-        return self._hist_ktCO2e_ca_key
-
-    @property
-    def hist_ktCO2e_pt_keys(self) -> dict[PT, GeneralKey]:
-        return self._hist_ktCO2e_pt_keys
-
-    @property
     def bovine_fraction_on_bovaer(self) -> CarryKey:
         return self.carry_key('bovine_fraction_on_bovaer')
 
@@ -132,8 +116,6 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
 
     @define_annual(ktCO2e_ca_key, annual_shape=[], posterior_only=True)
     @define_annual(ktCO2e_pt_keys, annual_shape=[], posterior_only=True)
-    @define(hist_ktCO2e_ca_key, prior_shape=[])
-    @define(hist_ktCO2e_pt_keys, prior_shape=[])
     @define(static_emission_factors, prior_shape=[n_livestock_types])
     @define('headcounts', prior_shape=[n_livestock_types, n_regions])
     @define_annual(annual_headcounts, annual_shape=[n_livestock_types, n_regions])
@@ -252,34 +234,26 @@ class Cattle_StaticNormals_ModelElement(ModelElement):
         ws.dist.general['emissions_obs_noise_pt'] = dist.HalfNormal(1.0).expand((n_regions,))
         ws.dist.general['emissions_obs_noise_ca'] = dist.HalfNormal(1.0)
 
-        pt_obs_weight = jnp.array(1.0)
-        ca_obs_weight = jnp.array(n_regions)
-
-        for ii, (pt, hist_key) in enumerate(self.hist_ktCO2e_pt_keys.items()):
-            if self._fit_to_data:
-                ws.obs_weight.general[hist_key] = pt_obs_weight
-                ws.obs_dist.general[hist_key] = ws.dist.general[self.nir_pt_keys[pt]]
-
-            ws.dist.general[hist_key] = dist.Normal(
+        for ii, (pt, key) in enumerate(self.ktCO2e_pt_keys.items()):
+            ws.dist.annual[key] = dist.Normal(
                     annual_PT_emissions_ktCO2e[:, ii],
                     ws.val.general['emissions_obs_noise_pt'][ii])
-
-        if self._fit_to_data:
-            ws.obs_weight.general[self.hist_ktCO2e_ca_key] = ca_obs_weight
-            ws.obs_dist.general[self.hist_ktCO2e_ca_key] = ws.dist.general[self.nir_ca_key]
-        ws.dist.general[self.hist_ktCO2e_ca_key] = dist.Normal(
+        ws.dist.annual[self.ktCO2e_ca_key] = dist.Normal(
                 annual_PT_emissions_ktCO2e.sum(axis=1),
                 ws.val.general['emissions_obs_noise_ca'])
 
-        # predictions for future years
-        # which are distinct rather than scaled random variables
-        # relative to the unit_ca_key, because unit_ca_key
-        # refers to previous, observed years' emissions
-        if ws.phase == Phase.Posterior:
-            for ii, (pt, hist_key) in enumerate(self.hist_ktCO2e_pt_keys.items()):
-                ws.dist.annual[self.ktCO2e_pt_keys[pt]] = dist.Normal(
-                        annual_PT_emissions_ktCO2e[:, ii],
-                        ws.val.general['emissions_obs_noise_pt'][ii])
-            ws.dist.annual[self.ktCO2e_ca_key] = dist.Normal(
-                    annual_PT_emissions_ktCO2e.sum(axis=1),
-                    ws.val.general['emissions_obs_noise_ca'])
+    @property
+    def ktCO2e_emissions_ca(
+            self,
+            ) -> dict[tuple[IPCC_Sector, GHG], AnnualKey]:
+        rval = {}
+        rval[IPCC_Sector.Enteric_Fermentation, GHG.CH4] = self.ktCO2e_ca_key
+        return rval
+
+    @property
+    def ktCO2e_emissions_pt(
+            self,
+            ) -> dict[tuple[IPCC_Sector, GHG], dict[PT, AnnualKey]]:
+        rval = {}
+        rval[IPCC_Sector.Enteric_Fermentation, GHG.CH4] = self.ktCO2e_pt_keys
+        return rval

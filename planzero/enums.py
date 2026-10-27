@@ -409,6 +409,12 @@ col_by_pt = {pt: col for pt, col in zip(PT, echarts_warm_earth)}
 col_ca = echarts_warm_earth[-1]
 
 
+class SpecialPurposeEntity(str, enum.Enum):
+    BovaerSubsidy = 'Bovaer Subsidy'
+
+SPE = SpecialPurposeEntity
+
+
 class Activity(str, enum.Enum):
     Farming_Cattle = 'Farming Cattle'
     Other = 'Other'

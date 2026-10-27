@@ -64,12 +64,13 @@ class SectorTotalEmissionsElement(ModelElement):
             # don't access the values to avoid sampling and slowing down MCMC
             pass
         elif ws.phase == Phase.Posterior:
-            total_w_lulucf = jnp.zeros(())
-            total_wo_lulucf = jnp.zeros(())
+            total_w_lulucf = jnp.zeros((ws.n_years,) + ws.mcmc_shape)
+            total_wo_lulucf = jnp.zeros((ws.n_years,) + ws.mcmc_shape)
             n_skipped = 0
 
             for sector, var_key in self.sector_keys.items():
-                sector_total = jnp.zeros(())
+                # shape (years, MCMC)
+                sector_total = jnp.zeros((ws.n_years,) + ws.mcmc_shape)
 
                 try:
                     subkeys = self.sector_ghg_subtotal_keys[sector].values()

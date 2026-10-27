@@ -108,15 +108,12 @@ class PreNIR_ModelElement(ModelElement):
     def identifier(self) -> str:
         return self.element_identifier(self.nir_year, self.months_ahead)
 
-
     @property
     def prediction_year(self) -> int:
         if self.nir_year == 2025 and self.months_ahead == 4:
             return 2022
         else:
             raise NotImplementedError(self.nir_year, self.months_ahead)
-
-
 
     def _subtotal_var_key(self, sector, ghg, region):
         return SubtotalVarKey(
@@ -177,7 +174,13 @@ class PreNIR_ModelElement(ModelElement):
             for key in self.kl_keys.values():
                 assert isinstance(key.sector, IPCC_Sector)
                 assert key.ghg is not None
-                nir_d = self.sector_ghg_nir_keys[key.sector, key.ghg]
+                try:
+                    nir_d = self.sector_ghg_nir_keys[key.sector, key.ghg]
+                except KeyError:
+                    if self.expect_all_sectors:
+                        raise
+                    else:
+                        continue
                 nir_dist_all_years_key = nir_d[key.region]
                 nir_dist_all_years = ws.dist.general[nir_dist_all_years_key]
                 if (isinstance(nir_dist_all_years, dists.ExpandedDistribution)
@@ -195,13 +198,21 @@ class PreNIR_ModelElement(ModelElement):
                     weight = .5 * weights[idx_of_sector[key.sector],
                                           idx_of_ghg[key.ghg],
                                           idx_of_pt[key.region]]
-                    pred_key = self.sector_region_ghg_subtotal_keys[key.sector, key.region][key.ghg]
+                    try:
+                        pred_key = self.sector_region_ghg_subtotal_keys[key.sector, key.region][key.ghg]
+                    except KeyError as err:
+                        err.add_note(f'key={key}')
+                        raise
                 elif key.region in PseudoRegion:
                     assert key.region == PseudoRegion.NationalTotal
                     weight = 0.5 * weights[idx_of_sector[key.sector],
                                           idx_of_ghg[key.ghg],
                                           :].sum()
-                    pred_key = self.sector_ghg_subtotal_keys[key.sector][key.ghg]
+                    try:
+                        pred_key = self.sector_ghg_subtotal_keys[key.sector][key.ghg]
+                    except KeyError as err:
+                        err.add_note(f'key={key}')
+                        raise
                 else:
                     raise NotImplementedError(key.region)
 

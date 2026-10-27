@@ -4,9 +4,10 @@ import jinja2
 import pint
 from numpyro import distributions as dists
 
-from .enums import GHG, PT
+from .enums import GHG, PT, IPCC_Sector
 from .ghgvalues import GWP_100
 from .html import coderef_url
+from .nir_model import NIR_ModelElement
 from .sc_3210013001 import (
     Livestock,
     Livestock_nonsums,
@@ -104,7 +105,7 @@ class Bovaer_Adoption_Limit(ModelElement):
                 'ModellingBovaer']
 
 
-class Bovaer_Production_Emissions(ModelElement):
+class Bovaer_Production_Emissions(NIR_ModelElement):
 
     @property
     def short_description(self) -> str:
@@ -132,15 +133,12 @@ class Bovaer_Production_Emissions(ModelElement):
             self,
             annual_headcounts_key,
             annual_bovaer_fraction,
-            baseline_ktCO2e_ca_key,
-            baseline_ktCO2e_pt_keys):
+            ):
         super().__init__()
         self._ktCO2e_ca_key = self.annual_key('ktCO2e_ca')
         self._ktCO2e_pt_keys = {
                 pt: self.annual_key(f'ktCO2e_{pt.value}')
                 for pt in PT if pt != PT.XX}
-        self._baseline_ktCO2e_ca_key = baseline_ktCO2e_ca_key
-        self._baseline_ktCO2e_pt_keys = baseline_ktCO2e_pt_keys
         self._annual_headcounts_key = annual_headcounts_key
         self._annual_bovaer_fraction = annual_bovaer_fraction
 
@@ -153,14 +151,6 @@ class Bovaer_Production_Emissions(ModelElement):
         return self._ktCO2e_pt_keys
 
     @property
-    def baseline_ktCO2e_ca_key(self) -> AnnualKey:
-        return self._baseline_ktCO2e_ca_key
-
-    @property
-    def baseline_ktCO2e_pt_keys(self) -> dict[PT, AnnualKey]:
-        return self._baseline_ktCO2e_pt_keys
-
-    @property
     def annual_headcounts(self) -> AnnualKey:
         return self._annual_headcounts_key
 
@@ -168,8 +158,6 @@ class Bovaer_Production_Emissions(ModelElement):
     def annual_bovaer_fraction(self) -> AnnualKey:
         return self._annual_bovaer_fraction
     
-    @access_annual(baseline_ktCO2e_ca_key)
-    @access_annual(baseline_ktCO2e_pt_keys)
     @access_annual(annual_headcounts)
     @access_annual(annual_bovaer_fraction)
     @define('bovaer_production_emission_factor', prior_shape=[])
@@ -189,20 +177,33 @@ class Bovaer_Production_Emissions(ModelElement):
 
         if ws.phase == Phase.Posterior:
             ws.val.annual[self.ktCO2e_ca_key] = (
-                    ws.val.annual[self.baseline_ktCO2e_ca_key]
-                    + (heads_ca
+                    heads_ca
                        * ws.val.annual[self.annual_bovaer_fraction]
                        * (ws.val.general['bovaer_production_emission_factor']
                           * kt_per_kg
-                          * float(GWP_100[GHG.CH4].magnitude))))
-            for ii, (pt, pt_key) in enumerate(self.baseline_ktCO2e_pt_keys.items()):
-                ws.val.annual[self.ktCO2e_pt_keys[pt]] = (
-                        ws.val.annual[pt_key]
-                        + (heads_pt[:, ii]
+                          * float(GWP_100[GHG.CH4].magnitude)))
+            for ii, (_, pt_key) in enumerate(self.ktCO2e_pt_keys.items()):
+                ws.val.annual[pt_key] = (
+                        heads_pt[:, ii]
                            * ws.val.annual[self.annual_bovaer_fraction]
                            * (ws.val.general['bovaer_production_emission_factor']
                               * kt_per_kg
-                              * float(GWP_100[GHG.CH4].magnitude))))
+                              * float(GWP_100[GHG.CH4].magnitude)))
+    @property
+    def ktCO2e_emissions_ca(
+            self,
+            ) -> dict[tuple[IPCC_Sector, GHG], AnnualKey]:
+        rval = {}
+        rval[IPCC_Sector.SCS__Manufacturing__Other, GHG.CO2] = self.ktCO2e_ca_key
+        return rval
+
+    @property
+    def ktCO2e_emissions_pt(
+            self,
+            ) -> dict[tuple[IPCC_Sector, GHG], dict[PT, AnnualKey]]:
+        rval = {}
+        rval[IPCC_Sector.SCS__Manufacturing__Other, GHG.CO2] = self.ktCO2e_pt_keys
+        return rval
 
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
