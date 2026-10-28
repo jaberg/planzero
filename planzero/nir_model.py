@@ -250,7 +250,6 @@ class Sector_Sum_Over_GHG(ModelElement):
     @define_annual(ktCO2e_ca, annual_shape=[], posterior_only=True)
     @define_annual(ktCO2e_pt, annual_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
-        print('SSOG running', self.identifier)
         if ws.phase == Phase.Posterior:
             for ii, (pt, key) in enumerate(self.ktCO2e_pt.items()):
                 ws.val.annual[key] = custom_sum(
@@ -271,16 +270,13 @@ class Sum_Over_Sectors(ModelElement):
 
     _sector_totals:dict[IPCC_Sector, AnnualKey]
     include_LULUCF:bool
-    use_dist_sum:bool
 
     def __init__(self,
                  include_LULUCF:bool,
-                 use_dist_sum:bool=True,
                  ):
         super().__init__()
         self._sector_totals = {}
         self.include_LULUCF = include_LULUCF
-        self.use_dist_sum = use_dist_sum
 
     @property
     def identifier(self) -> str:
@@ -300,13 +296,13 @@ class Sum_Over_Sectors(ModelElement):
 
     @property
     def ktCO2e_ca(self) -> AnnualKey:
-        return self.annual_key(f'ktCO2e_ca_{self.include_LULUCF}_{self.use_dist_sum}')
+        return self.annual_key(f'ktCO2e_ca_{self.include_LULUCF}')
 
     @access_annual(sector_totals)
     @define_annual(ktCO2e_ca, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Posterior:
-            ws.val.annual[self.ktCO2e_ca] = sum(
+            ws.val.annual[self.ktCO2e_ca] = custom_sum(
                     ws.val.annual[key] for key in self.sector_totals.values())
 
 
@@ -376,6 +372,8 @@ class NIR_ScenarioModel(ScenarioModel):
     def add_emissions_sums(self, fit_to_data:bool=True):
         self.sum_over_sectors[False] = Sum_Over_Sectors(include_LULUCF=False)
         self.sum_over_sectors[True] = Sum_Over_Sectors(include_LULUCF=True)
+        for sos in self.sum_over_sectors.values():
+            self.add_element(sos, mcmc_group=None)
         model_elements_items = list(self.model_elements.items())
         for elem_id, elem in model_elements_items:
             if isinstance(elem, NIR_ModelElement):

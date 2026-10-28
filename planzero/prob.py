@@ -3,7 +3,6 @@ BaseModels for Probabilistic Models
 """
 
 from . import ablation
-from .annual_emission_results import AnnualEmissionResults
 from .enums import GHG
 from .html import html_by_ghg
 from .nir2025 import near_zero_sector_ghgs
@@ -48,15 +47,16 @@ class SiteInference:
 
     @property
     def scenario_model_registry_name(self) -> str:
-        # this is attribute is used by GitHub workflow via
-        # __main__.py to manage the artifact cache
-        raise NotImplementedError()
+        # this is the first part of the 3-part registry_basename
+        # {model_name}_{version_hash}_{seed_hash}
+        return self._scenario_model_registry_name
 
     @property
     def scenario_model(self) -> NIR_ScenarioModel:
         return self._scenario_model
 
     def registry_basename(self) -> str:
+        # {model_name}_{version_hash}_{seed_hash}
         return registry_basename(
                 model=self._scenario_model,
                 model_name=self._scenario_model_registry_name,
@@ -175,9 +175,6 @@ class SiteInference:
             return None
         else:
             return ablation.registry[as_id]
-
-    def emission_results(self) -> AnnualEmissionResults:
-        raise NotImplementedError()
 
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
         # TODO: make it work, then move to base class

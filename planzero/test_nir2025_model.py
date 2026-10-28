@@ -8,4 +8,4 @@ def test_registry_computation_smoke():
             model,
             model_name='NIR2025',
             cache_posterior=False,
-            seed_or_key=1)
+            seed=42)

@@ -327,7 +327,7 @@ class SparklineEChartHelperBase(BaseBase):
     n_non_lulucf_rows = 10
     n_total_rows = n_non_lulucf_rows + 2
     cells_include_actuals = True
-
+    nir2025_quantiles: dict[IPCC_Sector|PseudoSector, dict[float, np.ndarray]]
 
     @property
     def v_unit_scale(self) -> float:
@@ -345,6 +345,17 @@ class SparklineEChartHelperBase(BaseBase):
         self.v_unit = v_unit
 
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
+
+        self.nir2025_quantiles = {}
+        if self.cells_include_actuals:
+            from .nir2025_site import NIR2025
+            site_model = NIR2025()
+            nir2025_sample = site_model.scenario_model.all_sector_echart_ktCO2e_sample(comp=site_model.comp)
+            for key, sample in nir2025_sample.items():
+                qvals = np.quantile(sample, q=self.actuals_q, axis=1)
+                self.nir2025_quantiles[key] = {
+                        q_ii: qvals_ii
+                        for q_ii, qvals_ii in zip(self.actuals_q, qvals)}
 
     def add_data_for_sector(self, sector, sector_means, lbounds, ubounds):
         assert sector not in self.data_by_sector
@@ -575,8 +586,7 @@ class SparklineEChartHelperBase(BaseBase):
 
         if self.cells_include_actuals:
             # historical actuals
-            from .nir2025_site import nir2025_ca_quantile_bounds
-            bounds = nir2025_ca_quantile_bounds(sector, self.actuals_q)
+            bounds = self.nir2025_quantiles[sector]
 
             self.series_list.append(
                 EChartSeriesBase(
@@ -797,6 +807,7 @@ class RegionalSparklineEChartHelperBase(BaseBase):
 
     n_rows = 2
     n_cols = 7
+    nir2025_quantiles:dict[PT|PseudoRegion, dict[float, np.ndarray]]
 
     @property
     def v_unit_scale(self) -> float:
@@ -818,6 +829,16 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
         self.color_by_key[PseudoRegion.NationalTotal] = col_ca
         self.color_by_key.update(col_by_pt)
+
+        self.nir2025_quantiles = {}
+        from .nir2025_site import NIR2025
+        site_model = NIR2025()
+        nir2025_sample = site_model.scenario_model.per_sector_echart_ktCO2e_sample(comp=site_model.comp, sector=sector, ghg=ghg)
+        for key, sample in nir2025_sample.items():
+            qvals = np.quantile(sample, q=self.actuals_q, axis=1)
+            self.nir2025_quantiles[key] = {
+                    q_ii: qvals_ii
+                    for q_ii, qvals_ii in zip(self.actuals_q, qvals)}
 
     def add_data_for_region(self, region, means, lbounds, ubounds):
         assert region not in self.data_by_region
@@ -904,10 +925,6 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         xaxis_id, yaxis_id = self.append_cell_grid_and_axes(
                 row, col, row_ymin, row_ymax)
 
-        from .nir2025_site import nir2025_pt_quantile_bounds
-        nir2025_q = nir2025_pt_quantile_bounds(
-                self.sector, self.ghg, q=self.actuals_q)
-
         self.series_list.append(
             EChartSeriesBase(
                 name=f'{region} NIR2025',
@@ -920,7 +937,7 @@ class RegionalSparklineEChartHelperBase(BaseBase):
                     type='dotted',
                     color='#000'),
                 data=list(zip(nir2025.nir2025_year_ints,
-                              self.v_unit_scale * nir2025_q[region][0.5])),
+                              self.v_unit_scale * self.nir2025_quantiles[region][0.5])),
                 ))
         self.series_list.append(
             EChartSeriesBase(
@@ -934,7 +951,7 @@ class RegionalSparklineEChartHelperBase(BaseBase):
                     type='solid',
                     color='#000'),
                 data=list(zip(nir2025.nir2025_year_ints,
-                              self.v_unit_scale * nir2025_q[region][0.025])),
+                              self.v_unit_scale * self.nir2025_quantiles[region][0.025])),
                 ))
         self.series_list.append(
             EChartSeriesBase(
@@ -948,7 +965,7 @@ class RegionalSparklineEChartHelperBase(BaseBase):
                     type='solid',
                     color='#000'),
                 data=list(zip(nir2025.nir2025_year_ints,
-                              self.v_unit_scale * nir2025_q[region][0.975])),
+                              self.v_unit_scale * self.nir2025_quantiles[region][0.975])),
                 ))
 
         self.append_cell_data(region, xaxis_id, yaxis_id)

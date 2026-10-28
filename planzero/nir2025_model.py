@@ -113,7 +113,6 @@ class NIR2025_ModelElement(NIR_ModelElement):
             ws.val.annual[self.annual_ca_key] = annual_zeros
             for pt, key in self.annual_pt_keys.items():
                 ws.val.annual[key] = annual_zeros
-        print('NIR model running', self.identifier)
 
     @property
     def ktCO2e_emissions_ca(
@@ -151,7 +150,6 @@ class Bypass_Sector_GHG_Observation(Sector_GHG_Observation):
         if ws.phase != Phase.Posterior:
             return
 
-        print('Bypass running', self.identifier)
         for ii, (pt, keys) in enumerate(self.ktCO2e_pt_contributors.items()):
             key, = keys
             ws.dist.annual[self.ktCO2e_pt[pt]] = ws.dist.annual[key]
