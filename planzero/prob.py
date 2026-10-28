@@ -8,7 +8,7 @@ from .enums import GHG
 from .html import html_by_ghg
 from .nir2025 import near_zero_sector_ghgs
 from .nir_model import NIR_ScenarioModel
-from .scenario_model import Computation, registry_compute_model
+from .scenario_model import Computation, registry_basename, registry_compute_model
 from .singleton_registry import SingletonRegistry
 from .sparkline_echart_helper import (
     national_emissions_by_sector_echart_from_sample,
@@ -35,6 +35,8 @@ class SiteInference:
     _scenario_model_registry_name: str
     _scenario_model: NIR_ScenarioModel
 
+    registry_computation_seed:int = 42
+
     def __init__(self, *,
                  scenario_model_registry_name:str,
                  scenario_model:NIR_ScenarioModel,
@@ -54,6 +56,12 @@ class SiteInference:
     def scenario_model(self) -> NIR_ScenarioModel:
         return self._scenario_model
 
+    def registry_basename(self) -> str:
+        return registry_basename(
+                model=self._scenario_model,
+                model_name=self._scenario_model_registry_name,
+                seed=self.registry_computation_seed)
+
     def registry_compute_model(
             self,
             compute_posterior=True,
@@ -65,7 +73,7 @@ class SiteInference:
                 cache_posterior=compute_posterior,
                 run_compute_posterior=compute_posterior,
                 quiet=quiet,
-                seed=42)
+                seed=self.registry_computation_seed)
 
     @property
     def comp(self) -> Computation:

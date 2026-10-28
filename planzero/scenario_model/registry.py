@@ -494,6 +494,23 @@ def _compute_posterior(
 _registry_mem_cache: dict[str, Computation] = {}
 
 
+def registry_basename(
+        model: ScenarioModel,
+        model_name: str,
+        seed: int) -> str:
+    rng_key = jrandom.key(seed)
+
+    model_version_hash = model.version_hash()
+    model_seed_hash = _rng_key_hash(rng_key)
+
+    model_root = infer_model_root(
+            model_name=model_name,
+            version_hash=model_version_hash,
+            seed_hash=model_seed_hash)
+    name = os.path.basename(model_root)
+    return name
+
+
 def registry_compute_model(
         model: ScenarioModel,
         model_name: str,
@@ -514,6 +531,7 @@ def registry_compute_model(
             model_name=model_name,
             version_hash=model_version_hash,
             seed_hash=model_seed_hash)
+    assert os.path.basename(model_root) == registry_basename(model, model_name, seed)
 
     os.makedirs(model_root, exist_ok=True)
     os.makedirs(os.path.join(model_root, '.locks'), exist_ok=True)

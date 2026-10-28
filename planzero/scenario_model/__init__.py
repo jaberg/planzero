@@ -15,7 +15,7 @@ from .computation import (
     Computation,
     compute_model,
 )
-from .registry import registry_compute_model
+from .registry import registry_basename, registry_compute_model
 from .scenario_model import (
     ModelElement,
     ScenarioModel,
@@ -53,6 +53,7 @@ __all__ = [
     "define_carry",
     "mcmc_dim",
     "ndarray_dim",
+    "registry_basename",
     "registry_compute_model",
     "years_dim",
     "years_key",

@@ -61,13 +61,13 @@ jobs:
 
       - name: Cache key for Static_Normals_2024_12_31
         id: cache_key_static_normals_2024_12_31
-        run: echo "version_hash=$(python -m planzero version_hash --model=Static_Normals_2024_12_31)" >> "$GITHUB_OUTPUT"
+        run: echo "registry_basename=$(python -m planzero registry_basename --model=Static_Normals_2024_12_31)" >> "$GITHUB_OUTPUT"
 
       - name: Restore inference cache for Static_Normals_2024_12_31
         uses: actions/cache/restore@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/model_Static_Normals_2024_12_31
-          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.version_hash }}
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
+          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
 
       - parallel:
         - name: Perform Static Normals inference
@@ -82,8 +82,8 @@ jobs:
       - name: Save inference cache for Static_Normals_2024_12_31
         uses: actions/cache/save@v6
         with:
-          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/model_Static_Normals_2024_12_31
-          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.version_hash }}
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
+          key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
 
       # TODO: cache this when it stabilizes
       - name: Infer cattle population and emission factors for scaling ablation study
