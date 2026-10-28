@@ -9,7 +9,7 @@ from jax.typing import ArrayLike
 
 from .base import GroupedPosterior, VarKey
 from .computation import Computation, run_mcmc
-from .scenario_model import ScenarioModel, hash_version_id
+from .scenario_model import ScenarioModel
 
 MODEL_REGISTRY_ROOT = os.environ.get('PLANZERO_MODEL_REGISTRY_ROOT')
 
@@ -133,14 +133,7 @@ def maybe_compute_mcmc_submodel(
         timeout:float,
         msg_prefix:str,
         ):
-    this_subsystem_version = 1.1
-    submodel_version_id = (
-            this_subsystem_version,
-            tuple(
-                [(elem_id, elem.version_id)
-                 for elem_id, elem in sorted(submodel.model_elements.items())]),
-                )
-    version_hash:str = hash_version_id(submodel_version_id)
+    version_hash = submodel.version_hash()
     lockpath = sentinel_path(model_name, 'mcmc', mcmc_group, version_hash)
     lock = filelock.FileLock(lockpath + ".lock", timeout=timeout)
     with lock:
