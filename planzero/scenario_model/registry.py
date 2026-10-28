@@ -334,6 +334,12 @@ def _compute_mcmc_submodel_reuse(
     Return (other_model_name, saved_sample_sites) if the required saved files
     exist within MODEL_REGISTRY_ROOT/model_{other_model_name}
     """
+
+    # TODO: a known issue is that the number of drawn samples is not
+    # considered properly. It should be possible to load a subset
+    # of a previously computed sample that is too large. It should
+    # be necessary to re-compute or continue a sampler that didn't draw
+    # enough samples.
     infer_key = (version_hash, seed_hash)
     avail = _get_available_inference(infer_key)
     if avail is None:
@@ -341,10 +347,13 @@ def _compute_mcmc_submodel_reuse(
     else:
         saved_sample_sites = avail.saved_sample_sites
         for var_key in saved_sample_sites:
+            assert model_seed_hash == avail.model_seed_hash
+            # model_version_hash will generally be different vs. avail
+            # model_name will generally be different vs. avail.model_name
             vkpath = var_key_path(
-                    model_name,
-                    version_hash=model_version_hash,
-                    seed_hash=model_seed_hash,
+                    model_name=avail.model_name,
+                    version_hash=avail.model_version_hash,
+                    seed_hash=avail.model_seed_hash,
                     var_key=GroupedPosterior(prior_var_key=var_key))
             try:
                 assert os.path.exists(vkpath)

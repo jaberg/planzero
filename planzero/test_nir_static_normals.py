@@ -19,7 +19,7 @@ variety_of_sectors = [
                 IPCC_Sector.SCS__Construction, # small low var
                 ]
 
-def test_smoke():
+def test_smoke_registry():
     model = StaticNormals_ScenarioModel(
             data_cutoff=datetime.date(year=2024, month=12, day=31),
             last_forecast_year=2050,
@@ -30,7 +30,7 @@ def test_smoke():
             model,
             'StaticNormals_loy2022_lfy2050',
             cache_posterior=True,
-            seed_or_key=1)
+            seed=42)
 
 
 def test_smoke_sector_ghg(
@@ -56,7 +56,6 @@ def test_smoke_sector_ghg(
     model.add_emissions_sums()
     model.add_element_prenir_2025_m04()
 
-    print(model.mcmc_submodels().keys())
     comp = compute_model(model, seed_or_key=1)
 
     if 0:

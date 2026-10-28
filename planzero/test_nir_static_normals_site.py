@@ -1,9 +1,12 @@
+import unittest
+
 import jax
 import numpy as np
 
 from .enums import GHG, IPCC_Sector
 from .nir2025 import near_zero_sector_ghgs
 from .nir_static_normals_site import Static_Normals_2024_12_31
+from .test_nir2025_site import SiteInferenceSmokeTester
 
 
 def test_weighted_divergence():
@@ -60,3 +63,9 @@ def test_predicted_emissions():
     low, high = site_model.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(
             site_model.comp)
     assert 600 < low < high < 1000
+
+
+
+class TestSiteInference(unittest.TestCase, SiteInferenceSmokeTester):
+    def setUp(self):
+        self.siteinf = Static_Normals_2024_12_31()
