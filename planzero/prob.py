@@ -71,6 +71,14 @@ class SiteInference:
     def comp(self) -> Computation:
         return self.registry_compute_model()
 
+    def version_hash(self) -> str:
+        """Return a hash string that uniquely identifies
+        this model, including all of its elements and their versions.
+
+        It is used to save & restore cached inferences on GitHub.
+        """
+        return self._scenario_model.version_hash()
+
     @classmethod
     def __init_subclass__(cls):
         super().__init_subclass__()

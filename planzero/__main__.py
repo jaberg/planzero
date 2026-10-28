@@ -83,12 +83,8 @@ def request_all_planzero_pages(args):
         print(status_code, '{:.2f}'.format(client.last_get_time), endpoint)
 
 
-def main_model_id(args):
-    return completed_prob_registry()[args.model].main_model_id()
-
-
-def main_inference_prep(args):
-    return completed_prob_registry()[args.model].main_inference_prep()
+def main_version_hash(args):
+    print(completed_prob_registry()[args.model].version_hash())
 
 
 def main_inference_work(args):
@@ -128,13 +124,9 @@ if __name__ == '__main__':
     parser_request_all_pages = subparsers.add_parser('request_all_pages')
     parser_request_all_pages.set_defaults(func=request_all_planzero_pages)
 
-    parser_model_id = subparsers.add_parser('model_id')
+    parser_model_id = subparsers.add_parser('version_hash')
     parser_model_id.add_argument('--model', help='model name')
-    parser_model_id.set_defaults(func=main_model_id)
-
-    parser_inference_prep = subparsers.add_parser('inference_prep')
-    parser_inference_prep.add_argument('--model', help='model name')
-    parser_inference_prep.set_defaults(func=main_inference_prep)
+    parser_model_id.set_defaults(func=main_version_hash)
 
     parser_inference_work = subparsers.add_parser('inference_work')
     parser_inference_work.add_argument('--model', help='model name')

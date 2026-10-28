@@ -31,3 +31,34 @@ def test_compute_model_ef_man_other():
             )
 
     comp = compute_model(sm, seed_or_key=1)
+
+
+def test_compute_model_ef_man_other_and_something_else():
+    sm = Scaling_ScenarioModel(
+            data_cutoff=datetime.date(year=2024, month=12, day=31),
+            sectors=[IPCC_Sector.Enteric_Fermentation,
+                     IPCC_Sector.SCS__Manufacturing__Other,
+                     IPCC_Sector.SCS__Public_Electricity_and_Heat],
+            num_warmup=90,
+            num_samples=11,
+            )
+
+    comp = compute_model(sm, seed_or_key=1)
+
+
+def test_reuse_static_normals_registry():
+    sm = Scaling_ScenarioModel(
+            data_cutoff=datetime.date(year=2024, month=12, day=31),
+            sectors=[IPCC_Sector.Enteric_Fermentation,
+                     IPCC_Sector.SCS__Manufacturing__Other,
+                     IPCC_Sector.SCS__Public_Electricity_and_Heat],
+            num_warmup=90,
+            num_samples=11,
+            )
+
+    raise NotImplementedError('fallback directories')
+    registry_compute_model(
+            sm,
+            'StaticNormals_loy2022_lfy2050',
+            cache_posterior=True,
+            seed_or_key=1)

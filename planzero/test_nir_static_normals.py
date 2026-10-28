@@ -73,15 +73,18 @@ def test_smoke_sector_ghg(
         print(sample[0, :, 0])
     #assert abs(jnp.max(sample[0, :, 0])) < 0.1
 
+
 def test_smoke_mining_n2o():
     test_smoke_sector_ghg(
             sector=IPCC_Sector.SCS__Mining,
             ghg=GHG.N2O)
 
+
 def test_smoke_pulp_paper_ch4():
     test_smoke_sector_ghg(
             sector=IPCC_Sector.SCS__Manufacturing__Pulp_and_Paper,
             ghg=GHG.CH4)
+
 
 def test_smoke_fishing_CO2():
     test_smoke_sector_ghg(

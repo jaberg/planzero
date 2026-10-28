@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import heapq
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, TypeAlias, TypeVar
 
 import jax.numpy as jnp
 from jax.typing import ArrayLike
@@ -23,9 +23,6 @@ from .base import (
     NdarrayType_w_Properties,
     NdarrayVariableMetadata,
     NextCarry,
-    Observation,
-    ObservationValid,
-    ObservationWeight,
     Subphase,
     ThisCarry,
     VarKey,
@@ -456,6 +453,8 @@ class ModelBuiltIns(ModelElement):
         ws.val.annual[scan_step_ii_key] = jnp.arange(0, ws.n_years)
 
 
+ModelElementParamType = TypeVar("ModelElementParamType", bound=ModelElement)
+
 
 class ScenarioModel:
     """
@@ -708,8 +707,8 @@ class ScenarioModel:
 
     def add_element(
             self,
-            element:ModelElement,
-            mcmc_group:str|None="default_mcmc_group") ->ModelElement:
+            element:ModelElementParamType,
+            mcmc_group:str|None="default_mcmc_group") -> ModelElementParamType:
         assert element.identifier
         assert element.identifier not in self.model_elements, element.identifier
         self.model_elements[element.identifier] = element
@@ -948,4 +947,15 @@ class ScenarioModel:
             rval[mcmc_group].add_element(elem)
         return rval
 
-
+    def version_hash(self) -> str:
+        # TODO: next time it's convenient,
+        # add (self.first_year, self.n_prior_years, self.num_warmup)
+        this_subsystem_version = 1.1
+        version_id = (
+                this_subsystem_version,
+                tuple(
+                    [(elem_id, elem.version_id)
+                     for elem_id, elem in sorted(self.model_elements.items())]),
+                    )
+        rval = hash_version_id(version_id)
+        return rval

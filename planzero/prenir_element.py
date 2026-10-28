@@ -17,6 +17,7 @@ from .scenario_model import (
     GeneralKey,
     ModelElement,
     Phase,
+    VersionID,
     Workspace,
     define,
     years_key,
@@ -107,6 +108,10 @@ class PreNIR_ModelElement(ModelElement):
     @property
     def identifier(self) -> str:
         return self.element_identifier(self.nir_year, self.months_ahead)
+
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
 
     @property
     def prediction_year(self) -> int:

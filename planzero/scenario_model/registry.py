@@ -91,20 +91,9 @@ def compute_mcmc_submodel(
         rng_key:ArrayLike,
         msg_prefix:str="",
         ):
-    this_subsystem_version = 1.1
-    submodel_version_id = (
-            this_subsystem_version,
-            tuple(
-                [(elem_id, elem.version_id)
-                 for elem_id, elem in sorted(submodel.model_elements.items())]),
-                )
-    version_hash:str = hash_version_id(submodel_version_id)
+    version_hash = submodel.version_hash()
     do_mcmc = (
         not sentinel_present(model_name, 'mcmc', mcmc_group, version_hash)
-        #or ('Fishing' in mcmc_group)
-        #or ('Black' in mcmc_group)
-        #or ('Ammonia' in mcmc_group)
-        #or ('Nitric' in mcmc_group)
         )
     if do_mcmc:
         comp = Computation(model=submodel, rng_key=jrandom.key(1))

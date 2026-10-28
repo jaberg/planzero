@@ -216,6 +216,10 @@ class Sector_Sum_Over_GHG(ModelElement):
         return f'Sector_Sum_Over_GHG_{self.sector}'
 
     @property
+    def version_id(self) -> VersionID:
+        return (1,)
+
+    @property
     def ktCO2e_ca(self) -> AnnualKey:
         return self.annual_key(f'ktCO2e_ca_{self.sector}_{self.use_dist_sum}')
 
@@ -281,6 +285,10 @@ class Sum_Over_Sectors(ModelElement):
     @property
     def identifier(self) -> str:
         return f'Sum_Over_Sectors_{"w" if self.include_LULUCF else "wo"}_LULUCF'
+
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
 
     def add_contributor(self, sector, key):
         assert sector not in self._sector_totals
