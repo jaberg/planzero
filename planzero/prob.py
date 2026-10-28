@@ -65,7 +65,7 @@ class SiteInference:
                 cache_posterior=compute_posterior,
                 run_compute_posterior=compute_posterior,
                 quiet=quiet,
-                seed_or_key=42)
+                seed=42)
 
     @property
     def comp(self) -> Computation:

@@ -34,13 +34,16 @@ from .base import (
 VersionID: TypeAlias = int | float | str | tuple["VersionID", ...]
 
 
-def hash_version_id(version_id: VersionID, n_chars=16) -> str:
+def hash_version_id(version_id: VersionID, n_chars=32) -> str:
     """Returns a stable, cross-session SHA-256 hex string."""
     # 1. Encode the string to bytes
     encoded_data = str(version_id).encode('utf-8')
+    assert n_chars % 2 == 0
 
     # 2. Generate and return the hexadecimal digest
-    return hashlib.shake_128(encoded_data).hexdigest(n_chars)
+    rval = hashlib.shake_128(encoded_data).hexdigest(n_chars // 2)
+    assert len(rval) == n_chars
+    return rval
 
 
 
@@ -950,9 +953,13 @@ class ScenarioModel:
     def version_hash(self) -> str:
         # TODO: next time it's convenient,
         # add (self.first_year, self.n_prior_years, self.num_warmup)
-        this_subsystem_version = 1.1
+        this_subsystem_version = 1.2
         version_id = (
                 this_subsystem_version,
+                self.first_year,
+                self.n_prior_years,
+                self.num_warmup,
+                self.thinning,
                 tuple(
                     [(elem_id, elem.version_id)
                      for elem_id, elem in sorted(self.model_elements.items())]),

@@ -45,6 +45,7 @@ class Static_Normals_2024_12_31(SiteModel):
     def prediction_scores_prenir_2025_m04(self):
         return self.scenario_model.prediction_scores_prenir_2025_m04(self.comp)
 
+    @property
     def show_prediction_quality(self):
         assert self.scenario_model.data_cutoff == datetime.date(year=2024, month=12, day=31)
         return True
@@ -54,7 +55,7 @@ class Static_Normals_2024_12_31(SiteModel):
                 'PreNIR_2025_m04',
                 'NetZero_2050',
                 ):
-            return f'/models/prob/{self.model_id}/#{challenge_name}'
+            return f'/models/prob/{self.scenario_model_registry_name}/#{challenge_name}'
         else:
             return ''
 
