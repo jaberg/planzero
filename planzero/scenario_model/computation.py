@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 import jax.random as jrandom
+import numpy as np
 import numpyro
 from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
@@ -376,8 +377,19 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
 
         elif comp.phase == Phase.Posterior:
             posterior_shape = build_annual_posterior_shape(comp, prior_var_key, ())
-            raise NotImplementedError(
-                    prior_var_key, posterior_shape, obs_shape)
+            if len(obs_shape) != len(posterior_shape):
+                raise NotImplementedError(
+                        prior_var_key, posterior_shape, obs_shape)
+            assert len(posterior_shape)
+            assert tuple(posterior_shape[:-1]) == obs_shape[:-1], (
+                        prior_var_key, posterior_shape, obs_shape)
+            assert (
+                    posterior_shape[-1] == obs_shape[-1]
+                    or obs_shape[-1] == 1
+                    ), (
+                        prior_var_key, posterior_shape, obs_shape)
+
+            return False # don't pad
         else:
             raise NotImplementedError()
     else:
@@ -960,7 +972,7 @@ class Computation:
         return self._ndarray_d[var_key]
 
     def set_ndarray(self, item:VarKey, value:jnp.ndarray):
-        if not isinstance(value, jnp.ndarray):
+        if not isinstance(value, (jnp.ndarray, np.ndarray)):
             raise TypeError(item, value)
         if isinstance(item, ElementGeneralKey):
             pad_right = storage_nd_check_ElementGeneralKey(self, item, value)

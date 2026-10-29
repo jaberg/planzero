@@ -88,16 +88,23 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
         self.data_cutoff = data_cutoff
         self._sectors = sectors
 
-        added_enteric_fermentation_and_SCS_Man_Other = False
-
         for sector in sectors:
-            if (sector in (IPCC_Sector.Enteric_Fermentation,
-                               IPCC_Sector.SCS__Manufacturing__Other)):
-                if not added_enteric_fermentation_and_SCS_Man_Other:
-                    _add_enteric_fermentation_and_other_product_mfg(
-                            self,
-                            mcmc_group='enteric_and_other_product_mfg')
-                    added_enteric_fermentation_and_SCS_Man_Other = True
+            if sector == IPCC_Sector.Enteric_Fermentation:
+                _add_enteric_fermentation_and_other_product_mfg(
+                        self,
+                        mcmc_group='enteric_and_other_product_mfg')
+            elif sector == IPCC_Sector.SCS__Manufacturing__Other:
+                for ghg in GHG:
+                    if ghg == GHG.CO2:
+                        # added by _add_enteric_fermentation_and_other_product_mfg
+                        continue
+                    if (sector, ghg) not in near_zero_sector_ghgs():
+                        snorm_elem = StaticNormals_ModelElement(
+                                sector=sector, ghg=ghg)
+                        # match nir_static_normals_model.py
+                        mcmc_group = f'{sector.value}_{ghg.value}'
+                        self.add_element(snorm_elem,
+                                         mcmc_group=mcmc_group)
             else:
                 for ghg in GHG:
                     if (sector, ghg) not in near_zero_sector_ghgs():

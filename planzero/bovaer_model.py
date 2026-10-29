@@ -476,8 +476,20 @@ class Scale_Bovaer(ModelElement):
     # should be ablated
     is_strategy:bool = True
 
-    def __init__(self, def_bovaer_budget:AnnualKey):
+    def __init__(self, def_bovaer_budget:AnnualKey, fixed_year:int|None=2030):
         self._bovaer_budget = def_bovaer_budget
+        self.fixed_year = 2030
+
+    @staticmethod
+    def element_identifier(fixed_year:int|None) -> str:
+        if fixed_year is None:
+            return 'Scale_Bovaer'
+        else:
+            return f'Scale_Bovaer_{fixed_year}'
+
+    @property
+    def identifier(self) -> str:
+        return self.element_identifier(self.fixed_year)
 
     @property
     def short_description(self) -> str:
@@ -536,7 +548,10 @@ class Scale_Bovaer(ModelElement):
     @define(bovaer_program_launch, prior_shape=[])
     @define_annual(bovaer_budget, annual_shape=[])
     def model_element_prepare(self, ws:Workspace):
-        ws.dist.general[self.bovaer_program_launch] = dists.Uniform(2027, 2035)
+        if self.fixed_year is not None:
+            ws.val.general[self.bovaer_program_launch] = jnp.array(self.fixed_year)[ws.mcmc_broadcast_index]
+        else:
+            ws.dist.general[self.bovaer_program_launch] = dists.Uniform(2027, 2035)
         # (years, optionally MCMC dimension)
         ws.val.annual[self.bovaer_budget] = jnp.where(
                 ws.val.annual[years_key] < ws.val.general[self.bovaer_program_launch],

@@ -26,6 +26,7 @@ import warnings
 from dataclasses import dataclass
 
 import filelock
+import jax.numpy as jnp
 import jax.random as jrandom
 import numpy as np
 from jax.typing import ArrayLike
@@ -279,7 +280,12 @@ def save_var(model_name: str,
     fp.flush()
 
 
-def load_var(model_name: str, model_version_hash:str, model_seed_hash:str, var_key: VarKey):
+def load_var(
+        model_name: str,
+        model_version_hash:str,
+        model_seed_hash:str,
+        var_key: VarKey,
+        ) -> jnp.ndarray:
     path = var_key_path(
             model_name=model_name,
             version_hash=model_version_hash,
