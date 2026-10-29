@@ -353,6 +353,22 @@ class DistAnnual:
         self.ws = ws
         self.attr = attr
 
+    def __contains__(self, item:str|ElementAnnualKey) -> bool:
+        if isinstance(item, str):
+            var_key = self.ws._annual_key(item)
+        else:
+            var_key = item
+        del item
+
+        if self.attr == 'dist':
+            # handles syntax: ws.obs.annual[item] = dist
+            return var_key in self.ws.comp.dist_d
+        elif self.attr == 'obs_dist':
+            # handles syntax: ws.obs_dist.annual[item]
+            return Observation(prior_var_key=var_key) in self.ws.comp.dist_d
+        else:
+            raise NotImplementedError(self.attr)
+
     def __getitem__(self, item:str|ElementAnnualKey) -> Distribution:
         if isinstance(item, str):
             var_key = self.ws._annual_key(item)

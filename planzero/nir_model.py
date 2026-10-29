@@ -168,11 +168,21 @@ class Sector_GHG_Observation(ModelElement):
 
             if not keys:
                 raise NotImplementedError()
-            elif all(isinstance(ws.dist.annual[key], dists.Normal) for key in keys):
-                loc = custom_sum(ws.dist.annual[key].loc for key in keys)
-                ssq = custom_sum(ws.dist.annual[key].scale ** 2 for key in keys)
-            else:
-                raise NotImplementedError()
+            loc = ssq = None
+            for key in keys:
+                if key in ws.dist.annual:
+                    dist_key = ws.dist.annual[key]
+                    if isinstance(dist_key, dists.Normal):
+                        if loc is None:
+                            loc = dist_key.loc
+                            ssq = dist_key.scale ** 2
+                        else:
+                            loc += dist_key.loc
+                            ssq += dist_key.scale ** 2
+                    else:
+                        raise NotImplementedError(key, dist_key)
+                else:
+                    raise NotImplementedError()
 
             loc_sum += loc
             ssq_sum += ssq

@@ -4,7 +4,9 @@ import hashlib
 import heapq
 from typing import Any, Literal, TypeAlias, TypeVar
 
+import jax.core
 import jax.numpy as jnp
+import numpy as np
 from jax.typing import ArrayLike
 from pydantic import BaseModel, ConfigDict
 
@@ -435,7 +437,12 @@ def _check_default_consistency(
                 f' shapes {jnp.shape(existing)} and {jnp.shape(new)}')
     existing_b = jnp.broadcast_to(existing, shape)
     new_b = jnp.broadcast_to(new, shape)
-    if not bool(jnp.array_equal(existing_b, new_b, equal_nan=True)):
+    def has_tracer(x):
+        return any(isinstance(leaf, jax.core.Tracer)
+                   for leaf in jax.tree_util.tree_leaves(x))
+    if (not has_tracer(new_b)
+        and not has_tracer(existing_b)
+        and not bool(np.array_equal(existing_b, new_b, equal_nan=True))):
         raise DefinitionError(
                 f'defaults for {var_key} are broadcast-compatible but not'
                 f' numerically equal: {existing} and {new}')

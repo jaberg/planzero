@@ -432,6 +432,8 @@ def set_dist_ElementGeneralKey_posterior_obs_valid(
         obs_val:jnp.ndarray,
         obs_valid:jnp.ndarray,
         ):
+    if not isinstance(dist, Distribution):
+        raise TypeError(var_key, dist)
     dist_shape = dist.shape()
     prior_shape = tuple(build_general_prior_shape(comp, var_key, dist_shape))
     if dist_shape == prior_shape:
@@ -808,11 +810,7 @@ class ComputationDistD:
         self.comp = comp
 
     def __contains__(self, item:VarKey):
-        try:
-            self.comp.get_dist(item)
-            return True
-        except KeyError:
-            return False
+        return item in self.comp._dist_d
 
     def __getitem__(self, item:VarKey) -> Distribution:
         return self.comp.get_dist(item)
@@ -962,6 +960,8 @@ class Computation:
         return self._ndarray_d[var_key]
 
     def set_ndarray(self, item:VarKey, value:jnp.ndarray):
+        if not isinstance(value, jnp.ndarray):
+            raise TypeError(item, value)
         if isinstance(item, ElementGeneralKey):
             pad_right = storage_nd_check_ElementGeneralKey(self, item, value)
 

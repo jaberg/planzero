@@ -170,8 +170,8 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
     @access_annual(annual_headcounts)
     @access_annual(annual_bovaer_fraction)
     @define('bovaer_production_emission_factor', prior_shape=[])
-    @define_annual(ktCO2e_ca_key, annual_shape=[], posterior_only=True)
-    @define_annual(ktCO2e_pt_keys, annual_shape=[], posterior_only=True)
+    @define_annual(ktCO2e_ca_key, annual_shape=[])
+    @define_annual(ktCO2e_pt_keys, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         # in units of kg CH4 / head / year
         ws.dist.general['bovaer_production_emission_factor'] = dists.Uniform(20, 50)
@@ -183,21 +183,25 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
         heads_ca = heads_pt.sum(axis=1)
 
         kt_per_kg = 1 / 1_000_000
+        pt_scale = 10
 
-        if ws.phase == Phase.Posterior:
-            ws.val.annual[self.ktCO2e_ca_key] = (
-                    heads_ca
+        loc = (
+                heads_ca
+                   * ws.val.annual[self.annual_bovaer_fraction]
+                   * (ws.val.general['bovaer_production_emission_factor']
+                      * kt_per_kg
+                      * float(GWP_100[GHG.CH4].magnitude)))
+        ws.dist.annual[self.ktCO2e_ca_key] = dists.Normal(
+                loc, scale=jnp.sqrt(13 * (pt_scale ** 2)))
+        for ii, (_, pt_key) in enumerate(self.ktCO2e_pt_keys.items()):
+            loc = (
+                    heads_pt[:, ii]
                        * ws.val.annual[self.annual_bovaer_fraction]
                        * (ws.val.general['bovaer_production_emission_factor']
                           * kt_per_kg
                           * float(GWP_100[GHG.CH4].magnitude)))
-            for ii, (_, pt_key) in enumerate(self.ktCO2e_pt_keys.items()):
-                ws.val.annual[pt_key] = (
-                        heads_pt[:, ii]
-                           * ws.val.annual[self.annual_bovaer_fraction]
-                           * (ws.val.general['bovaer_production_emission_factor']
-                              * kt_per_kg
-                              * float(GWP_100[GHG.CH4].magnitude)))
+            ws.dist.annual[pt_key] = dists.Normal(loc, scale=pt_scale)
+
     @property
     def ktCO2e_emissions_ca(
             self,
