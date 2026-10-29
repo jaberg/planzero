@@ -498,6 +498,7 @@ class ScenarioModel:
                  num_warmup:int,
                  num_samples:int,
                  thinning:int=1,
+                 add_builtins:bool=True,
                  ):
         self.model_elements = {}
         self.mcmc_group_by_elemid = {}
@@ -511,7 +512,8 @@ class ScenarioModel:
                 n_prior_years=n_prior_years,
                 n_posterior_years=n_posterior_years,
                 )
-        self.add_element(ModelBuiltIns())
+        if add_builtins:
+            self.add_element(ModelBuiltIns())
 
     def _check_new_var_key(
             self,

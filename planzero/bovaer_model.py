@@ -18,6 +18,7 @@ from .scenario_model import (
     GeneralKey,
     ModelElement,
     Phase,
+    VersionID,
     Workspace,
     access_annual,
     access_this_carry,
@@ -71,6 +72,10 @@ class Bovaer_Adoption_Limit(ModelElement):
         {low}-{high}% of farmers will switch to Bovaer in any given year.
         <p>
         """
+
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
 
     @property
     def bovine_fraction_on_bovaer(self) -> CarryKey:
@@ -157,6 +162,10 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
     @property
     def annual_bovaer_fraction(self) -> AnnualKey:
         return self._annual_bovaer_fraction
+
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
     
     @access_annual(annual_headcounts)
     @access_annual(annual_bovaer_fraction)
@@ -263,6 +272,9 @@ class Bovaer_Monitoring(ModelElement):
     def annual_bovaer_fraction(self) -> AnnualKey:
         return self._annual_bovaer_fraction
     
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
 
     @access_annual(baseline_subsidy_ca_key, annual_shape=[], default=0)
     @access_annual(annual_headcounts_key, annual_shape=[])
@@ -339,11 +351,15 @@ class Bovaer_Farm_Subsidy(ModelElement):
     def max_fraction_on_bovaer(self) -> CarryKey:
         return self._max_fraction
 
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
+
     @define_carry(bovine_fraction_on_bovaer, shape=[])
     def model_element_prepare(self, ws:Workspace):
         ws.val.initial_carry[self.bovine_fraction_on_bovaer] = jnp.zeros(())
 
-    @access_annual(bovaer_budget)
+    @access_annual(bovaer_budget, default=0)
     @define_annual(annual_bovaer_fraction, annual_shape=[])
     def model_element_annual_step(self, ws:Workspace):
         ws.val.next_carry[self.bovine_fraction_on_bovaer] = jnp.where(
@@ -409,6 +425,10 @@ class Bovaer_Purchase_Cost(ModelElement):
     def annual_headcounts(self) -> AnnualKey:
         return self._annual_headcounts_key
 
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
+
     @access_annual(annual_bovaer_fraction)
     @access_annual(annual_headcounts)
     @define_annual('bovaer_cost_pt', annual_shape=[13])
@@ -447,6 +467,10 @@ class Scale_Bovaer(ModelElement):
     """
     # TODO: add a see-also type mechanism, to look at the effects
     # on the various barriers affected by this strategy.
+
+    # used by SiteInference constructor to identify strategies that
+    # should be ablated
+    is_strategy:bool = True
 
     def __init__(self, def_bovaer_budget:AnnualKey):
         self._bovaer_budget = def_bovaer_budget
@@ -500,6 +524,10 @@ class Scale_Bovaer(ModelElement):
     @property
     def bovaer_program_launch(self) -> GeneralKey:
         return self.general_key('bovaer_program_launch')
+
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
 
     @define(bovaer_program_launch, prior_shape=[])
     @define_annual(bovaer_budget, annual_shape=[])

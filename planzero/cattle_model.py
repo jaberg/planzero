@@ -14,7 +14,6 @@ from .scenario_model import (
     AnnualKey,
     CarryKey,
     GeneralKey,
-    Phase,
     Workspace,
     access_annual,
     define,
@@ -82,13 +81,9 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
             Livestock.Calves: guess,
         }
 
-
     @property
     def version_id(self):
-        if self._fit_to_data:
-            return (1, self._fit_to_data)
-        else:
-            return (1, self._fit_to_data)
+        return (1,)
 
     @property
     def static_emission_factors(self) -> GeneralKey:

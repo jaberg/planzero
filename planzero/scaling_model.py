@@ -91,13 +91,13 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
         added_enteric_fermentation_and_SCS_Man_Other = False
 
         for sector in sectors:
-            if (not added_enteric_fermentation_and_SCS_Man_Other
-                and sector in (IPCC_Sector.Enteric_Fermentation,
+            if (sector in (IPCC_Sector.Enteric_Fermentation,
                                IPCC_Sector.SCS__Manufacturing__Other)):
-                _add_enteric_fermentation_and_other_product_mfg(
-                        self,
-                        mcmc_group='enteric_and_other_product_mfg')
-                added_enteric_fermentation_and_SCS_Man_Other = True
+                if not added_enteric_fermentation_and_SCS_Man_Other:
+                    _add_enteric_fermentation_and_other_product_mfg(
+                            self,
+                            mcmc_group='enteric_and_other_product_mfg')
+                    added_enteric_fermentation_and_SCS_Man_Other = True
             else:
                 for ghg in GHG:
                     if (sector, ghg) not in near_zero_sector_ghgs():

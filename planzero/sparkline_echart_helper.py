@@ -326,7 +326,7 @@ class SparklineEChartHelperBase(BaseBase):
 
     n_non_lulucf_rows = 10
     n_total_rows = n_non_lulucf_rows + 2
-    cells_include_actuals = True
+    cells_include_actuals:bool
     nir2025_quantiles: dict[IPCC_Sector|PseudoSector, dict[float, np.ndarray]]
 
     @property
@@ -338,7 +338,8 @@ class SparklineEChartHelperBase(BaseBase):
         else:
             raise NotImplementedError(self.v_unit)
 
-    def __init__(self, div_id, v_unit, model_name):
+    def __init__(self, div_id, v_unit, model_name,
+                 cells_include_actuals:bool=True):
         super().__init__(div_id=div_id, model_name=model_name)
         self.data_by_sector = {}
         self.data_by_sector = self.stats_d
@@ -347,6 +348,7 @@ class SparklineEChartHelperBase(BaseBase):
         self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
 
         self.nir2025_quantiles = {}
+        self.cells_include_actuals = cells_include_actuals
         if self.cells_include_actuals:
             from .nir2025_site import NIR2025
             site_model = NIR2025()
@@ -1071,4 +1073,73 @@ def sectoral_emissions_by_region_echart_from_sample(
 
     helper.order_regions()
     helper.add_regional_cells()
+    return helper.make_echart()
+
+
+def national_emissions_impact_echart(
+        with_strategy_ktCO2e_sample: dict[IPCC_Sector|PseudoSector, jnp.ndarray],
+        without_strategy_ktCO2e_sample: dict[IPCC_Sector|PseudoSector, jnp.ndarray],
+        year_0: int,
+        n_years: int,
+        n_samples: int,
+        div_id:str,
+        v_unit:str,
+        model_name:str,
+        ) -> UncertainSparklineMatrixEChart:
+
+    helper = SparklineEChartHelperBase(
+            div_id=div_id,
+            v_unit=v_unit,
+            model_name=model_name,
+            cells_include_actuals=False)
+    helper.years = np.arange(year_0, n_years + year_0)
+
+    nonzero_deltas = {}
+    eps = 1
+    for sector, sample in with_strategy_ktCO2e_sample.items():
+        delta = (sample - without_strategy_ktCO2e_sample[sector])
+        if abs(delta).max() > eps:
+            nonzero_deltas[sector] = delta
+
+    assert nonzero_deltas
+
+    helper.n_non_lulucf_rows = 0
+    while helper.n_cols * helper.n_non_lulucf_rows < len(nonzero_deltas):
+        helper.n_non_lulucf_rows += 1
+    helper.n_total_rows = helper.n_non_lulucf_rows
+
+    for sector in IPCC_Sector:
+        if sector in nonzero_deltas:
+            helper.compute_stats_and_add_data_for_sector(
+                sector,
+                nonzero_deltas[sector].T * helper.v_unit_scale)
+
+    estimates_with_lulucf = nonzero_deltas[PseudoSector.Total_with_LULUCF]
+    estimates_without_lulucf = nonzero_deltas[PseudoSector.Total_without_LULUCF]
+
+    helper.add_data_for_LULUCF_totals(
+        estimates_with_lulucf.T * helper.v_unit_scale,
+        estimates_with_lulucf.mean(axis=1) * helper.v_unit_scale,
+        estimates_without_lulucf.T * helper.v_unit_scale,
+        estimates_without_lulucf.mean(axis=1) * helper.v_unit_scale,
+        )
+
+    # begin logic in place of helper.order_sectors()
+    non_lulucf_scores = [
+        (-helper.data_by_sector[sector]['ubound'], sector)
+        for sector in nonzero_deltas
+        if sector not in LULUCF_Sectors]
+    if any(sector in LULUCF_Sectors for sector in nonzero_deltas):
+        raise NotImplementedError()
+    non_lulucf_scores.sort()
+    helper.sorted_non_lulucf = [sector for _, sector in non_lulucf_scores]
+    helper.sorted_lulucf = []
+    # end logic in place of helper.order_sectors()
+
+    helper.add_total_cells(ymin_without_lulucf=None)
+    helper.add_non_lulucf_cells()
+
+    # there won't be any because `n_non_lulucf_rows = 0` above
+    # helper.add_lulucf_cells()
+
     return helper.make_echart()

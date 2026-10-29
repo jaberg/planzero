@@ -87,10 +87,8 @@ def main_registry_basename(args):
     print(completed_prob_registry()[args.model].registry_basename())
 
 
-def main_inference_work(args):
-    completed_prob_registry()[args.model].registry_compute_model(
-            quiet=False,
-            compute_posterior=False)
+def main_registry_computation(args):
+    completed_prob_registry()[args.model].registry_computation()
 
 
 def main_generate_assets(args):
@@ -124,13 +122,13 @@ if __name__ == '__main__':
     parser_request_all_pages = subparsers.add_parser('request_all_pages')
     parser_request_all_pages.set_defaults(func=request_all_planzero_pages)
 
-    parser_model_id = subparsers.add_parser('registry_basename')
-    parser_model_id.add_argument('--model', help='model name')
-    parser_model_id.set_defaults(func=main_registry_basename)
+    parser_registry_basename = subparsers.add_parser('registry_basename')
+    parser_registry_basename.add_argument('--model', help='model name')
+    parser_registry_basename.set_defaults(func=main_registry_basename)
 
-    parser_inference_work = subparsers.add_parser('inference_work')
-    parser_inference_work.add_argument('--model', help='model name')
-    parser_inference_work.set_defaults(func=main_inference_work)
+    parser_registry_computation = subparsers.add_parser('registry_computation')
+    parser_registry_computation.add_argument('--model', help='model name')
+    parser_registry_computation.set_defaults(func=main_registry_computation)
 
     parser_generate_assets = subparsers.add_parser('generate_assets')
     parser_generate_assets.add_argument('--post-cls', help='post class name')

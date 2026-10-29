@@ -258,71 +258,6 @@ class RegionalSparklineEChartHelper(RegionalSparklineEChartHelperBase):
             estimates_ca=estimates_ca)
 
 
-class EmissionImpactChartHelper(SparklineEChartHelperBase):
-    """
-    Show the emission impact of a strategy, in the context of an ablation study.
-    """
-
-    cells_include_actuals = False
-
-    def load_data(self, aer:AnnualEmissionResults):
-        self.years = aer.years
-
-        n_samples = aer.n_samples
-
-        mean_with_lulucf = 0
-        estimates_with_lulucf = np.zeros(
-            (len(self.years), n_samples,))
-
-        mean_without_lulucf = 0
-        estimates_without_lulucf = np.zeros(
-            (len(self.years), n_samples,))
-
-        self.sectors = aer_sectors(aer)
-        assert self.sectors
-        # TODO: verify that the set of sectors calculated here
-        # matches the set of sectors that was declared symbolically
-        #affected_sectors = baseline.affected_sectors_by_strategy[strategy_name]
-
-        self.n_non_lulucf_rows = 0
-        while self.n_cols * self.n_non_lulucf_rows < len(self.sectors):
-            self.n_non_lulucf_rows += 1
-        self.n_total_rows = self.n_non_lulucf_rows
-
-        for sector in self.sectors:
-            if sector in LULUCF_Sectors:
-                raise NotImplementedError()
-            estimated_sector_total_ca = (
-                    sum(aer[sector].values())
-                    * self.v_unit_scale)
-            mean_sector_total = self.compute_stats_and_add_data_for_sector(
-                sector,
-                estimated_sector_total_ca.T)
-
-            if sector not in LULUCF_Sectors:
-                estimates_without_lulucf += estimated_sector_total_ca
-                mean_without_lulucf += mean_sector_total
-            estimates_with_lulucf += estimated_sector_total_ca
-            mean_with_lulucf += mean_sector_total
-
-        self.add_data_for_LULUCF_totals(
-            estimates_with_lulucf.T,
-            mean_with_lulucf,
-            estimates_without_lulucf.T,
-            mean_without_lulucf)
-
-    def order_sectors(self):
-
-        # order sectors by decreasing last-year uncertainty
-        non_lulucf_scores = [
-            (-self.data_by_sector[sector]['ubound'], sector)
-            for sector in self.sectors
-            if sector not in LULUCF_Sectors]
-        non_lulucf_scores.sort()
-        self.sorted_non_lulucf = [sector for _, sector in non_lulucf_scores]
-        self.sorted_lulucf = []
-
-
 class ScalingSiteInference(prob.SiteInference):
     """Maximal deployment of available, modelled products,
     based on a baseline assumption of static emissions amounts."""
@@ -338,127 +273,35 @@ class ScalingSiteInference(prob.SiteInference):
         #         f'-{data_cutoff.day}'
         #         '_lfy-2050')
         registry_name = 'Scaling_2024_12_31'
-        registry_fallbacks = ['Static_Normals_2024_12_31']
         scenario_model = Scaling_ScenarioModel(
                 data_cutoff=data_cutoff,
                 last_forecast_year=2050,
+                num_warmup=1500,
+                num_samples=500,
                 )
         super().__init__(
                 scenario_model_registry_name=registry_name,
-                scenario_model_registry_fallbacks=registry_fallbacks,
-                scenario_model=scenario_model)
-
-    @property
-    def ablation_study_id(self) -> str|None:
-        return 'ScalingStudy'
-
-    @property
-    def name(self) -> str:
-        if self.strategy_id is None:
-            return 'ScalingStudy_All_Strategies'
-        else:
-            return f'ScalingStudy_minus_{self.strategy_id}'
+                scenario_model=scenario_model,
+                )
 
     @property
     def pretty_name(self) -> str:
-        if self.strategy_id is None:
-            return 'Scaling'
-        else:
-            return f'Scaling (minus {self.strategy_id})'
+        return 'Scaling'
 
     def one_line_description(self):
         return "Hypothetical scaling of emission-reduction measures within an otherwise non-time-varying economy"
 
     @property
-    def identifier(self) -> str:
-        return scaling_model_id(self.data_cutoff)
-
-    @property
     def show_on_models_page(self) -> bool:
-        return (self.strategy_id is None)
+        return True
 
-    def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
-        helper = SparklineEChartHelper(
-                div_id,
-                v_unit,
-                model_name=self.name)
-        helper.load_data(
-                batch_rollout_barriers_results=self.batch_rollout_barriers())
-        helper.order_sectors()
-        helper.add_total_cells()
-        helper.add_non_lulucf_cells()
-        helper.add_lulucf_cells()
-        rval = helper.make_echart()
-        return rval
-
-    def sector_echart(self, sector, ghg, v_unit):
-        helper = RegionalSparklineEChartHelper(
-            sector=sector,
-            ghg=ghg,
-            div_id=f'regional_sparkline_echart_{ghg.value if ghg else "all"}',
-            v_unit=v_unit)
-        helper.load_data(
-                batch_rollout_barriers_results=self.batch_rollout_barriers())
-        helper.order_regions()
-        helper.add_regional_cells()
-        return helper.make_echart()
-
-    def GHGs_for_sector(self, sector):
-        static_normals_model_id = model_id_from_data_cutoff(
-                datetime.date(year=2024, month=12, day=31))
-        normals = normals_by_sector_ghg(static_normals_model_id)
-        rval = []
-        for ghg in GHG:
-            if (sector, ghg) in normals:
-                continue
-            rval.append(ghg)
-        return rval
-
-    def impact_chart(self):
-        return self.ablation_study.impact_chart(self.name)
-
-    @property
     def affected_sectors_by_strategy(self) -> dict:
+        assert 'Scale_Bovaer' in self._strategies
         baseline_rval = {
                 'Scale_Bovaer': {IPCC_Sector.Enteric_Fermentation,
                                  IPCC_Sector.Other_Product_Manufacture_and_Use,},
                 }
-        if self.strategy_id is not None:
-            del baseline_rval[self.strategy_id]
         return baseline_rval
-
-    def main_model_id(self) -> int:
-        # if model corresponds to a model in model_db, print model_id to
-        # stdout and return 0
-        print(self.identifier)
-        return 0
-
-    def main_inference_work(self):
-        # called via e.g. __main__.py
-        # post-condition: all inferences required for the model have been
-        # computed and cached in local file system
-        #
-        # The required files may be cached, workers should check for completed
-        # files and assume they are correct if they are present.
-        cached_inference()
-
-    def batch_rollout_barriers(self):
-        if not hasattr(self, '_rollout'):
-            barriers = dict(self.ablation_study.barriers)
-            strategies = {
-                    name: obj
-                    for name, obj in self.ablation_study.strategies.items()
-                    if name != self.strategy_id}
-            if self.strategy_id is not None:
-                assert len(strategies) == len(self.ablation_study.strategies) - 1
-            results = batch_rollout_barriers(
-                    barriers=barriers,
-                    strategies=strategies)
-            nbytes = results.total_nbytes()
-            if nbytes > self.rollout_nbytes_budget:
-                warnings.warn(f'rollout exceeded bytes budget {nbytes} > {self.rollout_nbytes_budget}')
-            self._rollout = results
-        return self._rollout
 
     @property
     def posts_developing_this_page(self) -> list[str]:
@@ -468,79 +311,14 @@ class ScalingSiteInference(prob.SiteInference):
                 'ModellingBovaer',
                 ]
 
-    def constants(self, elem_name) -> dict[str, jnp.ndarray | np.ndarray]:
-        results = self.batch_rollout_barriers()
-        var_names = results['constants'].outputs(elem_name)
-        rval = {}
-        for var_name in var_names:
-            if isinstance(var_name, str):
-                rval[var_name] = results['constants'][var_name]
-            elif isinstance(var_name, tuple):
-                rval[" - ".join(var_name)] = results['constants'][var_name]
-            else:
-                raise NotImplementedError(var_name)
-        return rval
-
-    def full_time_series(self, elem_name):
-        results = self.batch_rollout_barriers()
-        var_names = results['ys_ic'].outputs(elem_name)
-        rval = {var_name: results['ys'][var_name]
-                for var_name in var_names}
-        var_names_x = results['xs_ic'].outputs(elem_name)
-        rval.update(
-                {var_name: results['xs'][var_name]
-                 for var_name in var_names_x})
-        return rval
-
-    def running_time_series(self, elem_name, include_rngs=False):
-        results = self.batch_rollout_barriers()
-        var_names = results['nc_ic'].outputs(elem_name)
-        rval = {var_name: results['final_carry'][var_name]
-                for var_name in var_names
-                if include_rngs or 'key' not in str(results['final_carry'][var_name].dtype)
-                }
-        return rval
-
-    @property
-    def modelled_years(self):
-        results = self.batch_rollout_barriers()
-        return results['years']
-
-    @property
-    def predicted_emissions_2050_MtCO2e_bounds_ul(self) -> tuple[float, float]:
-        aer = self.compute_annual_emission_results()
-        low, high = total_prediction_CI(aer, year=2050)
-        return float(low) / 1000, float(high) / 1000
-
-    def compute_annual_emission_results(self) -> AnnualEmissionResults:
-        return compute_annual_emission_results(
-                strategies=self.strategies,
-                barriers=self.barriers)
-
-    def prediction_scores_prenir_2025_m04(self):
-        assert self.data_cutoff <= datetime.date(year=2024, month=12, day=31)
-        prenir = PreNIR_2025_m04()
-        results = self.batch_rollout_barriers()
-        return prenir.prediction_scores_from_batch_rollout(results)
-
-    def challenge_netzero_2050(self):
-        results = self.batch_rollout_barriers()
-        challenge = NetZero_2050()
-        return challenge.prediction_scores_from_batch_rollout(results)
-
     def challenge_result_url(self, challenge_name) -> str:
         if challenge_name in (
                 'PreNIR_2025_m04',
                 'NetZero_2050',
                 ):
-            return f'/models/prob/{self.name}/#{challenge_name}'
+            return f'/models/prob/{self.url_name}/#{challenge_name}'
         else:
             return ''
-
-    def show_prediction_quality(self):
-        assert self.data_cutoff == datetime.date(year=2024, month=12, day=31)
-        return True
-
 
 
 class ScalingStudy(AblationStudy):

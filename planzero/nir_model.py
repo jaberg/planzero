@@ -387,7 +387,11 @@ class NIR_ScenarioModel(ScenarioModel):
                     else:
                         nir_mcmc_group = self.mcmc_group_by_elemid[nir_elem.identifier]
                         if nir_mcmc_group != mcmc_group:
-                            raise NotImplementedError()
+                            raise NotImplementedError(
+                                    elem_id,
+                                    mcmc_group,
+                                    nir_mcmc_group
+                                    )
 
                     if (sector, ghg) not in self.sector_ghg_observations:
                         sgo = self._add_Sector_GHG_Observation(sector, ghg, mcmc_group, fit_to_data, nir_elem)
