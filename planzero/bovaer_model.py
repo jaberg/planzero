@@ -4,7 +4,7 @@ import jinja2
 import pint
 from numpyro import distributions as dists
 
-from .enums import GHG, PT, IPCC_Sector
+from .enums import GHG, PT, SPE, IPCC_Sector
 from .ghgvalues import GWP_100
 from .html import coderef_url
 from .nir_model import NIR_ModelElement
@@ -225,7 +225,7 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
 # Monitoring might cost 10-20 million / year?
 
 
-class Bovaer_Monitoring(ModelElement):
+class Bovaer_Monitoring(NIR_ModelElement):
 
     @property
     def short_description(self) -> str:
@@ -280,12 +280,28 @@ class Bovaer_Monitoring(ModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
+    @property
+    def admin_ca(self) -> AnnualKey:
+        return self.annual_key('admin_ca')
+
+    @property
+    def admin_ca_tax(self) -> AnnualKey:
+        return self.annual_key('admin_ca_tax')
+
+    @property
+    def onsite_ca(self) -> AnnualKey:
+        return self.annual_key('onsite_ca')
+
+    @property
+    def onsite_ca_tax(self) -> AnnualKey:
+        return self.annual_key('onsite_ca_tax')
+
     @access_annual(baseline_subsidy_ca_key, annual_shape=[], default=0)
     @access_annual(annual_headcounts_key, annual_shape=[])
-    @define_annual('bovaer_monitoring_admin_ca', annual_shape=[], posterior_only=True)
-    @define_annual('bovaer_monitoring_onsite_ca', annual_shape=[], posterior_only=True)
-    @define_annual('bovaer_monitoring_admin_ca_tax', annual_shape=[], posterior_only=True)
-    @define_annual('bovaer_monitoring_onsite_ca_tax', annual_shape=[], posterior_only=True)
+    @define_annual(admin_ca, annual_shape=[], posterior_only=True)
+    @define_annual(onsite_ca, annual_shape=[], posterior_only=True)
+    @define_annual(admin_ca_tax, annual_shape=[], posterior_only=True)
+    @define_annual(onsite_ca_tax, annual_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Prior:
             return
@@ -295,18 +311,41 @@ class Bovaer_Monitoring(ModelElement):
         farms_on_bovaer_ca = (
                 heads_ca / cattle_per_farm
                 * ws.val.annual[self.annual_bovaer_fraction])
-        ws.val.annual['bovaer_monitoring_admin_ca'] = (
+        ws.val.annual[self.admin_ca] = (
                 farms_on_bovaer_ca * self.paperwork_monitoring.magnitude)
-        ws.val.annual['bovaer_monitoring_onsite_ca'] = (
+        ws.val.annual[self.onsite_ca] = (
                 farms_on_bovaer_ca * self.onsite_monitoring.magnitude)
 
-        ws.val.annual['bovaer_monitoring_admin_ca_tax'] = (
-                ws.val.annual['bovaer_monitoring_admin_ca'] * self.income_tax_rate)
-        ws.val.annual['bovaer_monitoring_onsite_ca_tax'] = (
-                ws.val.annual['bovaer_monitoring_onsite_ca'] * self.income_tax_rate)
+        ws.val.annual[self.admin_ca_tax] = (
+                ws.val.annual[self.admin_ca] * self.income_tax_rate)
+        ws.val.annual[self.onsite_ca_tax] = (
+                ws.val.annual[self.onsite_ca] * self.income_tax_rate)
+
+    @property
+    def CAD_cashflow(
+            self,
+            ) -> dict[tuple[SPE, SPE, str], AnnualKey]:
+        return {
+                (SPE.BovaerSubsidy,
+                 SPE.BovaerMonitoringCompanies,
+                 'salaries for admin staff',
+                 ): self.admin_ca,
+                (SPE.BovaerSubsidy,
+                 SPE.BovaerMonitoringCompanies,
+                 'salaries for onsite staff',
+                 ): self.onsite_ca,
+                (SPE.BovaerMonitoringCompanies,
+                 SPE.BovaerSubsidy, # imagine income tax is applied back here
+                 'tax from admin staff',
+                 ): self.admin_ca_tax,
+                (SPE.BovaerMonitoringCompanies,
+                 SPE.BovaerSubsidy, # imagine income tax is applied back here
+                 'tax from onsite staff',
+                 ): self.onsite_ca_tax,
+                }
 
 
-class Bovaer_Farm_Subsidy(ModelElement):
+class Bovaer_Farm_Subsidy(NIR_ModelElement):
 
     def __init__(self,
                  def_bovine_fraction_on_bovaer:CarryKey,
@@ -373,11 +412,27 @@ class Bovaer_Farm_Subsidy(ModelElement):
         ws.val.this_annual[self.annual_bovaer_fraction] \
                 = ws.val.next_carry[self.bovine_fraction_on_bovaer]
 
+    @property
+    def subsidy_pt(self) -> AnnualKey:
+        return self.annual_key('subsidy_pt')
+
+    @property
+    def subsidy_ca(self) -> AnnualKey:
+        return self.annual_key('subsidy_ca')
+
+    @property
+    def subsidy_pt_tax(self) -> AnnualKey:
+        return self.annual_key('subsidy_pt_tax')
+
+    @property
+    def subsidy_ca_tax(self) -> AnnualKey:
+        return self.annual_key('subsidy_ca_tax')
+
     @access_annual(annual_headcounts)
-    @define_annual('bovaer_farm_subsidy_pt', annual_shape=[13])
-    @define_annual('bovaer_farm_subsidy_ca', annual_shape=[])
-    @define_annual('bovaer_farm_subsidy_pt_tax', annual_shape=[13])
-    @define_annual('bovaer_farm_subsidy_ca_tax', annual_shape=[])
+    @define_annual(subsidy_pt, annual_shape=[13])
+    @define_annual(subsidy_ca, annual_shape=[])
+    @define_annual(subsidy_pt_tax, annual_shape=[13])
+    @define_annual(subsidy_ca_tax, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         # num_samples, cattle_types, PT 14
         subsidy_per_head = self.subsidy_rate.magnitude / cattle_per_farm
@@ -389,14 +444,30 @@ class Bovaer_Farm_Subsidy(ModelElement):
                 heads_pt
                 * ws.val.annual[self.annual_bovaer_fraction][:, None, ...])
 
-        ws.val.annual['bovaer_farm_subsidy_pt'] = subsidy_per_head * bovaer_heads_pt[:, :13]
-        ws.val.annual['bovaer_farm_subsidy_ca'] = subsidy_per_head * bovaer_heads_pt.sum(axis=1)
+        ws.val.annual[self.subsidy_pt] = subsidy_per_head * bovaer_heads_pt[:, :13]
+        ws.val.annual[self.subsidy_ca] = subsidy_per_head * bovaer_heads_pt.sum(axis=1)
 
-        ws.val.annual['bovaer_farm_subsidy_pt_tax'] = ws.val.annual['bovaer_farm_subsidy_pt'] * .2
-        ws.val.annual['bovaer_farm_subsidy_ca_tax'] = ws.val.annual['bovaer_farm_subsidy_ca'] * .2
+        ws.val.annual[self.subsidy_pt_tax] = ws.val.annual[self.subsidy_pt] * .2
+        ws.val.annual[self.subsidy_ca_tax] = ws.val.annual[self.subsidy_ca] * .2
 
 
-class Bovaer_Purchase_Cost(ModelElement):
+    @property
+    def CAD_cashflow(
+            self,
+            ) -> dict[tuple[SPE, SPE, str], AnnualKey]:
+        return {
+                (SPE.BovaerSubsidy,
+                 SPE.CattleFarmersFeedingBovaer,
+                 'Bovaer farm subsidy',
+                 ): self.subsidy_ca,
+                (SPE.CattleFarmersFeedingBovaer,
+                 SPE.BovaerSubsidy, # imagine income tax is applied back here
+                 'Farm income tax',
+                 ): self.subsidy_ca_tax,
+                }
+
+
+class Bovaer_Purchase_Cost(NIR_ModelElement):
     """
     Define subsidy rates for the purchase cost of Bovaer
     """
@@ -433,10 +504,14 @@ class Bovaer_Purchase_Cost(ModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
+    @property
+    def cost_ca(self) -> AnnualKey:
+        return self.annual_key('cost_ca')
+
     @access_annual(annual_bovaer_fraction)
     @access_annual(annual_headcounts)
     @define_annual('bovaer_cost_pt', annual_shape=[13])
-    @define_annual('bovaer_cost_ca', annual_shape=[])
+    @define_annual(cost_ca, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         # num_samples, cattle_types, PT 14
 
@@ -455,7 +530,18 @@ class Bovaer_Purchase_Cost(ModelElement):
                 * ws.val.annual[self.annual_bovaer_fraction][:, None])
 
         ws.val.annual['bovaer_cost_pt'] = bovaer_costs_pt
-        ws.val.annual['bovaer_cost_ca'] = bovaer_costs_pt.sum(axis=1)
+        ws.val.annual[self.cost_ca] = bovaer_costs_pt.sum(axis=1)
+
+    @property
+    def CAD_cashflow(
+            self,
+            ) -> dict[tuple[SPE, SPE, str], AnnualKey]:
+        return {
+                (SPE.BovaerSubsidy,
+                 SPE.BovaerProducers,
+                 'Bovaer purchase',
+                 ): self.cost_ca,
+                }
 
 
 class Scale_Bovaer(ModelElement):

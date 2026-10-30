@@ -31,7 +31,7 @@ from .scaling_model import Scaling_ScenarioModel
 from .sparkline_echart_helper import (
     RegionalSparklineEChartHelperBase,
     SparklineEChartHelperBase,
-    echart_from_napb,
+    #echart_from_napb,
 )
 from .strategies.strategy2 import Scale_Bovaer
 

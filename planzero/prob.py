@@ -14,6 +14,7 @@ from .scenario_model import (
 )
 from .singleton_registry import SingletonRegistry
 from .sparkline_echart_helper import (
+    national_cost_impact_echart,
     national_emissions_by_sector_echart_from_sample,
     national_emissions_impact_echart,
     sectoral_emissions_by_region_echart_from_sample,
@@ -98,6 +99,10 @@ class SiteInference:
                 ablation.add_element(
                         elem,
                         mcmc_group=base.mcmc_group_by_elemid[elem_id])
+        ablation.mv.forgettable_dist_keys.update(
+                base.mv.forgettable_dist_keys)
+        ablation.mv.forgettable_val_keys.update(
+                base.mv.forgettable_val_keys)
         self._ablations[strategy_elem_id] = ablation
 
     @property
@@ -281,7 +286,22 @@ class SiteInference:
             strategy_elem_id:str,
             div_id:str,
             v_unit:str):
-        raise NotImplementedError()
+        sample_with = self.scenario_model.all_SPE_echart_cost_sample(
+                self.comp)
+        ablated = self._ablations[strategy_elem_id]
+        ablated_comp = self.registry_compute_model(
+                ablate_strategy_elem_id=strategy_elem_id)
+        sample_without = ablated.all_SPE_echart_cost_sample(ablated_comp)
+        rval = national_cost_impact_echart(
+                costs_with_strategy=sample_with,
+                costs_without_strategy=sample_without,
+                year_0=self.comp.model.mv.year_0,
+                n_years=self.comp.n_years,
+                div_id=div_id,
+                v_unit='Billions CAD',
+                model_name=self.url_name,
+                )
+        return rval
 
     # called by e.g. models/prob/foo/sectors/bar
     # to determine which GHGs to show

@@ -1,3 +1,4 @@
+import enum
 
 import jax.numpy as jnp
 import numpy as np
@@ -978,12 +979,15 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         self.append_all_cells()
 
 
-from .annual_subsidy_results import NationalAnnualProgramBalances
-from .enums import GovernmentProgram
+from .enums import SpecialPurposeEntity
 
 
-def echart_from_napb(
-        napb:NationalAnnualProgramBalances,
+def national_cost_impact_echart(
+        costs_with_strategy:dict[SpecialPurposeEntity, np.ndarray],
+        costs_without_strategy:dict[SpecialPurposeEntity, np.ndarray],
+        year_0:int,
+        n_years:int,
+        v_unit:str,
         div_id:str,
         model_name:str, # for linking charts to /models/prob/{model_name}/
         ):
@@ -991,18 +995,36 @@ def echart_from_napb(
             div_id=div_id,
             model_name=model_name,
             )
-    assert GovernmentProgram.Net in napb.CAD_sample
-    for program, balance_sample in napb.CAD_sample.items():
-        helper.update_stats_from_sample(program, balance_sample)
-    non_net_programs = [
-            prog for prog in napb.CAD_sample
-            if prog != GovernmentProgram.Net]
+    assert len(costs_with_strategy) == len(costs_without_strategy)
+    if v_unit == 'Billions CAD':
+        v_unit_scale = 1 / 1_000_000_000
+    else:
+        raise NotImplementedError(v_unit)
+
+    class NetEnum(str, enum.Enum):
+        Net = 'Net'
+
+    total_delta = None
+    for spe, cost_sample in costs_with_strategy.items():
+        delta = cost_sample - costs_without_strategy[spe]
+        helper.update_stats_from_sample(
+                spe,
+                delta.T * v_unit_scale)
+        if total_delta is None:
+            total_delta = delta
+        else:
+            total_delta += delta
+    assert total_delta is not None
+    helper.update_stats_from_sample(
+            NetEnum.Net,
+            total_delta.T * v_unit_scale)
+    non_net_programs = list(costs_with_strategy)
     non_net_programs.sort(key=lambda prog: helper.stats_d[prog]['spread'])
-    helper.sorted_keys.append(GovernmentProgram.Net)
+    helper.sorted_keys.append(NetEnum.Net)
     helper.sorted_keys.extend(non_net_programs)
     helper.determine_n_total_rows()
     helper.color_by_key = {
-        GovernmentProgram.Net: col_ca,
+        NetEnum.Net: col_ca,
     }
     helper.assign_default_colors()
     helper.append_all_cells()

@@ -123,5 +123,10 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
                         self.mv.forgettable_dist_keys.add(
                                 snorm_elem.ktCO2e_ca_key)
 
+        # TODO: how to add these automatically when required,
+        # instead of having to remember them as suffix of constructor
+        # maybe add_contributor and add_flow as you go in add_element?
         self.add_emissions_sums()
+        assert IPCC_Sector.SCS__Public_Electricity_and_Heat in self.sector_sum_over_ghg
         self.add_element_prenir_2025_m04()
+        self.add_cost_sums()

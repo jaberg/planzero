@@ -56,7 +56,7 @@ class NIR_ModelElement(ModelElement):
     @property
     def CAD_cashflow(
             self,
-            ) -> dict[tuple[SPE, Activity], AnnualKey]:
+            ) -> dict[tuple[SPE, SPE, str], AnnualKey]:
         return {}
 
 
@@ -309,11 +309,77 @@ class Sum_Over_Sectors(ModelElement):
         return self.annual_key(f'ktCO2e_ca_{self.include_LULUCF}')
 
     @access_annual(sector_totals)
-    @define_annual(ktCO2e_ca, annual_shape=[])
+    @define_annual(ktCO2e_ca, annual_shape=[], posterior_only=True)
     def model_element_postprocess(self, ws:Workspace):
         if ws.phase == Phase.Posterior:
             ws.val.annual[self.ktCO2e_ca] = custom_sum(
                     ws.val.annual[key] for key in self.sector_totals.values())
+
+
+class SPE_Cashflow(ModelElement):
+    """Tally up all of the annual transfers reported by NIR_ModelElement elements
+    via element.CAD_cashflow() calls, which should be added to this
+    element via add_flow().
+    """
+
+    _net_flow_keys:dict[tuple[SPE, SPE], AnnualKey]
+    _flow_contributions:dict[tuple[SPE, SPE, str], AnnualKey]
+
+    def __init__(self):
+        super().__init__()
+        self._net_annual_keys = {}
+        self._net_flow_keys = {}
+        self._flow_contributions = {}
+
+    @property
+    def version_id(self) -> VersionID:
+        return (1,)
+
+    def add_flow(self, key:AnnualKey, spe_src:SPE, spe_dst:SPE, reason:str):
+        flowconkey = (spe_src, spe_dst, reason)
+        assert flowconkey not in self._flow_contributions
+        self._flow_contributions[flowconkey] = key
+
+        flowkey = (spe_src, spe_dst)
+        if flowkey not in self._net_flow_keys:
+            self._net_flow_keys[flowkey] = self.annual_key(
+                    f'net_flow_{spe_src.value}_to_{spe_dst.value}')
+
+        for spe in (spe_src, spe_dst):
+            if spe not in self._net_annual_keys:
+                self._net_annual_keys[spe] = self.annual_key(f'net_{spe.value}')
+
+    @property
+    def flow_contributions(self) -> dict[tuple[SPE, SPE, str], AnnualKey]:
+        return self._flow_contributions
+
+    @property
+    def net_flow_keys(self) -> dict[tuple[SPE, SPE], AnnualKey]:
+        return self._net_flow_keys
+
+    @property
+    def net_annual_keys(self) -> dict[SPE, AnnualKey]:
+        return self._net_annual_keys
+
+    @access_annual(flow_contributions)
+    @define_annual(net_flow_keys, annual_shape=[], posterior_only=True)
+    @define_annual(net_annual_keys, annual_shape=[], posterior_only=True)
+    def model_element_postprocess(self, ws:Workspace):
+        if ws.phase == Phase.Posterior:
+            flow_summands:dict[tuple[SPE, SPE], list[jnp.ndarray]] = {}
+            for (src, dst, _), key in self._flow_contributions.items():
+                flow_summands.setdefault((src, dst), []).append(ws.val.annual[key])
+
+            net_summands:dict[SPE, list[jnp.ndarray]] = {}
+            for (src, dst), sum_args in flow_summands.items():
+                net_flow = custom_sum(sum_args)
+                ws.val.annual[self.net_flow_keys[src, dst]] = net_flow
+                net_summands.setdefault(src, []).append(-net_flow)
+                net_summands.setdefault(dst, []).append(net_flow)
+
+            for spe, net_args in net_summands.items():
+                net = custom_sum(net_args)
+                ws.val.annual[self.net_annual_keys[spe]] = net
 
 
 class NIR_ScenarioModel(ScenarioModel):
@@ -322,6 +388,8 @@ class NIR_ScenarioModel(ScenarioModel):
     sum_over_sectors:dict[bool, Sum_Over_Sectors]
     sector_sum_over_ghg:dict[IPCC_Sector, Sector_Sum_Over_GHG]
     sector_ghg_observations:dict[tuple[IPCC_Sector, GHG], Sector_GHG_Observation]
+
+    _spe_cashflow:SPE_Cashflow|None
 
     # only information available at or before this date
     # may be used as conditioning observations in Phase.Prior
@@ -349,6 +417,22 @@ class NIR_ScenarioModel(ScenarioModel):
         self.sum_over_sectors = {}
         self.sector_sum_over_ghg = {}
         self.sector_ghg_observations = {}
+        self._spe_cashflow = None
+
+    def add_element(self, elem, *args, **kwargs):
+        if isinstance(elem, SPE_Cashflow):
+            assert self._spe_cashflow is None
+            self._spe_cashflow = elem
+        elif isinstance(elem, Sector_GHG_Observation):
+            assert (elem.sector, elem.ghg) not in self.sector_ghg_observations
+            self.sector_ghg_observations[elem.sector, elem.ghg] = elem
+        elif isinstance(elem, Sector_Sum_Over_GHG):
+            assert elem.sector not in self.sector_sum_over_ghg
+            self.sector_sum_over_ghg[elem.sector] = elem
+        elif isinstance(elem, Sum_Over_Sectors):
+            assert elem.include_LULUCF not in self.sum_over_sectors
+            self.sum_over_sectors[elem.include_LULUCF] = elem
+        return super().add_element(elem, *args, **kwargs)
 
     def _latest_nir_model_element_before_cutoff(self, sector, ghg):
         assert isinstance(self.data_cutoff, datetime.date)
@@ -383,59 +467,57 @@ class NIR_ScenarioModel(ScenarioModel):
                 sgo.ktCO2e_ca)
         return sgo
 
-    def add_emissions_sums(self, fit_to_data:bool=True):
-        self.sum_over_sectors[False] = Sum_Over_Sectors(include_LULUCF=False)
-        self.sum_over_sectors[True] = Sum_Over_Sectors(include_LULUCF=True)
-        for sos in self.sum_over_sectors.values():
-            self.add_element(sos, mcmc_group=None)
-        model_elements_items = list(self.model_elements.items())
-        for elem_id, elem in model_elements_items:
+    @property
+    def _iter_NIR_ModelElements_items(self):
+        for elem_id, elem in self.model_elements.items():
             if isinstance(elem, NIR_ModelElement):
-                nme = elem
-                mcmc_group = self.mcmc_group_by_elemid[elem_id]
-                for (sector, ghg), pt_key_d in nme.ktCO2e_emissions_pt.items():
+                yield elem_id, elem
 
-                    nir_elem = self._latest_nir_model_element_before_cutoff(sector, ghg)
-                    if nir_elem.identifier not in self.model_elements:
-                        self.add_element(nir_elem, mcmc_group=mcmc_group)
-                    else:
-                        nir_mcmc_group = self.mcmc_group_by_elemid[nir_elem.identifier]
-                        if nir_mcmc_group != mcmc_group:
-                            raise NotImplementedError(
-                                    elem_id,
-                                    mcmc_group,
-                                    nir_mcmc_group
-                                    )
 
-                    if (sector, ghg) not in self.sector_ghg_observations:
-                        sgo = self._add_Sector_GHG_Observation(sector, ghg, mcmc_group, fit_to_data, nir_elem)
-                        self.sector_ghg_observations[sector, ghg] = sgo
+    def add_emissions_sums(self, fit_to_data:bool=True):
+        for include_LULUCF in [False, True]:
+            self.add_element(
+                    Sum_Over_Sectors(include_LULUCF=include_LULUCF),
+                    mcmc_group=None)
+        for elem_id, nme in list(self._iter_NIR_ModelElements_items):
+            mcmc_group = self.mcmc_group_by_elemid[elem_id]
+            for (sector, ghg), pt_key_d in nme.ktCO2e_emissions_pt.items():
 
-                        if sector not in self.sector_sum_over_ghg:
-                            ssog = Sector_Sum_Over_GHG(sector=sector)
-                            self.add_element(ssog, mcmc_group=None)
-                            self.sector_sum_over_ghg[sector] = ssog
-                            self.sum_over_sectors[True].add_contributor(
+                nir_elem = self._latest_nir_model_element_before_cutoff(sector, ghg)
+                if nir_elem.identifier not in self.model_elements:
+                    self.add_element(nir_elem, mcmc_group=mcmc_group)
+                else:
+                    nir_mcmc_group = self.mcmc_group_by_elemid[nir_elem.identifier]
+                    if nir_mcmc_group != mcmc_group:
+                        raise NotImplementedError(
+                                elem_id,
+                                mcmc_group,
+                                nir_mcmc_group
+                                )
+
+                if (sector, ghg) not in self.sector_ghg_observations:
+                    sgo = self._add_Sector_GHG_Observation(sector, ghg, mcmc_group, fit_to_data, nir_elem)
+                    if sector not in self.sector_sum_over_ghg:
+                        ssog = Sector_Sum_Over_GHG(sector=sector)
+                        self.add_element(ssog, mcmc_group=None)
+                        self.sum_over_sectors[True].add_contributor(
+                                sector=sector,
+                                key=ssog.ktCO2e_ca)
+                        if sector not in LULUCF_Sectors:
+                            self.sum_over_sectors[False].add_contributor(
                                     sector=sector,
                                     key=ssog.ktCO2e_ca)
-                            if sector not in LULUCF_Sectors:
-                                self.sum_over_sectors[False].add_contributor(
-                                        sector=sector,
-                                        key=ssog.ktCO2e_ca)
-                        else:
-                            ssog = self.sector_sum_over_ghg[sector]
-                        ssog.add_contributor(sgo.ktCO2e_pt, sgo.ktCO2e_ca)
                     else:
-                        sgo = self.sector_ghg_observations[sector, ghg]
+                        ssog = self.sector_sum_over_ghg[sector]
+                    ssog.add_contributor(sgo.ktCO2e_pt, sgo.ktCO2e_ca)
+                else:
+                    sgo = self.sector_ghg_observations[sector, ghg]
 
-                    sgo.add_contributor(
-                            pt_key_d,
-                            nme.ktCO2e_emissions_ca[sector, ghg])
+                sgo.add_contributor(
+                        pt_key_d,
+                        nme.ktCO2e_emissions_ca[sector, ghg])
 
-                # end for (sector, ghg)
-            else:
-                # not isinstance(elem, NIR_ModelElement)
-                pass
+            # end for (sector, ghg)
         # end for (elem_id, elem)
 
     def all_sector_echart_ktCO2e_sample(
@@ -596,3 +678,31 @@ class NIR_ScenarioModel(ScenarioModel):
                 sample_if_necessary=True)
         rval = float(jnp.mean(total_ems[idx_2050] < 0))
         return rval
+
+    def add_cost_sums(self):
+        """Extend self.model_elements with summing model elements elements as required
+        by NIR_ModelElements already in this model.
+
+        * SPE_Cashflow_Sum_Over_Reasons for each necessary (SPE, SPE) pair
+        * SPE_Net_Cashflow for each necessary SPE
+        """
+        spe_cashflow = SPE_Cashflow()
+        assert self._spe_cashflow is None
+        for elem_id, nme in list(self._iter_NIR_ModelElements_items):
+            for (spe_src, spe_dst, reason), var_key in nme.CAD_cashflow.items():
+                assert spe_src != spe_dst, (spe_src, spe_dst)
+                spe_cashflow.add_flow(var_key, spe_src, spe_dst, reason)
+        # all of the add_flows need to be called before add_element()
+        # because, unlike accesses, declarations need to be all in place
+        # once an element is added.
+        self.add_element(spe_cashflow, mcmc_group=None)
+
+    def all_SPE_echart_cost_sample(
+            self,
+            comp:Computation,
+            ) -> dict[SPE, jnp.ndarray]:
+        assert self._spe_cashflow is not None
+        cost_sample:dict[SPE, jnp.ndarray] = {}
+        for spe, net_key in self._spe_cashflow.net_annual_keys.items():
+            cost_sample[spe] = comp.ndarray_d[net_key]
+        return cost_sample
