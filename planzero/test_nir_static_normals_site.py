@@ -1,11 +1,69 @@
+import unittest
+
+import jax
 import numpy as np
 
-from .nir_static_normals import weighted_KL_score
+from .enums import GHG, IPCC_Sector
+from .nir2025 import near_zero_sector_ghgs
 from .nir_static_normals_site import Static_Normals_2024_12_31
+from .test_nir2025_site import SiteInferenceSmokeTester
 
 
-def test_aluminum_co2():
-    model = Static_Normals_2024_12_31()
-    weighted_div, abs_kts, kls = weighted_KL_score(year=2023, model_id=model.model_id)
-    print(weighted_div)
-    assert np.isfinite(weighted_div)
+def test_weighted_divergence():
+    site_model = Static_Normals_2024_12_31()
+    prenir = site_model.scenario_model.prediction_scores_prenir_2025_m04(
+            comp=site_model.comp)
+    near_zero = near_zero_sector_ghgs()
+    assert np.isfinite(prenir['weighted_divergence'])
+    wd = float(prenir['weighted_divergence'])
+    assert 3.2 < wd < 3.4, wd
+    for sector in IPCC_Sector:
+        for ghg in GHG:
+            if (sector, ghg) not in near_zero:
+                assert 0 <= float(prenir['scores_ca'][sector][ghg]) <= 15, (
+                        sector, ghg)
+
+
+def test_memory_usage():
+    site_model = Static_Normals_2024_12_31()
+
+    total_bytes = 0
+    bytes_used = []
+    for key, nd in site_model.comp.ndarray_d.items_no_sample_if_necessary():
+        total_bytes += nd.nbytes
+        bytes_used.append((nd.nbytes, 'ndarray', key))
+
+    for key, dist in site_model.comp.dist_d.items():
+        leaves = jax.tree_util.tree_leaves(dist)
+        leaves_bytes = sum(getattr(leaf, "nbytes", 0) for leaf in leaves)
+        total_bytes += leaves_bytes
+        bytes_used.append((leaves_bytes, 'dist', key))
+
+    print('MB', total_bytes / 1_000_000)
+    for ii, nbytes_key in enumerate(sorted(bytes_used, reverse=True)):
+        print(ii, nbytes_key)
+        if ii > 10:
+            break
+
+    assert total_bytes < 1500 * 1_000_000
+
+
+def test_p_net_zero():
+    site_model = Static_Normals_2024_12_31()
+    p_net_zero = site_model.scenario_model.p_net_zero_2050(site_model.comp)
+
+    # assert 1e-29 < p_net_zero < 1e-28  # only possible with analytic estimator
+    assert p_net_zero == 0.0  # with empirical estimator
+
+
+def test_predicted_emissions():
+    site_model = Static_Normals_2024_12_31()
+    low, high = site_model.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(
+            site_model.comp)
+    assert 600 < low < high < 1000
+
+
+
+class TestSiteInference(unittest.TestCase, SiteInferenceSmokeTester):
+    def setUp(self):
+        self.siteinf = Static_Normals_2024_12_31()

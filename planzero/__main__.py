@@ -1,14 +1,16 @@
 import argparse
 import os
 import sys
-
 from pathlib import Path
+
+from .endpoints import completed_prob_registry
+
 
 def print_max_gaps(args):
     from . import est_nir
     assert args.year == 2005
     est = est_nir.EstSectorEmissions()
-    max_gap = est.max_gap_2005()
+    est.max_gap_2005()
 
 
 def cache_ghgrp_by_petrinex(args):
@@ -81,24 +83,13 @@ def request_all_planzero_pages(args):
         print(status_code, '{:.2f}'.format(client.last_get_time), endpoint)
 
 
-def nir_ar2_inference(args):
-    from . import nir_ar2
-    return nir_ar2.main()
+def main_registry_basename(args):
+    print(completed_prob_registry()[args.model].registry_basename())
 
 
-def main_model_id(args):
-    from . import prob
-    return prob.registry[args.model].main_model_id()
+def main_registry_computation(args):
+    completed_prob_registry()[args.model].registry_computation()
 
-
-def main_inference_prep(args):
-    from . import prob
-    return prob.registry[args.model].main_inference_prep()
-
-
-def main_inference_work(args):
-    from . import prob
-    return prob.registry[args.model].main_inference_work()
 
 def main_generate_assets(args):
     from . import blog as post
@@ -131,20 +122,13 @@ if __name__ == '__main__':
     parser_request_all_pages = subparsers.add_parser('request_all_pages')
     parser_request_all_pages.set_defaults(func=request_all_planzero_pages)
 
-    parser_request_all_pages = subparsers.add_parser('nir_ar2_inference')
-    parser_request_all_pages.set_defaults(func=nir_ar2_inference)
+    parser_registry_basename = subparsers.add_parser('registry_basename')
+    parser_registry_basename.add_argument('--model', help='model name')
+    parser_registry_basename.set_defaults(func=main_registry_basename)
 
-    parser_model_id = subparsers.add_parser('model_id')
-    parser_model_id.add_argument('--model', help='model name')
-    parser_model_id.set_defaults(func=main_model_id)
-
-    parser_inference_prep = subparsers.add_parser('inference_prep')
-    parser_inference_prep.add_argument('--model', help='model name')
-    parser_inference_prep.set_defaults(func=main_inference_prep)
-
-    parser_inference_work = subparsers.add_parser('inference_work')
-    parser_inference_work.add_argument('--model', help='model name')
-    parser_inference_work.set_defaults(func=main_inference_work)
+    parser_registry_computation = subparsers.add_parser('registry_computation')
+    parser_registry_computation.add_argument('--model', help='model name')
+    parser_registry_computation.set_defaults(func=main_registry_computation)
 
     parser_generate_assets = subparsers.add_parser('generate_assets')
     parser_generate_assets.add_argument('--post-cls', help='post class name')

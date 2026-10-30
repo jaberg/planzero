@@ -1,17 +1,15 @@
-from pydantic import BaseModel, computed_field
 import numpy as np
+from pydantic import computed_field
 
-from .my_functools import cache
-
-from . import enums
-from .enums import GHG, PT, IPCC_Sector
-from .sts import STS, InterpolationMode
 from .base import (
-    DynamicElement,
     BaseScenarioProject,
+    DynamicElement,
     SparseTimeSeries,
+)
+from .base import (
     ureg as u,
-    )
+)
+from .enums import GHG, PT, IPCC_Sector
 from .ghgvalues import GWP_100
 from .sim import SiteSimulation
 

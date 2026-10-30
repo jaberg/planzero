@@ -11,7 +11,7 @@
     <h2>Sector: {{sector.value}}</h2>
 
     <h3>Total Across All Greenhouse Gases (Mt{{CO2e|safe}})</h3>
-<!-- TODO: brief description of activities driving sector emissions -->
+
 {{site_inference.sector_echart(sector, None, v_unit="Mt_CO2e")|safe}}
 
 <p>
@@ -98,7 +98,7 @@ at the bottom of this page.
 </ul>
 
 <ul class="actions special">
-    <li><a href="/models/prob/{{ident}}/" class="button">Back to {{ident.replace('_', ' ')}} Overview</a></li>
+    <li><a href="/models/prob/{{ident}}/" class="button">Back to {{ site_inference.pretty_name }} Overview</a></li>
 </ul>
 
 </section><!--post-->

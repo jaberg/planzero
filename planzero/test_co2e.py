@@ -1,9 +1,9 @@
 import numpy as np
 
-from .ureg import u
+from . import planet_model  # noqa: F401
 from .enums import GHG
-from .ghgvalues import GWP_100
 from .sim import simulation_result
+from .ureg import u
 
 
 def test_co2e(assert_value=0, years=100):
@@ -15,7 +15,7 @@ def test_co2e(assert_value=0, years=100):
         state_B = sim_result.ablations[f'EmissionsImpulseResponse_{ghg.value}']
         #assert state_A.sts[f'impulse_{ghg.value}'].max() == impulse_mass / GWP_100[ghg] / u.year
         #print(state_A.sts[f'impulse_{ghg.value}'])
-        co2e_key = f'Predicted_Annual_Emitted_CO2e_mass'
+        co2e_key = 'Predicted_Annual_Emitted_CO2e_mass'
         #print(ghg, state_A.sts[co2e_key].values)
         assert np.allclose(
             state_A.sts[co2e_key].max(_i_start=1),
