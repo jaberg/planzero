@@ -58,6 +58,9 @@ class ScanStorage_ThisAnnual_NdarrayD:
         self.scanstor.this_annual_set_ndarray(item, value)
 
 
+class ForgottenResult(KeyError):
+    pass
+
 
 class ScanStorage:
 
@@ -870,6 +873,8 @@ class Computation:
     model: ScenarioModel
     _dist_d: dict[VarKey, Distribution]
     _ndarray_d: dict[VarKey, jnp.ndarray]
+    _dist_d_forgotten: dict[VarKey, bool]
+    _ndarray_d_forgotten: dict[VarKey, bool]
     rng_key: ArrayLike
     phase: Phase
     has_run: bool
@@ -887,6 +892,8 @@ class Computation:
         self.model = model
         self._dist_d = {}
         self._ndarray_d = {}
+        self._dist_d_forgotten = {}
+        self._ndarray_d_forgotten = {}
         self._assigned_keys:set[VarKey] = set()
         if isinstance(rng_key, int):
             self.rng_key = jrandom.key(rng_key)
@@ -938,6 +945,8 @@ class Computation:
         return ComputationNdarrayD(self)
 
     def get_dist(self, item:VarKey) -> Distribution:
+        if self._dist_d_forgotten.get(item):
+            raise ForgottenResult(item)
         return self._dist_d[item]
 
     def set_dist(self, var_key:VarKey, dist:Distribution):
@@ -958,9 +967,13 @@ class Computation:
             sample_if_necessary,
             default:jnp.ndarray|None=None,
             ) -> jnp.ndarray:
+        if self._ndarray_d_forgotten.get(var_key):
+            raise ForgottenResult(var_key)
         try:
             return self._ndarray_d[var_key]
         except KeyError as err:
+            if self._dist_d_forgotten.get(var_key):
+                raise ForgottenResult(var_key)
             if (var_key not in self._dist_d or not sample_if_necessary):
                 if default is not None:
                     return default
@@ -1412,11 +1425,28 @@ class Computation:
                 err.add_note(f'element_id={elem_id}')
                 raise
 
+    def _forget_non_outputs(self):
+        for key in self.model.mv.forgettable_dist_keys:
+            if key in self._dist_d:
+                if (key not in self._ndarray_d
+                    and key not in self.model.mv.forgettable_val_keys):
+                    # preserve a sample from the distribution
+                    self.get_ndarray(key, sample_if_necessary=True)
+                del self._dist_d[key]
+                self._dist_d_forgotten[key] = True
+
+        for key in self.model.mv.forgettable_val_keys:
+            if key in self._ndarray_d:
+                del self._ndarray_d[key]
+                self._ndarray_d_forgotten[key] = True
+
+
     def run(self):
         assert not self.has_run
         self._run_prep()
         self._run_step()
         self._run_proc()
+        self._forget_non_outputs()
         self.has_run = True
 
 

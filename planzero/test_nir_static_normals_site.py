@@ -46,16 +46,7 @@ def test_memory_usage():
         if ii > 10:
             break
 
-    # this limit is not specifically important, but my laptop may crash
-    # if its' much bigger and I'm trying to run unit tests with web server loaded.
-    # assert total_bytes < 2500 * 1_000_000
-    #
-    # okay... after the nir_model rewrite it's bigger and I'm not sure why.
-    # It might be possible to reduce it back to 2500 with some effort.
-    # e.g. do posterior computation in float32
-    # e.g. free up some keys in the computation if we know they won't be needed
-    #      anymore... currently there's no mechanism for determining that.
-    assert total_bytes < 3500 * 1_000_000
+    assert total_bytes < 1500 * 1_000_000
 
 
 def test_p_net_zero():

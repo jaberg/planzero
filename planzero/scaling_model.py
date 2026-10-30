@@ -105,6 +105,10 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
                         mcmc_group = f'{sector.value}_{ghg.value}'
                         self.add_element(snorm_elem,
                                          mcmc_group=mcmc_group)
+                        self.mv.forgettable_dist_keys.update(
+                                snorm_elem.ktCO2e_pt_keys.values())
+                        self.mv.forgettable_dist_keys.add(
+                                snorm_elem.ktCO2e_ca_key)
             else:
                 for ghg in GHG:
                     if (sector, ghg) not in near_zero_sector_ghgs():
@@ -114,6 +118,10 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
                         mcmc_group = f'{sector.value}_{ghg.value}'
                         self.add_element(snorm_elem,
                                          mcmc_group=mcmc_group)
+                        self.mv.forgettable_dist_keys.update(
+                                snorm_elem.ktCO2e_pt_keys.values())
+                        self.mv.forgettable_dist_keys.add(
+                                snorm_elem.ktCO2e_ca_key)
 
         self.add_emissions_sums()
         self.add_element_prenir_2025_m04()

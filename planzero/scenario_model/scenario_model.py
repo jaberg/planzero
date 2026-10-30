@@ -113,6 +113,9 @@ class ModelVariables(BaseModel):
     # properties remain unresolved until Computation
     unresolved_accesses: list[UnresolvedAccessMetadata] = []
 
+    forgettable_dist_keys:set[VarKey] = set()
+    forgettable_val_keys:set[VarKey] = set()
+
 
 class ModelElement:
     """
@@ -141,6 +144,8 @@ class ModelElement:
                 name=name)
 
     def carry_key(self, name:str) -> ElementCarryKey:
+        # carry keys cannot be computational outputs
+        # see InitialCarry and FinalCarry
         if name == "":
             raise NotImplementedError("name should not be empty")
         return ElementCarryKey(

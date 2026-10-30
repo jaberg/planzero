@@ -377,6 +377,10 @@ class NIR_ScenarioModel(ScenarioModel):
                 fit_to_data=fit_to_data,
                 )
         self.add_element(sgo, mcmc_group=mcmc_group)
+        self.mv.forgettable_dist_keys.update(
+                sgo.ktCO2e_pt.values())
+        self.mv.forgettable_dist_keys.add(
+                sgo.ktCO2e_ca)
         return sgo
 
     def add_emissions_sums(self, fit_to_data:bool=True):

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import enum
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -30,22 +30,25 @@ class VariableRole(str, enum.Enum):
     PosteriorCache = 'PosteriorCache'
 
 
-class VarKey(BaseModel, frozen=True):
-    var_key_type: Literal['Posterior',
-                          'GroupedPosterior',
-                          'NamedKey',
-                          'InitialCarry',
-                          'ThisCarry',
-                          'NextCarry',
-                          'FinalCarry',
-                          'Observation',
-                          'ObservationValid',
-                          'ObservationWeight',
-                          'ElementGeneralKey',
-                          'ElementCarryKey',
-                          'ElementAnnualKey',
-                          ]
+class VarKey(BaseModel, frozen=True, strict=True):
+    model_config = ConfigDict(frozen=True, strict=True, extra='forbid')
+    var_key_type: Literal[
+            'Posterior',
+            'GroupedPosterior',
+            'NamedKey',
+            'InitialCarry',
+            'ThisCarry',
+            'NextCarry',
+            'FinalCarry',
+            'Observation',
+            'ObservationValid',
+            'ObservationWeight',
+            'ElementGeneralKey',
+            'ElementCarryKey',
+            'ElementAnnualKey',
+            ]
 
+    # I think this had something to do with Jax, but I can't remember what.
     def __lt__(self, other):
         return str(self) < str(other)
 
