@@ -13,7 +13,6 @@ def test_weighted_divergence():
     site_model = Static_Normals_2024_12_31()
     prenir = site_model.scenario_model.prediction_scores_prenir_2025_m04(
             comp=site_model.comp)
-    print(prenir)
     near_zero = near_zero_sector_ghgs()
     assert np.isfinite(prenir['weighted_divergence'])
     wd = float(prenir['weighted_divergence'])

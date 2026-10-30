@@ -136,8 +136,8 @@ class SiteInference:
 
     def registry_compute_model(
             self,
-            compute_posterior=True,
-            quiet=True,
+            compute_posterior:bool=True,
+            quiet:bool=True,
             ablate_strategy_elem_id:str|None=None,
             ) -> Computation:
         if ablate_strategy_elem_id is None:
