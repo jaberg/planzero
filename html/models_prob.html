@@ -64,13 +64,13 @@ at the bottom of this page.
 </p>
 
 <h2 id="strategies"><a href="/glossary/#Strategy">Strategies</a> in this Model</h2>
-    {% if site_inference.ablation_study %}
+    {% if site_inference.strategies %}
 	<table>
 	    <thead>
 		<tr><th>Name</th><th>Description</th><th>Affected Sector(s)</th></tr>
 	    </thead>
 	    <tbody>
-    {% for strategy_name, strategy_obj in site_inference.ablation_study.strategies.items() %}
+    {% for strategy_name, strategy_obj in site_inference.strategies.items() %}
 		<tr>
 		    <td><a href="/models/prob/{{ ident }}/strategies/{{ strategy_name }}/">{{ strategy_obj.pretty_name }}</a></td>
 		    <td>{{ strategy_obj.short_description }}</td>
@@ -89,7 +89,7 @@ at the bottom of this page.
     {% endif %}
 
     <h2 id="barriers"><a href="/glossary/#Barrier">Barrier Elements</a> in this Model</h2>
-    {% if site_inference.ablation_study %}
+    {% if site_inference.barriers %}
 	<table>
 	    <thead>
 		<tr>
@@ -99,7 +99,7 @@ at the bottom of this page.
 		</tr>
 	    </thead>
 	    <tbody>
-    {% for barrier_name, barrier_obj in site_inference.ablation_study.barriers.items() %}
+    {% for barrier_name, barrier_obj in site_inference.barriers.items() %}
 		<tr>
 		    <td><a href="/models/prob/{{ ident }}/barriers/{{ barrier_name }}/">{{ barrier_obj.pretty_name }}</a></td>
 		    <td>{{ barrier_obj.short_description }}</td>
