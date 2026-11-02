@@ -18,7 +18,7 @@ from .base import (
     VarKey,
     scan_step_ii_key,
 )
-from .computation import Computation, ScanStorage, ScenarioModel
+from .computation import Computation, ScanStorage, ScenarioModel, _downcast_on_posterior
 
 
 def dist_scan_set_next(comp:Computation, scan_storage:ScanStorage, var_key:ElementCarryKey, dist:Distribution):
@@ -513,7 +513,8 @@ class ValNextCarry:
         assert self.ws.scan_storage is not None
 
         if self.attr == 'val':
-            self.ws.scan_storage.next_carry_d[var_key] = value
+            self.ws.scan_storage.next_carry_d[var_key] = _downcast_on_posterior(
+                    value, self.ws.scan_storage.phase)
             self.ws.comp._record_assignment(var_key)
         else:
             raise NotImplementedError(f'{self.attr}_scan_set_this')

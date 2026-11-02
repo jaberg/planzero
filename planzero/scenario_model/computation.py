@@ -62,6 +62,19 @@ class ForgottenResult(KeyError):
     pass
 
 
+def _downcast_on_posterior(val, phase):
+    if phase == Phase.Posterior:
+        # save memory by float64 -> float32 cast
+        if isinstance(val, jnp.ndarray) and val.dtype == jnp.float64:
+            return val.astype(jnp.float32)
+        elif isinstance(val, np.ndarray) and val.dtype == np.float64:
+            return val.astype(np.float32)
+        else:
+            return val
+    else:
+        return val
+
+
 class ScanStorage:
 
     this_carry_d: dict[VarKey, jnp.ndarray]
@@ -142,7 +155,7 @@ class ScanStorage:
                     ' (define_annual on model_element_prepare); it cannot be'
                     ' assigned during a scan step.'
                     ' Assign it during prepare via ws.val.annual.')
-        self.this_annual_output_d[var_key] = value
+        self.this_annual_output_d[var_key] = _downcast_on_posterior(value, self.phase)
 
     def this_annual_set_ndarray_from_dist(self, var_key:VarKey) -> None:
         assert var_key in self.this_annual_dist_d
@@ -1018,7 +1031,8 @@ class Computation:
             padded = value[..., None]
         else:
             padded = value
-        self._ndarray_d[item] = padded
+        self._ndarray_d[item] = _downcast_on_posterior(padded, self.phase)
+
 
     def set_ndarray_from_dist(self, var_key:VarKey):
         assert var_key in self._dist_d
@@ -1372,7 +1386,8 @@ class Computation:
         for elem_id, elem in self._elem_items(Subphase.Prep):
             try:
                 self._reset_assignments()
-                elem.model_element_prepare(self._workspace(elem_id, Subphase.Prep))
+                ws = self._workspace(elem_id, Subphase.Prep)
+                elem.model_element_prepare(ws)
                 self._check_defined_assignments(elem, Subphase.Prep)
             except Exception as err:
                 err.add_note(f'element_id={elem_id}')
@@ -1508,7 +1523,6 @@ def compute_model(
                     saved_sample_sites[var_key] = sample_site
             assert len(saved_sample_sites) == len(grouped_samples)
             all_grouped_samples.update(grouped_samples)
-            print(grouped_samples)
     comp_posterior = Computation(
             model=model,
             rng_key=seed_or_key)

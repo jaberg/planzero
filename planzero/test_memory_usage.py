@@ -5,7 +5,8 @@ from .scaling_site import ScalingSiteInference
 def test_avoid_getting_killed():
     site_infs = [
             Static_Normals_2024_12_31(),
-            ScalingSiteInference()]
+            ScalingSiteInference(),
+            ]
     for si in site_infs:
         print('compute', si.registry_basename())
         si.registry_compute_model()

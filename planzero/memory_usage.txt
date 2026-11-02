@@ -1,0 +1,81 @@
+
+MCMC sampling of the whole NIR results in a lot of numbers.
+Some sophistication is required in order not to run out of RAM on a
+standard modern workstation. The target platforms are
+(1) my laptop, with  8GB of RAM
+(2) standard free GitHub runners, with 16GB RAM
+
+
+Techniques to reduce memory usage:
+
+
+Compute Posterior pass in Float32
+---------------------------------
+
+Costs:
+* reduced precision probably not noticeable
+* low effort
+
+Benefit:
+* 1/2 RAM required
+* 2x computation speed
+* leaves open other techniques for memory reduction
+
+
+Switch to Numpy from JAX for Posterior pass
+-------------------------------------------
+
+Possible implementation:
+Use `ws.np` as the active numpy / jnp module
+
+Cost:
+* more unusual syntax in method bodies
+* initial porting slightly annoying
+* have to use custom jax_scan stand-in for np data
+* scan might be slower, especially in scan-heavy models
+
+Benefit:
+* unclear RAM savings, although possibly some where there's slicing
+  * (NIR2024/2025)
+  * provinces as dicts instead of a 13 element matrix
+* possibly faster execution
+* plain old numpy is simpler to reason about, supports memory views
+
+
+Share intermediate terms between Ablations
+------------------------------------------
+
+Possible implementation:
+Assume that the only thing that can be ablated is a strategy
+and the only thing a strategy can do is define some keys
+that are already declared.
+(A strategy can't declare keys.)
+(A strategy also can't be random, as it messes up RNGs?)
+
+Anyway, the hope with this approach is that if the ablation of a strategy
+is the only change between models in an ablation study, then only
+the successors of keys defined by the strategy should be recomputed.
+
+Costs:
+* implementation might be tricky
+
+Benefit:
+* 1/N RAM required where N is number of strategies
+* Nx computation speed
+
+
+Share intermediate terms between Models
+---------------------------------------
+
+Possible implementation: TBD
+Recording all the metadata of inputs and definitions of each
+decorated method should do the trick,
+but it hasn't been done completely I think, especially it is not done
+at all for accesses via property that change after add_element().
+
+Cost:
+* implementation is tricky
+
+Benefit:
+* 1/N RAM required, where N is the number of models mostly sharing computation
+* ... so maybe 1/3 ?  Ditto for increase in computation speed
