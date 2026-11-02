@@ -85,9 +85,26 @@ jobs:
           path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
           key: ${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
 
-      # TODO: cache this when it stabilizes
-      - name: Infer cattle population and emission factors for scaling ablation study
+      # Scaling Model
+
+      - name: Cache key for Scaling model
+        id: cache_key_scaling
+        run: echo "registry_basename=$(python -m planzero registry_basename --model=ScalingSiteInference )" >> "$GITHUB_OUTPUT"
+
+      - name: Restore inference cache for Scaling model
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_scaling.outputs.registry_basename }}
+          key: ${{ steps.cache_key_scaling.outputs.registry_basename }}
+
+      - name: Scaling inference
         run: python -m planzero registry_computation --model=ScalingSiteInference
+
+      - name: Save inference cache for Scaling model
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_scaling.outputs.registry_basename }}
+          key: ${{ steps.cache_key_scaling.outputs.registry_basename }}
 
       # Run test and populate app cache (diskcache)
 
