@@ -5,7 +5,6 @@ import pint
 from numpyro import distributions as dists
 
 from .enums import GHG, PT, SPE, IPCC_Sector
-from .ghgvalues import GWP_100
 from .html import coderef_url
 from .nir_model import NIR_ModelElement
 from .prob import SiteModelElement
@@ -137,16 +136,14 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
 
     def __init__(
             self,
-            annual_headcounts_key,
-            annual_bovaer_fraction,
+            ktCO2e_abated_by_bovaer_ca:AnnualKey,
             ):
         super().__init__()
         self._ktCO2e_ca_key = self.annual_key('ktCO2e_ca')
         self._ktCO2e_pt_keys = {
                 pt: self.annual_key(f'ktCO2e_{pt.value}')
                 for pt in PT if pt != PT.XX}
-        self._annual_headcounts_key = annual_headcounts_key
-        self._annual_bovaer_fraction = annual_bovaer_fraction
+        self._ktCO2e_abated_by_bovaer_ca = ktCO2e_abated_by_bovaer_ca
 
     @property
     def ktCO2e_ca_key(self) -> AnnualKey:
@@ -157,50 +154,33 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
         return self._ktCO2e_pt_keys
 
     @property
-    def annual_headcounts(self) -> AnnualKey:
-        return self._annual_headcounts_key
-
-    @property
-    def annual_bovaer_fraction(self) -> AnnualKey:
-        return self._annual_bovaer_fraction
-
-    @property
     def version_id(self) -> VersionID:
         return (1,)
+
+    @property
+    def ktCO2e_abated_by_bovaer_ca(self) -> AnnualKey:
+        return self._ktCO2e_abated_by_bovaer_ca
     
-    @access_annual(annual_headcounts)
-    @access_annual(annual_bovaer_fraction)
+    @access_annual(ktCO2e_abated_by_bovaer_ca)
     @define('bovaer_production_emission_factor', prior_shape=[])
     @define_annual(ktCO2e_ca_key, annual_shape=[])
     @define_annual(ktCO2e_pt_keys, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
-        # in units of kg CH4 / head / year
+
+        # in units of x less than the methane abated from enteric fermentation
         ws.dist.general['bovaer_production_emission_factor'] = dists.Uniform(20, 50)
 
-        # sum over livestock types
-        heads_pt = ws.val.annual[self.annual_headcounts].sum(axis=1)
-
-        # sum over regions
-        heads_ca = heads_pt.sum(axis=1)
-
-        kt_per_kg = 1 / 1_000_000
         pt_scale = 10
 
-        loc = (
-                heads_ca
-                   * ws.val.annual[self.annual_bovaer_fraction]
-                   * (ws.val.general['bovaer_production_emission_factor']
-                      * kt_per_kg
-                      * float(GWP_100[GHG.CH4].magnitude)))
+        ktCO2e_abated = ws.val.annual[self.ktCO2e_abated_by_bovaer_ca]
+        # sum over PTs
+        loc = (ktCO2e_abated.sum(axis=1)
+               / ws.val.general['bovaer_production_emission_factor'])
         ws.dist.annual[self.ktCO2e_ca_key] = dists.Normal(
                 loc, scale=jnp.sqrt(13 * (pt_scale ** 2)))
         for ii, (_, pt_key) in enumerate(self.ktCO2e_pt_keys.items()):
-            loc = (
-                    heads_pt[:, ii]
-                       * ws.val.annual[self.annual_bovaer_fraction]
-                       * (ws.val.general['bovaer_production_emission_factor']
-                          * kt_per_kg
-                          * float(GWP_100[GHG.CH4].magnitude)))
+            loc = (ktCO2e_abated[:, ii]
+                   / ws.val.general['bovaer_production_emission_factor'])
             ws.dist.annual[pt_key] = dists.Normal(loc, scale=pt_scale)
 
     @property
@@ -545,7 +525,7 @@ class Bovaer_Purchase_Cost(NIR_ModelElement):
                 }
 
 
-class Scale_Bovaer(ModelElement, SiteModelElement):
+class Scale_Bovaer(SiteModelElement):
     """<p>The "Scale Bovaer" strategy implements an assumption that
     cattle farmers who are modelled as being open to Bovaer usage
     (according to the assumptions in
@@ -608,17 +588,14 @@ class Scale_Bovaer(ModelElement, SiteModelElement):
         return [jinja2.Template(source=source).render(render_vars)
                 for source in sources]
 
-    @property
-    def description_html(self) -> str:
-        if self.__doc__ is None:
-            raise NotImplementedError()
-        else:
-            template = jinja2.Template(source=self.__doc__)
-            rval = template.render(
-                Bovaer_Adoption_Limit=Bovaer_Adoption_Limit,
-                coderef_url=coderef_url,
-                )
-            return rval
+    def description_html(self, context:None|dict=None) -> str:
+        assert self.__doc__ is not None
+        template = jinja2.Template(source=self.__doc__)
+        rval = template.render(
+            Bovaer_Adoption_Limit=Bovaer_Adoption_Limit,
+            coderef_url=coderef_url,
+            )
+        return rval
 
     @property
     def bovaer_budget(self) -> AnnualKey:
@@ -644,3 +621,7 @@ class Scale_Bovaer(ModelElement, SiteModelElement):
                 ws.val.annual[years_key] < ws.val.general[self.bovaer_program_launch],
                 0,
                 float('inf'))
+
+    @property
+    def cost_centre(self) -> SPE:
+        return SPE.BovaerSubsidy

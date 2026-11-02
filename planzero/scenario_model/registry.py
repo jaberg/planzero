@@ -371,7 +371,7 @@ def _compute_mcmc_submodel_reuse(
                 err.add_note(f'vk_path={vkpath}')
                 raise
         if msg_prefix:
-            print(msg_prefix, 'reusing mcmc for', model_name, mcmc_group, version_hash, seed_hash)
+            print(msg_prefix, 'reusing mcmc from', model_name, mcmc_group, version_hash, seed_hash)
         return ((avail.model_name,
                  avail.model_version_hash,
                  avail.model_seed_hash),

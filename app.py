@@ -395,27 +395,22 @@ async def get_simulations_strategy_impact(request: Request, sim_name: str, strat
 
 @app_cache
 def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name: str):
-    import planzero.blog
     from planzero.endpoints import completed_prob_registry as prob_registry
+    from planzero.prob import SiteInference
     try:
         site_inference = prob_registry()[site_inference_name]
+        assert isinstance(site_inference, SiteInference)
     except KeyError:
         raise HTTPException(
                 status_code=404,
                 detail=f"No such model: '{site_inference_name}'")
 
-    ablation_study = site_inference.ablation_study
-    if not ablation_study:
-        raise HTTPException(
-                status_code=404,
-                detail=f"No ablation study for: '{site_inference_name}'")
-
-    impact_chart = ablation_study.impact_chart(strategy_name)
-    subsidies_chart = ablation_study.government_impact_chart(strategy_name)
-    cost_per_tCO2e = ablation_study.cost_per_tCO2e(strategy_name)
-
-    # TODO: this should maybe be a diagnostic / warning?
-    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
+    impact_chart = site_inference.national_emissions_impact_echart(
+            strategy_name, div_id='emissions_echart', v_unit='Mt_CO2e')
+    subsidies_chart = site_inference.national_cost_impact_echart(
+            strategy_name, div_id='cost_echart', v_unit='Billions CAD')
+    cost_per_tCO2e = site_inference.cost_per_tCO2e(
+            strategy_name)
 
     context = get_context(
             title=f"PlanZero Model {site_inference_name} - Strategy {strategy_name}",
@@ -424,12 +419,14 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
             sim_name=None,
             site_inference=site_inference,
             strategy_name=strategy_name,
-            description_html=ablation_study.strategies[strategy_name].description_html,
+            description_html=(
+                site_inference.strategies[strategy_name].description_html()),
             impact_chart=impact_chart,
             subsidies_chart=subsidies_chart,
             cost_per_tCO2e=cost_per_tCO2e,
             )
-    context['see_also'] = ablation_study.strategies[strategy_name].see_also_html(context)
+    context['see_also'] = (
+            site_inference.strategies[strategy_name].see_also_html(context))
     return templates.get_template('strategy_impact_prob.html').render(context)
 
 

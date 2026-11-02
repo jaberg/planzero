@@ -1461,7 +1461,8 @@ class Computation:
         self._run_prep()
         self._run_step()
         self._run_proc()
-        self._forget_non_outputs()
+        if self.phase == Phase.Posterior:
+            self._forget_non_outputs()
         self.has_run = True
 
 
@@ -1510,7 +1511,7 @@ def compute_model(
     comp_prior.run()
 
     if len(mcmc_submodels) > 1:
-        raise NotImplementedError()
+        raise NotImplementedError(model.mcmc_group_by_elemid)
     else:
         saved_sample_sites = {}
         all_grouped_samples = {}

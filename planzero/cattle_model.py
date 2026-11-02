@@ -83,7 +83,10 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
 
     @property
     def version_id(self):
-        return (1,)
+        return (
+                # 1, initial
+                2, # fix scale error in emissions variance
+                )
 
     @property
     def static_emission_factors(self) -> GeneralKey:
@@ -109,8 +112,14 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
     def annual_bovaer_fraction(self) -> AnnualKey:
         return self.annual_key('annual_bovaer_fraction')
 
-    @define_annual(ktCO2e_ca_key, annual_shape=[], posterior_only=True)
-    @define_annual(ktCO2e_pt_keys, annual_shape=[], posterior_only=True)
+    @property
+    def ktCO2e_abated_by_bovaer_ca(self) -> AnnualKey:
+        """Used to calculate Bovaer production emissions"""
+        return self.annual_key('ktCO2e_abated_by_bovaer_ca')
+
+    @define_annual(ktCO2e_ca_key, annual_shape=[])
+    @define_annual(ktCO2e_pt_keys, annual_shape=[])
+    @define_annual(ktCO2e_abated_by_bovaer_ca, annual_shape=[13])
     @define(static_emission_factors, prior_shape=[n_livestock_types])
     @define('headcounts', prior_shape=[n_livestock_types, n_regions])
     @define_annual(annual_headcounts, annual_shape=[n_livestock_types, n_regions])
@@ -200,6 +209,18 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
             for lt in Livestock_nonsums]).reshape(
                     (-1,) + (1,) + ws.mcmc_broadcast_shape)
 
+        ws.val.annual[self.ktCO2e_abated_by_bovaer_ca] = (
+                ws.val.general[self.static_emission_factors][:, None]
+                * ws.val.general['mu_livestock_counts']
+                * livestock_scale
+                * bovine_fraction_on_bovaer[:, None, None]
+                * actual_methane_reduction
+                * (
+                    GWP_100[GHG.CH4].magnitude # CH4 -> CO2e
+                    / 1_000_000 # kg -> kt
+                  )
+                ).sum(axis=1) # over livestock types
+
         # (years, n_PTs,)
         annual_PT_emissions_kg_CH4_from_cattle_on_bovaer = (
                 ws.val.general[self.static_emission_factors][:, None]
@@ -229,13 +250,16 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
         ws.dist.general['emissions_obs_noise_pt'] = dist.HalfNormal(1.0).expand((n_regions,))
         ws.dist.general['emissions_obs_noise_ca'] = dist.HalfNormal(1.0)
 
+        pt_scales = {pt: 1000 if pt == PT.AB else 200 for pt in PT}
+        ca_scale = jnp.sqrt(sum(scale ** 2 for scale in pt_scales.values()))
+
         for ii, (pt, key) in enumerate(self.ktCO2e_pt_keys.items()):
             ws.dist.annual[key] = dist.Normal(
                     annual_PT_emissions_ktCO2e[:, ii],
-                    ws.val.general['emissions_obs_noise_pt'][ii])
+                    pt_scales[pt] * ws.val.general['emissions_obs_noise_pt'][ii])
         ws.dist.annual[self.ktCO2e_ca_key] = dist.Normal(
                 annual_PT_emissions_ktCO2e.sum(axis=1),
-                ws.val.general['emissions_obs_noise_ca'])
+                ca_scale)
 
     @property
     def ktCO2e_emissions_ca(

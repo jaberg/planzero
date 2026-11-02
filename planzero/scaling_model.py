@@ -36,8 +36,8 @@ def _add_enteric_fermentation_and_other_product_mfg(self, mcmc_group:str):
     # it shouldn't hurt.
     add_element(
             bovaer_model.Bovaer_Production_Emissions(
-                annual_headcounts_key=cattle_elem.annual_headcounts,
-                annual_bovaer_fraction=cattle_elem.annual_bovaer_fraction))
+                ktCO2e_abated_by_bovaer_ca=cattle_elem.ktCO2e_abated_by_bovaer_ca,
+                ))
 
     adoption_limit = add_element(
             bovaer_model.Bovaer_Adoption_Limit())
@@ -66,13 +66,15 @@ def _add_enteric_fermentation_and_other_product_mfg(self, mcmc_group:str):
 
 
 class Scaling_ScenarioModel(NIR_ScenarioModel):
-    def __init__(self,
-                 data_cutoff:datetime.date,
-                 last_forecast_year=2050,
-                 sectors:type[IPCC_Sector]|list[IPCC_Sector]=IPCC_Sector,
-                 num_warmup=1500,
-                 num_samples=500,
-                 ):
+    def __init__(
+            self,
+            data_cutoff:datetime.date,
+            last_forecast_year=2050,
+            sectors:type[IPCC_Sector]|list[IPCC_Sector]=IPCC_Sector,
+            num_warmup=1500,
+            num_samples=500,
+            just_efman_testing:bool=False,
+            ):
         """
         sectors: default to all sectors (site models require all sectors), but subsets can be used in testing
         """
@@ -87,6 +89,15 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
         # can free some memory as it goes... as of writing, it does not.
         self.data_cutoff = data_cutoff
         self._sectors = sectors
+
+        if just_efman_testing:
+            _add_enteric_fermentation_and_other_product_mfg(
+                    self,
+                    mcmc_group='enteric_and_other_product_mfg')
+            self.add_emissions_sums()
+            self.add_element_prenir_2025_m04()
+            self.add_cost_sums()
+            return
 
         for sector in sectors:
             if sector == IPCC_Sector.Enteric_Fermentation:
@@ -127,6 +138,5 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
         # instead of having to remember them as suffix of constructor
         # maybe add_contributor and add_flow as you go in add_element?
         self.add_emissions_sums()
-        assert IPCC_Sector.SCS__Public_Electricity_and_Heat in self.sector_sum_over_ghg
         self.add_element_prenir_2025_m04()
         self.add_cost_sums()

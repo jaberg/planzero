@@ -1001,31 +1001,15 @@ def national_cost_impact_echart(
     else:
         raise NotImplementedError(v_unit)
 
-    class NetEnum(str, enum.Enum):
-        Net = 'Net'
-
-    total_delta = None
     for spe, cost_sample in costs_with_strategy.items():
         delta = cost_sample - costs_without_strategy[spe]
         helper.update_stats_from_sample(
                 spe,
                 delta.T * v_unit_scale)
-        if total_delta is None:
-            total_delta = delta
-        else:
-            total_delta += delta
-    assert total_delta is not None
-    helper.update_stats_from_sample(
-            NetEnum.Net,
-            total_delta.T * v_unit_scale)
-    non_net_programs = list(costs_with_strategy)
+    non_net_programs = list(costs_with_strategy) # keys
     non_net_programs.sort(key=lambda prog: helper.stats_d[prog]['spread'])
-    helper.sorted_keys.append(NetEnum.Net)
     helper.sorted_keys.extend(non_net_programs)
     helper.determine_n_total_rows()
-    helper.color_by_key = {
-        NetEnum.Net: col_ca,
-    }
     helper.assign_default_colors()
     helper.append_all_cells()
     return helper.make_echart()
@@ -1108,7 +1092,6 @@ def national_emissions_impact_echart(
         v_unit:str,
         model_name:str,
         ) -> UncertainSparklineMatrixEChart:
-
     helper = SparklineEChartHelperBase(
             div_id=div_id,
             v_unit=v_unit,
@@ -1150,7 +1133,7 @@ def national_emissions_impact_echart(
     non_lulucf_scores = [
         (-helper.data_by_sector[sector]['ubound'], sector)
         for sector in nonzero_deltas
-        if sector not in LULUCF_Sectors]
+        if isinstance(sector, IPCC_Sector) and sector not in LULUCF_Sectors]
     if any(sector in LULUCF_Sectors for sector in nonzero_deltas):
         raise NotImplementedError()
     non_lulucf_scores.sort()

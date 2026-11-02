@@ -650,7 +650,7 @@ class NIR_ScenarioModel(ScenarioModel):
                     ghg=ghg,
                     report_emissions=False)
             nir_years_key = nir_elem.years_key
-            self.add_element(nir_elem)
+            self.add_element(nir_elem, mcmc_group=None)
 
             sector_ghg_nir_keys[sector, ghg] = {}
             sector_ghg_nir_keys[sector, ghg][PseudoRegion.NationalTotal] = nir_elem.ca_key

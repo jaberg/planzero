@@ -1,8 +1,11 @@
 """
 BaseModels for Probabilistic Models
 """
+from __future__ import annotations
 
-from .enums import GHG, IPCC_Sector
+import numpy as np
+
+from .enums import GHG, SPE, IPCC_Sector
 from .html import html_by_ghg
 from .nir2025 import near_zero_sector_ghgs
 from .nir_model import NIR_ScenarioModel
@@ -11,6 +14,9 @@ from .scenario_model import (
     ModelElement,
     registry_basename,
     registry_compute_model,
+)
+from .sector_total_emissions_element import (
+    PseudoSector,
 )
 from .singleton_registry import SingletonRegistry
 from .sparkline_echart_helper import (
@@ -222,12 +228,20 @@ class SiteInference:
         raise NotImplementedError()
 
     @property
-    def strategies(self) -> dict[str, ModelElement]:
-        return self._strategies
+    def strategies(self) -> dict[str, SiteModelElement]:
+        rval = {}
+        for key, val in self._strategies.items():
+            assert isinstance(val, SiteModelElement)
+            rval[key] = val
+        return rval
 
     @property
-    def barriers(self) -> dict[str, ModelElement]:
-        return self._barriers
+    def barriers(self) -> dict[str, SiteModelElement]:
+        rval = {}
+        for key, val in self._barriers.items():
+            assert isinstance(val, SiteModelElement)
+            rval[key] = val
+        return rval
 
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
         ktCO2e_sample = self.scenario_model.all_sector_echart_ktCO2e_sample(self.comp)
@@ -303,6 +317,33 @@ class SiteInference:
                 )
         return rval
 
+    def cost_per_tCO2e(self, strategy_elem_id) -> tuple[float, float]:
+        """Return 95% CI for strategy's cost
+        """
+        strategy = self.strategies[strategy_elem_id]
+        CAD_with = self.scenario_model.all_SPE_echart_cost_sample(
+                self.comp)
+        ktCO2e_with = self.scenario_model.all_sector_echart_ktCO2e_sample(
+                self.comp)
+        ablated_model = self._ablations[strategy_elem_id]
+        ablated_comp = self.registry_compute_model(
+                ablate_strategy_elem_id=strategy_elem_id)
+        CAD_without = ablated_model.all_SPE_echart_cost_sample(ablated_comp)
+        ktCO2e_without = ablated_model.all_sector_echart_ktCO2e_sample(ablated_comp)
+
+        CAD_delta = CAD_with[strategy.cost_centre] - CAD_without[strategy.cost_centre]
+        ktCO2e_delta = (ktCO2e_with[PseudoSector.Total_with_LULUCF]
+                        - ktCO2e_without[PseudoSector.Total_with_LULUCF])
+        tCO2e_delta = ktCO2e_delta * 1000
+        # tCO2e_delta has shape (n_years, n_samples)
+        estimates = (
+                CAD_delta.sum(axis=0)
+                / tCO2e_delta.sum(axis=0))
+        lower, upper = np.quantile(
+                estimates,
+                q=[0.025, 0.975])
+        return lower, upper
+
     # called by e.g. models/prob/foo/sectors/bar
     # to determine which GHGs to show
     def GHGs_for_sector(self, sector) -> list[GHG]:
@@ -311,7 +352,7 @@ class SiteInference:
         return rval
 
 
-class SiteModelElement:
+class SiteModelElement(ModelElement):
     """Contract for attributes used to render barriers and strategies.
     """
 
@@ -326,3 +367,15 @@ class SiteModelElement:
         To be shown in e.g. the table on the /models/prob/{model} page.
         """
         return []
+
+    def description_html(self, context:None|dict=None) -> str:
+        raise NotImplementedError()
+
+    def see_also_html(self, context:None|dict=None) -> list[str]:
+        return []
+
+    @property
+    def cost_centre(self) -> SPE:
+        # for Strategies, what SPE balance over time should be used to compute
+        # cost_per_tCO2e ?
+        raise NotImplementedError()
