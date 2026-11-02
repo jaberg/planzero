@@ -71,13 +71,13 @@ jobs:
 
       - parallel:
         - name: Perform Static Normals inference
-          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+          run: python -m planzero registry_computation --model=Static_Normals_2024_12_31
 
         - name: Perform Static Normals inference
-          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+          run: python -m planzero registry_computation --model=Static_Normals_2024_12_31
 
         - name: Perform Static Normals inference
-          run: python -m planzero inference_work --model=Static_Normals_2024_12_31
+          run: python -m planzero registry_computation --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
         uses: actions/cache/save@v6
@@ -87,7 +87,7 @@ jobs:
 
       # TODO: cache this when it stabilizes
       - name: Infer cattle population and emission factors for scaling ablation study
-        run: python -m planzero inference_work --model=ScalingStudy_All_Strategies
+        run: python -m planzero registry_computation --model=ScalingSiteInference
 
       # Run test and populate app cache (diskcache)
 
