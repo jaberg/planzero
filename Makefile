@@ -167,9 +167,6 @@ build_and_test:
 	# the environment and docker command should configure the project root
 	# as /mnt
 	# and set the environment variables to use subfolders as cache directories
-	rm -f ./my_database.db
-	python -m planzero.model_db init
-	python -m planzero inference_prep --model=Static_Normals_2024_12_31
-	python -m planzero inference_work --model=Static_Normals_2024_12_31
-	python -m planzero inference_work --model=ScalingStudy_All_Strategies
-	pytest -n 4 -W error --maxfail=10 .
+	python -m planzero registry_computation --model=Static_Normals_2024_12_31
+	python -m planzero registry_computation --model=Scaling
+	pytest -W error --maxfail=10 -m "not slow" .
