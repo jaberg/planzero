@@ -2,7 +2,7 @@
 BaseModels for Probabilistic Models
 """
 
-from .enums import GHG
+from .enums import GHG, IPCC_Sector
 from .html import html_by_ghg
 from .nir2025 import near_zero_sector_ghgs
 from .nir_model import NIR_ScenarioModel
@@ -309,3 +309,20 @@ class SiteInference:
         near_zeros = near_zero_sector_ghgs()
         rval = [ghg for ghg in GHG if (sector, ghg) not in near_zeros]
         return rval
+
+
+class SiteModelElement:
+    """Contract for attributes used to render barriers and strategies.
+    """
+
+    @property
+    def pretty_name(self) -> str:
+        """Name used in page content, to be read naturally."""
+        return self.__class__.__name__.replace('_', ' ')
+
+    @property
+    def extra_ipcc_sectors(self) -> list[IPCC_Sector]:
+        """Sectors related to this modelling element.
+        To be shown in e.g. the table on the /models/prob/{model} page.
+        """
+        return []

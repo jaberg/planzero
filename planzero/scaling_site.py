@@ -262,7 +262,7 @@ class ScalingSiteInference(prob.SiteInference):
     """Maximal deployment of available, modelled products,
     based on a baseline assumption of static emissions amounts."""
 
-    include_in_registry:bool = False
+    include_in_registry:bool = True
 
     def __init__(self):
         data_cutoff = datetime.date(year=2024, month=12, day=31)

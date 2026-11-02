@@ -6,13 +6,12 @@ HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'
 
 def completed_prob_registry() -> singleton_registry.SingletonRegistry:
     from . import (
-            #ablation,
-            #ablation_study_scaling,  # noqa: F401
             challenge,  # noqa: F401   # HACK to ensure loaded
             nir2025_site,  # noqa: F401
             nir_ar2_site,  # noqa: F401
             nir_static_normals_site,  # noqa: F401
             prob,
+            scaling_site,  # noqa: F401
             sim,  # noqa: F401   # HACK to ensure loaded
     )
 
@@ -23,6 +22,7 @@ def completed_prob_registry() -> singleton_registry.SingletonRegistry:
 
     assert 'NIR2025' in rval
     assert 'Static_Normals_2024_12_31' in rval
+    assert 'ScalingSiteInference' in rval
     # assert 'ScalingStudy_All_Strategies' in rval
     return rval
 

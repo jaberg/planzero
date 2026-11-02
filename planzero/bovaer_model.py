@@ -8,6 +8,7 @@ from .enums import GHG, PT, SPE, IPCC_Sector
 from .ghgvalues import GWP_100
 from .html import coderef_url
 from .nir_model import NIR_ModelElement
+from .prob import SiteModelElement
 from .sc_3210013001 import (
     Livestock,
     Livestock_nonsums,
@@ -544,7 +545,7 @@ class Bovaer_Purchase_Cost(NIR_ModelElement):
                 }
 
 
-class Scale_Bovaer(ModelElement):
+class Scale_Bovaer(ModelElement, SiteModelElement):
     """<p>The "Scale Bovaer" strategy implements an assumption that
     cattle farmers who are modelled as being open to Bovaer usage
     (according to the assumptions in
