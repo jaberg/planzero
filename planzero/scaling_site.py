@@ -288,6 +288,10 @@ class ScalingSiteInference(prob.SiteInference):
     def pretty_name(self) -> str:
         return 'Scaling'
 
+    @property
+    def url_name(self) -> str:
+        return 'Scaling'
+
     def one_line_description(self):
         return "Hypothetical scaling of emission-reduction measures within an otherwise non-time-varying economy"
 

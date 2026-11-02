@@ -298,6 +298,9 @@ class Sum_Over_Sectors(ModelElement):
 
     def add_contributor(self, sector, key):
         assert sector not in self._sector_totals
+        assert isinstance(sector, IPCC_Sector)
+        if not self.include_LULUCF:
+            assert sector not in LULUCF_Sectors
         self._sector_totals[sector] = key
     
     @property
@@ -566,7 +569,7 @@ class NIR_ScenarioModel(ScenarioModel):
             comp:Computation,
             ) -> tuple[float, float]:
         ktCO2e_sample = comp.ndarray_d[
-                self.sum_over_sectors[True].ktCO2e_ca]
+                self.sum_over_sectors[False].ktCO2e_ca]
         model_years = np.asarray(comp.ndarray_d[years_key])
         match_mask = (model_years == 2050)
         if np.any(match_mask):
@@ -576,7 +579,7 @@ class NIR_ScenarioModel(ScenarioModel):
         ktCO2e_2050 = ktCO2e_sample[model_idx_of_prediction_year]
         n_mcmc, = ktCO2e_2050.shape
         assert n_mcmc > 100
-        unit_conversion = 1 / 1000
+        unit_conversion = 1 / 1000 # ktCO2e -> MtCO2e
         lower, upper = np.quantile(ktCO2e_2050, [0.025, 0.975]) * unit_conversion
         return lower, upper
 

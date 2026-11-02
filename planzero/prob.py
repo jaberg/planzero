@@ -195,7 +195,8 @@ class SiteInference:
 
     @property
     def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
-        low, high = self.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(self.comp)
+        low, high = self.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(
+                self.comp)
         rval = f"{low:.1f} - {high:.1f} Mt{html_by_ghg[GHG.CO2]}e"
         return rval
 
@@ -262,8 +263,8 @@ class SiteInference:
                 comp=self.comp, sector=sector, ghg=ghg)
         return sectoral_emissions_by_region_echart_from_sample(
                 ktCO2e_sample=ktCO2e_sample,
-                year_0=1990,
-                n_years=34,
+                year_0=self.comp.model.mv.year_0,
+                n_years=self.comp.n_years,
                 n_samples=self.comp.n_mcmc,
                 sector=sector,
                 ghg=ghg,
