@@ -168,5 +168,5 @@ build_and_test:
 	# as /mnt
 	# and set the environment variables to use subfolders as cache directories
 	python -m planzero registry_computation --model=Static_Normals_2024_12_31
-	python -m planzero registry_computation --model=Scaling
+	python -m planzero registry_computation --model=ScalingSiteInference
 	pytest -W error --maxfail=10 -m "not slow" .
