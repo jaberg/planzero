@@ -89,7 +89,8 @@ def dist_scan_set_next(comp:Computation, scan_storage:ScanStorage, var_key:Eleme
                         jnp.minimum(this_idx, n_prior_years - 1)]
             this_sample = jnp.where(switching_scalar, sample_mcmc_right, nc_data)
 
-            scan_storage.next_carry_d[var_key] = this_sample
+            scan_storage.next_carry_d[var_key] = _downcast_on_posterior(
+                    this_sample, phase=comp.phase)
     else:
         assert 0
 

@@ -188,7 +188,14 @@ class ScanStorage:
 
 
 def build_general_prior_shape(comp:Computation, var_key:VarKey, val_shape:tuple) -> list[int]:
-    metadata_shape = comp.model.mv.general_nd[var_key].definition_metadata.value_type.shape
+    try:
+        metadata_shape = comp.model.mv.general_nd[var_key].definition_metadata.value_type.shape
+    except KeyError:
+        if comp.phase == Phase.Prior and var_key in comp._ndarray_shapes:
+            metadata_shape = comp._ndarray_shapes[var_key]
+        else:
+            raise
+
     prior_shape_list:list[int] = []
     for ii, dim_ii in enumerate(metadata_shape):
         if isinstance(dim_ii, NdarrayDim):
@@ -206,13 +213,18 @@ def build_annual_prior_shape(comp:Computation, var_key:ElementAnnualKey, val_sha
     with an argument (distribution or ndarray) of shape `val_shape`
     in phase `Phase.Prior`
     """
-    metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
-    assert metadata_shape[0] == years_dim
+    try:
+        metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
+        assert metadata_shape[0] == years_dim
+    except KeyError:
+        if comp.phase == Phase.Prior and var_key in comp._ndarray_shapes:
+            metadata_shape = comp._ndarray_shapes[var_key]
+        else:
+            raise
     if len(val_shape) < len(metadata_shape):
         broadcast_val_shape = (1,) * (len(metadata_shape) - len(val_shape)) + val_shape
     else:
         broadcast_val_shape = val_shape
-    del val_shape
 
     prior_shape_list:list[int] = []
     if len(broadcast_val_shape) == len(metadata_shape):
@@ -225,8 +237,17 @@ def build_annual_prior_shape(comp:Computation, var_key:ElementAnnualKey, val_sha
             else:
                 raise NotImplementedError(dim_ii)
     else:
-        raise ValueError(f"val_shape {broadcast_val_shape} has too many dimensions")
+        raise ValueError(f"broadcast_val_shape {broadcast_val_shape} from val_shape {val_shape} has too many dimensions for metadata_shape {metadata_shape}")
     return prior_shape_list
+
+
+def build_prior_shape(comp:Computation, var_key:VarKey, val_shape:tuple) -> list[int]:
+    if isinstance(var_key, ElementAnnualKey):
+        return build_annual_prior_shape(comp, var_key, val_shape)
+    elif isinstance(var_key, ElementGeneralKey):
+        return build_general_prior_shape(comp, var_key, val_shape)
+    else:
+        raise NotImplementedError(var_key)
 
 
 def build_annual_posterior_shape(comp:Computation, var_key:ElementAnnualKey, val_shape:tuple) -> list[int]:
@@ -234,9 +255,16 @@ def build_annual_posterior_shape(comp:Computation, var_key:ElementAnnualKey, val
     with an argument (distribution or ndarray) of shape `val_shape`
     in phase `Phase.Posterior`
     """
-    prior_metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
-    assert prior_metadata_shape[0] == years_dim
-    metadata_shape = prior_metadata_shape + [comp.n_mcmc]
+    try:
+        prior_metadata_shape = comp.model.mv.annual_nd[var_key].definition_metadata.value_type.shape
+        assert prior_metadata_shape[0] == years_dim
+        metadata_shape = prior_metadata_shape + [comp.n_mcmc]
+    except KeyError:
+        if comp.phase == Phase.Posterior and var_key in comp._ndarray_shapes:
+            metadata_shape = comp._ndarray_shapes[var_key]
+        else:
+            raise
+
     if len(val_shape) < len(metadata_shape):
         # broadcast val_shape by left-padding shape with (1,)
         broadcast_val_shape = (1,) * (len(metadata_shape) - len(val_shape)) + val_shape
@@ -893,7 +921,14 @@ class Computation:
     has_run: bool
     sample_sites: dict[VarKey, str]
     ndarray_dim_d: dict[NdarrayDim, int]
+
+    # this is a list, not a dict, because syntactically, a var_key can
+    # have a different default value at each point of access.
+    # It is an error to actually have different values though.
     _resolved_accesses: list[ResolvedAccessMetadata]
+
+    _ndarray_shapes: dict[VarKey, tuple]
+    _ndarray_dtypes: dict[VarKey, object]
 
     n_mcmc: int
 
@@ -919,16 +954,51 @@ class Computation:
                 years_dim: model.n_prior_years,
                 mcmc_dim: model.num_samples,
                 }
-        self._defined_var_keys = (
-                set(model.mv.general_nd)
-                | set(model.mv.carry_nd)
-                | set(model.mv.annual_nd))
         self._resolved_accesses = model.resolve_accesses()
         self._access_default_d = {
                 (access.elem_id, access.subphase, access.var_key): access.default
                 for access in self._resolved_accesses
                 if access.default is not None
                 }
+        self._ndarray_shapes = {}
+        self._ndarray_dtypes = {}
+        self._init_ndarray_shapes_dtypes()
+        self._defined_var_keys = (
+                set(model.mv.general_nd)
+                | set(model.mv.carry_nd)
+                | set(model.mv.annual_nd)
+                | {access.var_key for access in self._resolved_accesses})
+
+    def _init_ndarray_shapes_dtypes(self):
+        """Infer the shape and dtype that every variable should have"""
+        for access in self._resolved_accesses:
+            if access.default is None:
+                continue
+            var_key = access.var_key
+            arr_default = jnp.array(access.default)
+            if isinstance(var_key, ElementGeneralKey):
+                if self.phase == Phase.Prior:
+                    self._ndarray_shapes[var_key] = arr_default.shape
+                    self._ndarray_dtypes[var_key] = jnp.float64
+                elif self.phase == Phase.Posterior:
+                    self._ndarray_shapes[var_key] = arr_default.shape + (1,)
+                    self._ndarray_dtypes[var_key] = jnp.float32
+                else:
+                    raise NotImplementedError(self.phase)
+            elif isinstance(var_key, ElementAnnualKey):
+                if self.phase == Phase.Prior:
+                    self._ndarray_shapes[var_key] = (self.n_years,) + arr_default.shape
+                    self._ndarray_dtypes[var_key] = jnp.float64
+                elif self.phase == Phase.Posterior:
+                    self._ndarray_shapes[var_key] = (
+                            (self.n_years,)
+                            + arr_default.shape
+                            + (1,))
+                    self._ndarray_dtypes[var_key] = jnp.float32
+                else:
+                    raise NotImplementedError(self.phase)
+            else:
+                raise NotImplementedError(var_key)
 
     def is_var_defined(self, var_key:VarKey) -> bool:
         return var_key in self._defined_var_keys
@@ -945,9 +1015,9 @@ class Computation:
         If the key has a definer, a missing value is a bug in the model or in
         the dependency ordering and must still raise.
         """
-        if self.is_var_defined(var_key):
-            return None
-        return self._access_default_d.get((elem_id, subphase, var_key))
+        assert self.is_var_defined(var_key)
+        rval = self._access_default_d.get((elem_id, subphase, var_key))
+        return rval
 
     @property
     def dist_d(self) -> ComputationDistD:
@@ -977,9 +1047,10 @@ class Computation:
     def get_ndarray(
             self,
             var_key:VarKey,
-            sample_if_necessary,
+            sample_if_necessary:bool,
             default:jnp.ndarray|None=None,
             ) -> jnp.ndarray:
+        # default here is the argument to the decorator
         if self._ndarray_d_forgotten.get(var_key):
             raise ForgottenResult(var_key)
         try:
@@ -987,15 +1058,45 @@ class Computation:
         except KeyError as err:
             if self._dist_d_forgotten.get(var_key):
                 raise ForgottenResult(var_key)
-            if (var_key not in self._dist_d or not sample_if_necessary):
-                if default is not None:
-                    return default
-                err.add_note(f'var_key in dist_d = {var_key in self._dist_d}')
-                err.add_note(f'sample_if_necessary = {sample_if_necessary}')
-                err.add_note(f'phase = {self.phase}')
-                raise
-        self.set_ndarray_from_dist(var_key)
-        return self._ndarray_d[var_key]
+            if var_key in self._dist_d:
+                if sample_if_necessary:
+                    self.set_ndarray_from_dist(var_key)
+                    return self._ndarray_d[var_key]
+                else:
+                    err.add_note(f'phase = {self.phase}')
+                    raise
+            elif default is not None:
+                self.set_ndarray_from_default(var_key, default)
+                return self._ndarray_d[var_key]
+            err.add_note(f'phase = {self.phase}')
+            raise
+
+    def set_ndarray_from_default(self, var_key:VarKey, default:jnp.ndarray):
+        arr_default = jnp.array(default)
+        if isinstance(var_key, ElementGeneralKey):
+            if self.phase == Phase.Prior:
+                full_default = arr_default
+            elif self.phase == Phase.Posterior:
+                full_default = arr_default[..., None]
+            else:
+                raise NotImplementedError(self.phase)
+        elif isinstance(var_key, ElementAnnualKey):
+            if self.phase == Phase.Prior:
+                full_default = jnp.full(
+                        shape=self._ndarray_shapes[var_key],
+                        fill_value=arr_default,
+                        dtype=jnp.float64)
+            elif self.phase == Phase.Posterior:
+                full_default = jnp.full(
+                        shape=self._ndarray_shapes[var_key],
+                        fill_value=arr_default[..., None],
+                        dtype=jnp.float32)
+            else:
+                raise NotImplementedError(self.phase)
+        else:
+            raise NotImplementedError()
+        assert self._ndarray_shapes[var_key] == full_default.shape
+        self.set_ndarray(var_key, full_default)
 
     def set_ndarray(self, item:VarKey, value:jnp.ndarray):
         if not isinstance(value, (jnp.ndarray, np.ndarray)):
@@ -1211,6 +1312,9 @@ class Computation:
                 for key, val in self.sample_sites.items()}
         assert len(rlookup) == len(self.sample_sites)
         self.ndarray_dim_d[years_dim] = self.model.n_posterior_years
+        self._ndarray_shapes.clear()
+        self._ndarray_dtypes.clear()
+        self._init_ndarray_shapes_dtypes()
 
         for key_str, grouped_sample in grouped_samples.items():
             var_key = rlookup[key_str]

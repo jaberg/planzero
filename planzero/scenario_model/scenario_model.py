@@ -57,7 +57,8 @@ class UnresolvedAccessMetadata(BaseModel, frozen=True):
     subphase: Subphase
     var_key_or_prop: VarKey|property
     # ndarray returned when no element in the model defines var_key.
-    default: Any = None
+    default: Any
+    shape:list[int|NdarrayDim]|None
     annual:bool
     which_carry: Literal['neither', 'this', 'next'] = "neither"
 
@@ -69,7 +70,8 @@ class ResolvedAccessMetadata(BaseModel, frozen=True):
     subphase: Subphase
     var_key: VarKey
     # ndarray returned when no element in the model defines var_key.
-    default: Any = None
+    default: Any
+    shape:list[int|NdarrayDim]|None
     which_carry: Literal['neither', 'this', 'next']
 
 
@@ -187,6 +189,7 @@ def _access_deco(
         var_key:str|VarKey|property,
         *,
         default:ArrayLike|None,
+        shape:list[int|NdarrayDim]|None=None,
         deco_attr:str,
         ):
     def deco(f):
@@ -198,6 +201,7 @@ def _access_deco(
         subphase=_subphase_from_f(f)
         access_d.setdefault(subphase, {})[var_key] = {
                 'default': None if default is None else jnp.asarray(default),
+                'shape': shape,
                 }
         return f
     return deco
@@ -206,6 +210,7 @@ def _access_deco(
 def access_val(
         var_key:str|VarKey|property,
         *,
+        shape:list[int|NdarrayDim]|None=None,
         default:ArrayLike|None=None,
         ):
     """Declare that a model element reads a general value or distribution.
@@ -223,6 +228,7 @@ def access_val(
     return _access_deco(
             var_key,
             default=default,
+            shape=shape,
             deco_attr=_deco_attr_access_val)
 
 
@@ -250,6 +256,7 @@ def access_annual(
     return _access_deco(
             var_key,
             default=default,
+            shape=annual_shape,
             deco_attr=_deco_attr_access_annual)
 
 
@@ -433,21 +440,18 @@ def _check_default_consistency(
     with a default. Those defaults must broadcast to a common shape and be
     numerically equal there, so the default read does not depend on which
     element (or subphase) performs the read.
+
     """
-    try:
-        shape = jnp.broadcast_shapes(jnp.shape(existing), jnp.shape(new))
-    except ValueError:
+    if jnp.shape(existing) != jnp.shape(new):
         raise DefinitionError(
-                f'defaults for {var_key} are not broadcast-compatible:'
+                f'defaults for {var_key} have differing'
                 f' shapes {jnp.shape(existing)} and {jnp.shape(new)}')
-    existing_b = jnp.broadcast_to(existing, shape)
-    new_b = jnp.broadcast_to(new, shape)
     def has_tracer(x):
         return any(isinstance(leaf, jax.core.Tracer)
                    for leaf in jax.tree_util.tree_leaves(x))
-    if (not has_tracer(new_b)
-        and not has_tracer(existing_b)
-        and not bool(np.array_equal(existing_b, new_b, equal_nan=True))):
+    if (not has_tracer(new)
+        and not has_tracer(existing)
+        and not bool(np.array_equal(existing, new, equal_nan=True))):
         raise DefinitionError(
                 f'defaults for {var_key} are broadcast-compatible but not'
                 f' numerically equal: {existing} and {new}')
@@ -700,6 +704,7 @@ class ScenarioModel:
         for subphase, var_key_d in avd.items():
             for str_vk_or_prop, metadata in var_key_d.items():
                 default = metadata['default']
+                shape = metadata['shape']
                 if isinstance(str_vk_or_prop, str):
                     if annual:
                         vk_or_prop = ElementAnnualKey(
@@ -719,6 +724,7 @@ class ScenarioModel:
                             subphase=subphase,
                             var_key_or_prop=vk_or_prop,
                             default=default,
+                            shape=shape,
                             annual=annual,
                             which_carry=which_carry))
 
@@ -799,7 +805,7 @@ class ScenarioModel:
 
     def resolve_accesses(self) -> list[ResolvedAccessMetadata]:
         """Return a list of accesses that resolves the properties in mv.access_declarations.
-        Also fill out default_by by side-effect.
+        Also fill out default_by_var_key by side-effect.
         """
         rval:list[ResolvedAccessMetadata] = []
 
@@ -830,19 +836,24 @@ class ScenarioModel:
                 accessed_vk = var_key_
 
             if uam.default is not None:
+                # store the default as it was passed, it may be modified
+                # with e.g. n_years or MCMC padding where it is needed
+                # in Computation. See Computation.set_ndarray_from_default
                 existing = self._default_by_var_key.get(accessed_vk)
                 if existing is None:
                     self._default_by_var_key[accessed_vk] = uam.default
                 else:
                     _check_default_consistency(
                             accessed_vk, existing, uam.default)
+
             rval.append(
                     ResolvedAccessMetadata(
                         elem_id=uam.elem_id,
                         subphase=uam.subphase,
                         var_key=accessed_vk,
                         which_carry=uam.which_carry,
-                        default=uam.default))
+                        default=uam.default,
+                        shape=uam.shape))
 
         for uam in self.mv.unresolved_accesses:
             if isinstance(uam.var_key_or_prop, VarKey):

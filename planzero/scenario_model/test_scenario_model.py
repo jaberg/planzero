@@ -395,7 +395,7 @@ def test_access_val_default_when_undefined():
 
 class AnnualDefaultReader(ModelElement):
 
-    @access_annual('missing_annual', default=jnp.arange(4.0))
+    @access_annual('missing_annual', default=2.0)
     @define_annual('out', annual_shape=[])
     def model_element_prepare(self, ws:Workspace):
         ws.val.annual['out'] = ws.val.annual['missing_annual'] + 1.0
@@ -407,7 +407,7 @@ def test_access_annual_default_when_undefined():
     comp.run()
 
     out_key = ElementAnnualKey(elem_id='AnnualDefaultReader', name='out')
-    assert np.all(np.asarray(comp._ndarray_d[out_key]) == np.arange(1.0, 5.0))
+    assert np.all(np.asarray(comp._ndarray_d[out_key]) == 3)
 
 
 class AnnualStepDefaultReader(ModelElement):
@@ -478,8 +478,8 @@ class DefaultUserA(ModelElement):
 
 class DefaultUserB(ModelElement):
 
-    @access_val(_shared_default_key, default=jnp.array([5.0, 5.0]))
-    @define('out', prior_shape=[2])
+    @access_val(_shared_default_key, default=jnp.array(5.0))
+    @define('out', prior_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         ws.val.general['out'] = ws.val.general[_shared_default_key] + 0.0
 
@@ -489,13 +489,15 @@ def test_default_consistency_allows_broadcast_equal():
     # scalar and shape-(2,) defaults broadcast to (2,) and are equal
     model.add_element(DefaultUserB())
     comp = Computation(model=model, rng_key=jrandom.key(1))
+    print(comp._access_default_d)
+    assert comp._access_default_d
     comp.run()
 
     a_out = ElementGeneralKey(elem_id='DefaultUserA', name='out')
     b_out = ElementGeneralKey(elem_id='DefaultUserB', name='out')
     assert float(comp._ndarray_d[a_out]) == 5.0
     b_val = np.asarray(comp._ndarray_d[b_out])
-    assert b_val.shape == (2,)
+    assert b_val.shape == ()
     assert np.all(b_val == 5.0)
 
 
@@ -638,12 +640,14 @@ def test_step_dependency_order():
             subphase=Subphase.Step,
             var_key=ElementAnnualKey(elem_id='StepKeyProducer', name='shared'),
             default=None,
+            shape=None,
             which_carry='neither') in accesses
     assert ResolvedAccessMetadata(
             elem_id='StepKeyProducer',
             subphase=Subphase.Step,
             var_key=ElementAnnualKey(elem_id='ModelBuiltIns', name='years'),
             default=None,
+            shape=None,
             which_carry='neither') in accesses
 
     step_order = model.element_order(Subphase.Step)
