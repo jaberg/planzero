@@ -8,7 +8,10 @@ netCDF4
 numpyro
 openpyxl
 scikit-learn
-pytest
-pytest-xdist
+
+# 9.2 triggers pytest11 entrypoint errors 2026-11-02
+pytest==9.1.1
+
+pytest-xdist    # implements -n 2 option for running tests concurrently
 xlrd
 xarray

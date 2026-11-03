@@ -38,19 +38,10 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
     """
     _fit_to_data:bool
     farm_type = FarmType.AllCattle
-    model_headcounts:bool
-    model_emission_factors:bool
-    model_emissions:bool
 
     def __init__(
             self,
-            model_headcounts:bool=True,
-            model_emission_factors:bool=True,
-            model_emissions:bool=True,
             ):
-        self.model_headcounts = model_headcounts
-        self.model_emission_factors = model_emission_factors
-        self.model_emissions = model_emissions
 
         self._ktCO2e_ca_key = self.annual_key('ktCO2e_ca')
         self._ktCO2e_pt_keys = {
@@ -144,12 +135,9 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
         livestock_counts = jnp.array(cattle.np_data(self.farm_type))
         livestock_scale = jnp.nanmax(livestock_counts)
 
-        if self.model_headcounts:
-            self._model_headcounts(ws, livestock_counts, livestock_scale)
-        if self.model_emission_factors:
-            self._model_emission_factors(ws)
-        if self.model_emissions:
-            self._model_emissions(ws, livestock_scale)
+        self._model_headcounts(ws, livestock_counts, livestock_scale)
+        self._model_emission_factors(ws)
+        self._model_emissions(ws, livestock_scale)
 
     def _model_headcounts(self, ws, livestock_counts, livestock_scale):
 

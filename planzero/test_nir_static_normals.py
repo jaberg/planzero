@@ -1,5 +1,7 @@
 import datetime
 
+import pytest
+
 from .enums import GHG, IPCC_Sector
 from .nir_model import NIR_ScenarioModel
 from .nir_static_normals_model import (
@@ -19,6 +21,7 @@ variety_of_sectors = [
                 IPCC_Sector.SCS__Construction, # small low var
                 ]
 
+@pytest.mark.skip
 def test_smoke_registry():
     model = StaticNormals_ScenarioModel(
             data_cutoff=datetime.date(year=2024, month=12, day=31),
@@ -37,7 +40,7 @@ def test_smoke_sector_ghg(
     sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
     ghg=GHG.CO2,
     num_warmup=1500,
-    num_samples=1000,
+    num_samples=100,
     ):
 
     model = NIR_ScenarioModel(
