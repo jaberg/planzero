@@ -18,11 +18,7 @@ def _add_enteric_fermentation_and_other_product_mfg(self, mcmc_group:str):
         return self.add_element(elem, mcmc_group=mcmc_group)
 
     cattle_elem = add_element(
-            Cattle_StaticNormals_ModelElement(
-                model_headcounts=True,
-                model_emission_factors=True,
-                model_emissions=True,
-            ))
+            Cattle_StaticNormals_ModelElement())
 
     # TODO: assert that CO2 is only significant GHG from this sector
     add_element(
