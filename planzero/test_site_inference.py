@@ -3,6 +3,7 @@ from collections.abc import Callable
 from .enums import GHG, IPCC_Sector
 from .prob import SiteInference
 from .scenario_model import Computation
+from .site_model import SiteModelSummaryStats
 
 
 class SiteInferenceSmokeTester:
@@ -26,9 +27,9 @@ class SiteInferenceSmokeTester:
         sm = self.siteinf.scenario_model
         self.assertIsNotNone(sm)
 
-    def test_comp(self):
-        comp = self.siteinf.comp
-        self.assertIsInstance(comp, Computation)
+    def test_summary_stats(self):
+        summary_stats = self.siteinf.site_model_summary_stats
+        self.assertIsInstance(summary_stats, SiteModelSummaryStats)
 
     def test_version_id(self):
         self.assertIsInstance(self.siteinf.version_hash(), str)
@@ -48,10 +49,6 @@ class SiteInferenceSmokeTester:
         self.assertIsInstance(
                 self.siteinf.predicted_emissions_2050_MtCO2e_bounds_str,
                 str)
-
-    def test_registry_compute_model(self):
-        comp = self.siteinf.registry_compute_model(compute_posterior=False)
-        self.assertIsInstance(comp, Computation)
 
     def test_strategies(self):
         strategies = self.siteinf.strategies
@@ -78,11 +75,6 @@ class SiteInferenceSmokeTester:
     def test_uncertain_sparkline_matrix_echart(self):
         result = self.siteinf.uncertain_sparkline_matrix_echart('div1', 'Mt_CO2e')
         self.assertIsNotNone(result)
-
-    def test_ablations(self):
-        for elem_id in self.siteinf.strategies:
-            comp = self.siteinf.registry_compute_model(ablate_strategy_elem_id=elem_id)
-            self.assertIsInstance(comp, Computation)
 
     def test_national_emissions_impact_echart(self):
         for elem_id in self.siteinf.strategies:

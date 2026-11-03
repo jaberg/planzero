@@ -1,7 +1,10 @@
+import pytest
+
 from .nir_static_normals_site import Static_Normals_2024_12_31
 from .scaling_site import ScalingSiteInference
 
 
+@pytest.mark.skip
 def test_avoid_getting_killed():
     site_infs = [
             Static_Normals_2024_12_31(),

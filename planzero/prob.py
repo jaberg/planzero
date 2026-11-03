@@ -75,7 +75,7 @@ class SiteInference:
         self._ablations = {}
         for strat_id in self._strategies:
             self._add_ablation(strat_id)
-        self.site_summary_stats = site_model_summary_stats(
+        self.site_model_summary_stats = site_model_summary_stats(
                 self._scenario_model_registry_name,
                 scenario_model=self._scenario_model,
                 ablations=self._ablations,
@@ -154,30 +154,6 @@ class SiteInference:
         for strategy_elem_id in self._ablations:
             _registry_compute_model(ablate_strategy_elem_id=strategy_elem_id)
 
-    def registry_compute_model(
-            self,
-            compute_posterior:bool=True,
-            quiet:bool=True,
-            ablate_strategy_elem_id:str|None=None,
-            ) -> Computation:
-        if ablate_strategy_elem_id is None:
-            model = self._scenario_model
-            model_name = self._scenario_model_registry_name
-        else:
-            model = self._ablations[ablate_strategy_elem_id]
-            model_name = f'{self.scenario_model_registry_name}_{ablate_strategy_elem_id}'
-        return registry_compute_model(
-                model=model,
-                model_name=model_name,
-                run_compute_posterior=compute_posterior,
-                quiet=quiet,
-                seed=self.registry_computation_seed)
-
-    @property
-    def comp(self) -> Computation:
-        # Compatibility accessor for callers that still expect a Computation.
-        return self.registry_compute_model()
-
     def version_hash(self) -> str:
         """Return a hash string that uniquely identifies
         this model, including all of its elements and their versions.
@@ -209,7 +185,7 @@ class SiteInference:
 
     @property
     def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
-        stats = self.site_summary_stats.predicted_emissions_2050_ktCO2e
+        stats = self.site_model_summary_stats.predicted_emissions_2050_ktCO2e
         if stats is None:
             return 'N/A'
         unit_conversion = 1 / 1000 # ktCO2e -> MtCO2e
@@ -219,7 +195,7 @@ class SiteInference:
         return rval
 
     def prediction_scores_prenir_2025_m04(self) -> dict:
-        stats = self.site_summary_stats.prenir_2025_m04
+        stats = self.site_model_summary_stats.prenir_2025_m04
         if stats is None:
             return {
                     'weighted_divergence': float('nan'),
@@ -231,7 +207,7 @@ class SiteInference:
                 }
 
     def challenge_netzero_2050(self) -> float:
-        rval = self.site_summary_stats.p_net_zero_2050
+        rval = self.site_model_summary_stats.p_net_zero_2050
         if rval is None:
             raise NotImplementedError(
                     'this model does not include a prediction for 2050')
@@ -280,11 +256,11 @@ class SiteInference:
 
     def GHGs_for_sector(self, sector:IPCC_Sector) -> list[GHG]:
         # called by e.g. models/prob/foo/sectors/bar
-        return self.site_summary_stats.GHGs_for_sector.get(sector, [])
+        return self.site_model_summary_stats.GHGs_for_sector.get(sector, [])
 
     def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
         return national_emissions_by_sector_echart_from_stats(
-                ktCO2e_stats=self.site_summary_stats.all_sector_echart_ktCO2e,
+                ktCO2e_stats=self.site_model_summary_stats.all_sector_echart_ktCO2e,
                 div_id=div_id,
                 v_unit=v_unit,
                 model_name=self.url_name,
@@ -292,7 +268,7 @@ class SiteInference:
 
     def sector_echart(self, sector, ghg:GHG|None, v_unit):
         ktCO2e_stats = \
-                self.site_summary_stats.per_sector_echart_ktCO2e[sector][ghg]
+                self.site_model_summary_stats.per_sector_echart_ktCO2e[sector][ghg]
         return sectoral_emissions_by_region_echart_from_stats(
                 ktCO2e_stats=ktCO2e_stats,
                 sector=sector,
@@ -309,7 +285,7 @@ class SiteInference:
             v_unit:str):
         return national_emissions_impact_echart_from_stats(
                 impact_stats=(
-                    self.site_summary_stats.national_emission_impact[
+                    self.site_model_summary_stats.national_emission_impact[
                         strategy_elem_id]),
                 div_id=div_id,
                 v_unit=v_unit,
@@ -323,7 +299,7 @@ class SiteInference:
             v_unit:str):
         return national_cost_impact_echart_from_stats(
                 cost_impact_stats=(
-                    self.site_summary_stats.national_cost_impact[
+                    self.site_model_summary_stats.national_cost_impact[
                         strategy_elem_id]),
                 div_id=div_id,
                 v_unit=v_unit,
@@ -333,7 +309,7 @@ class SiteInference:
     def cost_per_tCO2e(self, strategy_elem_id) -> tuple[float, float]:
         """Return 95% CI for strategy's cost
         """
-        stats = self.site_summary_stats.cost_per_tCO2e_quantiles[
+        stats = self.site_model_summary_stats.cost_per_tCO2e_quantiles[
                 strategy_elem_id]
         return stats.quantiles[0.025], stats.quantiles[0.975]
 

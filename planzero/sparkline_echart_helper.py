@@ -363,7 +363,7 @@ class SparklineEChartHelperBase(BaseBase):
             from .nir2025_site import NIR2025
             site_model = NIR2025()
             self.nir2025_stats = (
-                    site_model.site_summary_stats.all_sector_echart_ktCO2e)
+                    site_model.site_model_summary_stats.all_sector_echart_ktCO2e)
 
     def add_data_for_sector(self, sector, sector_means, lbounds, ubounds):
         assert sector not in self.data_by_sector
@@ -854,7 +854,7 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         from .nir2025_site import NIR2025
         site_model = NIR2025()
         self.nir2025_stats = (
-                site_model.site_summary_stats
+                site_model.site_model_summary_stats
                 .per_sector_echart_ktCO2e[sector][ghg])
 
     def add_data_for_region(self, region, means, lbounds, ubounds):

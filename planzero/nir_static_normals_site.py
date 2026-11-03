@@ -1,10 +1,10 @@
 import datetime
 
 from .nir_static_normals_model import StaticNormals_ScenarioModel
-from .prob import SiteInference as SiteModel
+from .prob import SiteInference
 
 
-class Static_Normals_2024_12_31(SiteModel):
+class Static_Normals_2024_12_31(SiteInference):
     """Emissions per province and territory,
     and per greenhouse gas, modelled as
     non-time-varying Normal distributions.

@@ -17,7 +17,6 @@ from .sector_total_emissions_element import (
     PseudoSector,
 )
 
-
 # The quantiles that are pre-computed for every time series and scalar.
 QUANTILE_LEVELS = (0.025, 0.5, 0.975)
 
