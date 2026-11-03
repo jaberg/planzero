@@ -25,6 +25,20 @@ class PreNIR_2025_m04_Stats:
 
 
 @dataclass
+class AnnualTimeSeriesStats:
+    # Invariant: the lists should all be the same length
+    years: list[int]
+    quantiles: dict[float, list[float]]
+    mean: list[float]
+
+@dataclass
+class ScalarStats:
+    # quantile dict y -> x such that p(X < x) = y
+    quantiles: dict[float, float]
+    mean: float
+
+
+@dataclass
 class SiteModelSummaryStats:
     scenario_model:NIR_ScenarioModel
     seed: int
@@ -33,34 +47,33 @@ class SiteModelSummaryStats:
     # to determine which GHGs to show
     GHGs_for_sector: dict[IPCC_Sector, list[GHG]]
 
-    predicted_emissions_2050_ktCO2e_quantiles: None|dict[float, float]
+    all_sector_echart_ktCO2e: dict[
+            IPCC_Sector|PseudoSector, AnnualTimeSeriesStats]
 
-    all_sector_echart_ktCO2e_quantiles: dict[
-            IPCC_Sector|PseudoSector,
-            dict[float, list[float]]]
+    per_sector_echart_ktCO2e: dict[
+            PT|PseudoRegion, AnnualTimeSeriesStats]
 
-    per_sector_echart_ktCO2e_quantiles: dict[
-            PT|PseudoRegion,
-            dict[float, list[float]]]
-
-    prenir_2025_m04_stats: None|PreNIR_2025_m04_Stats
+    prenir_2025_m04: None|PreNIR_2025_m04_Stats
 
     p_net_zero_2050: None|float
 
     cost_per_tCO2e_quantiles: dict[
             str, # strategy_element_id
-            dict[float, float]] # quantile -> CAD/tCO2e
+            ScalarStats]
 
-    national_emission_impact_quantiles: dict[
+    national_emission_impact: dict[
             str, # strategy element id
-            dict[IPCC_Sector|PseudoSector,
-                 dict[float, list[float]]]]
+            dict[IPCC_Sector|PseudoSector, AnnualTimeSeriesStats]]
 
-    national_cost_impact_quantiles: dict[
+    national_cost_impact: dict[
             str, # strategy element id
-            dict[SPE,
-                 dict[float, list[float]]]]
+            dict[SPE, AnnualTimeSeriesStats]]
 
+    @property
+    def predicted_emissions_2050_ktCO2e(self) -> None|ScalarStats:
+        # TODO: look these up from self.all_sector_echart_ktCO2e
+        # if the years include 2050
+        raise NotImplementedError()
 
 
 def GHGs_for_sector() -> dict[IPCC_Sector, list[GHG]]:
