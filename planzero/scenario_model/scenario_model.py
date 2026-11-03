@@ -200,7 +200,7 @@ def _access_deco(
         assert var_key not in access_d
         subphase=_subphase_from_f(f)
         access_d.setdefault(subphase, {})[var_key] = {
-                'default': None if default is None else jnp.asarray(default),
+                'default': None if default is None else np.asarray(default),
                 'shape': shape,
                 }
         return f
@@ -431,8 +431,8 @@ def _resolve_properties_ndarray_definition(
 
 def _check_default_consistency(
         var_key:VarKey,
-        existing:jnp.ndarray,
-        new:jnp.ndarray,
+        existing:np.ndarray,
+        new:np.ndarray,
         ) -> None:
     """Defaults declared for one key must agree where the read happens.
 
@@ -442,10 +442,10 @@ def _check_default_consistency(
     element (or subphase) performs the read.
 
     """
-    if jnp.shape(existing) != jnp.shape(new):
+    if np.shape(existing) != np.shape(new):
         raise DefinitionError(
                 f'defaults for {var_key} have differing'
-                f' shapes {jnp.shape(existing)} and {jnp.shape(new)}')
+                f' shapes {np.shape(existing)} and {np.shape(new)}')
     def has_tracer(x):
         return any(isinstance(leaf, jax.core.Tracer)
                    for leaf in jax.tree_util.tree_leaves(x))
@@ -490,6 +490,7 @@ class ScenarioModel:
     model_elements: dict[str, ModelElement]
     mcmc_group_by_elemid: dict[str, str|None]
     mv: ModelVariables
+    _default_by_var_key:dict[VarKey, np.ndarray]
 
     # MCMC parameters, for how much sampling is recommended for this model
     # These should be associated with mcmc groups, not whole models
@@ -519,7 +520,7 @@ class ScenarioModel:
         self.model_elements = {}
         self.mcmc_group_by_elemid = {}
         self._element_order_cache = {}
-        self._default_by_var_key:dict[VarKey, jnp.ndarray] = {}
+        self._default_by_var_key = {}
         self.num_warmup = num_warmup
         self.thinning = thinning
         self.num_samples = num_samples

@@ -3,22 +3,16 @@ BaseModels for Probabilistic Models
 """
 from __future__ import annotations
 
-import numpy as np
-
 from .enums import GHG, SPE, IPCC_Sector
 from .html import html_by_ghg
-from .nir2025 import near_zero_sector_ghgs
 from .nir_model import NIR_ScenarioModel
 from .scenario_model import (
-    Computation,
     ModelElement,
     registry_basename,
     registry_compute_model,
 )
-from .sector_total_emissions_element import (
-    PseudoSector,
-)
 from .singleton_registry import SingletonRegistry
+from .site_model import SiteModelSummaryStats, site_model_summary_stats
 from .sparkline_echart_helper import (
     national_cost_impact_echart,
     national_emissions_by_sector_echart_from_sample,
@@ -59,6 +53,8 @@ class SiteInference:
     # relationship between the things we control and the results we seek to influence.
     _barriers: dict[str, ModelElement]
 
+    site_model_summary_stats:SiteModelSummaryStats
+
     registry_computation_seed:int = 42
 
     def __init__(self, *,
@@ -78,6 +74,12 @@ class SiteInference:
         self._ablations = {}
         for strat_id in self._strategies:
             self._add_ablation(strat_id)
+        self.site_summary_stats = site_model_summary_stats(
+                self._scenario_model_registry_name,
+                scenario_model=self._scenario_model,
+                ablations=self._ablations,
+                seed=self.registry_computation_seed,
+                )
 
     def _add_ablation(self, strategy_elem_id):
         assert strategy_elem_id not in self._ablations
@@ -131,38 +133,26 @@ class SiteInference:
 
     def registry_computation(self, quiet:bool=False) -> None:
         # called from __main__
-        self.registry_compute_model(
-                quiet=quiet,
-                compute_posterior=False)
-        for strategy_elem_id in self._ablations:
-            self.registry_compute_model(
-                    ablate_strategy_elem_id=strategy_elem_id,
+        def _registry_compute_model(
+                ablate_strategy_elem_id:str|None=None,
+                ):
+            if ablate_strategy_elem_id is None:
+                model = self._scenario_model
+                model_name = self._scenario_model_registry_name
+            else:
+                model = self._ablations[ablate_strategy_elem_id]
+                model_name = f'{self.scenario_model_registry_name}_{ablate_strategy_elem_id}'
+            registry_compute_model(
+                    model=model,
+                    model_name=model_name,
+                    run_compute_posterior=False,
                     quiet=quiet,
-                    compute_posterior=False)
+                    seed=self.registry_computation_seed)
 
-    def registry_compute_model(
-            self,
-            compute_posterior:bool=True,
-            quiet:bool=True,
-            ablate_strategy_elem_id:str|None=None,
-            ) -> Computation:
-        if ablate_strategy_elem_id is None:
-            model = self._scenario_model
-            model_name = self._scenario_model_registry_name
-        else:
-            model = self._ablations[ablate_strategy_elem_id]
-            model_name = f'{self.scenario_model_registry_name}_{ablate_strategy_elem_id}'
-        return registry_compute_model(
-                model=model,
-                model_name=model_name,
-                cache_posterior=compute_posterior,
-                run_compute_posterior=compute_posterior,
-                quiet=quiet,
-                seed=self.registry_computation_seed)
+        _registry_compute_model()
+        for strategy_elem_id in self._ablations:
+            _registry_compute_model(ablate_strategy_elem_id=strategy_elem_id)
 
-    @property
-    def comp(self) -> Computation:
-        return self.registry_compute_model()
 
     def version_hash(self) -> str:
         """Return a hash string that uniquely identifies
@@ -199,9 +189,6 @@ class SiteInference:
                 self.comp)
         rval = f"{low:.1f} - {high:.1f} Mt{html_by_ghg[GHG.CO2]}e"
         return rval
-
-    def prediction_scores_prenir_2025_06(self) -> dict:
-        raise NotImplementedError()
 
     def challenge_result_url(self, challenge_name) -> str:
         return ''
@@ -318,44 +305,14 @@ class SiteInference:
                 )
         return rval
 
-    def cost_per_tCO2e(self, strategy_elem_id) -> tuple[float, float]:
-        """Return 95% CI for strategy's cost
-        """
-        strategy = self.strategies[strategy_elem_id]
-        CAD_with = self.scenario_model.all_SPE_echart_cost_sample(
-                self.comp)
-        ktCO2e_with = self.scenario_model.all_sector_echart_ktCO2e_sample(
-                self.comp)
-        ablated_model = self._ablations[strategy_elem_id]
-        ablated_comp = self.registry_compute_model(
-                ablate_strategy_elem_id=strategy_elem_id)
-        CAD_without = ablated_model.all_SPE_echart_cost_sample(ablated_comp)
-        ktCO2e_without = ablated_model.all_sector_echart_ktCO2e_sample(ablated_comp)
-
-        CAD_delta = CAD_with[strategy.cost_centre] - CAD_without[strategy.cost_centre]
-        ktCO2e_delta = (ktCO2e_with[PseudoSector.Total_with_LULUCF]
-                        - ktCO2e_without[PseudoSector.Total_with_LULUCF])
-        tCO2e_delta = ktCO2e_delta * 1000
-        # tCO2e_delta has shape (n_years, n_samples)
-        estimates = (
-                CAD_delta.sum(axis=0)
-                / tCO2e_delta.sum(axis=0))
-        lower, upper = np.quantile(
-                estimates,
-                q=[0.025, 0.975])
-        return lower, upper
-
-    # called by e.g. models/prob/foo/sectors/bar
-    # to determine which GHGs to show
-    def GHGs_for_sector(self, sector) -> list[GHG]:
-        near_zeros = near_zero_sector_ghgs()
-        rval = [ghg for ghg in GHG if (sector, ghg) not in near_zeros]
-        return rval
 
 
 class SiteModelElement(ModelElement):
     """Contract for attributes used to render barriers and strategies.
     """
+
+    is_strategy: bool = False
+    is_barrier: bool = False
 
     @property
     def pretty_name(self) -> str:

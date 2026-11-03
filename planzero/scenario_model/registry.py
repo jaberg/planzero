@@ -506,9 +506,6 @@ def _compute_posterior(
     return comp
 
 
-_registry_mem_cache: dict[str, Computation] = {}
-
-
 def registry_basename(
         model: ScenarioModel,
         model_name: str,
@@ -529,13 +526,10 @@ def registry_basename(
 def registry_compute_model(
         model: ScenarioModel,
         model_name: str,
-        cache_posterior: bool,
         seed: int,
         run_compute_posterior: bool = True,
         quiet: bool = True,
 ) -> Computation:
-    if cache_posterior and model_name in _registry_mem_cache:
-        return _registry_mem_cache[model_name]
 
     rng_key = jrandom.key(seed)
 
@@ -628,6 +622,4 @@ def registry_compute_model(
         run_computation=run_compute_posterior,
     )
 
-    if cache_posterior:
-        _registry_mem_cache[model_name] = comp
     return comp

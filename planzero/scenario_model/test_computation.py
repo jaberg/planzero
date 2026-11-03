@@ -1,12 +1,9 @@
-import pytest
-
 from .computation import (
     Computation,
-    build_annual_prior_shape,
     build_annual_posterior_shape,
+    build_annual_prior_shape,
 )
-
-from .test_scenario_model import _annual_test_model, AnnualEcho
+from .test_scenario_model import AnnualEcho, _annual_test_model
 
 
 def test_annual_shape():

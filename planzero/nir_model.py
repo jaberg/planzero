@@ -1,11 +1,9 @@
 import datetime
 
 import jax.numpy as jnp
-import numpy as np
 from numpyro import distributions as dists
 
-from .enums import GHG, PT, SPE, Activity, IPCC_Sector, LULUCF_Sectors
-from .nir2025 import near_zero_sector_ghgs
+from .enums import GHG, PT, SPE, IPCC_Sector, LULUCF_Sectors
 from .prenir_element import PreNIR_ModelElement
 from .regional_total_emissions_element import (
     PseudoRegion,
@@ -22,7 +20,6 @@ from .scenario_model import (
     access_annual,
     access_val,
     define_annual,
-    years_key,
 )
 from .sector_total_emissions_element import (
     PseudoSector,
@@ -523,66 +520,6 @@ class NIR_ScenarioModel(ScenarioModel):
             # end for (sector, ghg)
         # end for (elem_id, elem)
 
-    def all_sector_echart_ktCO2e_sample(
-            self,
-            comp:Computation,
-            ) -> dict[IPCC_Sector|PseudoSector, jnp.ndarray]:
-        ktCO2e_sample = {}
-        for sector in IPCC_Sector:
-            ktCO2e_sample[sector] = comp.ndarray_d[
-                    self.sector_sum_over_ghg[sector].ktCO2e_ca]
-        ktCO2e_sample[PseudoSector.Total_with_LULUCF] = comp.ndarray_d[
-                self.sum_over_sectors[True].ktCO2e_ca]
-        ktCO2e_sample[PseudoSector.Total_without_LULUCF] = comp.ndarray_d[
-                self.sum_over_sectors[False].ktCO2e_ca]
-        return ktCO2e_sample
-
-    def per_sector_echart_ktCO2e_sample(
-            self,
-            comp:Computation,
-            sector:IPCC_Sector,
-            ghg:GHG|None
-            ) -> dict[PT|PseudoRegion, jnp.ndarray]:
-
-        ktCO2e_sample:dict[PT|PseudoRegion, jnp.ndarray] = {}
-        regions = [pt for pt in PT if pt != PT.XX] + [PseudoRegion.NationalTotal]
-        if ghg is None:
-            for region in regions:
-                if isinstance(region, PT):
-                    ktCO2e_sample[region] = comp.ndarray_d[
-                            self.sector_sum_over_ghg[sector].ktCO2e_pt[region]]
-                else:
-                    ktCO2e_sample[region] = comp.ndarray_d[
-                            self.sector_sum_over_ghg[sector].ktCO2e_ca]
-        else:
-            for region in regions:
-                if isinstance(region, PT):
-                    ktCO2e_sample[region] = comp.ndarray_d[
-                            self.sector_ghg_observations[sector, ghg].ktCO2e_pt[region]]
-                else:
-                    ktCO2e_sample[region] = comp.ndarray_d[
-                            self.sector_ghg_observations[sector, ghg].ktCO2e_ca]
-        return ktCO2e_sample
-
-    def predicted_emissions_2050_MtCO2e_bounds_95(
-            self,
-            comp:Computation,
-            ) -> tuple[float, float]:
-        ktCO2e_sample = comp.ndarray_d[
-                self.sum_over_sectors[False].ktCO2e_ca]
-        model_years = np.asarray(comp.ndarray_d[years_key])
-        match_mask = (model_years == 2050)
-        if np.any(match_mask):
-            model_idx_of_prediction_year = np.argmax(match_mask)
-        else:
-            raise NotImplementedError('no prediction for 2050')
-        ktCO2e_2050 = ktCO2e_sample[model_idx_of_prediction_year]
-        n_mcmc, = ktCO2e_2050.shape
-        assert n_mcmc > 100
-        unit_conversion = 1 / 1000 # ktCO2e -> MtCO2e
-        lower, upper = np.quantile(ktCO2e_2050, [0.025, 0.975]) * unit_conversion
-        return lower, upper
-
     # PRE-NIR
 
     def prenir_2025_m04_total_key(self) -> GeneralKey:
@@ -604,27 +541,6 @@ class NIR_ScenarioModel(ScenarioModel):
                 region=PseudoRegion.NationalTotal,
                 nir_year=2025,
                 months_ahead=4)
-
-    def prediction_scores_prenir_2025_m04(self, comp:Computation):
-        scores_ca = {}
-        near_zero = near_zero_sector_ghgs()
-        for sector in IPCC_Sector:
-            scores_ca[sector] = {}
-            for ghg in GHG:
-                if (sector, ghg) not in near_zero:
-                    sector_ghg_key = self.prenir_2025_m04_sector_ghg_key(sector, ghg)
-                    sector_ghg_val = np.asarray(comp.ndarray_d[sector_ghg_key])
-                    # remove the mcmc dim
-                    assert sector_ghg_val.shape == (1,)
-                    scores_ca[sector][ghg] = float(sector_ghg_val[0])
-        total_key = self.prenir_2025_m04_total_key()
-        total_val = comp.ndarray_d[total_key]
-        assert total_val.shape == (1,)
-        rval = {
-                'weighted_divergence': float(total_val[0]),
-                'scores_ca': scores_ca,
-                }
-        return rval
 
     def _sector_ghg_subtotal_keys(self) -> dict[IPCC_Sector, dict[GHG, AnnualKey]]:
         rval = {sector: {} for sector in IPCC_Sector}
@@ -672,15 +588,6 @@ class NIR_ScenarioModel(ScenarioModel):
                     expect_all_sectors=self.expect_all_sectors),
                 mcmc_group=None)
 
-    # P-Emissions-Below-Thresh
-    def p_net_zero_2050(self, comp:Computation) -> float:
-        # TODO: assert years end at 2050
-        idx_2050 = -1
-        total_ems = comp.get_ndarray(
-                self.sum_over_sectors[False].ktCO2e_ca,
-                sample_if_necessary=True)
-        rval = float(jnp.mean(total_ems[idx_2050] < 0))
-        return rval
 
     def add_cost_sums(self):
         """Extend self.model_elements with summing model elements elements as required
