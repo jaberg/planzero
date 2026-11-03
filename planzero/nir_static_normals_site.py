@@ -39,12 +39,6 @@ class Static_Normals_2024_12_31(SiteModel):
     def show_on_models_page(self) -> bool:
         return True
 
-    def challenge_netzero_2050(self):
-        return self.scenario_model.p_net_zero_2050(self.comp)
-
-    def prediction_scores_prenir_2025_m04(self):
-        return self.scenario_model.prediction_scores_prenir_2025_m04(self.comp)
-
     @property
     def show_prediction_quality(self):
         assert self.scenario_model.data_cutoff == datetime.date(year=2024, month=12, day=31)

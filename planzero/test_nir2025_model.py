@@ -7,5 +7,5 @@ def test_registry_computation_smoke():
     comp = registry_compute_model(
             model,
             model_name='NIR2025',
-            cache_posterior=False,
             seed=42)
+    del comp

@@ -18,6 +18,10 @@ from .sector_total_emissions_element import (
 )
 
 
+# The quantiles that are pre-computed for every time series and scalar.
+QUANTILE_LEVELS = (0.025, 0.5, 0.975)
+
+
 @dataclass
 class PreNIR_2025_m04_Stats:
     scores_ca: dict[IPCC_Sector, dict[GHG, float]]
@@ -50,8 +54,10 @@ class SiteModelSummaryStats:
     all_sector_echart_ktCO2e: dict[
             IPCC_Sector|PseudoSector, AnnualTimeSeriesStats]
 
+    # sector -> ghg (None means all GHGs) -> region
     per_sector_echart_ktCO2e: dict[
-            PT|PseudoRegion, AnnualTimeSeriesStats]
+            IPCC_Sector,
+            dict[GHG|None, dict[PT|PseudoRegion, AnnualTimeSeriesStats]]]
 
     prenir_2025_m04: None|PreNIR_2025_m04_Stats
 
@@ -71,184 +77,221 @@ class SiteModelSummaryStats:
 
     @property
     def predicted_emissions_2050_ktCO2e(self) -> None|ScalarStats:
-        # TODO: look these up from self.all_sector_echart_ktCO2e
-        # if the years include 2050
-        raise NotImplementedError()
+        total = self.all_sector_echart_ktCO2e.get(
+                PseudoSector.Total_without_LULUCF)
+        if total is None:
+            return None
+        try:
+            idx_2050 = total.years.index(2050)
+        except ValueError:
+            return None
+        return ScalarStats(
+                quantiles={
+                    q: values[idx_2050]
+                    for q, values in total.quantiles.items()},
+                mean=total.mean[idx_2050],
+                )
 
 
-def GHGs_for_sector() -> dict[IPCC_Sector, list[GHG]]:
-    rval = {}
-    near_zeros = near_zero_sector_ghgs()
-    for (sector, ghg) in near_zeros:
-        rval.setdefault(sector, []).append(ghg)
-    return rval
+def GHGs_for_sector(
+        scenario_model:NIR_ScenarioModel,
+        ) -> dict[IPCC_Sector, list[GHG]]:
+    """Return the GHGs that this model actually represents, by sector.
+
+    The per-sector charts are only pre-computed for these (sector, ghg)
+    pairs, so the site's sector pages must only ask for these.
+    """
+    rval:dict[IPCC_Sector, set[GHG]] = {}
+    for sector, ghg in scenario_model.sector_ghg_observations:
+        rval.setdefault(sector, set()).add(ghg)
+    for sector in scenario_model.sector_sum_over_ghg:
+        rval.setdefault(sector, set())
+    return {
+            sector: [ghg for ghg in GHG if ghg in ghgs]
+            for sector, ghgs in rval.items()}
 
 
-def predicted_emissions_2050_MtCO2e_bounds_95(
-        model:NIR_ScenarioModel,
+def _annual_stats_from_sample(
+        sample,
+        years:list[int],
+        ) -> AnnualTimeSeriesStats:
+    """Summarize an array of shape (n_years, n_samples)."""
+    arr = np.asarray(sample)
+    if arr.ndim == 1:
+        arr = arr[:, None]
+    if arr.ndim != 2:
+        raise ValueError(f'expected a 2-d sample, got shape {arr.shape}')
+    if arr.shape[0] != len(years):
+        raise ValueError(
+                f'sample has {arr.shape[0]} years, expected {len(years)}')
+
+    quantile_values = np.quantile(arr, q=QUANTILE_LEVELS, axis=1)
+    mean_values = np.mean(arr, axis=1)
+    return AnnualTimeSeriesStats(
+            years=[int(year) for year in years],
+            quantiles={
+                float(q): [float(value) for value in values]
+                for q, values in zip(QUANTILE_LEVELS, quantile_values)},
+            mean=[float(value) for value in mean_values],
+            )
+
+
+def _scalar_stats_from_sample(sample) -> ScalarStats:
+    arr = np.asarray(sample).reshape(-1)
+    quantile_values = np.quantile(arr, q=QUANTILE_LEVELS)
+    return ScalarStats(
+            quantiles={
+                float(q): float(value)
+                for q, value in zip(QUANTILE_LEVELS, quantile_values)},
+            mean=float(np.mean(arr)),
+            )
+
+
+def _years_from_comp(comp:Computation) -> list[int]:
+    years = np.asarray(comp.ndarray_d[years_key])
+    if years.ndim > 1:
+        years = years[:, 0]
+    return [int(year) for year in years]
+
+
+def _pre_nir_2025_m04_stats(
+        scenario_model:NIR_ScenarioModel,
         comp:Computation,
-        ) -> tuple[float, float]:
-    ktCO2e_sample = comp.ndarray_d[
-            model.sum_over_sectors[False].ktCO2e_ca]
-    model_years = np.asarray(comp.ndarray_d[years_key])
-    match_mask = (model_years == 2050)
-    if np.any(match_mask):
-        model_idx_of_prediction_year = np.argmax(match_mask)
-    else:
-        raise NotImplementedError('no prediction for 2050')
-    ktCO2e_2050 = ktCO2e_sample[model_idx_of_prediction_year]
-    n_mcmc, = ktCO2e_2050.shape
-    assert n_mcmc > 100
-    unit_conversion = 1 / 1000 # ktCO2e -> MtCO2e
-    lower, upper = np.quantile(ktCO2e_2050, [0.025, 0.975]) * unit_conversion
-    return lower, upper
+        ) -> None|PreNIR_2025_m04_Stats:
+    total_key = scenario_model.prenir_2025_m04_total_key()
+    try:
+        total_val = comp.ndarray_d[total_key]
+    except KeyError:
+        # This model does not include the Pre-NIR element.
+        return None
 
-
-def all_sector_echart_ktCO2e_sample(
-        self,
-        comp:Computation,
-        ) -> dict[IPCC_Sector|PseudoSector, jnp.ndarray]:
-    ktCO2e_sample = {}
-    for sector in IPCC_Sector:
-        ktCO2e_sample[sector] = comp.ndarray_d[
-                self.sector_sum_over_ghg[sector].ktCO2e_ca]
-    ktCO2e_sample[PseudoSector.Total_with_LULUCF] = comp.ndarray_d[
-            self.sum_over_sectors[True].ktCO2e_ca]
-    ktCO2e_sample[PseudoSector.Total_without_LULUCF] = comp.ndarray_d[
-            self.sum_over_sectors[False].ktCO2e_ca]
-    return ktCO2e_sample
-
-
-def per_sector_echart_ktCO2e_sample(
-        self,
-        comp:Computation,
-        sector:IPCC_Sector,
-        ghg:GHG|None
-        ) -> dict[PT|PseudoRegion, jnp.ndarray]:
-
-    ktCO2e_sample:dict[PT|PseudoRegion, jnp.ndarray] = {}
-    regions = [pt for pt in PT if pt != PT.XX] + [PseudoRegion.NationalTotal]
-    if ghg is None:
-        for region in regions:
-            if isinstance(region, PT):
-                ktCO2e_sample[region] = comp.ndarray_d[
-                        self.sector_sum_over_ghg[sector].ktCO2e_pt[region]]
-            else:
-                ktCO2e_sample[region] = comp.ndarray_d[
-                        self.sector_sum_over_ghg[sector].ktCO2e_ca]
-    else:
-        for region in regions:
-            if isinstance(region, PT):
-                ktCO2e_sample[region] = comp.ndarray_d[
-                        self.sector_ghg_observations[sector, ghg].ktCO2e_pt[region]]
-            else:
-                ktCO2e_sample[region] = comp.ndarray_d[
-                        self.sector_ghg_observations[sector, ghg].ktCO2e_ca]
-    return ktCO2e_sample
-
-def prediction_scores_prenir_2025_m04(self, comp:Computation):
-    scores_ca = {}
     near_zero = near_zero_sector_ghgs()
+    scores_ca = {}
     for sector in IPCC_Sector:
         scores_ca[sector] = {}
         for ghg in GHG:
-            if (sector, ghg) not in near_zero:
-                sector_ghg_key = self.prenir_2025_m04_sector_ghg_key(sector, ghg)
-                sector_ghg_val = np.asarray(comp.ndarray_d[sector_ghg_key])
-                # remove the mcmc dim
-                assert sector_ghg_val.shape == (1,)
-                scores_ca[sector][ghg] = float(sector_ghg_val[0])
-    total_key = self.prenir_2025_m04_total_key()
-    total_val = comp.ndarray_d[total_key]
-    assert total_val.shape == (1,)
-    rval = {
-            'weighted_divergence': float(total_val[0]),
-            'scores_ca': scores_ca,
-            }
-    return rval
+            if (sector, ghg) in near_zero:
+                continue
+            sector_ghg_key = scenario_model.prenir_2025_m04_sector_ghg_key(
+                    sector, ghg)
+            sector_ghg_val = np.asarray(comp.ndarray_d[sector_ghg_key])
+            assert sector_ghg_val.shape == (1,), sector_ghg_val.shape
+            scores_ca[sector][ghg] = float(sector_ghg_val[0])
 
-
-# P-Emissions-Below-Thresh
-def p_net_zero_2050(self, comp:Computation) -> float:
-    # TODO: assert years end at 2050
-    idx_2050 = -1
-    total_ems = comp.get_ndarray(
-            self.sum_over_sectors[False].ktCO2e_ca,
-            sample_if_necessary=True)
-    rval = float(jnp.mean(total_ems[idx_2050] < 0))
-    return rval
-
-def national_emissions_impact_quantiles(
-        self,
-        strategy_elem_id:str,
-        div_id:str,
-        v_unit:str):
-    sample_with = self.scenario_model.all_sector_echart_ktCO2e_sample(
-            self.comp)
-    ablated = self._ablations[strategy_elem_id]
-    ablated_comp = self.registry_compute_model(
-            ablate_strategy_elem_id=strategy_elem_id)
-    sample_without = ablated.all_sector_echart_ktCO2e_sample(ablated_comp)
-    rval = national_emissions_impact_echart(
-            with_strategy_ktCO2e_sample=sample_with,
-            without_strategy_ktCO2e_sample=sample_without,
-            year_0=self.comp.model.mv.year_0,
-            n_years=self.comp.n_years,
-            n_samples=self.comp.n_mcmc,
-            div_id=div_id,
-            v_unit=v_unit,
-            model_name=f'{self.url_name}',
+    total_val = np.asarray(total_val)
+    assert total_val.shape == (1,), total_val.shape
+    return PreNIR_2025_m04_Stats(
+            scores_ca=scores_ca,
+            weighted_divergence=float(total_val[0]),
             )
+
+
+def _p_net_zero_2050(
+        scenario_model:NIR_ScenarioModel,
+        comp:Computation,
+        years:list[int],
+        ) -> None|float:
+    try:
+        idx_2050 = years.index(2050)
+    except ValueError:
+        return None
+    total_ems = comp.ndarray_d[
+            scenario_model.sum_over_sectors[False].ktCO2e_ca]
+    return float(np.mean(np.asarray(total_ems)[idx_2050] < 0))
+
+
+def _all_sector_echart_stats(
+        scenario_model:NIR_ScenarioModel,
+        comp:Computation,
+        years:list[int],
+        ) -> dict[IPCC_Sector|PseudoSector, AnnualTimeSeriesStats]:
+    samples = scenario_model.all_sector_echart_ktCO2e_sample(comp)
+    return {
+            sector: _annual_stats_from_sample(sample, years)
+            for sector, sample in samples.items()}
+
+
+def _per_sector_echart_stats(
+        scenario_model:NIR_ScenarioModel,
+        comp:Computation,
+        years:list[int],
+        ) -> dict[
+            IPCC_Sector,
+            dict[GHG|None, dict[PT|PseudoRegion, AnnualTimeSeriesStats]]]:
+    rval = {}
+    ghgs_for_sector = GHGs_for_sector(scenario_model)
+    for sector in scenario_model.sector_sum_over_ghg:
+        rval[sector] = {}
+        for ghg in [None] + list(ghgs_for_sector[sector]):
+            samples = scenario_model.per_sector_echart_ktCO2e_sample(
+                    comp=comp,
+                    sector=sector,
+                    ghg=ghg)
+            rval[sector][ghg] = {
+                    region: _annual_stats_from_sample(sample, years)
+                    for region, sample in samples.items()}
     return rval
 
-def national_cost_impact_quantiles(
-        self,
+
+def _cost_per_tCO2e_stats(
+        scenario_model:NIR_ScenarioModel,
+        comp:Computation,
+        ablated_model:NIR_ScenarioModel,
+        ablated_comp:Computation,
         strategy_elem_id:str,
-        div_id:str,
-        v_unit:str):
-    sample_with = self.scenario_model.all_SPE_echart_cost_sample(
-            self.comp)
-    ablated = self._ablations[strategy_elem_id]
-    ablated_comp = self.registry_compute_model(
-            ablate_strategy_elem_id=strategy_elem_id)
-    sample_without = ablated.all_SPE_echart_cost_sample(ablated_comp)
-    rval = national_cost_impact_echart(
-            costs_with_strategy=sample_with,
-            costs_without_strategy=sample_without,
-            year_0=self.comp.model.mv.year_0,
-            n_years=self.comp.n_years,
-            div_id=div_id,
-            v_unit='Billions CAD',
-            model_name=self.url_name,
-            )
-    return rval
-
-def cost_per_tCO2e(self, strategy_elem_id) -> tuple[float, float]:
-    """Return 95% CI for strategy's cost
-    """
-    strategy = self.strategies[strategy_elem_id]
-    CAD_with = self.scenario_model.all_SPE_echart_cost_sample(
-            self.comp)
-    ktCO2e_with = self.scenario_model.all_sector_echart_ktCO2e_sample(
-            self.comp)
-    ablated_model = self._ablations[strategy_elem_id]
-    ablated_comp = self.registry_compute_model(
-            ablate_strategy_elem_id=strategy_elem_id)
+        ) -> ScalarStats:
+    strategy = scenario_model.model_elements[strategy_elem_id]
+    CAD_with = scenario_model.all_SPE_echart_cost_sample(comp)
+    ktCO2e_with = scenario_model.all_sector_echart_ktCO2e_sample(comp)
     CAD_without = ablated_model.all_SPE_echart_cost_sample(ablated_comp)
-    ktCO2e_without = ablated_model.all_sector_echart_ktCO2e_sample(ablated_comp)
+    ktCO2e_without = ablated_model.all_sector_echart_ktCO2e_sample(
+            ablated_comp)
 
     CAD_delta = CAD_with[strategy.cost_centre] - CAD_without[strategy.cost_centre]
-    ktCO2e_delta = (ktCO2e_with[PseudoSector.Total_with_LULUCF]
-                    - ktCO2e_without[PseudoSector.Total_with_LULUCF])
-    tCO2e_delta = ktCO2e_delta * 1000
+    ktCO2e_delta = (
+            ktCO2e_with[PseudoSector.Total_with_LULUCF]
+            - ktCO2e_without[PseudoSector.Total_with_LULUCF])
+    tCO2e_delta = np.asarray(ktCO2e_delta) * 1000
     # tCO2e_delta has shape (n_years, n_samples)
     estimates = (
-            CAD_delta.sum(axis=0)
+            np.asarray(CAD_delta).sum(axis=0)
             / tCO2e_delta.sum(axis=0))
-    lower, upper = np.quantile(
-            estimates,
-            q=[0.025, 0.975])
-    return lower, upper
+    return _scalar_stats_from_sample(estimates)
+
+
+def _national_emission_impact_stats(
+        scenario_model:NIR_ScenarioModel,
+        comp:Computation,
+        ablated_model:NIR_ScenarioModel,
+        ablated_comp:Computation,
+        years:list[int],
+        ) -> dict[IPCC_Sector|PseudoSector, AnnualTimeSeriesStats]:
+    with_strategy = scenario_model.all_sector_echart_ktCO2e_sample(comp)
+    without_strategy = ablated_model.all_sector_echart_ktCO2e_sample(
+            ablated_comp)
+    return {
+            sector: _annual_stats_from_sample(
+                np.asarray(with_strategy[sector])
+                - np.asarray(without_strategy[sector]),
+                years)
+            for sector in with_strategy}
+
+
+def _national_cost_impact_stats(
+        scenario_model:NIR_ScenarioModel,
+        comp:Computation,
+        ablated_model:NIR_ScenarioModel,
+        ablated_comp:Computation,
+        years:list[int],
+        ) -> dict[SPE, AnnualTimeSeriesStats]:
+    with_strategy = scenario_model.all_SPE_echart_cost_sample(comp)
+    without_strategy = ablated_model.all_SPE_echart_cost_sample(ablated_comp)
+    return {
+            spe: _annual_stats_from_sample(
+                np.asarray(with_strategy[spe])
+                - np.asarray(without_strategy[spe]),
+                years)
+            for spe in with_strategy}
 
 
 def _site_model_summary_stats_no_cache(
@@ -265,20 +308,23 @@ def _site_model_summary_stats_no_cache(
             quiet=False,
             seed=seed)
 
+    years = _years_from_comp(base_comp)
+
     rval = SiteModelSummaryStats(
             scenario_model=scenario_model,
             seed=seed,
-            GHGs_for_sector=GHGs_for_sector(),
-            predicted_emissions_2050_ktCO2e_quantiles=predicted_emissions_2050_ktCO2e_quantiles(base_comp),
-            all_sector_echart_ktCO2e_quantiles=all_sector_echart_ktCO2e_quantiles(
-                base_comp),
-            per_sector_echart_ktCO2e_quantiles=per_sector_echart_ktCO2e_quantiles(
-                base_comp),
-            prenir_2025_m04_stats=prenir_2025_m04_stats(base_comp),
-            p_net_zero_2050=p_net_zero_2050(base_comp),
+            GHGs_for_sector=GHGs_for_sector(scenario_model),
+            all_sector_echart_ktCO2e=_all_sector_echart_stats(
+                scenario_model, base_comp, years),
+            per_sector_echart_ktCO2e=_per_sector_echart_stats(
+                scenario_model, base_comp, years),
+            prenir_2025_m04=_pre_nir_2025_m04_stats(
+                scenario_model, base_comp),
+            p_net_zero_2050=_p_net_zero_2050(
+                scenario_model, base_comp, years),
             cost_per_tCO2e_quantiles={},
-            national_emission_impact_quantiles={},
-            national_cost_impact_quantiles={},
+            national_emission_impact={},
+            national_cost_impact={},
             )
 
     for strategy_id, ablated_model in ablations.items():
@@ -290,12 +336,25 @@ def _site_model_summary_stats_no_cache(
                 quiet=False,
                 seed=seed)
 
-        rval.cost_per_tCO2e_quantiles[strategy_id] = cost_per_tCO2e_quantiles(
-                base_comp, ablated_comp)
-        rval.national_emission_impact_quantiles[strategy_id] = national_emission_impact_quantiles(
-                base_comp, ablated_comp)
-        rval.national_cost_impact_quantiles[strategy_id] = national_cost_impact_quantiles(
-                base_comp, ablated_comp)
+        rval.cost_per_tCO2e_quantiles[strategy_id] = _cost_per_tCO2e_stats(
+                scenario_model,
+                base_comp,
+                ablated_model,
+                ablated_comp,
+                strategy_id)
+        rval.national_emission_impact[strategy_id] = \
+                _national_emission_impact_stats(
+                    scenario_model,
+                    base_comp,
+                    ablated_model,
+                    ablated_comp,
+                    years)
+        rval.national_cost_impact[strategy_id] = _national_cost_impact_stats(
+                scenario_model,
+                base_comp,
+                ablated_model,
+                ablated_comp,
+                years)
 
     return rval
 
@@ -315,7 +374,16 @@ def site_model_summary_stats(
     model_version_hash = scenario_model.version_hash()
     model_seed_hash = _rng_key_hash(rng_key)
 
-    cache_key = (model_version_hash, model_seed_hash)
+    ablation_hash = tuple(sorted(
+        (strategy_id, model.version_hash())
+        for strategy_id, model in ablations.items()))
+
+    cache_key = (
+            scenario_model_registry_name,
+            model_version_hash,
+            model_seed_hash,
+            ablation_hash,
+            )
 
     if cache_key in _site_model_cache:
         return _site_model_cache[cache_key]

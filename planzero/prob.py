@@ -7,6 +7,7 @@ from .enums import GHG, SPE, IPCC_Sector
 from .html import html_by_ghg
 from .nir_model import NIR_ScenarioModel
 from .scenario_model import (
+    Computation,
     ModelElement,
     registry_basename,
     registry_compute_model,
@@ -14,10 +15,10 @@ from .scenario_model import (
 from .singleton_registry import SingletonRegistry
 from .site_model import SiteModelSummaryStats, site_model_summary_stats
 from .sparkline_echart_helper import (
-    national_cost_impact_echart,
-    national_emissions_by_sector_echart_from_sample,
-    national_emissions_impact_echart,
-    sectoral_emissions_by_region_echart_from_sample,
+    national_cost_impact_echart_from_stats,
+    national_emissions_by_sector_echart_from_stats,
+    national_emissions_impact_echart_from_stats,
+    sectoral_emissions_by_region_echart_from_stats,
 )
 
 registry = SingletonRegistry()
@@ -153,6 +154,29 @@ class SiteInference:
         for strategy_elem_id in self._ablations:
             _registry_compute_model(ablate_strategy_elem_id=strategy_elem_id)
 
+    def registry_compute_model(
+            self,
+            compute_posterior:bool=True,
+            quiet:bool=True,
+            ablate_strategy_elem_id:str|None=None,
+            ) -> Computation:
+        if ablate_strategy_elem_id is None:
+            model = self._scenario_model
+            model_name = self._scenario_model_registry_name
+        else:
+            model = self._ablations[ablate_strategy_elem_id]
+            model_name = f'{self.scenario_model_registry_name}_{ablate_strategy_elem_id}'
+        return registry_compute_model(
+                model=model,
+                model_name=model_name,
+                run_compute_posterior=compute_posterior,
+                quiet=quiet,
+                seed=self.registry_computation_seed)
+
+    @property
+    def comp(self) -> Computation:
+        # Compatibility accessor for callers that still expect a Computation.
+        return self.registry_compute_model()
 
     def version_hash(self) -> str:
         """Return a hash string that uniquely identifies
@@ -185,9 +209,32 @@ class SiteInference:
 
     @property
     def predicted_emissions_2050_MtCO2e_bounds_str(self) -> str:
-        low, high = self.scenario_model.predicted_emissions_2050_MtCO2e_bounds_95(
-                self.comp)
+        stats = self.site_summary_stats.predicted_emissions_2050_ktCO2e
+        if stats is None:
+            return 'N/A'
+        unit_conversion = 1 / 1000 # ktCO2e -> MtCO2e
+        low = stats.quantiles[0.025] * unit_conversion
+        high = stats.quantiles[0.975] * unit_conversion
         rval = f"{low:.1f} - {high:.1f} Mt{html_by_ghg[GHG.CO2]}e"
+        return rval
+
+    def prediction_scores_prenir_2025_m04(self) -> dict:
+        stats = self.site_summary_stats.prenir_2025_m04
+        if stats is None:
+            return {
+                    'weighted_divergence': float('nan'),
+                    'scores_ca': {},
+                    }
+        return {
+                'weighted_divergence': stats.weighted_divergence,
+                'scores_ca': stats.scores_ca,
+                }
+
+    def challenge_netzero_2050(self) -> float:
+        rval = self.site_summary_stats.p_net_zero_2050
+        if rval is None:
+            raise NotImplementedError(
+                    'this model does not include a prediction for 2050')
         return rval
 
     def challenge_result_url(self, challenge_name) -> str:
@@ -231,28 +278,23 @@ class SiteInference:
             rval[key] = val
         return rval
 
-    def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
-        ktCO2e_sample = self.scenario_model.all_sector_echart_ktCO2e_sample(self.comp)
+    def GHGs_for_sector(self, sector:IPCC_Sector) -> list[GHG]:
+        # called by e.g. models/prob/foo/sectors/bar
+        return self.site_summary_stats.GHGs_for_sector.get(sector, [])
 
-        rval = national_emissions_by_sector_echart_from_sample(
-                ktCO2e_sample=ktCO2e_sample,
-                year_0=self.comp.model.mv.year_0,
-                n_years=self.comp.n_years,
-                n_samples=self.comp.n_mcmc,
+    def uncertain_sparkline_matrix_echart(self, div_id, v_unit):
+        return national_emissions_by_sector_echart_from_stats(
+                ktCO2e_stats=self.site_summary_stats.all_sector_echart_ktCO2e,
                 div_id=div_id,
                 v_unit=v_unit,
                 model_name=self.url_name,
                 )
-        return rval
 
     def sector_echart(self, sector, ghg:GHG|None, v_unit):
-        ktCO2e_sample = self.scenario_model.per_sector_echart_ktCO2e_sample(
-                comp=self.comp, sector=sector, ghg=ghg)
-        return sectoral_emissions_by_region_echart_from_sample(
-                ktCO2e_sample=ktCO2e_sample,
-                year_0=self.comp.model.mv.year_0,
-                n_years=self.comp.n_years,
-                n_samples=self.comp.n_mcmc,
+        ktCO2e_stats = \
+                self.site_summary_stats.per_sector_echart_ktCO2e[sector][ghg]
+        return sectoral_emissions_by_region_echart_from_stats(
+                ktCO2e_stats=ktCO2e_stats,
                 sector=sector,
                 ghg=ghg,
                 div_id=(f'{self.__class__.__name__}'
@@ -265,45 +307,35 @@ class SiteInference:
             strategy_elem_id:str,
             div_id:str,
             v_unit:str):
-        sample_with = self.scenario_model.all_sector_echart_ktCO2e_sample(
-                self.comp)
-        ablated = self._ablations[strategy_elem_id]
-        ablated_comp = self.registry_compute_model(
-                ablate_strategy_elem_id=strategy_elem_id)
-        sample_without = ablated.all_sector_echart_ktCO2e_sample(ablated_comp)
-        rval = national_emissions_impact_echart(
-                with_strategy_ktCO2e_sample=sample_with,
-                without_strategy_ktCO2e_sample=sample_without,
-                year_0=self.comp.model.mv.year_0,
-                n_years=self.comp.n_years,
-                n_samples=self.comp.n_mcmc,
+        return national_emissions_impact_echart_from_stats(
+                impact_stats=(
+                    self.site_summary_stats.national_emission_impact[
+                        strategy_elem_id]),
                 div_id=div_id,
                 v_unit=v_unit,
                 model_name=f'{self.url_name}',
                 )
-        return rval
 
     def national_cost_impact_echart(
             self,
             strategy_elem_id:str,
             div_id:str,
             v_unit:str):
-        sample_with = self.scenario_model.all_SPE_echart_cost_sample(
-                self.comp)
-        ablated = self._ablations[strategy_elem_id]
-        ablated_comp = self.registry_compute_model(
-                ablate_strategy_elem_id=strategy_elem_id)
-        sample_without = ablated.all_SPE_echart_cost_sample(ablated_comp)
-        rval = national_cost_impact_echart(
-                costs_with_strategy=sample_with,
-                costs_without_strategy=sample_without,
-                year_0=self.comp.model.mv.year_0,
-                n_years=self.comp.n_years,
+        return national_cost_impact_echart_from_stats(
+                cost_impact_stats=(
+                    self.site_summary_stats.national_cost_impact[
+                        strategy_elem_id]),
                 div_id=div_id,
-                v_unit='Billions CAD',
+                v_unit=v_unit,
                 model_name=self.url_name,
                 )
-        return rval
+
+    def cost_per_tCO2e(self, strategy_elem_id) -> tuple[float, float]:
+        """Return 95% CI for strategy's cost
+        """
+        stats = self.site_summary_stats.cost_per_tCO2e_quantiles[
+                strategy_elem_id]
+        return stats.quantiles[0.025], stats.quantiles[0.975]
 
 
 
