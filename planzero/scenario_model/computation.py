@@ -26,6 +26,7 @@ from .base import (
     ObservationWeight,
     Phase,
     Subphase,
+    ThisCarry,
     UnassignedDefinitionError,
     VarKey,
     mcmc_dim,
@@ -976,7 +977,9 @@ class Computation:
                 continue
             var_key = access.var_key
             arr_default = jnp.array(access.default)
-            if isinstance(var_key, ElementGeneralKey):
+            if isinstance(var_key, (ElementGeneralKey,
+                                    ThisCarry,
+                                    )):
                 if self.phase == Phase.Prior:
                     self._ndarray_shapes[var_key] = arr_default.shape
                     self._ndarray_dtypes[var_key] = jnp.float64
