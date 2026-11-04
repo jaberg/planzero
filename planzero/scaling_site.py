@@ -299,13 +299,12 @@ class ScalingSiteInference(prob.SiteInference):
     def show_on_models_page(self) -> bool:
         return True
 
-    def affected_sectors_by_strategy(self) -> dict:
-        assert 'Scale_Bovaer' in self._strategies
-        baseline_rval = {
-                'Scale_Bovaer': {IPCC_Sector.Enteric_Fermentation,
-                                 IPCC_Sector.Other_Product_Manufacture_and_Use,},
-                }
-        return baseline_rval
+    def sectors_affected_by_strategy(self, strategy_id:str) -> set[IPCC_Sector]:
+        if strategy_id.startswith('Scale_Bovaer'):
+            return {IPCC_Sector.Enteric_Fermentation,
+                    IPCC_Sector.Other_Product_Manufacture_and_Use,}
+        else:
+            raise KeyError(strategy_id)
 
     @property
     def posts_developing_this_page(self) -> list[str]:

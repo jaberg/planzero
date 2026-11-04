@@ -43,18 +43,18 @@
           </tr>
     </thead>
     <tbody>
-        {% for ident, site_inf in planzero.prob.registry.items()
+        {% for url_name, site_inf in model_registry.items()
            if site_inf.show_on_models_page
 	   and site_inf.challenge_result_url(challenge_name)
 	   %}
           <tr>
               <td>
-                  <a href="/models/prob/{{ident}}/">{{ site_inf.pretty_name }}</a>
+                  <a href="/models/prob/{{url_name}}/">{{ site_inf.pretty_name }}</a>
               </td>
               <td>{{site_inf.one_line_description() }}</td>
               <td>
                   {% if challenge_obj.results_available %}
-		  <a href="/models/prob/{{ident}}/#{{challenge_name}}">{{ challenge_obj.overall_loss_str(site_inf) }}</a>
+		  <a href="/models/prob/{{url_name}}/#{{challenge_name}}">{{ challenge_obj.overall_loss_str(site_inf) }}</a>
                   {% else %}
                   {{siteref("Pending Prediction Challenge Results", "Pending")|safe}}
                   {% endif %}
@@ -67,7 +67,7 @@
 
 <h2 id="posts">Posts developing this page</h2>
 <ul>
-{% for ident in ["StaticNormals"] %}
+{% for ident in ["NetZero2050Metric", "ProbabilisticBovaer", "StaticNormals"] %}
 <li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>

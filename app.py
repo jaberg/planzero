@@ -188,6 +188,8 @@ def get_prob_barrier_impact_html(site_inf_name, barrier_name):
     template = templates.get_template("model_barrier.html")
     site_inference = prob_registry()[site_inf_name]
     barrier_obj = site_inference.barriers[barrier_name]
+    def var_name_fn(vk, nchars:int):
+        return str(vk)[:nchars]
     rval = template.render(
         get_context(
             title=f"PlanZero - Model {site_inf_name} - Barrier {barrier_name}",
@@ -196,6 +198,7 @@ def get_prob_barrier_impact_html(site_inf_name, barrier_name):
             barrier_name=barrier_name,
             barrier_obj=barrier_obj,
             site_inference=site_inference,
+            var_name_fn=var_name_fn,
             ))
     return rval
 
@@ -448,14 +451,11 @@ def get_strategies_html():
     models_by_strategy = {}
     sectors_by_strategy = {}
     for model_id, site_inf in sorted(registry.items()):
-        if site_inf.ablation_study and site_inf.strategy_id:
-            # don't list ablated variants
-            continue
-        for strategy_id in site_inf.strategy_ids:
+        for strategy_id in site_inf.strategies:
             models_by_strategy.setdefault(strategy_id, []).append(model_id)
             try:
                 sectors_by_strategy.setdefault(strategy_id, set()).update(
-                        site_inf.affected_sectors_by_strategy[strategy_id])
+                        site_inf.sectors_affected_by_strategy(strategy_id))
             except KeyError as err:
                 raise KeyError((model_id, strategy_id)) from err
 
@@ -527,11 +527,11 @@ async def get_blog(request: Request, post_name:str):
 @app_cache
 def get_models_html():
     from planzero.endpoints import completed_prob_registry as prob_registry
-    prob_registry()  # call it to ensure the registry is populated
     return templates.get_template('models.html').render(
             get_context(
                 title="PlanZero - Models",
                 active_tab='models',
+                model_registry=prob_registry(), # dict
                 ))
 
 @app.get("/models/", response_class=HTMLResponse)
@@ -544,12 +544,12 @@ async def get_models(request: Request):
 
 @app_cache
 def get_metrics_html():
-    from planzero.endpoints import completed_prob_registry as prob_registry
-    prob_registry()  # call it to ensure the registry is populated
+    from planzero.endpoints import completed_prob_registry
     return templates.get_template('metrics.html').render(
             get_context(
                 title="PlanZero - Metrics",
                 active_tab='metrics',
+                model_registry=completed_prob_registry(),
                 ))
 
 @app.get("/metrics/", response_class=HTMLResponse)

@@ -11,7 +11,7 @@ from .enums import GHG, PT, SPE, IPCC_Sector
 from .nir2025 import near_zero_sector_ghgs
 from .nir_model import NIR_ScenarioModel
 from .regional_total_emissions_element import PseudoRegion
-from .scenario_model import Computation, years_key
+from .scenario_model import Computation, VarKey, years_key
 from .scenario_model.registry import _rng_key_hash, registry_compute_model
 from .sector_total_emissions_element import (
     PseudoSector,
@@ -45,6 +45,9 @@ class ScalarStats:
 class SiteModelSummaryStats:
     scenario_model:NIR_ScenarioModel
     seed: int
+    last_forecast_year:int
+
+    shapes: dict[VarKey, list[int]]
 
     # used by e.g. models/prob/foo/sectors/bar
     # to determine which GHGs to show
@@ -151,6 +154,18 @@ def _years_from_comp(comp:Computation) -> list[int]:
     if years.ndim > 1:
         years = years[:, 0]
     return [int(year) for year in years]
+
+
+def _shapes_from_comp(comp:Computation) -> dict[VarKey, list[int]]:
+    rval = {}
+    for vk, nda in comp._ndarray_d.items():
+        rval[vk] = nda.shape
+
+    for vk, dist in comp._dist_d.items():
+        dshape = dist.shape()
+        rval.setdefault(vk, dshape)
+        assert rval[vk] == dshape
+    return rval
 
 
 def _pre_nir_2025_m04_stats(
@@ -298,13 +313,14 @@ def _site_model_summary_stats_no_cache(
         scenario_model:NIR_ScenarioModel,
         ablations:dict[str, NIR_ScenarioModel],
         seed: int,
+        quiet:bool,
         ) -> SiteModelSummaryStats:
 
     base_comp = registry_compute_model(
             model=scenario_model,
             model_name=scenario_model_registry_name,
             run_compute_posterior=True,
-            quiet=False,
+            quiet=quiet,
             seed=seed)
 
     years = _years_from_comp(base_comp)
@@ -312,6 +328,8 @@ def _site_model_summary_stats_no_cache(
     rval = SiteModelSummaryStats(
             scenario_model=scenario_model,
             seed=seed,
+            last_forecast_year=years[-1],
+            shapes=_shapes_from_comp(base_comp),
             GHGs_for_sector=GHGs_for_sector(scenario_model),
             all_sector_echart_ktCO2e=_all_sector_echart_stats(
                 scenario_model, base_comp, years),
@@ -366,6 +384,7 @@ def site_model_summary_stats(
         scenario_model:NIR_ScenarioModel,
         ablations:dict[str, NIR_ScenarioModel],
         seed: int,
+        quiet:bool=False,
         ) -> SiteModelSummaryStats:
 
     rng_key = jrandom.key(seed)
@@ -391,6 +410,7 @@ def site_model_summary_stats(
             scenario_model_registry_name,
             scenario_model,
             ablations,
-            seed)
+            seed=seed,
+            quiet=quiet)
         _site_model_cache[cache_key] = rval
         return rval

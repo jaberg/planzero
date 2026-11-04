@@ -5,14 +5,17 @@ from __future__ import annotations
 
 from .enums import GHG, SPE, IPCC_Sector
 from .html import html_by_ghg
-from .nir_model import NIR_ScenarioModel
+from .nir_model import NIR_ModelElement, NIR_ScenarioModel
 from .scenario_model import (
-    Computation,
-    ModelElement,
+    AnnualKey,
+    CarryKey,
+    FinalCarry,
+    GeneralKey,
+    InitialCarry,
+    VarKey,
     registry_basename,
     registry_compute_model,
 )
-from .singleton_registry import SingletonRegistry
 from .site_model import SiteModelSummaryStats, site_model_summary_stats
 from .sparkline_echart_helper import (
     national_cost_impact_echart_from_stats,
@@ -20,8 +23,6 @@ from .sparkline_echart_helper import (
     national_emissions_impact_echart_from_stats,
     sectoral_emissions_by_region_echart_from_stats,
 )
-
-registry = SingletonRegistry()
 
 
 class SiteInference:
@@ -32,11 +33,6 @@ class SiteInference:
     an ablation study.
     """
 
-    # include this object in the registry of models to show on the site
-    # e.g. on the models/ page
-    # This should be over-ridden with a derived class class variable
-    include_in_registry: bool
-
     # the "model_name" of the model (or baseline model without any ablation)
     _scenario_model_registry_name: str
 
@@ -45,14 +41,14 @@ class SiteInference:
 
     # strategies are site-visible model elements that can be omitted
     # for the purpose of ablative analysis
-    _strategies: dict[str, ModelElement]
+    _strategies: dict[str, SiteModelElement]
 
     # ablations are the ScenarioModels that result from removing each strategy
     _ablations: dict[str, NIR_ScenarioModel]
 
     # barriers are site-visible model elements that implement the mathematical
     # relationship between the things we control and the results we seek to influence.
-    _barriers: dict[str, ModelElement]
+    _barriers: dict[str, SiteModelElement]
 
     site_model_summary_stats:SiteModelSummaryStats
 
@@ -67,11 +63,11 @@ class SiteInference:
         self._strategies = {
                 elem_id: elem
                 for elem_id, elem in scenario_model.model_elements.items()
-                if getattr(elem, 'is_strategy', False)}
+                if isinstance(elem, SiteModelElement) and elem.is_strategy}
         self._barriers = {
                 elem_id: elem
                 for elem_id, elem in scenario_model.model_elements.items()
-                if getattr(elem, 'is_barrier', False)}
+                if isinstance(elem, SiteModelElement) and not elem.is_strategy}
         self._ablations = {}
         for strat_id in self._strategies:
             self._add_ablation(strat_id)
@@ -80,6 +76,7 @@ class SiteInference:
                 scenario_model=self._scenario_model,
                 ablations=self._ablations,
                 seed=self.registry_computation_seed,
+                quiet=True,
                 )
 
     def _add_ablation(self, strategy_elem_id):
@@ -162,12 +159,6 @@ class SiteInference:
         """
         return self._scenario_model.version_hash()
 
-    @classmethod
-    def __init_subclass__(cls):
-        super().__init_subclass__()
-        if getattr(cls, 'include_in_registry', False):
-            registry.add_class(cls)
-
     @property
     def show_on_models_page(self) -> bool:
         return True
@@ -232,27 +223,20 @@ class SiteInference:
 
     @property
     def posts_developing_this_page(self) -> list[str]:
+        """Posts that narrate the evolution of this model """
         return []
 
-    def affected_sectors_by_strategy(self) -> dict:
+    def sectors_affected_by_strategy(self, strategy_id:str) -> set[IPCC_Sector]:
         # This could be determined empirically
         raise NotImplementedError()
 
     @property
     def strategies(self) -> dict[str, SiteModelElement]:
-        rval = {}
-        for key, val in self._strategies.items():
-            assert isinstance(val, SiteModelElement)
-            rval[key] = val
-        return rval
+        return dict(self._strategies)
 
     @property
     def barriers(self) -> dict[str, SiteModelElement]:
-        rval = {}
-        for key, val in self._barriers.items():
-            assert isinstance(val, SiteModelElement)
-            rval[key] = val
-        return rval
+        return dict(self._barriers)
 
     def GHGs_for_sector(self, sector:IPCC_Sector) -> list[GHG]:
         # called by e.g. models/prob/foo/sectors/bar
@@ -263,8 +247,7 @@ class SiteInference:
                 ktCO2e_stats=self.site_model_summary_stats.all_sector_echart_ktCO2e,
                 div_id=div_id,
                 v_unit=v_unit,
-                model_name=self.url_name,
-                )
+                model_name=self.url_name)
 
     def sector_echart(self, sector, ghg:GHG|None, v_unit):
         ktCO2e_stats = \
@@ -313,14 +296,55 @@ class SiteInference:
                 strategy_elem_id]
         return stats.quantiles[0.025], stats.quantiles[0.975]
 
+    def general_varkeys_defined(self, elem_id:str) -> set[GeneralKey]:
+        rval = set()
+        for vk, nvm in self._scenario_model.mv.general_nd.items():
+            if isinstance(vk, (InitialCarry, FinalCarry)):
+                pass
+            else:
+                assert isinstance(vk, GeneralKey), vk
+                if nvm.defining_element_id == elem_id:
+                    rval.add(vk)
+        return rval
+
+    def annual_varkeys_defined(self, elem_id:str) -> set[AnnualKey]:
+        rval = set()
+        for vk, nvm in self._scenario_model.mv.annual_nd.items():
+            assert isinstance(vk, AnnualKey), vk
+            if nvm.defining_element_id == elem_id:
+                rval.add(vk)
+        return rval
+
+    def carry_varkeys_defined(self, elem_id:str, include_rngs:bool) -> set[CarryKey]:
+        rval = set()
+        for vk, nvm in self._scenario_model.mv.carry_nd.items():
+            assert isinstance(vk, CarryKey), vk
+            if nvm.defining_element_id == elem_id:
+                rval.add(vk)
+        return rval
+
+    def varkey_shape(self, vk:VarKey) -> list[int]:
+        if isinstance(vk, CarryKey):
+            return list(self.site_model_summary_stats.shapes[
+                InitialCarry(carry_key=vk)])
+        else:
+            return list(self.site_model_summary_stats.shapes[vk])
 
 
-class SiteModelElement(ModelElement):
-    """Contract for attributes used to render barriers and strategies.
+class SiteModelElement(NIR_ModelElement):
+    """Model Elements should derive from this class in order to render on the site.
+
+    Strategies are required to derive from this class.
+
+    Structural elements (previously Barrier elements) should derive from this class
+    to be featured as part of models.
+
+    Support classes such as various summations and ModelBuiltins should
+    not derive from this class, in order not to clutter model presentation.
     """
 
     is_strategy: bool = False
-    is_barrier: bool = False
+    _cost_centre: None|SPE = None
 
     @property
     def pretty_name(self) -> str:
@@ -334,14 +358,31 @@ class SiteModelElement(ModelElement):
         """
         return []
 
+    @property
+    def short_description(self) -> str:
+        if self.__class__.__doc__ is not None:
+            return self.__class__.__doc__
+        else:
+            raise NotImplementedError()
+
     def description_html(self, context:None|dict=None) -> str:
-        raise NotImplementedError()
+        if self.__class__.__doc__ is not None:
+            return self.__class__.__doc__
+        else:
+            raise NotImplementedError()
 
     def see_also_html(self, context:None|dict=None) -> list[str]:
         return []
 
     @property
     def cost_centre(self) -> SPE:
+        assert self.is_strategy
+        assert self._cost_centre is not None
         # for Strategies, what SPE balance over time should be used to compute
         # cost_per_tCO2e ?
+        return self._cost_centre
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        """Posts that narrate the evolution of this element"""
         raise NotImplementedError()

@@ -2,7 +2,6 @@ from collections.abc import Callable
 
 from .enums import GHG, IPCC_Sector
 from .prob import SiteInference
-from .scenario_model import Computation
 from .site_model import SiteModelSummaryStats
 
 
@@ -57,6 +56,18 @@ class SiteInferenceSmokeTester:
     def test_barriers(self):
         barriers = self.siteinf.barriers
         self.assertIsInstance(barriers, dict)
+
+    def test_general_varkeys_defined(self):
+        varkeys = self.siteinf.general_varkeys_defined('ModelBuiltIns')
+        self.assertIsInstance(varkeys, set)
+
+    def test_annual_varkeys_defined(self):
+        varkeys = self.siteinf.annual_varkeys_defined('ModelBuiltIns')
+        self.assertIsInstance(varkeys, set)
+
+    def test_carry_varkeys_defined(self):
+        varkeys = self.siteinf.carry_varkeys_defined('ModelBuiltIns', False)
+        self.assertIsInstance(varkeys, set)
 
     def test_ghgs_for_sector(self):
         ghgs = self.siteinf.GHGs_for_sector(self.default_sector)

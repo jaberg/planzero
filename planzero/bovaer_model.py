@@ -6,7 +6,6 @@ from numpyro import distributions as dists
 
 from .enums import GHG, PT, SPE, IPCC_Sector
 from .html import coderef_url
-from .nir_model import NIR_ModelElement
 from .prob import SiteModelElement
 from .sc_3210013001 import (
     Livestock,
@@ -16,7 +15,6 @@ from .scenario_model import (
     AnnualKey,
     CarryKey,
     GeneralKey,
-    ModelElement,
     Phase,
     VersionID,
     Workspace,
@@ -33,7 +31,7 @@ from .ureg import u
 cattle_per_farm = 160 # look this up somewhere
 
 
-class Bovaer_Adoption_Limit(ModelElement):
+class Bovaer_Adoption_Limit(SiteModelElement):
 
     def __init__(self):
         pass
@@ -59,8 +57,7 @@ class Bovaer_Adoption_Limit(ModelElement):
     def short_description(self) -> str:
         return f"Assume Bovaer will only be adopted by, at most, {self.max_increase_rate} of cattle operations, up to a maximum of {(1 - self.organic_fraction) * 100:.1f}%"
 
-    @property
-    def description(self) -> str:
+    def description_html(self, context:None|dict=None) -> str:
         low, high = self.prob_max_increase_rate
         return f"""Assume that no more than {self.max_increase_rate} of
         farmers will switch to administering Bovaer
@@ -110,24 +107,23 @@ class Bovaer_Adoption_Limit(ModelElement):
                 'ModellingBovaer']
 
 
-class Bovaer_Production_Emissions(NIR_ModelElement):
+class Bovaer_Production_Emissions(SiteModelElement):
+
+    ratio_lower = 20
+    ratio_upper = 50
 
     @property
     def short_description(self) -> str:
-        return f"""Suppose that embedded/production emission of Bovaer is about {self.rate}."""
+        return f"""Suppose that embedded/production emission of Bovaer
+        are between {self.ratio_lower}-{self.ratio_upper} times less
+        than the abated emissions."""
 
-    @property
-    def description(self) -> str:
-        return f"""In deterministic models, this barrier estimates the
-        production emissions of Bovaer at {self.rate}.
-        </p>
-        <p>
-        In the probabilistic version of this barrier,
-        the logic is based on a "20-50x" reduction in CO2e compared with
-        methane emitted from cattle, as suggested by an LLM-AI chat,
-        which was the original source for the {self.rate} value.
+    def description_html(self, context:None|dict=None) -> str:
+        return f"""
+        The assumption of this element is a "20-50x" reduction in CO2e compared with
+        methane emitted from cattle, as suggested by an LLM-AI chat.
         For each sampled scenario, a reduction factor
-        is sampled uniformly from 20 to 50.
+        is sampled uniformly from {self.ratio_lower} to {self.ratio_upper}.
         </p>
         <p>This barrier does not reflect manufacturer or 3rd party
         estimates of emission rates nor does
@@ -168,7 +164,9 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
     def model_element_postprocess(self, ws:Workspace):
 
         # in units of x less than the methane abated from enteric fermentation
-        ws.dist.general['bovaer_production_emission_factor'] = dists.Uniform(20, 50)
+        ws.dist.general['bovaer_production_emission_factor'] = dists.Uniform(
+                self.ratio_lower,
+                self.ratio_upper)
 
         pt_scale = 10
 
@@ -199,6 +197,11 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
         rval[IPCC_Sector.SCS__Manufacturing__Other, GHG.CO2] = self.ktCO2e_pt_keys
         return rval
 
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']
+
 # TODO: there will be a cost for monitoring
 # https://www.mn.uio.no/geo/english/about/news-and-events/news/2025/combined-drone-satelite-data-and-ground-based-measurements-methane-emissions.html
 # It can apparently be done pretty well with drones
@@ -206,7 +209,7 @@ class Bovaer_Production_Emissions(NIR_ModelElement):
 # Monitoring might cost 10-20 million / year?
 
 
-class Bovaer_Monitoring(NIR_ModelElement):
+class Bovaer_Monitoring(SiteModelElement):
 
     @property
     def short_description(self) -> str:
@@ -214,14 +217,13 @@ class Bovaer_Monitoring(NIR_ModelElement):
     {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for
     on-site inspection"""
 
-    @property
-    def description(self) -> str:
+    def description_html(self, context:None|dict=None) -> str:
         return f"""Assume administering and monitoring costs
-    {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for
-    on-site inspection. Furthermore, estimate that these amounts are paid
-    in labour costs, from which income tax is collected back at a rate of
-    {self.income_tax_rate * 100}%.
-    """
+        {self.paperwork_monitoring} for paperwork and {self.onsite_monitoring} for
+        on-site inspection. Furthermore, estimate that these amounts are paid
+        in labour costs, from which income tax is collected back at a rate of
+        {self.income_tax_rate * 100}%.
+        """
 
     def __init__(self, annual_headcounts_key, annual_bovaer_fraction):
         super().__init__()
@@ -325,8 +327,13 @@ class Bovaer_Monitoring(NIR_ModelElement):
                  ): self.onsite_ca_tax,
                 }
 
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']
 
-class Bovaer_Farm_Subsidy(NIR_ModelElement):
+
+class Bovaer_Farm_Subsidy(SiteModelElement):
 
     def __init__(self,
                  def_bovine_fraction_on_bovaer:CarryKey,
@@ -342,8 +349,7 @@ class Bovaer_Farm_Subsidy(NIR_ModelElement):
     def short_description(self) -> str:
         return f"""Pay farmers {self.subsidy_rate} to administer Bovaer."""
 
-    @property
-    def description(self) -> str:
+    def description_html(self, context:None|dict=None) -> str:
         return f"""Model a tax-funded government subsidy program to pay
         cattle farmers {self.subsidy_rate} to administer Bovaer to all
         cattle on their farms, and comply with monitoring protocols.
@@ -447,8 +453,13 @@ class Bovaer_Farm_Subsidy(NIR_ModelElement):
                  ): self.subsidy_ca_tax,
                 }
 
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']
 
-class Bovaer_Purchase_Cost(NIR_ModelElement):
+
+class Bovaer_Purchase_Cost(SiteModelElement):
     """
     Define subsidy rates for the purchase cost of Bovaer
     """
@@ -524,6 +535,11 @@ class Bovaer_Purchase_Cost(NIR_ModelElement):
                  ): self.cost_ca,
                 }
 
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']
+
 
 class Scale_Bovaer(SiteModelElement):
     """<p>The "Scale Bovaer" strategy implements an assumption that
@@ -545,7 +561,10 @@ class Scale_Bovaer(SiteModelElement):
 
     def __init__(self, def_bovaer_budget:AnnualKey, fixed_year:int|None=2030):
         self._bovaer_budget = def_bovaer_budget
-        self.fixed_year = 2030
+        if fixed_year is None:
+            raise NotImplementedError()
+        self.fixed_year = fixed_year
+        self._cost_centre = SPE.BovaerSubsidy
 
     @staticmethod
     def element_identifier(fixed_year:int|None) -> str:
@@ -623,5 +642,6 @@ class Scale_Bovaer(SiteModelElement):
                 float('inf'))
 
     @property
-    def cost_centre(self) -> SPE:
-        return SPE.BovaerSubsidy
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']
