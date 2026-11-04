@@ -624,6 +624,7 @@ def get_context(title:str, **kwargs):
             'float': float,
             'min': min,
             'max': max,
+            'len': len,
             'np': np,
             'sorted': sorted,
             'enumerate': enumerate,

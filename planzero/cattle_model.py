@@ -4,7 +4,7 @@ import numpyro.distributions as dist
 from . import cattle
 from .enums import GHG, PT, IPCC_Sector
 from .ghgvalues import GWP_100
-from .nir_model import NIR_ModelElement
+from .prob import SiteModelElement
 from .sc_3210013001 import (
     FarmType,
     Livestock,
@@ -24,7 +24,7 @@ n_regions = 13
 n_livestock_types = len(Livestock_nonsums)
 
 
-class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
+class Cattle_StaticNormals_ModelElement(SiteModelElement):
     """This model element makes static normal estimates of cattle populations
     and enteric fermentation emission factors to explain three
     things:
@@ -264,3 +264,8 @@ class Cattle_StaticNormals_ModelElement(NIR_ModelElement):
         rval = {}
         rval[IPCC_Sector.Enteric_Fermentation, GHG.CH4] = self.ktCO2e_pt_keys
         return rval
+
+    @property
+    def posts_developing_this_page(self) -> list[str]:
+        return ['ProbabilisticBovaer',
+                'ModellingBovaer']

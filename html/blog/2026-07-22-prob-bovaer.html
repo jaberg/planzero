@@ -36,13 +36,13 @@ This post is about combining both:
 it introduces a probabilistic
 "<a href="/models/prob/Scaling/">Scaling</a>" model whose predictions are based
 both on statistical patterns <i>and</i> the influence of a
-<a href="/models/prob/Scaling/strategies/Scale_Bovaer/">probabilistic interpretation of the "Scale Bovaer" strategy</a>
+<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">probabilistic interpretation of the "Scale Bovaer" strategy</a>
 that is similar to the deterministic one <a href="/post/2026-04-03-bovaer#model">introduced previously</a>.
 </p>
 
 <p>
 As before, the
-"<a href="/models/prob/Scaling/strategies/Scale_Bovaer/">Scale Bovaer</a>" strategy implements the idea that
+"<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" strategy implements the idea that
 some fraction of cattle farmers would be open to 
 starting to administer Bovaer if they were sufficiently incentivized
 by government subsidy (and that no statistically significant population
@@ -69,7 +69,7 @@ a complete listing of modelling changes.
 The cost per tonne estimate is the ratio of values in the following two figures.
 The first figure is the expected <i>change</i> in emissions for each sector affected
 by the strategy
-(<a href="/models/prob/Scaling/strategies/Scale_Bovaer/#emissions">figure on strategy page</a>).
+(<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/#emissions">figure on strategy page</a>).
 The vertical is in units of <b>Mt{{CO2e}}</b>,
 and the horizontal is in units of <b>years</b> (adjust the slider below to zoom).
 The dotted line indicates the mean and the shaded regions indicate a 95% credible internval.
@@ -80,7 +80,7 @@ Mouse-over the slider below the panels to see and change the years shown.
 The second figure is the expected change in government cashflow, due to spending
 on farm subsidies and monitoring programs, and income tax revenue from the
 work associated with monitoring.
-(<a href="/models/prob/Scaling/strategies/Scale_Bovaer/#subsidies">figure on strategy page</a>).
+(<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/#subsidies">figure on strategy page</a>).
 The vertical here in units of <b>billions of CAD</b>.
 Values above zero represent government revenue. Values below zero represent government spending.
 {% include "blog/2026-07-22-prob-bovaer-subsidies.html" %}
@@ -201,7 +201,7 @@ This site also now includes pages
 for the strategies and barrier elements in a model,
 which serve to organize the logic and computations associated with each model.
 For example,
-the strategy page for "<a href="/models/prob/Scaling/strategies/Scale_Bovaer/">Scale Bovaer</a>" currently features the figures above,
+the strategy page for "<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above,
 and the "<a href="/models/prob/Scaling/barriers/Bovaer_Adoption_Limit/">Bovaer Adoption Limit</a>" barrier page describes and shows the
 assumption that just-over 2.5% to just-under 10% of farmers will start feeding Bovaer per year.
 The terms "strategy" and "barrier" will be explained in more detail in an upcoming
@@ -251,7 +251,7 @@ The new barrier elements are:
 <h3 id="a2-cattle">Cattle Population Static Normal</h3>
 
 <p>Link to barrier page: 
-<a href="/models/prob/Scaling/barriers/Cattle_Population_Static_Normal/">Cattle Population Static Normal</a></p>
+<a href="/models/prob/Scaling/barriers/Cattle_StaticNormals_ModelElement/">Cattle Population Static Normal</a></p>
 
 <p>This barrier element makes static normal estimates of cattle populations
     and enteric fermentation emission factors to explain three
@@ -291,7 +291,7 @@ this element assumes instead that 2.5-10.0% of farmers will switch to Bovaer in 
 <h3 id="a2-bovaer-production">Bovaer Production Emission Factors</h3>
 
 <p>Link to barrier page:
-<a href="/models/prob/Scaling/barriers/Bovaer_Production_Emission_Factors/">Bovaer Production Emission Factors</a></p>
+<a href="/models/prob/Scaling/barriers/Bovaer_Production_Emissions/">Bovaer Production Emission Factors</a></p>
 
 <p>
 When used in deterministic models,
