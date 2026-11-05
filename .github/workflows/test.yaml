@@ -90,7 +90,7 @@ jobs:
 
       - name: Cache key for Scaling model
         id: cache_key_scaling
-        run: echo "registry_basename=$(python -m planzero registry_basename --model=ScalingSiteInference )" >> "$GITHUB_OUTPUT"
+        run: echo "registry_basename=$(python -m planzero registry_basename --model=Scaling )" >> "$GITHUB_OUTPUT"
 
       - name: Restore inference cache for Scaling model
         uses: actions/cache/restore@v6
@@ -99,7 +99,7 @@ jobs:
           key: ${{ steps.cache_key_scaling.outputs.registry_basename }}
 
       - name: Scaling inference
-        run: python -m planzero registry_computation --model=ScalingSiteInference
+        run: python -m planzero registry_computation --model=Scaling
 
       - name: Save inference cache for Scaling model
         uses: actions/cache/save@v6
@@ -115,8 +115,8 @@ jobs:
       - name: Site Model Summary Stats for Static_Normals_2024_12_31
         run: python -m planzero site_model_summary_stats --model=Static_Normals_2024_12_31
 
-      - name: Site Model Summary Stats for ScalingSiteInference
-        run: python -m planzero site_model_summary_stats --model=ScalingSiteInference
+      - name: Site Model Summary Stats for Scaling
+        run: python -m planzero site_model_summary_stats --model=Scaling
 
       - name: Run all tests
         run: pytest -n 2 --maxfail=10 -W error --durations=30 -m "not slow" .
