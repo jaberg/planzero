@@ -65,6 +65,7 @@ jobs:
         run: echo "registry_basename=$(python -m planzero registry_basename --model=Static_Normals_2024_12_31)" >> "$GITHUB_OUTPUT"
 
       - name: Restore inference cache for Static_Normals_2024_12_31
+        id: restore_Static_Normals_2024_12_31
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
@@ -81,6 +82,7 @@ jobs:
           run: python -m planzero registry_computation --model=Static_Normals_2024_12_31
 
       - name: Save inference cache for Static_Normals_2024_12_31
+        if: steps.restore_Static_Normals_2024_12_31.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_static_normals_2024_12_31.outputs.registry_basename }}
@@ -93,6 +95,7 @@ jobs:
         run: echo "registry_basename=$(python -m planzero registry_basename --model=Scaling )" >> "$GITHUB_OUTPUT"
 
       - name: Restore inference cache for Scaling model
+        id: restore_Scaling
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_scaling.outputs.registry_basename }}
@@ -102,6 +105,7 @@ jobs:
         run: python -m planzero registry_computation --model=Scaling
 
       - name: Save inference cache for Scaling model
+        if: steps.restore_Scaling.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_scaling.outputs.registry_basename }}
