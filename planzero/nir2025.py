@@ -23,7 +23,7 @@ def load_inventory():
     """Return inventory as DataFrame with standard pre-processing
     """
     inv = pd.read_csv(os.path.join(os.environ['PLANZERO_DATA'], 'EN_GHG_IPCC_Can_Prov_Terr.csv'))
-    assert ('kt',) == inv['Unit'].unique()
+    assert {'kt'} == set(inv['Unit'].unique())
 
     inv['CategoryPathWithWhitespace'] = (
         inv['Category'].fillna('').astype(str) + '/' +
