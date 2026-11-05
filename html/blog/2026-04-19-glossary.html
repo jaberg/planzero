@@ -68,8 +68,8 @@ in the model may grow too, perhaps into the many hundreds of thousands.
 </p>
 
 <p>
-PlanZero manages the semantic complexity of these models by building them up from smaller elements:
-Strategy Elements, and Structural Elements.
+PlanZero manages the semantic complexity of these models by building them up from smaller elements especially
+<i>strategy elements</i>, and <i>structural elements</i>.
 Each element provides logic to define some variables in the model.
 An element might might define a variable in terms of numbers (e.g. a Statistics Canada table)
 or in terms of a distribution (e.g. the probabilistic interpretation of emissions from NIR-2025).
@@ -81,7 +81,9 @@ in that they define relationships between variables that are not necessary.
 to subsidize the administration of a feed additive such as Bovaer, but as an illustrative element it serves its purpose.)
 When a model includes strategy elements, PlanZero estimates the impact of each strategy by
 evaluating model variants with and without that strategy.
-For a more detailed overview of PlanZero's semantic modelling framework, including also the outcomes (so far: emissions and costs) and the metrics used to evaluate models, see Appendix 1.
+For a more detailed overview of PlanZero's semantic modelling framework,
+including also the outcomes (so far: emissions and costs) and the metrics used to evaluate models,
+see Appendix 1.
 </p>
 
 <p>
@@ -99,15 +101,15 @@ Finally <a href="#appendix-full-glossary">Appendix 3</a> includes a snapshot of 
 </p>
 
 <p>
-PlanZero's Models page has been updated and consolidated so that there
-are no longer two subsections (there used to be "Simulation-based models" and "Probabilistic Models" subsections)
+PlanZero's <a href="/models">models</a> page has been updated and consolidated so that there
+are no longer two subsections (there used to be "simulation-based models" and "probabilistic Models" subsections)
 there is just one list of [probabilistic] models:
 <ul>
 	<li>NIR2025, the probabilistic interpretation of the NIR-2025 data</li>
 	<li>Static Normals, a baseline probabilistic model implementing an assumption that there will be no long-term trends in any of the NIR emissions sectors</li>
 	<li>Scaling, the model that is intended to include multiple scalable technologies, but currently includes just a hypothetical Bovaer program.</li>
 </ul>
-So-called Simulation-based models have been removed as being redundant with the probabilistic models.
+The so-called "simulation-based" models have been removed as being redundant with the probabilistic models.
 What used to be simulation-based models were conceptually a special case of probabilistic models, but the way they
 were implemented was not amenable to Bayesian inference.
 </p>

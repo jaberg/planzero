@@ -152,12 +152,13 @@ def load_uncertainty():
     ]
     df = pd.read_excel(
         os.path.join(os.environ['PLANZERO_DATA'], 'EN_Annex2_Uncertainty.xlsx'),
+        engine='calamine',
         sheet_name='Table A2-2',
         usecols='A:M',
         skiprows=4,
         nrows=129 - 4,
         names=str_columns + float_columns + percent_columns,
-        )
+        ).dropna(how='all')
     for col in float_columns:
         df[col] = df[col].astype(float)
     for col in percent_columns:

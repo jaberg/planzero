@@ -22,12 +22,16 @@ class VentingType(str, enum.Enum):
 def st60b_2024_OneStop():
     rval = objtensor.empty(VentingType)
     onestop_2023 = pd.read_excel('data/ST60B_2024.xlsx',
+                                 engine='calamine',
                                  sheet_name="2023 OneStop", header=6)
     onestop_2022 = pd.read_excel('data/ST60B_2024.xlsx',
+                                 engine='calamine',
                                  sheet_name="2022 OneStop", header=6)
     onestop_2021 = pd.read_excel('data/ST60B_2024.xlsx',
+                                 engine='calamine',
                                  sheet_name="2021 Onestop", header=6)
     onestop_2020 = pd.read_excel('data/ST60B_2024.xlsx',
+                                 engine='calamine',
                                  sheet_name="2020 Onestop", header=6)
 
     for vt in VentingType:
@@ -138,6 +142,7 @@ class BitumenProductionType(str, enum.Enum):
 def st98_crude_bitumen_production():
     df = pd.read_excel(
         'data/st98-2025-crude-bitumen-supplydemand-data.xlsx',
+        engine='calamine',
         sheet_name="Figures",
         usecols='P:T',
         skiprows=33,
