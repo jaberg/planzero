@@ -2,8 +2,10 @@
 the /model/{site}/* pages of the site.
 """
 
+import os
 from dataclasses import dataclass
 
+import diskcache
 import numpy as np
 from jax import random as jrandom
 
@@ -16,6 +18,8 @@ from .scenario_model.registry import _rng_key_hash, registry_compute_model
 from .sector_total_emissions_element import (
     PseudoSector,
 )
+
+ROOT = os.environ['PLANZERO_SITE_MODEL_SUMMARY_STATS_ROOT']
 
 # The quantiles that are pre-computed for every time series and scalar.
 QUANTILE_LEVELS = (0.025, 0.5, 0.975)
@@ -43,8 +47,6 @@ class ScalarStats:
 
 @dataclass
 class SiteModelSummaryStats:
-    scenario_model:NIR_ScenarioModel
-    seed: int
     last_forecast_year:int
 
     shapes: dict[VarKey, list[int]]
@@ -326,8 +328,6 @@ def _site_model_summary_stats_no_cache(
     years = _years_from_comp(base_comp)
 
     rval = SiteModelSummaryStats(
-            scenario_model=scenario_model,
-            seed=seed,
             last_forecast_year=years[-1],
             shapes=_shapes_from_comp(base_comp),
             GHGs_for_sector=GHGs_for_sector(scenario_model),
@@ -376,8 +376,10 @@ def _site_model_summary_stats_no_cache(
     return rval
 
 
-
-_site_model_cache = {}
+# saves having to recompute after each file change
+# during e.g. site edits or between unit test attempts
+_disk_cache = diskcache.Cache(ROOT)
+_mem_cache = {}
 
 def site_model_summary_stats(
         scenario_model_registry_name:str,
@@ -403,8 +405,11 @@ def site_model_summary_stats(
             ablation_hash,
             )
 
-    if cache_key in _site_model_cache:
-        return _site_model_cache[cache_key]
+    if cache_key in _mem_cache:
+        rval = _mem_cache[cache_key]
+    elif cache_key in _disk_cache:
+        rval = _disk_cache[cache_key]
+        _mem_cache[cache_key] = rval
     else:
         rval = _site_model_summary_stats_no_cache(
             scenario_model_registry_name,
@@ -412,5 +417,7 @@ def site_model_summary_stats(
             ablations,
             seed=seed,
             quiet=quiet)
-        _site_model_cache[cache_key] = rval
-        return rval
+        _mem_cache[cache_key] = rval
+        _disk_cache[cache_key] = rval
+    assert isinstance(rval, SiteModelSummaryStats)
+    return rval

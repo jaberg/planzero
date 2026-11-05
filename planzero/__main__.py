@@ -91,6 +91,12 @@ def main_registry_computation(args):
     completed_prob_registry()[args.model].registry_computation()
 
 
+def main_site_model_summary_stats(args):
+    # touching the attribute triggers computation / loading of stats
+    stats = completed_prob_registry()[args.model].site_model_summary_stats
+    del stats
+
+
 def main_generate_assets(args):
     from . import blog as post
     post.registry[args.post_cls].generate_assets()
@@ -129,6 +135,10 @@ if __name__ == '__main__':
     parser_registry_computation = subparsers.add_parser('registry_computation')
     parser_registry_computation.add_argument('--model', help='model name')
     parser_registry_computation.set_defaults(func=main_registry_computation)
+
+    parser_smss = subparsers.add_parser('site_model_summary_stats')
+    parser_smss.add_argument('--model', help='model name')
+    parser_smss.set_defaults(func=main_site_model_summary_stats)
 
     parser_generate_assets = subparsers.add_parser('generate_assets')
     parser_generate_assets.add_argument('--post-cls', help='post class name')

@@ -40,6 +40,7 @@ RUN echo 'export JAX_ENABLE_X64=1' >> /root/.bashrc
 RUN echo 'export JAX_CHECK_STATIC_INDICES=1' >> /root/.bashrc
 RUN echo 'export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 inter_op_parallelism_threads=1"' >> /root/.bashrc
 RUN echo 'export PLANZERO_MODEL_REGISTRY_ROOT=_model_registry' >> /root/.bashrc
+RUN echo 'export PLANZERO_SITE_MODEL_SUMMARY_STATS_ROOT=_site_model_summary_stats' >> /root/.bashrc
 
 
 # built on dev machine

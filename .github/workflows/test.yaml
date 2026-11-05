@@ -20,6 +20,7 @@ env:
   PLANZERO_CACHE_DIR: "${{ github.workspace }}/_planzero_cache"
   PLANZERO_DATA: "${{ github.workspace }}/data"
   PLANZERO_MODEL_CACHE_ROOT: "_model_cache"
+  PLANZERO_SITE_MODEL_SUMMARY_STATS_ROOT: "${{ github.workspace }}/_site_model_summary_stats"
   PLANZERO_MODEL_REGISTRY_ROOT: "${{ github.workspace }}/_model_registry"
   PLANZERO_HOME_SHOW_PLANNED_POSTS: "0"
   PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS: "0"
@@ -107,6 +108,15 @@ jobs:
           key: ${{ steps.cache_key_scaling.outputs.registry_basename }}
 
       # Run test and populate app cache (diskcache)
+
+      - name: Site Model Summary Stats for NIR2025
+        run: python -m planzero site_model_summary_stats --model=NIR2025
+
+      - name: Site Model Summary Stats for Static_Normals_2024_12_31
+        run: python -m planzero site_model_summary_stats --model=Static_Normals_2024_12_31
+
+      - name: Site Model Summary Stats for ScalingSiteInference
+        run: python -m planzero site_model_summary_stats --model=ScalingSiteInference
 
       - name: Run all tests
         run: pytest -n 2 --maxfail=10 -W error --durations=30 -m "not slow" .
