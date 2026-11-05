@@ -111,6 +111,29 @@ jobs:
           path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_scaling.outputs.registry_basename }}
           key: ${{ steps.cache_key_scaling.outputs.registry_basename }}
 
+      # NIR2025 Model
+
+      - name: Cache key for NIR2025
+        id: cache_key_NIR2025
+        run: echo "registry_basename=$(python -m planzero registry_basename --model=NIR2025)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore inference cache for NIR2025
+        id: restore_NIR2025
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_NIR2025.outputs.registry_basename }}
+          key: ${{ steps.cache_key_NIR2025.outputs.registry_basename }}
+
+      - name: NIR2025 inference
+        run: python -m planzero registry_computation --model=NIR2025
+
+      - name: Save inference cache for NIR2025
+        if: steps.restore_NIR2025.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.PLANZERO_MODEL_REGISTRY_ROOT }}/${{ steps.cache_key_NIR2025.outputs.registry_basename }}
+          key: ${{ steps.cache_key_NIR2025.outputs.registry_basename }}
+
       # Run test and populate app cache (diskcache)
 
       - name: Site Model Summary Stats for NIR2025
