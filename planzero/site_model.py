@@ -29,10 +29,10 @@ class PreNIR_2025_m04_Stats:
 
 @dataclass
 class AnnualTimeSeriesStats:
-    # Invariant: the lists should all be the same length
-    years: list[int]
-    quantiles: dict[float, list[float]]
-    mean: list[float]
+    # Invariant: the arrays should all be the same length
+    years: np.ndarray # dtype int32
+    quantiles: dict[float, np.ndarray] # each dtype float32
+    mean: np.ndarray # dtype float32
 
 @dataclass
 class ScalarStats:
@@ -83,10 +83,10 @@ class SiteModelSummaryStats:
                 PseudoSector.Total_without_LULUCF)
         if total is None:
             return None
-        try:
-            idx_2050 = total.years.index(2050)
-        except ValueError:
+        idx = np.flatnonzero(total.years == 2050)
+        if idx.size == 0:
             return None
+        idx_2050 = int(idx[0])
         return ScalarStats(
                 quantiles={
                     q: values[idx_2050]
@@ -115,7 +115,7 @@ def GHGs_for_sector(
 
 def _annual_stats_from_sample(
         sample,
-        years:list[int],
+        years:np.ndarray,
         ) -> AnnualTimeSeriesStats:
     """Summarize an array of shape (n_years, n_samples)."""
     arr = np.asarray(sample)
@@ -130,11 +130,11 @@ def _annual_stats_from_sample(
     quantile_values = np.quantile(arr, q=QUANTILE_LEVELS, axis=1)
     mean_values = np.mean(arr, axis=1)
     return AnnualTimeSeriesStats(
-            years=[int(year) for year in years],
+            years=np.asarray(years, dtype=np.int32),
             quantiles={
-                float(q): [float(value) for value in values]
+                float(q): np.asarray(values, dtype=np.float32)
                 for q, values in zip(QUANTILE_LEVELS, quantile_values)},
-            mean=[float(value) for value in mean_values],
+            mean=np.asarray(mean_values, dtype=np.float32),
             )
 
 
@@ -149,11 +149,11 @@ def _scalar_stats_from_sample(sample) -> ScalarStats:
             )
 
 
-def _years_from_comp(comp:Computation) -> list[int]:
+def _years_from_comp(comp:Computation) -> np.ndarray:
     years = np.asarray(comp.ndarray_d[years_key])
     if years.ndim > 1:
         years = years[:, 0]
-    return [int(year) for year in years]
+    return np.asarray(years, dtype=np.int32)
 
 
 def _shapes_from_comp(comp:Computation) -> dict[VarKey, list[int]]:
@@ -203,12 +203,12 @@ def _pre_nir_2025_m04_stats(
 def _p_net_zero_2050(
         scenario_model:NIR_ScenarioModel,
         comp:Computation,
-        years:list[int],
+        years:np.ndarray,
         ) -> None|float:
-    try:
-        idx_2050 = years.index(2050)
-    except ValueError:
+    idx = np.flatnonzero(years == 2050)
+    if idx.size == 0:
         return None
+    idx_2050 = int(idx[0])
     total_ems = comp.ndarray_d[
             scenario_model.sum_over_sectors[False].ktCO2e_ca]
     return float(np.mean(np.asarray(total_ems)[idx_2050] < 0))
@@ -217,7 +217,7 @@ def _p_net_zero_2050(
 def _all_sector_echart_stats(
         scenario_model:NIR_ScenarioModel,
         comp:Computation,
-        years:list[int],
+        years:np.ndarray,
         ) -> dict[IPCC_Sector|PseudoSector, AnnualTimeSeriesStats]:
     samples = scenario_model.all_sector_echart_ktCO2e_sample(comp)
     return {
@@ -228,7 +228,7 @@ def _all_sector_echart_stats(
 def _per_sector_echart_stats(
         scenario_model:NIR_ScenarioModel,
         comp:Computation,
-        years:list[int],
+        years:np.ndarray,
         ) -> dict[
             IPCC_Sector,
             dict[GHG|None, dict[PT|PseudoRegion, AnnualTimeSeriesStats]]]:
@@ -278,7 +278,7 @@ def _national_emission_impact_stats(
         comp:Computation,
         ablated_model:NIR_ScenarioModel,
         ablated_comp:Computation,
-        years:list[int],
+        years:np.ndarray,
         ) -> dict[IPCC_Sector|PseudoSector, AnnualTimeSeriesStats]:
     with_strategy = scenario_model.all_sector_echart_ktCO2e_sample(comp)
     without_strategy = ablated_model.all_sector_echart_ktCO2e_sample(
@@ -296,7 +296,7 @@ def _national_cost_impact_stats(
         comp:Computation,
         ablated_model:NIR_ScenarioModel,
         ablated_comp:Computation,
-        years:list[int],
+        years:np.ndarray,
         ) -> dict[SPE, AnnualTimeSeriesStats]:
     with_strategy = scenario_model.all_SPE_echart_cost_sample(comp)
     without_strategy = ablated_model.all_SPE_echart_cost_sample(ablated_comp)
