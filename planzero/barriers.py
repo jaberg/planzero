@@ -6,6 +6,9 @@ from .base import DynamicElement
 from . import sts
 from . import objtensor
 
+# TODO: don't make a registry of these,
+# let each AblationStudy / Model define its own barriers
+# Then also don't import cattle.py below
 barriers = {} # classname -> Singleton instance
 
 

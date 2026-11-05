@@ -246,6 +246,20 @@ def load_ndarray_group(model_id, component_id, group_id):
     return rval
 
 
+def delete_ndarray_group(component_id, group_id):
+    with connect() as conn:
+        cursor = conn.execute(
+            """
+            DELETE
+            FROM Ndarray
+            WHERE component_id = ? AND group_id = ?
+            RETURNING key, file_name
+            ;""",
+            (component_id, group_id,))
+        returned = list(cursor)
+    return returned
+
+
 def params_Normal(component_id):
     with connect() as conn:
         cursor = conn.execute(

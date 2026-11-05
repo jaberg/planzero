@@ -1,7 +1,6 @@
-from .enums import GHG
 from . import objtensor
-from .ureg import u, kg_by_ghg
-
+from .enums import GHG
+from .ureg import kg_by_ghg, u
 
 # TODO: these values can change over time, consider using STS instead of
 # scalars

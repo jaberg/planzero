@@ -44,6 +44,7 @@ def df_residential_table2():
         else:
             pt = getattr(PT, pt_letters.upper())
         df = pd.read_excel(xlspath,
+                       engine='calamine',
                        sheet_name='Table 2',
                        usecols='B:Z',
                        header=10,
@@ -100,6 +101,7 @@ def df_transportation_table8():
         else:
             pt = getattr(PT, pt_letters.upper())
         df = pd.read_excel(xlspath,
+                       engine='calamine',
                        sheet_name='Table 8',
                        usecols='B:Z',
                        header=10,
@@ -174,6 +176,7 @@ def df_transportation_table36():
         else:
             pt = getattr(PT, pt_letters.upper())
         df = pd.read_excel(xlspath,
+                       engine='calamine',
                        sheet_name='Table 36',
                        usecols='B:Z',
                        header=10,
@@ -240,6 +243,7 @@ def df_transportation_table22():
         else:
             pt = getattr(PT, pt_letters.upper())
         df = pd.read_excel(xlspath,
+                       engine='calamine',
                        sheet_name='Table 22',
                        usecols='B:Z',
                        header=10,

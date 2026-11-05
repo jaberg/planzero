@@ -5,54 +5,18 @@
 <section class="post">
     <header class="major">
         <h1>Models</h1>
-        <p>Simulation-based and probabilistic models of Canada's
+        <p>Probabilistic models of Canada's
         future National Inventory Reports.</p>
     </header>
 
-<h2>Simulation-based Models</h2>
-
-<p>Simulation-based models
-are single scenarios (sometimes with ablations for analysis)
-to illustrate data sets and hypothetical futures.<p>
-
-<table id="gemini-sort-data-table">
-    <thead>
-          <tr>
-              <th>
-                  Name
-              </th>
-              <th>
-                  Short Description
-              </th>
-              <th>
-                  Predicted Emissions 2050
-              </th>
-          </tr>
-    </thead>
-    <tbody>
-        {% for ident, obj in planzero.sim.site_simulations.items() if obj.show_on_simulations_page %}
-          <tr>
-              <td>
-                  <a href="/models/sim/{{ident}}/">{{ident}}</a>
-              </td>
-              <td>{{obj.short_description}}</td>
-              <td>{{"{:.1f}".format(
-                  planzero.sim.simulation_result(ident).state.compute_annual_emissions().total().query(
-                      2050 * u.year).to(u.Mt_CO2e).magnitude)}}
-                  Mt{{CO2e|safe}}</td>
-          </tr>
-          {% endfor %}
-    </tbody>
-</table>
-
-<h2>Probabilistic Models</h2>
-
+    <!--
 <p>Probabilistic models
 estimate the probabilities of multiple possible futures.
 They are visualized in terms of the mean, and upper and lower bounds on probable futures.
 <p>
+    -->
 
-<table id="gemini-sort-data-table">
+<table class="gemini-sort-data-table">
     <thead>
           <tr>
               <th>
@@ -67,14 +31,13 @@ They are visualized in terms of the mean, and upper and lower bounds on probable
           </tr>
     </thead>
     <tbody>
-        {% for ident, obj in planzero.prob.site_inferences.items() if obj.show_on_models_page %}
+        {% for url_name, siteinf in sorted(model_registry.items()) %}
           <tr>
               <td>
-                  <a href="/models/prob/{{ident}}/">{{obj.pretty_name}}</a>
+                  <a href="/models/prob/{{url_name}}/">{{siteinf.pretty_name}}</a>
               </td>
-              <td>{{obj.short_description}}</td>
-              <td>{{"{:.1f} - {:.1f}".format(*obj.predicted_emissions_2050_MtCO2e_bounds_ul)}}
-                  Mt{{CO2e|safe}}</td>
+              <td>{{siteinf.short_description}}</td>
+              <td>{{siteinf.predicted_emissions_2050_MtCO2e_bounds_str}}</td>
           </tr>
           {% endfor %}
     </tbody>
