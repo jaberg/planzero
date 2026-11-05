@@ -50,7 +50,7 @@ class SiteInference:
     # relationship between the things we control and the results we seek to influence.
     _barriers: dict[str, SiteModelElement]
 
-    site_model_summary_stats:SiteModelSummaryStats
+    _site_model_summary_stats:None|SiteModelSummaryStats
 
     registry_computation_seed:int = 42
 
@@ -71,13 +71,19 @@ class SiteInference:
         self._ablations = {}
         for strat_id in self._strategies:
             self._add_ablation(strat_id)
-        self.site_model_summary_stats = site_model_summary_stats(
-                self._scenario_model_registry_name,
-                scenario_model=self._scenario_model,
-                ablations=self._ablations,
-                seed=self.registry_computation_seed,
-                quiet=True,
-                )
+        self._site_model_summary_stats = None # lazy-loaded
+
+    @property
+    def site_model_summary_stats(self) -> SiteModelSummaryStats:
+        if self._site_model_summary_stats is None:
+            self._site_model_summary_stats = site_model_summary_stats(
+                    self._scenario_model_registry_name,
+                    scenario_model=self._scenario_model,
+                    ablations=self._ablations,
+                    seed=self.registry_computation_seed,
+                    quiet=True,
+                    )
+        return self._site_model_summary_stats
 
     def _add_ablation(self, strategy_elem_id):
         assert strategy_elem_id not in self._ablations
