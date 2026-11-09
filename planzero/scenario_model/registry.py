@@ -1,8 +1,22 @@
 """
 The design of the registry:
 
-Every model for which registry_compute_model is called gets a folder
-{MODEL_REGISTRY_ROOT}/model_{model_name}_{version_hash}_{seed_hash}.
+Models are grouped into "families". A family consists of a baseline model and
+its ablations. Every family gets a folder
+
+    {MODEL_REGISTRY_ROOT}/model_family_{family}_{version_hash}_{seed_hash}
+
+where version_hash and seed_hash are those of the baseline model.
+
+Inside a family folder, every model for which registry_compute_model is called
+gets a folder
+
+    model_{model_name}_{version_hash}_{seed_hash}
+
+For the baseline model, the family and model names are the same. Ablation
+models share the baseline's family folder but have their own model folder.
+
+The family folder is the unit that is cached/restored by the GitHub workflow.
 
 In that [per-model] folder, there is at least "sentinel file" for each mcmc_group,
 with which is associated a submodel whose mcmc can be run independently.
@@ -48,17 +62,33 @@ def var_key_hash(var_key: VarKey, n_chars=32) -> str:
     return rval
 
 
-def infer_model_root(model_name: str, version_hash:str, seed_hash:str):
+def infer_model_family_basename(
+        model_name: str, version_hash: str, seed_hash: str) -> str:
+    assert len(model_name) < MAX_NAME_LEN, ("catch accidentally long strings", model_name)
+    assert len(version_hash) == 32
+    assert len(seed_hash) == 32
+    return f'model_family_{model_name}_{version_hash}_{seed_hash}'
+
+
+def infer_model_root(
+        model_name: str,
+        version_hash: str,
+        seed_hash: str,
+        family_basename: str | None = None) -> str:
     assert len(model_name) < MAX_NAME_LEN, ("catch accidentally long strings", model_name)
     assert MODEL_REGISTRY_ROOT, "env var PLANZERO_MODEL_REGISTRY_ROOT not set"
     assert len(version_hash) == 32
     assert len(seed_hash) == 32
-    return f'{MODEL_REGISTRY_ROOT}/model_{model_name}_{version_hash}_{seed_hash}'
+    if family_basename is None:
+        family_basename = infer_model_family_basename(
+                model_name, version_hash, seed_hash)
+    return (
+            f'{MODEL_REGISTRY_ROOT}/{family_basename}'
+            f'/model_{model_name}_{version_hash}_{seed_hash}')
 
 
-def var_key_path(model_name: str, version_hash:str, seed_hash:str, var_key: VarKey):
-    """Path where samples would be saved for var_key, if they were saved by model_name"""
-    model_root = infer_model_root(model_name, version_hash, seed_hash=seed_hash)
+def var_key_path(model_root: str, var_key: VarKey):
+    """Path where samples would be saved for var_key in model_root"""
     return f'{model_root}/var_key_np_{var_key_hash(var_key)}.npy'
 
 
@@ -67,9 +97,16 @@ def _iter_model_roots():
     if not MODEL_REGISTRY_ROOT:
         return
     try:
-        for entry in os.scandir(MODEL_REGISTRY_ROOT):
-            if entry.is_dir() and entry.name.startswith('model_'):
-                yield entry.path
+        for family_entry in os.scandir(MODEL_REGISTRY_ROOT):
+            if not (family_entry.is_dir()
+                    and family_entry.name.startswith('model_family_')):
+                continue
+            try:
+                for model_entry in os.scandir(family_entry.path):
+                    if model_entry.is_dir() and model_entry.name.startswith('model_'):
+                        yield model_entry.path
+            except OSError:
+                continue
     except OSError:
         return
 
@@ -97,7 +134,7 @@ def _rng_key_hash(rng_key: ArrayLike, n_chars=32) -> str:
 class AvailableInference:
     infer_key: tuple[str, str] # version_hash of submodel, mcmc group seed hash
     model_name: str
-    model_root_path: str
+    model_root_path: str  # includes ROOT/family/model
     model_version_hash: str
     model_seed_hash:str
     sentinel_path: str
@@ -110,6 +147,29 @@ _infer_registry: dict[tuple[str, str], AvailableInference] = {}
 _registry_scanned_mtime: float | None = None
 
 
+def _registry_mtime_ns() -> int | None:
+    """Return the newest mtime of the registry root or any family directory.
+
+    Model directories live inside family directories, so changes inside an
+    existing family do not update the registry root's mtime.
+    """
+    try:
+        assert MODEL_REGISTRY_ROOT
+        mtimes = [os.stat(MODEL_REGISTRY_ROOT).st_mtime_ns]
+    except OSError:
+        return None
+    try:
+        for entry in os.scandir(MODEL_REGISTRY_ROOT):
+            if entry.is_dir() and entry.name.startswith('model_family_'):
+                try:
+                    mtimes.append(entry.stat().st_mtime_ns)
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return max(mtimes)
+
+
 def _scan_available_inferences(force: bool = False) -> dict[tuple[str, str], AvailableInference]:
     global _registry_scanned_mtime
 
@@ -117,11 +177,7 @@ def _scan_available_inferences(force: bool = False) -> dict[tuple[str, str], Ava
         warnings.warn('MODEL_REGISTRY_ROOT not set')
         return _infer_registry
 
-    try:
-        root_stat = os.stat(MODEL_REGISTRY_ROOT)
-        root_mtime = root_stat.st_mtime_ns
-    except OSError:
-        root_mtime = None
+    root_mtime = _registry_mtime_ns()
 
     # return cached if not force
     if (not force and _registry_scanned_mtime is not None
@@ -177,11 +233,7 @@ def _scan_available_inferences(force: bool = False) -> dict[tuple[str, str], Ava
                     continue
                 for var_key in saved_sample_sites:
                     try:
-                        var_key_path(
-                                model_name=model_name,
-                                version_hash=model_version_hash,
-                                seed_hash=model_seed_hash,
-                                var_key=var_key)
+                        var_key_path(model_dir, var_key)
                     except Exception as err:
                         err.add_note(f'var_key={var_key}')
                         err.add_note(f'model_name={model_name}')
@@ -229,12 +281,15 @@ def _get_available_inference(
 
 
 def _register_inference(
+        model_root_path: str,
         model_name: str,
         model_version_hash:str,
         model_seed_hash:str,
         infer_key: tuple[str, str],
         sentinel_path: str,
         saved_sample_sites: dict[VarKey, str]):
+    # called only after computing inference results via MCMC
+    # and saving a new corresponding sentinel file
     try:
         mtime_ns = os.stat(sentinel_path).st_mtime_ns
     except OSError:
@@ -244,10 +299,7 @@ def _register_inference(
         model_name=model_name,
         model_version_hash=model_version_hash,
         model_seed_hash=model_seed_hash,
-        model_root_path=infer_model_root(
-            model_name,
-            version_hash=model_version_hash,
-            seed_hash=model_seed_hash),
+        model_root_path=model_root_path,
         sentinel_path=sentinel_path,
         saved_sample_sites=saved_sample_sites,
         mtime_ns=mtime_ns,
@@ -256,16 +308,10 @@ def _register_inference(
         _infer_registry[infer_key] = avail
 
 
-def save_var(model_name: str,
-             model_version_hash:str,
-             model_seed_hash:str,
+def save_var(model_root: str,
              var_key: VarKey,
              val: np.ndarray):
-    path = var_key_path(
-            model_name=model_name,
-            version_hash=model_version_hash,
-            seed_hash=model_seed_hash,
-            var_key=var_key)
+    path = var_key_path(model_root, var_key)
     if val.dtype == np.float64:
         dtype = np.float32
     else:
@@ -281,16 +327,10 @@ def save_var(model_name: str,
 
 
 def load_var(
-        model_name: str,
-        model_version_hash:str,
-        model_seed_hash:str,
+        model_root: str,
         var_key: VarKey,
         ) -> jnp.ndarray:
-    path = var_key_path(
-            model_name=model_name,
-            version_hash=model_version_hash,
-            seed_hash=model_seed_hash,
-            var_key=var_key)
+    path = var_key_path(model_root, var_key)
     return np.load(path, mmap_mode='r')
 
 
@@ -306,39 +346,33 @@ def infer_sentinel_name(mcmc_group: str, version_hash: str, seed_hash: str):
     return f'sentinel_mcmc_{mcmc_group}_{version_hash}_{seed_hash}'
 
 
-def infer_sentinel_path(model_name: str,
-                        model_version_hash:str,
-                        model_seed_hash:str,
+def infer_sentinel_path(model_root: str,
                         mcmc_group: str, version_hash: str, seed_hash: str) -> str:
     return os.path.join(
-            infer_model_root(model_name, model_version_hash, seed_hash=model_seed_hash),
+            model_root,
             infer_sentinel_name(mcmc_group, version_hash, seed_hash))
 
 
 def infer_lock_path(
-        model_name: str,
-        model_version_hash:str,
-        model_seed_hash:str,
+        model_root: str,
         mcmc_group: str, version_hash: str, seed_hash: str):
-    locks_dir = os.path.join(
-            infer_model_root(model_name, model_version_hash, model_seed_hash),
-            '.locks')
+    locks_dir = os.path.join(model_root, '.locks')
     os.makedirs(locks_dir, exist_ok=True)
     return os.path.join(
             locks_dir,
             f'{infer_sentinel_name(mcmc_group, version_hash, seed_hash)}.lock')
 
 
-
 class NoAvailableSentinel(Exception): pass
+
 
 def _compute_mcmc_submodel_reuse(
         model_name, model_version_hash, model_seed_hash,
         mcmc_group, version_hash, seed_hash, msg_prefix,
-        ) -> tuple[tuple[str, str, str], dict[VarKey, str]]:
+        ) -> tuple[str, dict[VarKey, str]]:
     """
-    Return (other_model_name, saved_sample_sites) if the required saved files
-    exist within MODEL_REGISTRY_ROOT/model_{other_model_name}
+    Return (model_root_path, saved_sample_sites) if the required saved files
+    exist within MODEL_REGISTRY_ROOT.
     """
 
     # TODO: a known issue is that the number of drawn samples is not
@@ -357,10 +391,8 @@ def _compute_mcmc_submodel_reuse(
             # model_version_hash will generally be different vs. avail
             # model_name will generally be different vs. avail.model_name
             vkpath = var_key_path(
-                    model_name=avail.model_name,
-                    version_hash=avail.model_version_hash,
-                    seed_hash=avail.model_seed_hash,
-                    var_key=GroupedPosterior(prior_var_key=var_key))
+                    avail.model_root_path,
+                    GroupedPosterior(prior_var_key=var_key))
             try:
                 assert os.path.exists(vkpath)
             except Exception as err:
@@ -372,22 +404,19 @@ def _compute_mcmc_submodel_reuse(
                 raise
         if msg_prefix:
             print(msg_prefix, 'reusing mcmc for', model_name, mcmc_group, version_hash, seed_hash)
-        return ((avail.model_name,
-                 avail.model_version_hash,
-                 avail.model_seed_hash),
-                saved_sample_sites)
-
+        return (avail.model_root_path, saved_sample_sites)
 
 
 def _compute_mcmc_submodel(
         model_name: str,
         model_version_hash:str,
         model_seed_hash:str,
+        family_basename: str,
         mcmc_group: str,
         submodel: ScenarioModel,
         rng_key: ArrayLike,
         msg_prefix: str = "",
-) -> tuple[tuple[str, str, str], dict[VarKey, str]]:
+) -> tuple[str, dict[VarKey, str]]:
     # This function may or may not actually do the mcmc computations,
     # depending on the determination of `do_mcmc` later in the function body.
     #
@@ -407,9 +436,13 @@ def _compute_mcmc_submodel(
     except NoAvailableSentinel:
         pass
 
+    model_root = infer_model_root(
+            model_name,
+            version_hash=model_version_hash,
+            seed_hash=model_seed_hash,
+            family_basename=family_basename)
     local_sentinel = infer_sentinel_path(
-            model_name, model_version_hash, model_seed_hash,
-            mcmc_group, version_hash, seed_hash)
+            model_root, mcmc_group, version_hash, seed_hash)
 
     comp = Computation(model=submodel, rng_key=jrandom.key(1))
     comp.run()  # run once so the error is intelligible if it fails
@@ -429,7 +462,7 @@ def _compute_mcmc_submodel(
     for var_key, sample_site in comp.sample_sites.items():
         if sample_site in grouped_samples:
             save_var(
-                model_name, model_version_hash, model_seed_hash,
+                model_root,
                 GroupedPosterior(prior_var_key=var_key),
                 grouped_samples[sample_site])
             saved_sample_sites[var_key] = sample_site
@@ -441,34 +474,39 @@ def _compute_mcmc_submodel(
     os.replace(sentinel_tmp, local_sentinel)
     infer_key = (version_hash, seed_hash)
     _register_inference(
-            model_name, model_version_hash, model_seed_hash,
+            model_root, model_name, model_version_hash, model_seed_hash,
             infer_key, local_sentinel, saved_sample_sites)
 
-    return ((model_name, model_version_hash, model_seed_hash),
-            saved_sample_sites)
+    return (model_root, saved_sample_sites)
 
 
 def _compute_mcmc_submodel_with_lock(
         model_name: str,
         model_version_hash:str,
         model_seed_hash:str,
+        family_basename: str,
         mcmc_group: str,
         submodel: ScenarioModel,
         rng_key: ArrayLike,
         timeout: float,
         msg_prefix: str,
-) -> tuple[tuple[str, str, str], dict[VarKey, str]]:
+) -> tuple[str, dict[VarKey, str]]:
     version_hash = submodel.version_hash()
     seed_hash = _rng_key_hash(rng_key)
+    model_root = infer_model_root(
+            model_name,
+            version_hash=model_version_hash,
+            seed_hash=model_seed_hash,
+            family_basename=family_basename)
     lockpath = infer_lock_path(
-            model_name, model_version_hash, model_seed_hash,
-            mcmc_group, version_hash, seed_hash)
+            model_root, mcmc_group, version_hash, seed_hash)
     lock = filelock.FileLock(lockpath, timeout=timeout)
     with lock:
         return _compute_mcmc_submodel(
                 model_name=model_name,
                 model_version_hash=model_version_hash,
                 model_seed_hash=model_seed_hash,
+                family_basename=family_basename,
                 mcmc_group=mcmc_group,
                 submodel=submodel,
                 rng_key=rng_key,
@@ -479,18 +517,15 @@ def _compute_posterior(
         model: ScenarioModel,
         rng_key: ArrayLike,
         saved_sample_sites: dict[VarKey, str],
-        saved_sample_models: dict[VarKey, tuple[str, str, str]],
+        saved_sample_models: dict[VarKey, str],
         run_computation: bool = True,
 ) -> Computation:
     grouped_samples = {}
     for var_key, sample_site in saved_sample_sites.items():
-        model_name, model_version_hash, model_seed_hash \
-                = saved_sample_models[var_key]
+        model_root = saved_sample_models[var_key]
         try:
             grouped_samples[sample_site] = load_var(
-                    model_name=model_name,
-                    model_version_hash=model_version_hash,
-                    model_seed_hash=model_seed_hash,
+                    model_root=model_root,
                     var_key=GroupedPosterior(prior_var_key=var_key))
         except OSError as err:
             err.add_note(f'var_key={var_key}')
@@ -515,12 +550,10 @@ def registry_basename(
     model_version_hash = model.version_hash()
     model_seed_hash = _rng_key_hash(rng_key)
 
-    model_root = infer_model_root(
+    return infer_model_family_basename(
             model_name=model_name,
             version_hash=model_version_hash,
             seed_hash=model_seed_hash)
-    name = os.path.basename(model_root)
-    return name
 
 
 def registry_compute_model(
@@ -529,6 +562,7 @@ def registry_compute_model(
         seed: int,
         run_compute_posterior: bool = True,
         quiet: bool = True,
+        family_basename: str | None = None,
 ) -> Computation:
 
     rng_key = jrandom.key(seed)
@@ -536,11 +570,16 @@ def registry_compute_model(
     model_version_hash = model.version_hash()
     model_seed_hash = _rng_key_hash(rng_key)
 
+    if family_basename is None:
+        family_basename = infer_model_family_basename(
+                model_name, model_version_hash, model_seed_hash)
+
     model_root = infer_model_root(
             model_name=model_name,
             version_hash=model_version_hash,
-            seed_hash=model_seed_hash)
-    assert os.path.basename(model_root) == registry_basename(model, model_name, seed)
+            seed_hash=model_seed_hash,
+            family_basename=family_basename)
+    assert os.path.basename(os.path.dirname(model_root)) == family_basename
 
     os.makedirs(model_root, exist_ok=True)
     os.makedirs(os.path.join(model_root, '.locks'), exist_ok=True)
@@ -556,6 +595,7 @@ def registry_compute_model(
                 model_name,
                 model_version_hash,
                 model_seed_hash,
+                family_basename,
                 mcmc_group,
                 submodel,
                 jrandom.key(mcmc_group_seed))
@@ -563,8 +603,8 @@ def registry_compute_model(
     # mcmc_group -> VarKey -> saved_site
     saved_sites_d:dict[str, dict[VarKey, str]] = {}
 
-    # mcmc_group -> (model_name, version_hash, seed_hash)
-    saved_models_d:dict[str, tuple[str, str, str]] = {}
+    # mcmc_group -> model_root_path
+    saved_models_d:dict[str, str] = {}
 
     n_groups_total = len(args_by_mcmc_group)
     n_groups_done = 0
@@ -606,8 +646,8 @@ def registry_compute_model(
     # key -> numpyro sample site name
     saved_sample_sites:dict[VarKey, str] = {}
 
-    # key -> (model_name, version_hash, seed_hash)
-    saved_sample_models:dict[VarKey, tuple[str, str, str]] = {}
+    # key -> model_root_path
+    saved_sample_models:dict[VarKey, str] = {}
     for mcmc_group, submodel_saved_sample_sites in saved_sites_d.items():
         for key, site in submodel_saved_sample_sites.items():
             assert key not in saved_sample_sites, key

@@ -119,8 +119,8 @@ class SiteInference:
 
     @property
     def scenario_model_registry_name(self) -> str:
-        # this is the first part of the 3-part registry_basename
-        # {model_name}_{version_hash}_{seed_hash}
+        # This is the baseline model's name. It is also the family name used
+        # to group the baseline and its ablations in the model registry.
         return self._scenario_model_registry_name
 
     @property
@@ -129,7 +129,7 @@ class SiteInference:
 
     def registry_basename(self) -> str:
         # called from __main__
-        # {model_name}_{version_hash}_{seed_hash}
+        # model_family_{family}_{version_hash}_{seed_hash}
         return registry_basename(
                 model=self._scenario_model,
                 model_name=self._scenario_model_registry_name,
@@ -137,6 +137,7 @@ class SiteInference:
 
     def registry_computation(self, quiet:bool=False) -> None:
         # called from __main__
+        family_basename = self.registry_basename()
         def _registry_compute_model(
                 ablate_strategy_elem_id:str|None=None,
                 ):
@@ -151,7 +152,8 @@ class SiteInference:
                     model_name=model_name,
                     run_compute_posterior=False,
                     quiet=quiet,
-                    seed=self.registry_computation_seed)
+                    seed=self.registry_computation_seed,
+                    family_basename=family_basename)
 
         _registry_compute_model()
         for strategy_elem_id in self._ablations:

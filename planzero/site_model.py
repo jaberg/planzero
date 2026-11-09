@@ -14,7 +14,11 @@ from .nir2025 import near_zero_sector_ghgs
 from .nir_model import NIR_ScenarioModel
 from .regional_total_emissions_element import PseudoRegion
 from .scenario_model import Computation, VarKey, years_key
-from .scenario_model.registry import _rng_key_hash, registry_compute_model
+from .scenario_model.registry import (
+    _rng_key_hash,
+    registry_basename,
+    registry_compute_model,
+)
 from .sector_total_emissions_element import (
     PseudoSector,
 )
@@ -318,12 +322,18 @@ def _site_model_summary_stats_no_cache(
         quiet:bool,
         ) -> SiteModelSummaryStats:
 
+    family_basename = registry_basename(
+            model=scenario_model,
+            model_name=scenario_model_registry_name,
+            seed=seed)
+
     base_comp = registry_compute_model(
             model=scenario_model,
             model_name=scenario_model_registry_name,
             run_compute_posterior=True,
             quiet=quiet,
-            seed=seed)
+            seed=seed,
+            family_basename=family_basename)
 
     years = _years_from_comp(base_comp)
 
@@ -351,7 +361,8 @@ def _site_model_summary_stats_no_cache(
                 model_name=model_name,
                 run_compute_posterior=True,
                 quiet=False,
-                seed=seed)
+                seed=seed,
+                family_basename=family_basename)
 
         rval.cost_per_tCO2e_quantiles[strategy_id] = _cost_per_tCO2e_stats(
                 scenario_model,
