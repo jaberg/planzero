@@ -1,6 +1,9 @@
 # this resolves circular type references
 from __future__ import annotations
 
+import gc
+
+import jax
 import jax.numpy as jnp
 import jax.random as jrandom
 import numpy as np
@@ -38,6 +41,18 @@ from .scenario_model import (
     ResolvedAccessMetadata,
     ScenarioModel,
 )
+
+
+def _attempt_release_jax_memory():
+    gc.collect()
+    jax.clear_caches()
+
+    # This seems like it will free every allocated jax array,
+    # which I think is too heavy-handed. We just want to free up the
+    # Computation.ndarray objects that we won't be wanting in future :/
+    #for arr in jax.live_arrays():
+        #arr.delete()
+
 
 
 class ScanStorage_ThisAnnual_NdarrayD:
@@ -1570,6 +1585,7 @@ class Computation:
         self._run_proc()
         if self.phase == Phase.Posterior:
             self._forget_non_outputs()
+        _attempt_release_jax_memory()
         self.has_run = True
 
 

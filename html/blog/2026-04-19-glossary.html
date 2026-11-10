@@ -43,9 +43,9 @@ It was not simply that the writing need reworking, PlanZero's implementation its
 The <a href="/blog/2026-04-12-about#draft-status">"Draft Status"</a> post from April
 described a process for the rework,
 and this post (now November) reflects the result of it.
-The rework was broadly about incorporating uncertainty
-and the result is an articulation of what PlanZero models <i>are</i>.
-This post explains PlanZero models in general, and introduces a
+The rework was broadly about incorporating uncertainty,
+and the result is a new articulation of what PlanZero models <i>are</i>, as probabilistic models.
+This post explains what PlanZero models are (and aim to be, in general) and introduces a
 <a href="/glossary">glossary</a> featuring key modelling terms and miscellaneous
 other terms that this site uses in specific ways. 
 </p>
@@ -109,20 +109,18 @@ there is just one list of [probabilistic] models:
 	<li>Static Normals, a baseline probabilistic model implementing an assumption that there will be no long-term trends in any of the NIR emissions sectors</li>
 	<li>Scaling, the model that is intended to include multiple scalable technologies, but currently includes just a hypothetical Bovaer program.</li>
 </ul>
-The so-called "simulation-based" models have been removed as being redundant with the probabilistic models.
-What used to be simulation-based models were conceptually a special case of probabilistic models, but the way they
-were implemented was not amenable to Bayesian inference.
+The so-called "simulation-based" models have been removed because they were redundant with the probabilistic models.
+What used to be simulation-based models were, conceptually, a restricted special case of probabilistic models.
+Furthermore, the way they were implemented was not amenable to Bayesian inference, so they've been replaced with
+fully probabilistic ones.
 </p>
-
 
 
 <h2 id="appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</h2>
 
-<p>PlanZero models are large probabilistic models.
-This appendix is about how they are organized in terms of semantic elements.
-Specifically, the types of semantic elements comprising a model are:
+<p>PlanZero models can be understood at the highest level as comprising:
 <ul>
-	<li>Outcomes and Metrics</li>
+	<li>Modelling Outputs</li>
 	<li>Structural Elements</li>
 	<li>Strategy Elements</li>
 </ul>
@@ -133,87 +131,214 @@ In particular, relative to
 "<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">
 	The Executive's Guide to Facilitating Strategy
 </a>" by Michael Wilkinson (2011),
-outcomes and metrics would be KPIs related to "Goals" (broad aims that define accomplishment of a mission of emissions reduction),
+outcomes and metrics would be key performance indicators (KPIs) related to "Goals" (broad aims that define accomplishment of a mission of emissions reduction);
 structural elements would be a formalization of "Barriers"
-(existing or potential challenges that hinder the achievement of one or more objectives)
+(existing or potential challenges that hinder the achievement of one or more objectives);
 and strategy elements represent "Strategies" (broad activities required to achieve an objective).
 </p>
 
-<h3 id="#outcomes-and-metrics">Outcomes and Metrics</h3>
-
-
-<h3 id="strategy-elements">Strategies: broad activities that could be pursued</h3>
+<h3 id="#outputs">Modelling Outputs</h3>
 
 <p>
-Strategies are defined in EGFS as
-"broad activities required to achieve a goal, create a critical condition, or overcome a barrier."
-In PlanZero,
-strategies are dynamic elements that influence barriers (see below) to affect
-KPIs such as emissions and costs.
-PlanZero barriers and strategies are both dynamic elements in PlanZero.
-The difference between them is that PlanZero strategies should be optional,
-whereas barriers should not.
-PlanZero strategy [dynamic] elements are meant to represent real-life strategies that could be pursued, or not pursued;
-including a strategy in a model means pursuing it,
-and not-including that strategy in the model should mean not-pursuing it.
-The effect of a strategy can be determined by simulating a model with the strategy included,
-and then again without including it, and comparing the two scenarios.
-PlanZero performs this comparison (called {{siteref("Ablative Analysis")|safe}}) automatically
-to produce charts and analysis for strategies in a simulation.
-What counts as a "broad activity" in EGFS is the <i>only</i> kind of activity reflected in PlanZero.
-Detailed planning of how to pursue a strategy in real life is beyond the scope of PlanZero modelling.
+The purpose of PlanZero models is to model three kinds of quantities:
+<ul>
+	<li>[Always] Annual emission amounts associated with sector-gas-region combinations</li>
+	<li>[Sometimes] Annual cashflows associated with Special Project Entities (SPEs)</li>
+	<li>[Typically] Miscellaneous other quantities of relevance to specific sector-gas-region models</li>
+</ul>
 </p>
 
+<p>
+Annual emissions estimates are what got PlanZero modelling started, starting with the NIR-2025 data.
+PlanZero models are designed to make estimates for 
+each year (from 1990 to some forecasting horizon such as 2050 or 2100), in units of ktCO2e, of each gas, from each region (province and territory), associated with each of the 71 NIR-2025 reporting sectors.
+The estimates from a given model may be more or less uncertain, but they'll all be there.
+The visualizations of these estimates provide the main graphics for model summaries and per-sector summary pages featured on the site.
+I imagine at some point, a future NIR will change the reporting taxonomy
+from the 71 sectors of the NIR-2025 to some other set.
+At such a time, PlanZero modelling will need to adapt to the new taxonomy in order to continue forecasting NIR data.
+The NIR-2025 and Static-Normals models have only these emissions variables as modelling outputs.
+</p>
+
+<p>
+PlanZero models that contain strategies (more on strategies, below) explore how the movement of money might affect emissions.
+In these models (such as the Scaling model) there
+is a concept of Special Project Entities (SPEs),
+which are abstract economic entities with cash balances.
+PlanZero models may estimate movement of money between SPEs as a distinct kind of modelling output beyond emissions amounts.
+SPEs represent non-overlapping sets of actual or hypothetical individuals and corporate entities,
+such as e.g. "Farms administering Bovaer", "Farms not administering Bovaer", and a hypothetical federal "Bovaer Subsidy Program".
+Since PlanZero models only the flow of money from one SPE into another one, the annual sum of all cashflow is always zero.
+Cashflow estimtes can be combined with emissions estimates to estimate a strategy's efficiency of emissions reduction, in terms
+of e.g. cost per t{{CO2e}} abated.
+</p>
+
+<p>
+The final type of quantity, after emissions and cashflow, is, for lack of a better term: everything else.
+A planzero model can include various other forecasts of contributing factors, or latent explanatory variables, in
+order to estimate emissions and cashflow.
+Such quantities can be modelled in various ways, and are expected to be documented where they arise by the
+so-called structural elements and strategy elements that define them. Structural elements and strategy elements
+are the subjects of the next sections.
+</p>
+
+<p>
+To summarize this first section on modelling outputs, PlanZero models (1) always
+estimate emissions, and always do so in terms of emissions per year, per sector, per gas, and per provincial or territorial region;
+(2) sometimes estimate cashflows, but if they do so, they do so in a standard way in terms of a fixed set of SPEs; and
+(3) typically include other estimates as well, but not in a standardized way that qualify such things as full-model-level outputs.
+The next sections on strategy elements and structural elements explain how all of these variables are modelled.
+</p>
 
 <h3 id="structural-elements">Structural Elements: connecting strategies to outcomes</h3>
 
 <p>
-Barriers are defined in EGFS as "existing or potential challenges that
-hinder the achievement of one or more objectives".
-In PlanZero, barriers are the dynamic elements that do almost all of the modelling work;
-they define time series for various physical, economic, ecological, or social
-factors, they relate these time series to one another, and
-they relate them as well to critical success factors
-such as emissions and costs.
-PlanZero barrier [dynamic] elements don't just aim to model
-challenges and hinderences, they collectively represent <i>all</i> of the modelled relationship between
-strategies and objectives.
-Barrier dynamic elements model, e.g.
-<ul>
-    <li>how fast strategies will take effect</li>
-    <li>what costs / profits are expected</li>
-    <li>what will happen in the meantime before / as they work</li>
-    <li>how will strategies affect one another</li>
-</ul>
-At first it seemed cynical to call everything in the model a "barrier" to the
-success of a strategy, but I have come to see this as a reasonable interpretation.
-That said, if there is a better term, I'd be open to adopting it.
-I hope, over time, to build up and refine the library of barriers in PlanZero,
-because I believe that this library will become the most valuable component of the project.
+Structural elements are fragments of modelling logic that,
+taken together,
+represent the assumptions about what variables
+are in the model (other than the emissions variables, which are always present) and how
+those variables are related to one another, either deterministically or probabilistically.
+A deterministic relationship between variables A and B might be that A is twice B.
+A probabilistic relationship between variables A and B might be that A is Normally-distributed about a mean that is twice B,
+with such-and-such variance.
+(In either case, B might be known exactly, or it may be an unknown variable with its own distribution under the model.)
+Structural elements are required, and make up most if not all of the elements of a full model:
+the Static-Normals model, for example, is made up entirely of structural elements;
+the Scaling model, as of writing, is made up of hundreds of structural elements and a single strategy element.
 </p>
 
-<h2 id="structural-elements">Appendix 2: Model Implementation</h2>
+<p>
+Structural elements do many kinds of work, such as e.g.
+<ul>
+    <li>loading data as observations of unknown variables</li>
+    <li>defining the priors on static normals in the Static Normals model</li>
+    <li>computing the weighted-KL divergence metric from NIR-2025 actuals</li>
+    <li>defining hypothetical dynamics of Bovaer uptake across Canadian farms</li>
+    <li>summing up emissions across regions, sectors, and gases</li>
+</ul>
+Any set of structural elements that defines all of the necessary emissions can be a valid PlanZero model.
+Two of the models currently listed on the PlanZero models page are composed entirely of structural elements:
+NIR-2025 and Static Normals.
+Models pages on the PlanZero site generally feature a listing of their key structural elements,
+and links to per-structural-element pages documenting those structural elements.
+The Scaling model has one additional type of element, a <i>strategy element</i>; strategy elements are the subject
+of the next section.
+</p>
 
-<h3 id="phases">Phases of inference (prior and posterior)</h3>
 
-<h3 id="subphases">Computational subphases of model construction</h3>
-
-<h3 id="varkey-types">Types of model variable</h3>
-
-<h3 id="varkey-aspects">Aspects of model variable</h3>
-
-<h3 id="inference-subsets">Inference Subset Diagrams</h3>
+<h3 id="strategy-elements">Strategies: broad activities that could be pursued</h3>
+<p>
+Strategy elements are elements that are meant to be ablated (individually
+removed) in order to compare model outputs with and without the presence of the
+strategy element.
+Strategies are indended to explore opportunities for capital, labour, and technology to reduce emissions.
+In future, PlanZero could be perhaps be extended to evaluate strategies in terms of attracting investment,
+creating durable employment, affecting land use, or affecting trade, sovereignty, and other matters of policy, but those
+things are not currently modelled.
+PlanZero currently features just a single strategy element, which is to fund a hypothetical federal Bovaer subsidy program.
+When the hypothetical program SPE is funded, then pre-existing structural elements draw funds from the program to
+e.g. Bovaer purchase, farm subsidies, and monitoring programs. When the hypothetical program SPE is not funded,
+then the pre-existing structural elements have no effect.
+</p>
 
 <p>
-I would like to illustrate national emissions models, but they are
-hard to show.  The following diagram is a first attempt at drawing a part of
-PlanZero model. It looks only at the use of Bovaer model, looks only
-at one kind of cost, looks only at the effect on one IPCC Sector, and ignores that separate
-time series are defined for each of several cattle types, as well as most provinces
-and territories. Still it begins to show something of the kind of dependency relationship
-that flows through from strategies, through barriers, to emissions and costs.
-Perhaps some day, this sort of visualization can be used to explore implemented models
-rather than simplified caricatures.
+Strategy elements are similar in nature to structural elements, but they must be defined
+such that the model is still valid without their presence.
+So for example, they can't define emission variables directly.
+They must work by 
+offering definitions for variables that would otherwise assume default values.
+In the case of the Bovaer strategy, the default balance for the hypothetical program is 0, and the strategy
+implements a supposition that it were sufficiently funded to support as many farmers as would opt-in.
+</p>
+
+<p>
+PlanZero model pages list the strategies in a model,
+and link to per-strategy pages that document each strategy and its impact on the model outputs.
+The impact of a strategy is determined by evaluating the full model with the strategy included (which is the same for all strategies),
+and then again without including it (which is unique for each strategy), and comparing the two sets of results.
+PlanZero performs this comparison (called {{siteref("Ablative Analysis")|safe}}) automatically
+to produce charts and analysis for each strategy page.
+</p>
+
+
+<h2 id="model-evaluation">Appendix 2: Model Evaluation</h2>
+
+<h3 id="phases">Phases of model evaluation: prior, inference, and posterior</h3>
+
+<p>
+Model evaluation is the computational task of determining a model's outputs (the variables outlined in the first section
+of Appendix 1.)
+PlanZero models are evaluated in two phases.
+The first phase starts by loading data and drawing random samples from
+any independent unknown variables, and then proceeds to compute or sample variables that depend on those variables,
+and then variables that depend on those variables and so on until all variables have <i>some</i> value.
+This is called the Prior phase, and even though PlanZero models are large, it can be completed in a few seconds.
+</p>
+
+<p>
+After the prior phase has completed, some analysis occurs around variables with both probability distributions and data,
+called {{siteref("Observed Variables")|safe}}.
+For each observed variable, PlanZero estimates the probability of the data
+according to the model. This is especially important in cases where the probability according to the model actually depends
+on other variables in the model, which have their own probabilities.
+Typically the parameters of the distribution over data
+(a) were themselves chosen randomly as part of the prior calculation,
+(b) don't make the data very probable,
+and (c) are <i>hardly</i> any more probable than some other parameter values that could have been chosen almost as easily,
+and which would have made the data appear <i>far</i> more probable.
+{{siteref("Bayesian Inference")|safe}} is about sampling,
+with the benefit of data, parameter values governing observed values that
+strike a balance between being probable themselves (according to the prior distribution) and making the data associated
+with observed variables also probable. 
+PlanZero uses NumPyro (a probabilistic programming system)
+to compute samples that implement Bayesian inference of the {{siteref("Unobserved Variable", "unobserved variables")|safe}}
+in PlanZero models.
+In contrast with the computation of the Prior phase, which takes a few seconds,
+this inference of posterior samples can take <i>hours</i> for e.g. 500 samples.
+PlanZero implements strategies for caching and piecewise computation to prevent this computation from taking longer,
+or from being repeated unnecessarily.
+See NumPyro documentation for an introduction to the
+<a href="https://num.pyro.ai/en/latest/getting_started.html">inference algorithms</a>
+used in this phase.
+</p>
+
+<p>
+The final phase of PlanZero model evaluation is called the {{siteref("Posterior Phase")|safe}},
+which is a re-computation of the whole model for each of the e.g. 500 inferred values of unobserved variables.
+The posterior phase involves recomputation of values for observed variables, the semantics of which are:
+<i>What is a plausible value for this observed variable, given all of the observations (with some amount of noise, which may or may not have been estimated) and any inferred values of governing model parameters?</i>
+Or, simply: <i>What does the model think the variable was?</i>
+This computation is currently memory-intensive
+because it involves computing statistics over e.g. 500 possible values of every
+variable in the already-large model, but larger models could be accommodated by a more careful sequencing of the computation of statistics.
+Whereas prior computations take seconds, and inference computations take hours,
+posterior computations take a few minutes.
+The result of posterior computations are the statistics displayed on the site:
+the upper and lower quantiles of emission amounts, strategy costs, and so on are all calculated across the e.g. 500 plausible values
+associated with whatever is the relevant model output.
+</p>
+
+<h3 id="inference-subsets">Inference Groups</h3>
+
+<p>
+PlanZero models are too large for a direct application of NumPyro's standard inference algorithms.
+At the same time, it is also true that PlanZero models, to date, comprise many independent parts, each of which
+is of a suitable size for standard inference algorithms.
+For example, in the Static Normals model, Oil and Gas Extraction emissions are independent of Venting emissions.
+But in that same model, modelled emissions from residential heating in British Columbia are not independent
+of modelled residential heating emissions from Newfoundland, because they both contribute to national total emissions data
+in NIR-2025 (in another model they might be further inter-related by e.g. the price of oil, but not in Static Normals).
+In order to leverage this independence and use standard inference algorithms,
+PlanZero models are constructed with a concept of {{siteref("Inference Group", "Inference Groups")|safe}},
+which are sets of structural and strategy elements that are meant to define a submodel suitable for independent inference.
+Inference in such submodels (at least for models to date) typically takes a few minutes.
+Prior computations go through the whole model, inference computations go group-by-group, and posterior computations
+currently go through the whole model again, although they may go partly group-by-group in future.
+</p>
+
+<p>
+An additional benefit of Inference Groups (beyond making inference possible) is that they 
+are, at least so far, about the right size to draw as a diagram.
 
 <pre class="mermaid">
     flowchart TD
@@ -229,6 +354,14 @@ rather than simplified caricatures.
     TS_bovaer_cost(["Cost: Annual Bovaer per cattle type (Time Series)"])
 </pre>
 </p>
+
+
+<h3 id="subphases">Computational subphases of model construction</h3>
+
+<h3 id="varkey-types">Types of model variable</h3>
+
+<h3 id="varkey-aspects">Aspects of model variable</h3>
+
 
 
 <h2 id="appendix-full-glossary">Appendix 2: Full Glossary</h2>
