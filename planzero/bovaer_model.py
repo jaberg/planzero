@@ -389,6 +389,7 @@ class Bovaer_Farm_Subsidy(SiteModelElement):
     def model_element_prepare(self, ws:Workspace):
         ws.val.initial_carry[self.bovine_fraction_on_bovaer] = jnp.zeros(())
 
+    @access_this_carry(max_fraction_on_bovaer)
     @access_annual(bovaer_budget, default=0)
     @define_annual(annual_bovaer_fraction, annual_shape=[])
     def model_element_annual_step(self, ws:Workspace):

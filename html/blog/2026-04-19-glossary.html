@@ -25,7 +25,7 @@ Contents:
             <li><a href="#subphases">subphases of model construction</a></li>
             <li><a href="#varkey-types">types of model variable</a></li>
             <li><a href="#varkey-aspects">aspects of model variables</a></li>
-            <li><a href="#inference-subsets">Inference Subset Diagrams</a></li>
+            <li><a href="#inference-groups">Inference Groups</a></li>
         </ul>
     </li>
     <li><a href="#appendix-full-glossary">Appendix 2: Full Glossary</a>
@@ -277,7 +277,7 @@ This is called the Prior phase, and even though PlanZero models are large, it ca
 
 <p>
 After the prior phase has completed, some analysis occurs around variables with both probability distributions and data,
-called {{siteref("Observed Variables")|safe}}.
+called <i>{{siteref("Observed Variable", "observed variables")|safe}}</i>.
 For each observed variable, PlanZero estimates the probability of the data
 according to the model. This is especially important in cases where the probability according to the model actually depends
 on other variables in the model, which have their own probabilities.
@@ -318,7 +318,7 @@ the upper and lower quantiles of emission amounts, strategy costs, and so on are
 associated with whatever is the relevant model output.
 </p>
 
-<h3 id="inference-subsets">Inference Groups</h3>
+<h3 id="inference-groups">Inference Groups</h3>
 
 <p>
 PlanZero models are too large for a direct application of NumPyro's standard inference algorithms.
@@ -334,6 +334,13 @@ which are sets of structural and strategy elements that are meant to define a su
 Inference in such submodels (at least for models to date) typically takes a few minutes.
 Prior computations go through the whole model, inference computations go group-by-group, and posterior computations
 currently go through the whole model again, although they may go partly group-by-group in future.
+</p>
+
+<p>
+New diagram:
+<pre class="mermaid">
+{{ blog.efman_mermaid() | safe}}
+</pre>
 </p>
 
 <p>

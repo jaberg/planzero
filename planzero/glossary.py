@@ -1613,6 +1613,42 @@ class Inference_Algorithm(GlossaryTerm):
         ]
 
 
+class Inference_Group(GlossaryTerm):
+    """
+    An inference group is a set of structural and strategy elements of
+    a PlanZero model for which an inference algorithm can operate independently
+    of other inference groups.
+    PlanZero models are large, and inference groups serve to define smaller submodels
+    upon which inference algorithms can operate effectively.
+    """
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
+
+
+class Observed_Variable(GlossaryTerm):
+    """An observed variable is an unknown variable for which we do have
+    direct readings to inform a probability distribution over its possible values.
+    It is through observed variables that data informs model evaluation.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unobserved_Variable': 'A variable for which we have no direct reading of its probable value',
+            'Unknown_Variable': 'A variable in a probabilistic model',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
+
+
 class Unknown_Variable(GlossaryTerm):
     """An unknown variable is an unknown scalar- or vector-valued
     term in a probabilistic model. Often it could be known, measured
@@ -1628,6 +1664,8 @@ class Unknown_Variable(GlossaryTerm):
         return {
             'Stochastic_Model': 'A model associates unknown variables with probability distributions',
             'Probability_Distribution': 'In order to reason about a variable without knowing exactly what it is, we assume a set of values that it might have using a probability distribution.',
+            'Observed_Variable': 'A variable for which we have some [noisy] data exemplifying its probable value',
+            'Unobserved_Variable': 'A variable for which we have no direct data',
         }
 
     @computed_field
@@ -1639,6 +1677,43 @@ class Unknown_Variable(GlossaryTerm):
     @computed_field
     def aka(self) -> list[str]:
         return ['Random Variable']
+
+
+class Unobserved_Variable(GlossaryTerm):
+    """An unobserved variable is an unknown variable for which we have no
+    direct readings to inform a probability distribution over its possible values.
+    Inference algorithms draw samples for unobserved variables based on data
+    associated with observed variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Observed_Variable': 'A variable for which we have some [noisy] data exemplifying its probable value',
+            'Unknown_Variable': 'A variable in a probabilistic model',
+        }
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
+
+
+class Posterior_Phase(GlossaryTerm):
+    """
+    The computation phase of model evaluation in which samples from
+    an inference algorithm are used to recompute all model variables.
+    The statistics computed in the posterior phase are the ones used to render
+    graphics on the site that characterize model evaluation.
+    """
+
+    @computed_field
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
+
 
 
 class Predictive_Model(GlossaryTerm):
