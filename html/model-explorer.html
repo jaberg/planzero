@@ -54,6 +54,14 @@
 
     <form class="model-explorer-group-picker" method="get" action="/model-explorer/">
         <label>
+            <span>Model</span>
+            <select name="model" onchange="this.form.submit()">
+                {% for model in models %}
+                <option value="{{ model.name }}"{% if model.name == selected_model %} selected{% endif %}>{{ model.pretty_name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
             <span>Inference group</span>
             <select name="group" onchange="this.form.submit()">
                 {% for group in groups %}
@@ -61,7 +69,8 @@
                 {% endfor %}
             </select>
         </label>
-        <button type="submit" class="button small">Load group</button>
+        <input type="hidden" name="tab" value="overview" data-mcmc-tab-input>
+        <button type="submit" class="button small">Load</button>
         <noscript>
             <span style="align-self:center;color:#6b7280;font-size:0.8rem;">
                 JavaScript is disabled; use the button to load the selected group.

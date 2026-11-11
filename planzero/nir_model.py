@@ -22,6 +22,7 @@ from .scenario_model import (
     access_annual,
     access_val,
     define_annual,
+    varkey_property,
     years_key,
 )
 from .sector_total_emissions_element import (
@@ -99,20 +100,20 @@ class Sector_GHG_Observation(ModelElement):
             self.ktCO2e_pt_contributors[pt].append(key)
         self.ktCO2e_ca_contributors['ca'].append(ca_key)
 
-    @property
+    @varkey_property()
     def ktCO2e_ca(self) -> AnnualKey:
         return self.annual_key(f'ktCO2e_ca_{self.sector}_{self.ghg}_{self.fit_to_data}')
 
-    @property
+    @varkey_property()
     def ktCO2e_pt(self) -> dict[PT, AnnualKey]:
         return {pt: self.annual_key(f'ktCO2e_pt_{pt}_{self.sector}_{self.ghg}_{self.fit_to_data}')
                 for pt in PT if pt != PT.XX}
 
-    @property
+    @varkey_property()
     def nir_ca_key(self) -> GeneralKey:
         return self._nir_ca_key
 
-    @property
+    @varkey_property()
     def nir_pt_keys(self) -> dict[PT, GeneralKey]:
         return self._nir_pt_keys
 
@@ -120,7 +121,7 @@ class Sector_GHG_Observation(ModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
-    @property
+    @varkey_property()
     def _contributors(self) -> dict[int, AnnualKey]:
         counter = 0
         rval = {}
@@ -229,11 +230,11 @@ class Sector_Sum_Over_GHG(ModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
-    @property
+    @varkey_property()
     def ktCO2e_ca(self) -> AnnualKey:
         return self.annual_key(f'ktCO2e_ca_{self.sector}_{self.use_dist_sum}')
 
-    @property
+    @varkey_property()
     def ktCO2e_pt(self) -> dict[PT, AnnualKey]:
         return {pt: self.annual_key(f'ktCO2e_{pt}_{self.sector}_{self.use_dist_sum}')
                 for pt in PT if pt != PT.XX}
@@ -243,7 +244,7 @@ class Sector_Sum_Over_GHG(ModelElement):
             self.ktCO2e_pt_contributors[pt].append(key)
         self.ktCO2e_ca_contributors['ca'].append(ca_key)
 
-    @property
+    @varkey_property()
     def _contributors(self) -> dict[int, AnnualKey]:
         counter = 0
         rval = {}
@@ -303,11 +304,11 @@ class Sum_Over_Sectors(ModelElement):
             assert sector not in LULUCF_Sectors
         self._sector_totals[sector] = key
     
-    @property
+    @varkey_property()
     def sector_totals(self) -> dict[IPCC_Sector, AnnualKey]:
         return self._sector_totals
 
-    @property
+    @varkey_property()
     def ktCO2e_ca(self) -> AnnualKey:
         return self.annual_key(f'ktCO2e_ca_{self.include_LULUCF}')
 
@@ -352,15 +353,15 @@ class SPE_Cashflow(ModelElement):
             if spe not in self._net_annual_keys:
                 self._net_annual_keys[spe] = self.annual_key(f'net_{spe.value}')
 
-    @property
+    @varkey_property()
     def flow_contributions(self) -> dict[tuple[SPE, SPE, str], AnnualKey]:
         return self._flow_contributions
 
-    @property
+    @varkey_property()
     def net_flow_keys(self) -> dict[tuple[SPE, SPE], AnnualKey]:
         return self._net_flow_keys
 
-    @property
+    @varkey_property()
     def net_annual_keys(self) -> dict[SPE, AnnualKey]:
         return self._net_annual_keys
 

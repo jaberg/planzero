@@ -20,6 +20,7 @@ from . import (
     ScenarioModel,
     Workspace,
     define,
+    varkey_property,
 )
 
 
@@ -40,13 +41,13 @@ class PropertyModelElement(ModelElement):
     def __init__(self, n_samples):
         self._n_samples = n_samples
 
-    @property
+    @varkey_property()
     def prop_key(self) -> ElementGeneralKey:
         if self._prop_key is None:
             self._prop_key = self.general_key(f'prop_key_{self.n_samples}')
         return self._prop_key
 
-    @property
+    @varkey_property()
     def dict_keys(self) -> dict[Case, ElementGeneralKey]:
         if self._dict_keys is None:
             self._dict_keys = {

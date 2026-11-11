@@ -11,6 +11,7 @@ from .scenario_model import (
     Phase,
     Workspace,
     define,
+    varkey_property,
     years_dim,
 )
 
@@ -43,16 +44,16 @@ class SectorTotalEmissionsElement(ModelElement):
         self.sector_ghg_subtotal_keys = sector_ghg_subtotal_keys
         self.expect_all_sectors = expect_all_sectors
 
-    @property
+    @varkey_property()
     def sector_keys(self) -> dict[IPCC_Sector, SectorTotalEmissionsVarKey]:
         return {sector: SectorTotalEmissionsVarKey(elem_id=self.identifier, name="", sector=sector)
                 for sector in IPCC_Sector}
 
-    @property
+    @varkey_property()
     def total_with_LULUCF_key(self) -> SectorTotalEmissionsVarKey:
         return SectorTotalEmissionsVarKey(elem_id=self.identifier, name="", sector=PseudoSector.Total_with_LULUCF)
 
-    @property
+    @varkey_property()
     def total_without_LULUCF_key(self) -> SectorTotalEmissionsVarKey:
         return SectorTotalEmissionsVarKey(elem_id=self.identifier, name="", sector=PseudoSector.Total_without_LULUCF)
 

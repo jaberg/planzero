@@ -185,6 +185,42 @@ def test_cross_and_self_flags(data):
     assert self_edge["cross_element"] is False
 
 
+def test_property_connections_summary(data):
+    properties_by_id = {p["id"]: p for p in data["properties"]}
+    for edge in data["edges"]:
+        assert edge["source_property"] in properties_by_id
+        assert edge["target_property"] in properties_by_id
+        assert properties_by_id[edge["source_property"]]["element"] == \
+            edge["source_element"]
+        assert properties_by_id[edge["target_property"]]["element"] == \
+            edge["target_element"]
+
+    connections = {
+            (e["source_property"], e["target_property"])
+            for e in data["edges"]}
+    cross = {
+            (e["source_property"], e["target_property"])
+            for e in data["edges"] if e["cross_element"]}
+    summary = data["summary"]
+    assert summary["n_properties"] == len(data["properties"])
+    assert summary["n_property_connections"] == len(connections)
+    assert summary["n_cross_property_connections"] == len(cross)
+    assert len(connections) < summary["n_edges"]
+
+
+def test_varkey_property_is_property_subclass():
+    from .scenario_model import varkey_property
+
+    class Example:
+        @varkey_property()
+        def key(self):
+            return "k"
+
+    assert isinstance(Example.__dict__["key"], property)
+    assert Example.__dict__["key"].fget.__name__ == "key"
+    assert Example().key == "k"
+
+
 def test_matrix_cells_aggregate_distinct_variables(data):
     variables_by_id = {v["id"]: v for v in data["variables"]}
     edges_by_id = {e["id"]: e for e in data["edges"]}

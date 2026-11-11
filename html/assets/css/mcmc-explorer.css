@@ -152,34 +152,13 @@
     white-space: nowrap;
 }
 
-/* Header ------------------------------------------------------------------ */
-
-.mcmc-explorer-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--mcmc-border);
-}
-
-.mcmc-explorer-title {
-    font-size: 1.35rem;
-    font-weight: 700;
-    line-height: 1.2;
-}
-
-.mcmc-explorer-subtitle {
-    color: var(--mcmc-muted);
-    font-size: 0.85rem;
-    margin-top: 0.35rem;
-}
+/* Stats ------------------------------------------------------------------- */
 
 .mcmc-explorer-stats {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
+    margin-left: auto;
 }
 
 .mcmc-stat {
@@ -377,80 +356,6 @@
 
 .mcmc-overview-main {
     min-width: 0;
-}
-
-.mcmc-overview-side {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-    gap: 0.75rem;
-}
-
-.mcmc-panel {
-    background: #ffffff;
-    border: 1px solid var(--mcmc-border);
-    border-radius: var(--mcmc-radius);
-    padding: 0.8rem;
-}
-
-.mcmc-panel h3 {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--mcmc-muted);
-    margin-bottom: 0.55rem;
-}
-
-.mcmc-panel-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-
-.mcmc-panel-list li {
-    margin: 0;
-}
-
-.mcmc-panel-item {
-    align-items: center;
-    background: transparent;
-    border: 0;
-    border-radius: 4px;
-    color: var(--mcmc-text);
-    cursor: pointer;
-    display: flex;
-    font-family: inherit;
-    font-size: 0.78rem;
-    gap: 0.5rem;
-    justify-content: space-between;
-    line-height: 1.25;
-    margin: 0;
-    padding: 0.3rem 0.35rem;
-    text-align: left;
-    width: 100%;
-}
-
-.mcmc-panel-item:hover {
-    background: var(--mcmc-panel);
-}
-
-.mcmc-panel-item-name {
-    overflow-wrap: anywhere;
-}
-
-.mcmc-panel-item-count {
-    background: var(--mcmc-panel-strong);
-    border-radius: 999px;
-    color: var(--mcmc-muted);
-    flex: 0 0 auto;
-    font-size: 0.68rem;
-    font-weight: 700;
-    min-width: 1.4rem;
-    padding: 0.1rem 0.4rem;
-    text-align: center;
 }
 
 .mcmc-legend {
@@ -1115,9 +1020,8 @@
         font-size: 0.86rem;
     }
 
-    .mcmc-explorer-header {
-        align-items: flex-start;
-        flex-direction: column;
+    .mcmc-explorer-stats {
+        margin-left: 0;
     }
 
     .mcmc-explorer-tab {

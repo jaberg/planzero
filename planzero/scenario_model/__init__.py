@@ -30,6 +30,7 @@ from .scenario_model import (
     define,
     define_annual,
     define_carry,
+    varkey_property,
 )
 from .workspace import Workspace
 
@@ -48,6 +49,7 @@ __all__ = [
     "ScenarioModel",
     "VarKey",
     "VersionID",
+    "varkey_property",
     "Workspace",
     "access_annual",
     "access_next_carry",

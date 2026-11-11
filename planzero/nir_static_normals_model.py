@@ -20,6 +20,7 @@ from .scenario_model import (
     Workspace,
     define,
     define_annual,
+    varkey_property,
 )
 
 n_regions = 13
@@ -72,11 +73,11 @@ class StaticNormals_ModelElement(NIR_ModelElement):
                 #       target_accept_prob?
                 )
 
-    @property
+    @varkey_property()
     def ktCO2e_ca_key(self) -> AnnualKey:
         return self._ktCO2e_ca_key
 
-    @property
+    @varkey_property()
     def ktCO2e_pt_keys(self) -> dict[PT, AnnualKey]:
         return self._ktCO2e_pt_keys
 

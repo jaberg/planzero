@@ -20,6 +20,7 @@ from .scenario_model import (
     VersionID,
     Workspace,
     define,
+    varkey_property,
     years_key,
 )
 from .sector_total_emissions_element import PseudoSector
@@ -130,7 +131,7 @@ class PreNIR_ModelElement(ModelElement):
                 nir_year=self.nir_year,
                 months_ahead=self.months_ahead)
 
-    @property
+    @varkey_property()
     def kl_keys(self) -> dict[
             tuple[IPCC_Sector,
                   GHG,
@@ -152,7 +153,7 @@ class PreNIR_ModelElement(ModelElement):
                         = self._subtotal_var_key(sector, ghg, PseudoRegion.NationalTotal)
         return rval
 
-    @property
+    @varkey_property()
     def prenir_score_key(self) -> SubtotalVarKey:
         return self._subtotal_var_key(
                 PseudoSector.Total_with_LULUCF,

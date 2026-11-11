@@ -9,6 +9,7 @@ from .scenario_model import (
     Phase,
     Workspace,
     define,
+    varkey_property,
     years_key,
 )
 
@@ -44,7 +45,7 @@ class PEmissionsBelowThresh(ModelElement):
         return self.element_identifier(self.prediction_year,
                                        self.thresh_ktCO2e)
 
-    @property
+    @varkey_property()
     def prob_key(self) -> GeneralKey:
         return self.general_key('prob_key')
 

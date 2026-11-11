@@ -18,6 +18,7 @@ from .scenario_model import (
     access_annual,
     define,
     define_annual,
+    varkey_property,
 )
 
 n_regions = 13
@@ -79,15 +80,15 @@ class Cattle_StaticNormals_ModelElement(SiteModelElement):
                 2, # fix scale error in emissions variance
                 )
 
-    @property
+    @varkey_property()
     def static_emission_factors(self) -> GeneralKey:
         return self.general_key('static_emission_factors')
 
-    @property
+    @varkey_property()
     def ktCO2e_ca_key(self) -> AnnualKey:
         return self._ktCO2e_ca_key
 
-    @property
+    @varkey_property()
     def ktCO2e_pt_keys(self) -> dict[PT, AnnualKey]:
         return self._ktCO2e_pt_keys
 
@@ -95,15 +96,15 @@ class Cattle_StaticNormals_ModelElement(SiteModelElement):
     def bovine_fraction_on_bovaer(self) -> CarryKey:
         return self.carry_key('bovine_fraction_on_bovaer')
 
-    @property
+    @varkey_property()
     def annual_headcounts(self) -> AnnualKey:
         return self.annual_key('annual_headcounts')
 
-    @property
+    @varkey_property()
     def annual_bovaer_fraction(self) -> AnnualKey:
         return self.annual_key('annual_bovaer_fraction')
 
-    @property
+    @varkey_property()
     def ktCO2e_abated_by_bovaer_ca(self) -> AnnualKey:
         """Used to calculate Bovaer production emissions"""
         return self.annual_key('ktCO2e_abated_by_bovaer_ca')

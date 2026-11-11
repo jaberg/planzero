@@ -72,10 +72,6 @@
             esc(text) + '</span>';
     }
 
-    function isNonEmptyArray(value) {
-        return Array.isArray(value) && value.length > 0;
-    }
-
     function initAll() {
         const containers = document.querySelectorAll('[data-mcmc-explorer]');
         for (let i = 0; i < containers.length; i++) {
@@ -111,10 +107,13 @@
         const variables = Array.isArray(data.variables) ? data.variables : [];
         const occurrences = Array.isArray(data.occurrences)
             ? data.occurrences : [];
+        const properties = Array.isArray(data.properties)
+            ? data.properties : [];
         const edges = Array.isArray(data.edges) ? data.edges : [];
         const elementsById = new Map();
         const variablesById = new Map();
         const occurrencesById = new Map();
+        const propertiesById = new Map();
 
         for (const element of elements) {
             elementsById.set(element.id, element);
@@ -124,6 +123,9 @@
         }
         for (const occurrence of occurrences) {
             occurrencesById.set(occurrence.id, occurrence);
+        }
+        for (const property of properties) {
+            propertiesById.set(property.id, property);
         }
 
         if (!elements.length) {
@@ -431,37 +433,35 @@
 
         const summary = data.summary || {};
         const nElements = summary.n_elements || elements.length;
-        const nVariables = summary.n_variables || variables.length;
-        const nEdges = summary.n_edges || edges.length;
-        const nCrossEdges = summary.n_cross_edges === undefined
-            ? edges.filter(function (edge) {
+        const nProperties = summary.n_properties || properties.length;
+        const nConnections = summary.n_property_connections === undefined
+            ? new Set(edges.map(function (edge) {
+                return edge.source_property + '\u0000' +
+                    edge.target_property;
+            })).size
+            : summary.n_property_connections;
+        const nCrossConnections = summary.n_cross_property_connections ===
+            undefined
+            ? new Set(edges.filter(function (edge) {
                 return edge.cross_element;
-            }).length
-            : summary.n_cross_edges;
-        const modelName = data.model || 'Scaling';
+            }).map(function (edge) {
+                return edge.source_property + '\u0000' +
+                    edge.target_property;
+            })).size
+            : summary.n_cross_property_connections;
+        const statsHtml =
+            '<div class="mcmc-explorer-stats">' +
+                '<span class="mcmc-stat"><strong>' + nElements +
+                    '</strong> elements</span>' +
+                '<span class="mcmc-stat"><strong>' + nProperties +
+                    '</strong> properties</span>' +
+                '<span class="mcmc-stat"><strong>' + nConnections +
+                    '</strong> connections</span>' +
+                '<span class="mcmc-stat"><strong>' + nCrossConnections +
+                    '</strong> cross-element</span>' +
+            '</div>';
 
         container.innerHTML =
-            '<div class="mcmc-explorer-header">' +
-                '<div>' +
-                    '<div class="mcmc-explorer-title">Inference group: ' +
-                        '<code>' + esc(data.group) + '</code></div>' +
-                    '<div class="mcmc-explorer-subtitle">' +
-                        esc(modelName) +
-                        ' \u00b7 producer \u2192 consumer dependencies ' +
-                        'derived from model element decorators' +
-                    '</div>' +
-                '</div>' +
-                '<div class="mcmc-explorer-stats">' +
-                    '<span class="mcmc-stat"><strong>' + nElements +
-                        '</strong> elements</span>' +
-                    '<span class="mcmc-stat"><strong>' + nVariables +
-                        '</strong> variables</span>' +
-                    '<span class="mcmc-stat"><strong>' + nEdges +
-                        '</strong> dependencies</span>' +
-                    '<span class="mcmc-stat"><strong>' + nCrossEdges +
-                        '</strong> cross-element</span>' +
-                '</div>' +
-            '</div>' +
             '<div class="mcmc-explorer-tabs" role="tablist">' +
                 '<button type="button" class="mcmc-explorer-tab" ' +
                     'role="tab" data-tab="overview" ' +
@@ -505,6 +505,10 @@
             const panes = container.querySelectorAll('.mcmc-explorer-pane');
             for (const pane of panes) {
                 pane.hidden = pane.dataset.pane !== state.tab;
+            }
+            const tabInput = document.querySelector('[data-mcmc-tab-input]');
+            if (tabInput) {
+                tabInput.value = state.tab;
             }
         }
 
@@ -560,11 +564,7 @@
 
         function updateUrl() {
             const params = new URLSearchParams(window.location.search);
-            if (state.tab === 'trace') {
-                params.set('tab', 'trace');
-            } else {
-                params.delete('tab');
-            }
+            params.set('tab', state.tab);
             if (state.focus) {
                 params.set(
                     'focus',
@@ -661,20 +661,12 @@
                         '<span>orange outline = self or carry link</span>' +
                     '</span>' +
                 '</div>' +
+                statsHtml +
             '</div>' +
-            '<div class="mcmc-overview-layout">' +
-                '<div class="mcmc-overview-main">' +
-                    '<div class="mcmc-matrix-wrap" data-role="matrixWrap">' +
-                    '</div>' +
-                '</div>' +
-                '<aside class="mcmc-overview-side" ' +
-                    'data-role="overviewSide"></aside>' +
-            '</div>';
+            '<div class="mcmc-matrix-wrap" data-role="matrixWrap"></div>';
 
         const matrixWrap = overviewPane.querySelector(
             '[data-role="matrixWrap"]');
-        const overviewSide = overviewPane.querySelector(
-            '[data-role="overviewSide"]');
         const matrixFilterInput = overviewPane.querySelector(
             '[data-role="matrixFilter"]');
 
@@ -703,6 +695,11 @@
             return ordered;
         }
 
+        function propertyLabel(id) {
+            const property = propertiesById.get(id);
+            return property ? property.display : displayName(id);
+        }
+
         function buildMatrixCells() {
             const cells = new Map();
             for (const edge of edges) {
@@ -716,11 +713,20 @@
                     cell = {
                         source: edge.source_element,
                         target: edge.target_element,
+                        connections: new Map(),
                         variables: new Set(),
                         edgeIds: [],
                         backward: false,
                     };
                     cells.set(key, cell);
+                }
+                const connectionKey = edge.source_property + '\u0000' +
+                    edge.target_property;
+                if (!cell.connections.has(connectionKey)) {
+                    cell.connections.set(connectionKey, {
+                        source: edge.source_property,
+                        target: edge.target_property,
+                    });
                 }
                 cell.variables.add(edge.variable);
                 cell.edgeIds.push(edge.id);
@@ -738,7 +744,7 @@
             const ordered = orderedElements();
             let maxCount = 1;
             for (const cell of state.matrixCells.values()) {
-                maxCount = Math.max(maxCount, cell.variables.size);
+                maxCount = Math.max(maxCount, cell.connections.size);
             }
 
             if (!state.matrixCells.size) {
@@ -778,7 +784,7 @@
                         return '<td class="mcmc-matrix-empty" ' +
                             'aria-hidden="true">\u00b7</td>';
                     }
-                    const count = cell.variables.size;
+                    const count = cell.connections.size;
                     const level = Math.max(
                         1, Math.min(5, Math.ceil(count / maxCount * 5)));
                     const classes = [
@@ -795,7 +801,7 @@
                         spreadsheetColumnCode(columnIndex) + ': ' +
                         elementLabel(row.id) + ' \u2192 ' +
                         elementLabel(column.id) + ', ' + count +
-                        ' variable dependenc' + (count === 1 ? 'y' : 'ies');
+                        ' property connection' + (count === 1 ? '' : 's');
                     return '<td class="' + classes.join(' ') + '" ' +
                         'tabindex="0" role="button" ' +
                         'data-source="' + esc(row.id) + '" ' +
@@ -913,18 +919,15 @@
             if (!cellData) {
                 return;
             }
-            const variableNames = Array.from(cellData.variables).map(
-                function (variableId) {
-                    const variable = variablesById.get(variableId);
-                    return variable
-                        ? variableLabel(variableId) + ' (' +
-                            (KIND_LABELS[variable.kind] || variable.kind) + ')'
-                        : displayName(variableId);
+            const connectionNames = Array.from(cellData.connections.values())
+                .map(function (connection) {
+                    return propertyLabel(connection.source) + ' \u2192 ' +
+                        propertyLabel(connection.target);
                 });
-            const shown = variableNames.slice(0, TOOLTIP_VARIABLE_LIMIT);
-            const more = variableNames.length - shown.length;
-            const meta = variableNames.length + ' variable dependenc' +
-                (variableNames.length === 1 ? 'y' : 'ies') +
+            const shown = connectionNames.slice(0, TOOLTIP_VARIABLE_LIMIT);
+            const more = connectionNames.length - shown.length;
+            const meta = connectionNames.length + ' property connection' +
+                (connectionNames.length === 1 ? '' : 's') +
                 (cellData.backward
                     ? ' \u00b7 includes carry / backward links' : '');
 
@@ -1108,118 +1111,6 @@
         /* -----------------------------------------------------------------
          * Overview: side panels
          * ---------------------------------------------------------------- */
-
-        function sideItem(kind, id, label, count, countTitle) {
-            return '<li><button type="button" class="mcmc-panel-item" ' +
-                'data-focus-kind="' + esc(kind) + '" ' +
-                'data-focus-id="' + esc(id) + '" title="' +
-                esc(id) + '">' +
-                '<span class="mcmc-panel-item-name">' + esc(label) +
-                '</span>' +
-                '<span class="mcmc-panel-item-count" title="' +
-                esc(countTitle || '') + '">' + esc(count) +
-                '</span></button></li>';
-        }
-
-        function computeTopFanoutVariables() {
-            return variables.slice().sort(function (a, b) {
-                if (b.fan_out !== a.fan_out) {
-                    return b.fan_out - a.fan_out;
-                }
-                return variableLabel(a.id).localeCompare(
-                    variableLabel(b.id));
-            }).slice(0, 8);
-        }
-
-        function computeTopFaninElements() {
-            return elements.slice().sort(function (a, b) {
-                const aCount = (a.access_variable_ids || []).length;
-                const bCount = (b.access_variable_ids || []).length;
-                if (bCount !== aCount) {
-                    return bCount - aCount;
-                }
-                return elementLabel(a.id).localeCompare(
-                    elementLabel(b.id));
-            }).slice(0, 8);
-        }
-
-        function computeTopFanoutElements() {
-            return elements.slice().sort(function (a, b) {
-                const aCount = (a.define_variable_ids || []).length;
-                const bCount = (b.define_variable_ids || []).length;
-                if (bCount !== aCount) {
-                    return bCount - aCount;
-                }
-                return elementLabel(a.id).localeCompare(
-                    elementLabel(b.id));
-            }).slice(0, 8);
-        }
-
-        function renderOverviewSide() {
-            const topVariables = isNonEmptyArray(
-                summary.top_fanout_variables)
-                ? summary.top_fanout_variables
-                : computeTopFanoutVariables();
-            const topFanin = isNonEmptyArray(summary.top_fanin_elements)
-                ? summary.top_fanin_elements
-                : computeTopFaninElements();
-            const topFanout = isNonEmptyArray(summary.top_fanout_elements)
-                ? summary.top_fanout_elements
-                : computeTopFanoutElements();
-
-            const variableItems = topVariables.map(function (variable) {
-                const id = variable.id;
-                return sideItem(
-                    'variable', id, variableLabel(id), variable.fan_out,
-                    variable.fan_out + ' consumer elements');
-            }).join('');
-
-            const faninItems = topFanin.map(function (element) {
-                const modelElement = elementsById.get(element.id) || {};
-                const count = element.fan_in === undefined
-                    ? (modelElement.access_variable_ids || []).length
-                    : element.fan_in;
-                return sideItem(
-                    'element', element.id,
-                    element.display || elementLabel(element.id),
-                    count, count + ' accessed variables');
-            }).join('');
-
-            const fanoutItems = topFanout.map(function (element) {
-                const modelElement = elementsById.get(element.id) || {};
-                const count = element.fan_out === undefined
-                    ? (modelElement.define_variable_ids || []).length
-                    : element.fan_out;
-                return sideItem(
-                    'element', element.id,
-                    element.display || elementLabel(element.id),
-                    count, count + ' defined variables');
-            }).join('');
-
-            overviewSide.innerHTML =
-                '<div class="mcmc-panel">' +
-                    '<h3>Top fan-out variables</h3>' +
-                    '<ul class="mcmc-panel-list">' + variableItems +
-                    '</ul>' +
-                '</div>' +
-                '<div class="mcmc-panel">' +
-                    '<h3>Most accessed elements</h3>' +
-                    '<ul class="mcmc-panel-list">' + faninItems +
-                    '</ul>' +
-                '</div>' +
-                '<div class="mcmc-panel">' +
-                    '<h3>Most productive elements</h3>' +
-                    '<ul class="mcmc-panel-list">' + fanoutItems +
-                    '</ul>' +
-                '</div>';
-        }
-
-        overviewSide.addEventListener('click', function (event) {
-            const item = event.target.closest('[data-focus-kind]');
-            if (item) {
-                setFocus(item.dataset.focusKind, item.dataset.focusId);
-            }
-        });
 
         function syncMatrixBackwardLabel() {
             const label = overviewPane.querySelector(
@@ -2290,7 +2181,6 @@
         syncOverviewControls();
         syncTabButtons();
         syncHelpSections();
-        renderOverviewSide();
         renderMatrix();
 
         if (state.tab === 'trace') {

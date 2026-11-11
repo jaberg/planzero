@@ -157,6 +157,8 @@ def build_mcmc_group_dependency_data(
 
     occurrence_data = []
     variable_meta: dict[str, dict] = {}
+    property_data = []
+    property_id_by_key: dict[tuple[str, str], str] = {}
 
     for occurrence in occurrences:
         method_key = _METHOD_KEYS[occurrence.method]
@@ -170,6 +172,17 @@ def build_mcmc_group_dependency_data(
                 and occurrence.method == "model_element_annual_step"
                 and occurrence.attr == "model_element_access_this_carry"
                 )
+        property_key = (occurrence.elem_id, occurrence.name)
+        property_id = property_id_by_key.get(property_key)
+        if property_id is None:
+            property_id = f"p{len(property_data)}"
+            property_id_by_key[property_key] = property_id
+            property_data.append({
+                "id": property_id,
+                "element": occurrence.elem_id,
+                "name": occurrence.name,
+                "display": occurrence.name.replace("_", " "),
+                })
         occurrence_data.append({
             "id": occurrence_id,
             "element": occurrence.elem_id,
@@ -178,6 +191,7 @@ def build_mcmc_group_dependency_data(
             "direction": occurrence.direction,
             "kind": occurrence.kind,
             "name": occurrence.name,
+            "property": property_id,
             "variable_ids": variable_ids,
             "backward": backward,
             })
@@ -296,8 +310,10 @@ def build_mcmc_group_dependency_data(
                     "variable": variable["id"],
                     "source_element": define_occurrence["element"],
                     "source_method": define_occurrence["method"],
+                    "source_property": define_occurrence["property"],
                     "target_element": access_occurrence["element"],
                     "target_method": access_occurrence["method"],
+                    "target_property": access_occurrence["property"],
                     "backward": access_occurrence["backward"],
                     "cross_element": (
                         define_occurrence["element"]
@@ -349,20 +365,34 @@ def build_mcmc_group_dependency_data(
             element_data.values(),
             key=lambda e: (-len(e["define_variable_ids"]), e["id"]))[:10]
 
+    property_connections = {
+        (edge["source_property"], edge["target_property"])
+        for edge in edges
+        }
+    cross_property_connections = {
+        (edge["source_property"], edge["target_property"])
+        for edge in edges
+        if edge["cross_element"]
+        }
+
     return {
         "group": mcmc_group,
         "elements": [element_data[elem_id] for elem_id in element_ids],
         "occurrences": occurrence_data,
+        "properties": property_data,
         "variables": variables,
         "edges": edges,
         "matrix": matrix,
         "summary": {
             "n_elements": len(element_ids),
+            "n_properties": len(property_data),
             "n_variables": len(variables),
             "n_occurrences": len(occurrence_data),
             "n_edges": len(edges),
             "n_cross_edges": sum(
                 1 for edge in edges if edge["cross_element"]),
+            "n_property_connections": len(property_connections),
+            "n_cross_property_connections": len(cross_property_connections),
             "top_fanout_variables": [
                 {
                     "id": variable["id"],

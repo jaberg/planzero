@@ -16,6 +16,7 @@ from .scenario_model import (
     access_annual,
     define,
     define_annual,
+    varkey_property,
 )
 
 
@@ -60,23 +61,23 @@ class NIR2025_ModelElement(NIR_ModelElement):
                 3, # new def of ktCO2e_numpyro_dist_pt_ca_years fn
                 )
 
-    @property
+    @varkey_property()
     def ca_key(self) -> GeneralKey:
         return self._ca_key
 
-    @property
+    @varkey_property()
     def pt_keys(self) -> dict[PT, GeneralKey]:
         return self._pt_keys
 
-    @property
+    @varkey_property()
     def annual_ca_key(self) -> AnnualKey:
         return self._annual_ca_key
 
-    @property
+    @varkey_property()
     def annual_pt_keys(self) -> dict[PT, AnnualKey]:
         return self._annual_pt_keys
 
-    @property
+    @varkey_property()
     def years_key(self) -> GeneralKey:
         return self.general_key('defined_years')
 

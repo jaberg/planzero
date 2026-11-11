@@ -168,6 +168,26 @@ class ModelElement:
         pass
 
 
+class varkey_property(property):
+    """A property whose value is a VarKey or a dict of VarKeys.
+
+    Used in place of ``property`` as the argument of define* and access*
+    decorators. Because it subclasses ``property``, the decorators and
+    add_element treat it exactly as they treat a plain property.
+
+    Usage: ``@varkey_property()`` above a method. Arguments are reserved for
+    documenting the semantics of the VarKey(s) in the context of the
+    ModelElement; none are defined yet.
+    """
+
+    def __init__(self, fget=None, *, doc_args=None):
+        super().__init__(fget)
+        self.doc_args = doc_args
+
+    def __call__(self, fget):
+        return type(self)(fget, doc_args=self.doc_args)
+
+
 def _subphase_from_f(f):
     if f.__name__ == 'model_element_prepare':
         return Subphase.Prep

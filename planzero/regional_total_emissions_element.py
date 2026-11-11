@@ -11,6 +11,7 @@ from .scenario_model import (
     Phase,
     Workspace,
     define,
+    varkey_property,
     years_dim,
 )
 
@@ -47,7 +48,7 @@ class RegionalTotalEmissionsElement(ModelElement):
         self.sector_region_ghg_subtotal_keys = sector_region_ghg_subtotal_keys
         self.expect_all_sectors = expect_all_sectors
 
-    @property
+    @varkey_property()
     def sector_region_keys(self) -> dict[
             tuple[IPCC_Sector, PT|PseudoRegion], RegionalTotalEmissionsVarKey]:
         rval:dict[tuple[IPCC_Sector, PT|PseudoRegion], RegionalTotalEmissionsVarKey] = {}

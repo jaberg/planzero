@@ -542,32 +542,28 @@ async def get_models(request: Request):
 
 ## MODEL EXPLORER
 
-_explorer_model = None
-
-
-def get_explorer_model():
-    """Build (once) the model used by the interactive dependency explorer."""
-    global _explorer_model
-    if _explorer_model is None:
-        from planzero.scaling_model import Scaling_ScenarioModel
-        _explorer_model = Scaling_ScenarioModel(
-                data_cutoff=datetime.date(year=2024, month=12, day=31),
-                num_warmup=1,
-                num_samples=1)
-    return _explorer_model
-
-
 @app_cache
-def get_model_explorer_html(group: str | None = None):
+def get_model_explorer_html(model: str | None = None, group: str | None = None):
     from planzero.dependency_explorer import (
             list_mcmc_groups,
             render_mcmc_group_html_explorer,
             )
-    model = get_explorer_model()
-    group_names = list_mcmc_groups(model)
+    from planzero.endpoints import completed_prob_registry
+    registry = completed_prob_registry()
+    models = [
+            {'name': name, 'pretty_name': site_inf.pretty_name}
+            for name, site_inf in sorted(registry.items())
+            ]
+
+    if model not in registry:
+        # Prefer the Scaling model as the default when no valid model is given.
+        model = 'Scaling' if 'Scaling' in registry else models[0]['name']
+    site_inf = registry[model]
+    scenario_model = site_inf.scenario_model
+    group_names = list_mcmc_groups(scenario_model)
 
     group_counts = {name: 0 for name in group_names}
-    for name in model.mcmc_group_by_elemid.values():
+    for name in scenario_model.mcmc_group_by_elemid.values():
         if name in group_counts:
             group_counts[name] += 1
 
@@ -588,14 +584,16 @@ def get_model_explorer_html(group: str | None = None):
                 detail="no inference groups available")
 
     explorer_html = render_mcmc_group_html_explorer(
-            model,
+            scenario_model,
             group,
-            model_name='Scaling')
+            model_name=site_inf.pretty_name)
 
     return templates.get_template('model-explorer.html').render(
             get_context(
-                title=f"PlanZero - Model Explorer - {group}",
+                title=f"PlanZero - Model Explorer - {site_inf.pretty_name} - {group}",
                 active_tab='models',
+                models=models,
+                selected_model=model,
                 groups=groups,
                 selected_group=group,
                 explorer_html=explorer_html,
@@ -603,8 +601,11 @@ def get_model_explorer_html(group: str | None = None):
 
 
 @app.get("/model-explorer/", response_class=HTMLResponse)
-async def get_model_explorer(request: Request, group: str | None = None):
-    html = get_model_explorer_html(group)
+async def get_model_explorer(
+        request: Request,
+        model: str | None = None,
+        group: str | None = None):
+    html = get_model_explorer_html(model=model, group=group)
     return HTMLResponse(content=html)
 
 

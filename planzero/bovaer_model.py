@@ -23,6 +23,7 @@ from .scenario_model import (
     define,
     define_annual,
     define_carry,
+    varkey_property,
     years_key,
 )
 from .ureg import u
@@ -74,11 +75,11 @@ class Bovaer_Adoption_Limit(SiteModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
-    @property
+    @varkey_property()
     def bovine_fraction_on_bovaer(self) -> CarryKey:
         return self.carry_key('bovaer_fraction')
 
-    @property
+    @varkey_property()
     def max_possible_fraction_on_bovaer(self) -> CarryKey:
         return self.carry_key('max_possible_fraction')
 
@@ -141,11 +142,11 @@ class Bovaer_Production_Emissions(SiteModelElement):
                 for pt in PT if pt != PT.XX}
         self._ktCO2e_abated_by_bovaer_ca = ktCO2e_abated_by_bovaer_ca
 
-    @property
+    @varkey_property()
     def ktCO2e_ca_key(self) -> AnnualKey:
         return self._ktCO2e_ca_key
 
-    @property
+    @varkey_property()
     def ktCO2e_pt_keys(self) -> dict[PT, AnnualKey]:
         return self._ktCO2e_pt_keys
 
@@ -153,7 +154,7 @@ class Bovaer_Production_Emissions(SiteModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
-    @property
+    @varkey_property()
     def ktCO2e_abated_by_bovaer_ca(self) -> AnnualKey:
         return self._ktCO2e_abated_by_bovaer_ca
     
@@ -243,7 +244,7 @@ class Bovaer_Monitoring(SiteModelElement):
     def income_tax_rate(self) -> float:
         return .25
 
-    @property
+    @varkey_property()
     def baseline_subsidy_ca_key(self) -> AnnualKey:
         return self._baseline_subsidy_ca_key
 
@@ -251,7 +252,7 @@ class Bovaer_Monitoring(SiteModelElement):
     def subsidy_ca_key(self) -> AnnualKey:
         return self.annual_key('subsidy_ca')
 
-    @property
+    @varkey_property()
     def annual_headcounts_key(self) -> AnnualKey:
         return self._annual_headcounts_key
 
@@ -263,19 +264,19 @@ class Bovaer_Monitoring(SiteModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
-    @property
+    @varkey_property()
     def admin_ca(self) -> AnnualKey:
         return self.annual_key('admin_ca')
 
-    @property
+    @varkey_property()
     def admin_ca_tax(self) -> AnnualKey:
         return self.annual_key('admin_ca_tax')
 
-    @property
+    @varkey_property()
     def onsite_ca(self) -> AnnualKey:
         return self.annual_key('onsite_ca')
 
-    @property
+    @varkey_property()
     def onsite_ca_tax(self) -> AnnualKey:
         return self.annual_key('onsite_ca_tax')
 
@@ -361,23 +362,23 @@ class Bovaer_Farm_Subsidy(SiteModelElement):
     def subsidy_rate(self) -> object:
         return 5000 * u.CAD / u.farm / u.year
 
-    @property
+    @varkey_property()
     def bovaer_budget(self) -> AnnualKey:
         return self.annual_key('bovaer_budget')
 
-    @property
+    @varkey_property()
     def bovine_fraction_on_bovaer(self) -> CarryKey:
         return self._bovine_fraction_on_bovaer_key
 
-    @property
+    @varkey_property()
     def annual_bovaer_fraction(self) -> AnnualKey:
         return self._annual_bovaer_fraction
 
-    @property
+    @varkey_property()
     def annual_headcounts(self) -> AnnualKey:
         return self._annual_headcounts_key
 
-    @property
+    @varkey_property()
     def max_fraction_on_bovaer(self) -> CarryKey:
         return self._max_fraction
 
@@ -400,19 +401,19 @@ class Bovaer_Farm_Subsidy(SiteModelElement):
         ws.val.this_annual[self.annual_bovaer_fraction] \
                 = ws.val.next_carry[self.bovine_fraction_on_bovaer]
 
-    @property
+    @varkey_property()
     def subsidy_pt(self) -> AnnualKey:
         return self.annual_key('subsidy_pt')
 
-    @property
+    @varkey_property()
     def subsidy_ca(self) -> AnnualKey:
         return self.annual_key('subsidy_ca')
 
-    @property
+    @varkey_property()
     def subsidy_pt_tax(self) -> AnnualKey:
         return self.annual_key('subsidy_pt_tax')
 
-    @property
+    @varkey_property()
     def subsidy_ca_tax(self) -> AnnualKey:
         return self.annual_key('subsidy_ca_tax')
 
@@ -485,11 +486,11 @@ class Bovaer_Purchase_Cost(SiteModelElement):
             Livestock.Calves: .20 * u.CAD / u.day / u.cattle,
         }
 
-    @property
+    @varkey_property()
     def annual_bovaer_fraction(self) -> AnnualKey:
         return self._annual_bovaer_fraction
 
-    @property
+    @varkey_property()
     def annual_headcounts(self) -> AnnualKey:
         return self._annual_headcounts_key
 
@@ -497,7 +498,7 @@ class Bovaer_Purchase_Cost(SiteModelElement):
     def version_id(self) -> VersionID:
         return (1,)
 
-    @property
+    @varkey_property()
     def cost_ca(self) -> AnnualKey:
         return self.annual_key('cost_ca')
 
@@ -617,11 +618,11 @@ class Scale_Bovaer(SiteModelElement):
             )
         return rval
 
-    @property
+    @varkey_property()
     def bovaer_budget(self) -> AnnualKey:
         return self._bovaer_budget
 
-    @property
+    @varkey_property()
     def bovaer_program_launch(self) -> GeneralKey:
         return self.general_key('bovaer_program_launch')
 
