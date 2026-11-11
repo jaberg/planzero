@@ -1,0 +1,85 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post model-explorer-page">
+    <header class="major">
+        <h1>Model Explorer</h1>
+        <p>Trace how variables flow between the model elements of one inference group.</p>
+    </header>
+
+    <p>
+    PlanZero models are built from model elements, and each element declares the
+    variables it defines and the variables it accesses. This page reads those
+    declarations and presents them in two linked views: an
+    <strong>Overview</strong> matrix of producer-to-consumer dependencies, and a
+    <strong>Trace</strong> view for following a particular variable, element, or
+    path. The explorer is an interactive companion to the
+    <a href="/blog/2026-04-19-glossary#inference-groups">Inference Groups</a>
+    section of the glossary and to the
+    <a href="/models/">Models</a> page.
+    </p>
+
+    <div class="model-explorer-tabs-slot mcmc-explorer"
+         data-mcmc-tabs-slot></div>
+
+    <div class="model-explorer-help" data-mcmc-help>
+        <div data-help-tab="overview">
+            <h3>Overview</h3>
+            <p>
+            Rows are producer elements and columns are consumer elements. A cell
+            shows how many distinct variables flow from the row element to the
+            column element. Hover a cell for the variable names, and click it to
+            open exactly those dependencies in the Trace view.
+            </p>
+        </div>
+        <div data-help-tab="trace" hidden>
+            <h3>Trace</h3>
+            <p>
+            Pick an element or variable as the focus, then choose a depth and a
+            direction (upstream, downstream, or both). Click a node for its
+            declarations. Carry variables and loop-carried
+            <code>this_carry</code> accesses are drawn as dashed orange links.
+            </p>
+        </div>
+        <div data-help-tab="trace" hidden>
+            <h3>Path finder</h3>
+            <p>
+            Choose a source element and a target element to list directed
+            dependency paths. Click a path to isolate it in the graph. Enable
+            carry links if the path should be allowed to use loop-carried reads.
+            </p>
+        </div>
+    </div>
+
+    <form class="model-explorer-group-picker" method="get" action="/model-explorer/">
+        <label>
+            <span>Inference group</span>
+            <select name="group" onchange="this.form.submit()">
+                {% for group in groups %}
+                <option value="{{ group.name }}"{% if group.name == selected_group %} selected{% endif %}>{{ group.name }} ({{ group.n_elements }} element{% if group.n_elements != 1 %}s{% endif %})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" class="button small">Load group</button>
+        <noscript>
+            <span style="align-self:center;color:#6b7280;font-size:0.8rem;">
+                JavaScript is disabled; use the button to load the selected group.
+            </span>
+        </noscript>
+    </form>
+
+    {{ explorer_html | safe }}
+
+    <p style="margin-top:1.5rem;color:#6b7280;font-size:0.8rem;">
+    The explorer is generated from decorator metadata on the model elements.
+    It does not modify the model or its inference groups. To inspect the same
+    declarations as a static table or a Mermaid diagram, see the
+    <a href="/blog/2026-04-19-glossary#inference-groups">glossary's Inference Groups</a>
+    section.
+    </p>
+
+</section>
+</div>
+
+{% include "post-main.html" %}

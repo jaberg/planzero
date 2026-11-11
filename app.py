@@ -540,6 +540,74 @@ async def get_models(request: Request):
     return HTMLResponse(content=html)
 
 
+## MODEL EXPLORER
+
+_explorer_model = None
+
+
+def get_explorer_model():
+    """Build (once) the model used by the interactive dependency explorer."""
+    global _explorer_model
+    if _explorer_model is None:
+        from planzero.scaling_model import Scaling_ScenarioModel
+        _explorer_model = Scaling_ScenarioModel(
+                data_cutoff=datetime.date(year=2024, month=12, day=31),
+                num_warmup=1,
+                num_samples=1)
+    return _explorer_model
+
+
+@app_cache
+def get_model_explorer_html(group: str | None = None):
+    from planzero.dependency_explorer import (
+            list_mcmc_groups,
+            render_mcmc_group_html_explorer,
+            )
+    model = get_explorer_model()
+    group_names = list_mcmc_groups(model)
+
+    group_counts = {name: 0 for name in group_names}
+    for name in model.mcmc_group_by_elemid.values():
+        if name in group_counts:
+            group_counts[name] += 1
+
+    groups = sorted(
+            [
+                {'name': name, 'n_elements': group_counts[name]}
+                for name in group_names
+            ],
+            key=lambda item: (-item['n_elements'], item['name']))
+
+    if group not in group_counts:
+        # The largest group is the most useful default for exploration.
+        group = groups[0]['name'] if groups else None
+
+    if group is None:
+        raise HTTPException(
+                status_code=404,
+                detail="no inference groups available")
+
+    explorer_html = render_mcmc_group_html_explorer(
+            model,
+            group,
+            model_name='Scaling')
+
+    return templates.get_template('model-explorer.html').render(
+            get_context(
+                title=f"PlanZero - Model Explorer - {group}",
+                active_tab='models',
+                groups=groups,
+                selected_group=group,
+                explorer_html=explorer_html,
+                ))
+
+
+@app.get("/model-explorer/", response_class=HTMLResponse)
+async def get_model_explorer(request: Request, group: str | None = None):
+    html = get_model_explorer_html(group)
+    return HTMLResponse(content=html)
+
+
 ## PREDICTIONS
 
 @app_cache
