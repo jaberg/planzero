@@ -135,20 +135,28 @@ def build_mcmc_group_dependency_data(
             variable_id_to_key[variable_id] = var_key
         return variable_id
 
+    from .scenario_model.scenario_model import ModelElement
+
     element_data = {}
     for elem_id in element_ids:
+        element = model.model_elements.get(elem_id)
         metadata = _site_model_element_metadata(model, elem_id)
         display = (
                 metadata["pretty_name"]
                 if metadata["site_model_element"] and metadata["pretty_name"]
                 else elem_id.replace("_", " ")
                 )
+        annual_step_overridden = (
+                element is not None
+                and type(element).model_element_annual_step
+                is not ModelElement.model_element_annual_step)
         element_data[elem_id] = {
                 "id": elem_id,
                 "display": display,
                 "pretty_name": metadata["pretty_name"] or display,
                 "site_model_element": metadata["site_model_element"],
                 "short_description": metadata["short_description"],
+                "annual_step_overridden": annual_step_overridden,
                 "methods": {
                     method_key: {"defines": [], "accesses": []}
                     for method_key in _METHOD_KEYS_BY_ORDER
@@ -194,6 +202,7 @@ def build_mcmc_group_dependency_data(
             "property": property_id,
             "variable_ids": variable_ids,
             "backward": backward,
+            "attr": occurrence.attr,
             })
 
         method_data = element_data[occurrence.elem_id]["methods"][method_key]

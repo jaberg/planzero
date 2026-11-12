@@ -477,6 +477,59 @@
     z-index: 5;
 }
 
+.mcmc-matrix {
+    --mcmc-trace-left: 17.2rem;
+}
+
+.mcmc-matrix thead th.mcmc-matrix-trace-head,
+.mcmc-matrix tbody td.mcmc-matrix-trace-cell {
+    background: var(--mcmc-panel);
+    left: var(--mcmc-trace-left);
+    position: sticky;
+    width: 4.5rem;
+    z-index: 4;
+}
+
+.mcmc-matrix thead th.mcmc-matrix-trace-head {
+    background: var(--mcmc-panel);
+    text-align: center;
+    z-index: 5;
+}
+
+.mcmc-matrix tbody td.mcmc-matrix-trace-cell {
+    background: #ffffff;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.mcmc-matrix tbody td.mcmc-matrix-trace-cell input[type="checkbox"] {
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+    appearance: auto;
+    display: inline-block;
+    float: none;
+    margin: 0 auto;
+    opacity: 1;
+    width: 1rem;
+    z-index: auto;
+    cursor: pointer;
+}
+
+.mcmc-matrix tbody td.mcmc-matrix-trace-cell input:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+}
+
+.mcmc-trace-hint {
+    color: var(--mcmc-muted);
+    font-size: 0.8rem;
+    margin: 0 0 0.45rem 0;
+}
+
+.mcmc-trace-controls [hidden] {
+    display: none !important;
+}
+
 .mcmc-matrix-corner-inner {
     color: var(--mcmc-muted);
     display: block;
@@ -800,7 +853,7 @@
 
 .mcmc-trace-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 20rem;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     align-items: stretch;
 }
@@ -818,8 +871,8 @@
     border: 1px solid var(--mcmc-border);
     border-radius: var(--mcmc-radius);
     flex: 1 1 auto;
-    height: 34rem;
-    min-height: 24rem;
+    height: 37.4rem;
+    min-height: 26rem;
     overflow: hidden;
     position: relative;
 }
@@ -856,9 +909,8 @@
     background: #ffffff;
     border: 1px solid var(--mcmc-border);
     border-radius: var(--mcmc-radius);
-    height: 100%;
-    max-height: 34rem;
-    min-height: 12rem;
+    max-height: 22rem;
+    min-height: 8rem;
     overflow: auto;
     padding: 0.85rem;
 }
@@ -1002,16 +1054,12 @@
 /* Responsive -------------------------------------------------------------- */
 
 @media screen and (max-width: 1100px) {
-    .mcmc-trace-layout {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
     .mcmc-trace-graph {
-        height: 28rem;
+        height: 30.8rem;
     }
 
     .mcmc-details {
-        max-height: 22rem;
+        max-height: 20rem;
     }
 }
 
@@ -1036,11 +1084,15 @@
         width: 9rem;
     }
 
+    .mcmc-matrix {
+        --mcmc-trace-left: 11.2rem;
+    }
+
     .mcmc-matrix tbody th.mcmc-matrix-row-heading .mcmc-matrix-row-label {
         max-width: 8.25rem;
     }
 
     .mcmc-trace-graph {
-        height: 24rem;
+        height: 26.4rem;
     }
 }

@@ -20,38 +20,6 @@
     <a href="/models/">Models</a> page.
     </p>
 
-    <div class="model-explorer-tabs-slot mcmc-explorer"
-         data-mcmc-tabs-slot></div>
-
-    <div class="model-explorer-help" data-mcmc-help>
-        <div data-help-tab="overview">
-            <h3>Overview</h3>
-            <p>
-            Rows are producer elements and columns are consumer elements. A cell
-            shows how many distinct variables flow from the row element to the
-            column element. Hover a cell for the variable names, and click it to
-            open exactly those dependencies in the Trace view.
-            </p>
-        </div>
-        <div data-help-tab="trace" hidden>
-            <h3>Trace</h3>
-            <p>
-            Pick an element or variable as the focus, then choose a depth and a
-            direction (upstream, downstream, or both). Click a node for its
-            declarations. Carry variables and loop-carried
-            <code>this_carry</code> accesses are drawn as dashed orange links.
-            </p>
-        </div>
-        <div data-help-tab="trace" hidden>
-            <h3>Path finder</h3>
-            <p>
-            Choose a source element and a target element to list directed
-            dependency paths. Click a path to isolate it in the graph. Enable
-            carry links if the path should be allowed to use loop-carried reads.
-            </p>
-        </div>
-    </div>
-
     <form class="model-explorer-group-picker" method="get" action="/model-explorer/">
         <label>
             <span>Model</span>
@@ -77,6 +45,44 @@
             </span>
         </noscript>
     </form>
+
+    <div class="model-explorer-tabs-slot mcmc-explorer"
+         data-mcmc-tabs-slot></div>
+
+    <div class="model-explorer-help" data-mcmc-help>
+        <div data-help-tab="overview">
+            <h3>Overview</h3>
+            <p>
+            Rows are producer elements and columns are consumer elements. A cell
+            shows how many distinct variables flow from the row element to the
+            column element. Hover a cell for the variable names, and click it to
+            open exactly those dependencies in the Trace view.
+            </p>
+        </div>
+        <div data-help-tab="trace" hidden>
+            <h3>Trace</h3>
+            <p>
+            The graph shows the model elements ticked in the Trace column of the
+            Overview table. Each of the methods
+            <code>model_element_prepare</code>,
+            <code>model_element_annual_step</code>, and
+            <code>model_element_postprocess</code> that participates in a
+            declaration is drawn as a box (annual-step methods appear inside a
+            nested “Annual step” network). Variable nodes are created according
+            to the decorator and method: general values are single nodes; annual
+            variables use <code>(all)</code> and <code>(this)</code> nodes; carry
+            variables use <code>(initial)</code>, <code>(this)</code>,
+            <code>(next)</code>, and <code>(final)</code> nodes with the
+            lifecycle links
+            <code>initial→this</code>, dashed <code>next→this</code>, and
+            <code>next→final</code>. Edges run from defining methods to the
+            variables they define and from variables to the methods that access
+            them, annotated with the <code>varkey_property</code> name. A
+            dict-valued property is shown as a single node.
+            </p>
+        </div>
+
+    </div>
 
     {{ explorer_html | safe }}
 

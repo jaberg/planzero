@@ -53,6 +53,7 @@
     const MAX_PATHS = 20;
     const MAX_PATH_SEARCH_STEPS = 50000;
     const TOOLTIP_VARIABLE_LIMIT = 12;
+    const TRACE_ELEMENT_LIMIT = 3;
 
     function esc(value) {
         return String(value === undefined || value === null ? '' : value)
@@ -136,20 +137,6 @@
             return;
         }
 
-        const edgesBySource = new Map();
-        const edgesByTarget = new Map();
-        for (const edge of edges) {
-            if (!edgesBySource.has(edge.source_element)) {
-                edgesBySource.set(edge.source_element, []);
-            }
-            edgesBySource.get(edge.source_element).push(edge);
-
-            if (!edgesByTarget.has(edge.target_element)) {
-                edgesByTarget.set(edge.target_element, []);
-            }
-            edgesByTarget.get(edge.target_element).push(edge);
-        }
-
         // Variable-level dependency graph.  Inside a single element, every
         // defined variable depends on every accessed variable.
         const varUp = new Map();
@@ -198,36 +185,9 @@
                 : displayName(id);
         }
 
-        function variableOptionLabel(variable) {
-            const producers = (variable.define_elements || [])
-                .map(elementLabel)
-                .join(', ');
-            let label = variableLabel(variable.id) +
-                ' \u2014 ' + (KIND_LABELS[variable.kind] || 'Variable');
-            if (producers) {
-                label += ' \u2014 defined by ' + producers;
-            }
-            return label;
-        }
-
-        function defaultFocus() {
-            let bestId = elements[0].id;
-            let bestScore = -1;
-            for (const element of elements) {
-                const score =
-                    (element.define_variable_ids || []).length +
-                    (element.access_variable_ids || []).length;
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestId = element.id;
-                }
-            }
-            return { type: 'element', id: bestId };
-        }
-
         function readInitialState() {
             const params = new URLSearchParams(window.location.search);
-            let focus = defaultFocus();
+            let focus = null;
             const focusParam = params.get('focus');
             if (focusParam) {
                 const colon = focusParam.indexOf(':');
@@ -241,29 +201,23 @@
                 }
             }
 
-            let depth = parseInt(params.get('depth'), 10);
-            if (!(depth >= 1 && depth <= 3)) {
-                depth = 1;
-            }
-
-            let direction = params.get('direction');
-            if (direction !== 'upstream' && direction !== 'downstream') {
-                direction = 'both';
-            }
-
             let matrixScope = params.get('scope');
             if (matrixScope !== 'all' && matrixScope !== 'self') {
                 matrixScope = 'cross';
             }
 
+            const traceElements = [];
+            for (const id of (params.get('trace') || '').split(',')) {
+                if (elementsById.has(id) && traceElements.indexOf(id) === -1 &&
+                        traceElements.length < TRACE_ELEMENT_LIMIT) {
+                    traceElements.push(id);
+                }
+            }
+
             return {
                 tab: params.get('tab') === 'trace' ? 'trace' : 'overview',
+                traceElements: traceElements,
                 focus: focus,
-                depth: depth,
-                direction: direction,
-                showVariables: params.get('vars') !== '0',
-                allowBackward: params.get('backward') !== '0',
-                allowSelf: params.get('self') === '1',
                 matrixScope: matrixScope,
                 matrixBackward: params.get('matrixBackward') !== '0',
             };
@@ -272,36 +226,16 @@
         const initialState = readInitialState();
         const state = {
             tab: initialState.tab,
-            focus: initialState.focus,
-            depth: initialState.depth,
-            direction: initialState.direction,
-            showVariables: initialState.showVariables,
-            allowBackward: initialState.allowBackward,
-            allowSelf: initialState.allowSelf,
+            traceElements: initialState.traceElements,
+            focus: initialState.traceElements.length
+                ? { type: 'element', id: initialState.traceElements[0] }
+                : initialState.focus,
             matrixScope: initialState.matrixScope,
             matrixBackward: initialState.matrixBackward,
             matrixSort: 'group',
             matrixFilter: '',
             matrixCells: new Map(),
-            traceFilter: null,
-            pathResults: null,
-            pathFrom: null,
-            pathTo: null,
         };
-
-        function edgeAllowed(edge, allowBackward, allowSelf) {
-            const backwardOk = allowBackward === undefined
-                ? state.allowBackward : allowBackward;
-            const selfOk = allowSelf === undefined
-                ? state.allowSelf : allowSelf;
-            if (!selfOk && edge.source_element === edge.target_element) {
-                return false;
-            }
-            if (!backwardOk && edge.backward) {
-                return false;
-            }
-            return true;
-        }
 
         function matrixEdgeAllowed(edge) {
             if (!state.matrixBackward && edge.backward) {
@@ -314,117 +248,6 @@
                 return edge.source_element === edge.target_element;
             }
             return true;
-        }
-
-        function elementScope(startId, depth, direction) {
-            const scope = new Set([startId]);
-            let frontier = new Set([startId]);
-
-            for (let hop = 0; hop < depth; hop++) {
-                const next = new Set();
-                for (const id of frontier) {
-                    if (direction !== 'downstream') {
-                        for (const edge of edgesByTarget.get(id) || []) {
-                            if (edgeAllowed(edge)) {
-                                next.add(edge.source_element);
-                            }
-                        }
-                    }
-                    if (direction !== 'upstream') {
-                        for (const edge of edgesBySource.get(id) || []) {
-                            if (edgeAllowed(edge)) {
-                                next.add(edge.target_element);
-                            }
-                        }
-                    }
-                }
-                let added = false;
-                for (const id of next) {
-                    if (!scope.has(id)) {
-                        scope.add(id);
-                        added = true;
-                    }
-                }
-                if (!added) {
-                    break;
-                }
-                frontier = next;
-            }
-            return scope;
-        }
-
-        function variableScope(startId, depth, direction) {
-            const scope = new Set([startId]);
-            let frontier = new Set([startId]);
-
-            for (let hop = 0; hop < depth; hop++) {
-                const next = new Set();
-                for (const id of frontier) {
-                    if (direction !== 'downstream') {
-                        for (const up of varUp.get(id) || []) {
-                            next.add(up);
-                        }
-                    }
-                    if (direction !== 'upstream') {
-                        for (const down of varDown.get(id) || []) {
-                            next.add(down);
-                        }
-                    }
-                }
-                let added = false;
-                for (const id of next) {
-                    if (!scope.has(id)) {
-                        scope.add(id);
-                        added = true;
-                    }
-                }
-                if (!added) {
-                    break;
-                }
-                frontier = next;
-            }
-            return scope;
-        }
-
-        function selectedTraceEdges() {
-            if (state.traceFilter) {
-                if (state.traceFilter.kind === 'cell') {
-                    const ids = new Set(state.traceFilter.edgeIds || []);
-                    return edges.filter(function (edge) {
-                        return ids.has(edge.id) && edgeAllowed(edge);
-                    });
-                }
-                if (state.traceFilter.kind === 'path') {
-                    const pairs = new Set();
-                    const path = state.traceFilter.path || [];
-                    for (let i = 0; i + 1 < path.length; i++) {
-                        pairs.add(path[i] + '\u0000' + path[i + 1]);
-                    }
-                    return edges.filter(function (edge) {
-                        return pairs.has(
-                            edge.source_element + '\u0000' +
-                            edge.target_element) && edgeAllowed(edge);
-                    });
-                }
-            }
-
-            if (!state.focus) {
-                return [];
-            }
-            if (state.focus.type === 'variable') {
-                const scope = variableScope(
-                    state.focus.id, state.depth, state.direction);
-                return edges.filter(function (edge) {
-                    return scope.has(edge.variable) && edgeAllowed(edge);
-                });
-            }
-            const scope = elementScope(
-                state.focus.id, state.depth, state.direction);
-            return edges.filter(function (edge) {
-                return scope.has(edge.source_element) &&
-                    scope.has(edge.target_element) &&
-                    edgeAllowed(edge);
-            });
         }
 
         /* -----------------------------------------------------------------
@@ -565,6 +388,11 @@
         function updateUrl() {
             const params = new URLSearchParams(window.location.search);
             params.set('tab', state.tab);
+            if (state.traceElements.length) {
+                params.set('trace', state.traceElements.join(','));
+            } else {
+                params.delete('trace');
+            }
             if (state.focus) {
                 params.set(
                     'focus',
@@ -572,31 +400,6 @@
                     state.focus.id);
             } else {
                 params.delete('focus');
-            }
-            if (state.depth !== 1) {
-                params.set('depth', String(state.depth));
-            } else {
-                params.delete('depth');
-            }
-            if (state.direction !== 'both') {
-                params.set('direction', state.direction);
-            } else {
-                params.delete('direction');
-            }
-            if (!state.showVariables) {
-                params.set('vars', '0');
-            } else {
-                params.delete('vars');
-            }
-            if (!state.allowBackward) {
-                params.set('backward', '0');
-            } else {
-                params.delete('backward');
-            }
-            if (state.allowSelf) {
-                params.set('self', '1');
-            } else {
-                params.delete('self');
             }
             if (state.matrixScope !== 'cross') {
                 params.set('scope', state.matrixScope);
@@ -663,6 +466,7 @@
                 '</div>' +
                 statsHtml +
             '</div>' +
+            '<div class="mcmc-trace-hint" data-role="traceHint"></div>' +
             '<div class="mcmc-matrix-wrap" data-role="matrixWrap"></div>';
 
         const matrixWrap = overviewPane.querySelector(
@@ -825,7 +629,13 @@
                         infoClass + '">' +
                     '<span class="mcmc-matrix-row-label">' +
                     esc(elementLabel(row.id)) +
-                    '</span></th>' + cells + '</tr>';
+                    '</span></th>' +
+                    '<td class="mcmc-matrix-trace-cell">' +
+                        '<input type="checkbox" data-trace-element="' +
+                            esc(row.id) + '" aria-label="Trace ' +
+                            esc(elementLabel(row.id)) + '">' +
+                    '</td>' +
+                    cells + '</tr>';
             }).join('');
 
             matrixWrap.innerHTML =
@@ -837,13 +647,141 @@
                             '<span class="mcmc-matrix-corner-inner">' +
                                 'producer \u2193<br>consumer \u2192' +
                             '</span>' +
-                        '</th>' + headerCells +
+                        '</th>' +
+                        '<th class="mcmc-matrix-trace-head" scope="col" ' +
+                            'title="Choose up to ' + TRACE_ELEMENT_LIMIT +
+                            ' elements to show on the Trace tab">Trace</th>' +
+                        headerCells +
                     '</tr></thead>' +
                     '<tbody>' + bodyRows + '</tbody>' +
                 '</table>';
 
             applyMatrixFilter();
+            syncTraceColumn();
         }
+
+        /* -----------------------------------------------------------------
+         * Overview: Trace column selection
+         * ---------------------------------------------------------------- */
+
+        function visibleAdjacency() {
+            const adjacency = new Map();
+            for (const edge of edges) {
+                if (!matrixEdgeAllowed(edge) ||
+                        edge.source_element === edge.target_element) {
+                    continue;
+                }
+                for (const [from, to] of [
+                    [edge.source_element, edge.target_element],
+                    [edge.target_element, edge.source_element],
+                ]) {
+                    if (!adjacency.has(from)) {
+                        adjacency.set(from, new Set());
+                    }
+                    adjacency.get(from).add(to);
+                }
+            }
+            return adjacency;
+        }
+
+        function selectionIsConnected(ids, adjacency) {
+            if (ids.length <= 1) {
+                return true;
+            }
+            const members = new Set(ids);
+            const seen = new Set([ids[0]]);
+            const queue = [ids[0]];
+            while (queue.length) {
+                const current = queue.shift();
+                for (const next of adjacency.get(current) || []) {
+                    if (members.has(next) && !seen.has(next)) {
+                        seen.add(next);
+                        queue.push(next);
+                    }
+                }
+            }
+            return seen.size === members.size;
+        }
+
+        function syncTraceColumn() {
+            const selected = state.traceElements;
+            const adjacency = visibleAdjacency();
+            const full = selected.length >= TRACE_ELEMENT_LIMIT;
+
+            const boxes = matrixWrap.querySelectorAll(
+                'input[data-trace-element]');
+            for (const box of boxes) {
+                const id = box.dataset.traceElement;
+                const checked = selected.indexOf(id) !== -1;
+                box.checked = checked;
+                if (checked) {
+                    const rest = selected.filter(function (other) {
+                        return other !== id;
+                    });
+                    box.disabled = !selectionIsConnected(rest, adjacency);
+                } else {
+                    const touchesSelection = selected.some(function (other) {
+                        return (adjacency.get(id) || new Set()).has(other);
+                    });
+                    box.disabled = full ||
+                        (selected.length > 0 && !touchesSelection);
+                }
+            }
+
+            const hint = overviewPane.querySelector(
+                '[data-role="traceHint"]');
+            if (hint) {
+                hint.textContent = selected.length
+                    ? 'Trace: ' + selected.length + ' of ' +
+                        TRACE_ELEMENT_LIMIT + ' selected'
+                    : 'Trace: tick up to ' + TRACE_ELEMENT_LIMIT +
+                        ' elements to show them on the Trace tab';
+            }
+        }
+
+        function setTraceElements(ids) {
+            state.traceElements = ids.slice(0, TRACE_ELEMENT_LIMIT);
+            state.focus = state.traceElements.length
+                ? { type: 'element', id: state.traceElements[0] }
+                : null;
+            syncTraceColumn();
+            if (state.tab === 'trace') {
+                syncTraceControls();
+                renderTrace();
+            }
+            updateUrl();
+        }
+
+        function toggleTraceElement(id, checked) {
+            const adjacency = visibleAdjacency();
+            const selected = state.traceElements.slice();
+            const at = selected.indexOf(id);
+            if (checked && at === -1) {
+                const touchesSelection = selected.some(function (other) {
+                    return (adjacency.get(id) || new Set()).has(other);
+                });
+                if (selected.length >= TRACE_ELEMENT_LIMIT ||
+                        (selected.length && !touchesSelection)) {
+                    syncTraceColumn();
+                    return;
+                }
+                selected.push(id);
+            } else if (!checked && at !== -1) {
+                selected.splice(at, 1);
+                if (!selectionIsConnected(selected, adjacency)) {
+                    syncTraceColumn();
+                    return;
+                }
+            }
+            setTraceElements(selected);
+        }
+
+        matrixWrap.addEventListener('change', function (event) {
+            const box = event.target.closest('input[data-trace-element]');
+            if (box) {
+                toggleTraceElement(box.dataset.traceElement, box.checked);
+            }
+        });
 
         function applyMatrixFilter() {
             const query = state.matrixFilter.trim().toLowerCase();
@@ -1020,18 +958,7 @@
             if (!cell) {
                 return;
             }
-            state.traceFilter = {
-                kind: 'cell',
-                edgeIds: cell.edgeIds.slice(),
-                variableIds: Array.from(cell.variables),
-                source: source,
-                target: target,
-                label: elementLabel(source) + ' \u2192 ' +
-                    elementLabel(target),
-            };
-            state.focus = { type: 'element', id: source };
-            state.pathResults = null;
-            renderPathResults(null);
+            setTraceElements(source === target ? [source] : [source, target]);
             setTab('trace');
         }
 
@@ -1174,69 +1101,13 @@
          * ---------------------------------------------------------------- */
 
         tracePane.innerHTML =
-            '<div class="mcmc-trace-controls">' +
-                '<label class="mcmc-field">' +
-                    '<span>Focus</span>' +
-                    '<select data-role="focus"></select>' +
-                '</label>' +
-                '<label class="mcmc-field">' +
-                    '<span>Depth</span>' +
-                    '<select data-role="depth">' +
-                        '<option value="1">1 hop</option>' +
-                        '<option value="2">2 hops</option>' +
-                        '<option value="3">3 hops</option>' +
-                    '</select>' +
-                '</label>' +
-                '<label class="mcmc-field">' +
-                    '<span>Direction</span>' +
-                    '<select data-role="direction">' +
-                        '<option value="both">Both</option>' +
-                        '<option value="upstream">Upstream</option>' +
-                        '<option value="downstream">Downstream</option>' +
-                    '</select>' +
-                '</label>' +
-                '<label class="mcmc-check">' +
-                    '<input type="checkbox" data-role="showVariables" ' +
-                        'checked> Variable nodes' +
-                '</label>' +
-                '<label class="mcmc-check">' +
-                    '<input type="checkbox" data-role="allowBackward" ' +
-                        'checked> Carry / backward links' +
-                '</label>' +
-                '<label class="mcmc-check">' +
-                    '<input type="checkbox" data-role="allowSelf"> ' +
-                    'Self dependencies' +
-                '</label>' +
-                '<button type="button" class="mcmc-button" ' +
-                    'data-role="resetTrace">Reset</button>' +
-            '</div>' +
             '<div class="mcmc-trace-filter" data-role="filter" hidden>' +
             '</div>' +
-            '<div class="mcmc-path-controls">' +
-                '<strong>Path finder</strong>' +
-                '<label class="mcmc-field">' +
-                    '<span>From</span>' +
-                    '<select data-role="pathFrom"></select>' +
-                '</label>' +
-                '<span class="mcmc-path-arrow">\u2192</span>' +
-                '<label class="mcmc-field">' +
-                    '<span>To</span>' +
-                    '<select data-role="pathTo"></select>' +
-                '</label>' +
-                '<label class="mcmc-check">' +
-                    '<input type="checkbox" data-role="pathBackward" ' +
-                        'checked> Allow carry links' +
-                '</label>' +
-                '<button type="button" class="mcmc-button ' +
-                    'mcmc-button-primary" data-role="findPaths">' +
-                    'Find paths</button>' +
-            '</div>' +
-            '<div class="mcmc-path-results" data-role="pathResults"></div>' +
             '<div class="mcmc-trace-layout">' +
                 '<div class="mcmc-trace-graph-wrap">' +
                     '<div class="mcmc-trace-graph" data-role="graph">' +
                     '</div>' +
-                    '<div class="mcmc-trace-legend">' +
+                '<div class="mcmc-trace-legend">' +
                         '<div class="mcmc-legend-row">' +
                             '<span class="mcmc-legend-swatch" ' +
                                 'style="background:#2563eb"></span>' +
@@ -1271,17 +1142,14 @@
                         '</div>' +
                     '</div>' +
                 '</div>' +
+                '</div>' +
                 '<aside class="mcmc-trace-sidebar">' +
                     '<div class="mcmc-details" data-role="details">' +
                     '</div>' +
                 '</aside>' +
             '</div>';
 
-        const traceControls = tracePane.querySelector(
-            '.mcmc-trace-controls');
         const filterBar = tracePane.querySelector('[data-role="filter"]');
-        const pathResultsEl = tracePane.querySelector(
-            '[data-role="pathResults"]');
         const graphEl = tracePane.querySelector('[data-role="graph"]');
         const detailsEl = tracePane.querySelector('[data-role="details"]');
 
@@ -1291,187 +1159,52 @@
         }
 
         function populateTraceSelects() {
-            const focusSelect = tracePane.querySelector(
-                '[data-role="focus"]');
-            const elementOptions = elements.map(function (element) {
-                return option('el:' + element.id, elementLabel(element.id));
-            }).join('');
-            const variableOptions = variables.map(function (variable) {
-                return option(
-                    'var:' + variable.id, variableOptionLabel(variable));
-            }).join('');
-            focusSelect.innerHTML =
-                '<optgroup label="Elements">' + elementOptions +
-                '</optgroup>' +
-                '<optgroup label="Variables">' + variableOptions +
-                '</optgroup>';
-
-            const pathFrom = tracePane.querySelector(
-                '[data-role="pathFrom"]');
-            const pathTo = tracePane.querySelector(
-                '[data-role="pathTo"]');
-            const pathOptions = elements.map(function (element) {
-                return option(element.id, elementLabel(element.id));
-            }).join('');
-            pathFrom.innerHTML = pathOptions;
-            pathTo.innerHTML = pathOptions;
-
-            let fromId = state.focus && state.focus.type === 'element'
-                ? state.focus.id : elements[0].id;
-            let toId = null;
-            for (const element of elements) {
-                if (element.id !== fromId) {
-                    toId = element.id;
-                    break;
-                }
-            }
-            if (toId === null) {
-                toId = fromId;
-            }
-            state.pathFrom = fromId;
-            state.pathTo = toId;
-            pathFrom.value = fromId;
-            pathTo.value = toId;
         }
 
         function syncTraceControls() {
-            const focusSelect = tracePane.querySelector(
-                '[data-role="focus"]');
-            const depthSelect = tracePane.querySelector(
-                '[data-role="depth"]');
-            const directionSelect = tracePane.querySelector(
-                '[data-role="direction"]');
-            const showVariables = tracePane.querySelector(
-                '[data-role="showVariables"]');
-            const allowBackward = tracePane.querySelector(
-                '[data-role="allowBackward"]');
-            const allowSelf = tracePane.querySelector(
-                '[data-role="allowSelf"]');
-            const pathFrom = tracePane.querySelector(
-                '[data-role="pathFrom"]');
-            const pathTo = tracePane.querySelector(
-                '[data-role="pathTo"]');
-
-            if (state.focus) {
-                focusSelect.value = (state.focus.type === 'element'
-                    ? 'el:' : 'var:') + state.focus.id;
-            }
-            depthSelect.value = String(state.depth);
-            directionSelect.value = state.direction;
-            showVariables.checked = state.showVariables;
-            allowBackward.checked = state.allowBackward;
-            allowSelf.checked = state.allowSelf;
-
-            if (state.pathFrom) {
-                pathFrom.value = state.pathFrom;
-            }
-            if (state.pathTo) {
-                pathTo.value = state.pathTo;
-            }
             renderFilterBar();
         }
 
         function renderFilterBar() {
-            if (!state.traceFilter) {
+            if (!state.traceElements.length) {
                 filterBar.hidden = true;
                 filterBar.innerHTML = '';
                 return;
             }
-            const kindLabel = state.traceFilter.kind === 'cell'
-                ? 'Matrix cell' : 'Path';
+            const names = state.traceElements.map(elementLabel).join(
+                ' \u00b7 ');
             filterBar.hidden = false;
             filterBar.innerHTML =
-                '<span><strong>' + esc(kindLabel) + ':</strong> ' +
-                    esc(state.traceFilter.label) + '</span>' +
+                '<span><strong>Selected:</strong> ' + esc(names) + '</span>' +
                 '<button type="button" class="mcmc-button" ' +
-                    'data-role="clearFilter">Clear filter</button>';
+                    'data-role="clearFilter">Clear</button>';
         }
 
-        function setFocus(kind, id, options) {
-            if (kind === 'element' && !elementsById.has(id)) {
+        function setFocus(kind, id) {
+            if (kind === 'element') {
+                if (!elementsById.has(id)) {
+                    return;
+                }
+                setTraceElements([id]);
+                if (state.tab !== 'trace') {
+                    setTab('trace');
+                }
                 return;
             }
-            if (kind === 'variable' && !variablesById.has(id)) {
-                return;
-            }
-            state.focus = { type: kind, id: id };
-            if (!options || !options.keepFilter) {
-                state.traceFilter = null;
-            }
-            state.pathResults = null;
-            renderPathResults(null);
-            if (state.tab === 'trace') {
-                syncTraceControls();
+            if (kind === 'variable' && variablesById.has(id)) {
+                state.focus = { type: 'variable', id: id };
                 renderTrace();
                 updateUrl();
-            } else {
-                setTab('trace');
+                if (state.tab !== 'trace') {
+                    setTab('trace');
+                }
             }
         }
-
-        function resetTrace() {
-            state.focus = defaultFocus();
-            state.depth = 1;
-            state.direction = 'both';
-            state.showVariables = true;
-            state.allowBackward = true;
-            state.allowSelf = false;
-            state.traceFilter = null;
-            state.pathResults = null;
-            renderPathResults(null);
-            syncTraceControls();
-            renderTrace();
-            updateUrl();
-        }
-
-        traceControls.addEventListener('change', function (event) {
-            const role = event.target.dataset.role;
-            if (role === 'focus') {
-                const value = event.target.value;
-                const colon = value.indexOf(':');
-                setFocus(value.slice(0, colon), value.slice(colon + 1));
-            } else if (role === 'depth') {
-                state.depth = parseInt(event.target.value, 10) || 1;
-                renderTrace();
-                updateUrl();
-            } else if (role === 'direction') {
-                state.direction = event.target.value;
-                renderTrace();
-                updateUrl();
-            } else if (role === 'showVariables') {
-                state.showVariables = event.target.checked;
-                renderTrace();
-                updateUrl();
-            } else if (role === 'allowBackward') {
-                state.allowBackward = event.target.checked;
-                renderTrace();
-                updateUrl();
-            } else if (role === 'allowSelf') {
-                state.allowSelf = event.target.checked;
-                renderTrace();
-                updateUrl();
-            }
-        });
 
         tracePane.addEventListener('click', function (event) {
             const role = event.target.dataset.role;
-            if (role === 'resetTrace') {
-                resetTrace();
-                return;
-            }
             if (role === 'clearFilter') {
-                state.traceFilter = null;
-                renderTrace();
-                updateUrl();
-                return;
-            }
-            if (role === 'findPaths') {
-                runPathFinder();
-                return;
-            }
-            const pathButton = event.target.closest('[data-path-index]');
-            if (pathButton) {
-                selectPath(parseInt(pathButton.dataset.pathIndex, 10));
+                setTraceElements([]);
                 return;
             }
             const link = event.target.closest('[data-focus-kind]');
@@ -1490,6 +1223,7 @@
                 style: {
                     'font-family': 'Helvetica, Arial, sans-serif',
                     'font-size': 10,
+                    'label': 'data(label)',
                     'text-wrap': 'wrap',
                     'text-max-width': 150,
                     'text-valign': 'center',
@@ -1499,9 +1233,9 @@
                     'border-width': 1,
                     'border-color': '#ffffff',
                     'shape': 'round-rectangle',
+                    'padding': '7px',
                     'width': 'label',
                     'height': 'label',
-                    'padding': '7px',
                 },
             },
             {
@@ -1511,6 +1245,23 @@
                     'border-color': 'data(color)',
                     'border-width': 2,
                     'color': '#1f2937',
+                },
+            },
+            {
+                selector: 'node[type="network"]',
+                style: {
+                    'background-color': 'rgba(247, 249, 251, 0.72)',
+                    'background-opacity': 0.6,
+                    'border-color': '#94a3b8',
+                    'border-style': 'dashed',
+                    'border-width': 1.5,
+                    'color': '#475569',
+                    'font-size': 11,
+                    'font-weight': 700,
+                    'label': 'data(label)',
+                    'padding': '1.4rem',
+                    'text-halign': 'left',
+                    'text-valign': 'top',
                 },
             },
             {
@@ -1545,6 +1296,23 @@
                 style: {
                     'line-color': '#cbd5e1',
                     'target-arrow-color': '#cbd5e1',
+                    'label': 'data(label)',
+                    'font-size': 8,
+                    'text-rotation': 'autorotate',
+                    'text-background-color': '#fbfdfe',
+                    'text-background-opacity': 0.88,
+                    'text-background-padding': 2,
+                },
+            },
+            {
+                selector: 'edge[kind="access"]',
+                style: {
+                    'label': 'data(label)',
+                    'font-size': 8,
+                    'text-rotation': 'autorotate',
+                    'text-background-color': '#fbfdfe',
+                    'text-background-opacity': 0.88,
+                    'text-background-padding': 2,
                 },
             },
             {
@@ -1556,8 +1324,21 @@
                 },
             },
             {
-                selector: 'edge[kind="direct"]',
+                selector: 'edge[kind="back"]',
                 style: {
+                    'line-style': 'dashed',
+                    'line-color': '#d97706',
+                    'target-arrow-color': '#d97706',
+                    'label': 'data(label)',
+                    'font-size': 8,
+                    'text-rotation': 'autorotate',
+                },
+            },
+            {
+                selector: 'edge[kind="initial"], edge[kind="final"]',
+                style: {
+                    'line-color': '#94a3b8',
+                    'target-arrow-color': '#94a3b8',
                     'label': 'data(label)',
                     'font-size': 8,
                     'text-rotation': 'autorotate',
@@ -1586,119 +1367,315 @@
             return 'm:' + elementId + ':' + method;
         }
 
-        function buildGraphModel(traceEdges) {
+        function buildSelectionGraph() {
             const nodes = new Map();
-            const graphEdges = [];
+            const edges = new Map();
+            const selected = new Set(state.traceElements);
+            if (!selected.size) {
+                return { nodes: [], edges: [] };
+            }
+
+            const selectedOccurrences = occurrences.filter(function (o) {
+                return selected.has(o.element);
+            });
+
+            const annualNetworkId = 'annual-step-network';
+            let annualNetworkNeeded = false;
+
+            function ensureAnnualNetwork() {
+                if (annualNetworkNeeded) {
+                    return;
+                }
+                annualNetworkNeeded = true;
+                nodes.set(annualNetworkId, {
+                    data: {
+                        id: annualNetworkId,
+                        type: 'network',
+                        label: 'Annual step',
+                    },
+                });
+            }
 
             function addMethodNode(elementId, method) {
                 const id = methodNodeId(elementId, method);
                 if (!nodes.has(id)) {
-                    nodes.set(id, {
-                        data: {
-                            id: id,
-                            type: 'method',
-                            element: elementId,
-                            method: method,
-                            methodLabel: METHOD_LABELS[method] || method,
-                            label: elementLabel(elementId) + '\n[' +
-                                (METHOD_LABELS[method] || method) + ']',
-                            color: METHOD_COLORS[method] || '#64748b',
-                        },
-                    });
+                    const data = {
+                        id: id,
+                        type: 'method',
+                        element: elementId,
+                        method: method,
+                        methodLabel: METHOD_LABELS[method] || method,
+                        label: elementLabel(elementId) + '\n[' +
+                            (METHOD_LABELS[method] || method) + ']',
+                        color: METHOD_COLORS[method] || '#64748b',
+                    };
+                    if (method === 'annual_step') {
+                        ensureAnnualNetwork();
+                        data.parent = annualNetworkId;
+                    }
+                    nodes.set(id, { data: data });
                 }
                 return id;
             }
 
-            function addOccurrenceNode(occurrenceId) {
-                const occurrence = occurrencesById.get(occurrenceId);
-                if (!occurrence) {
-                    return null;
+            function occurrenceKey(occurrence) {
+                const ids = (occurrence.variable_ids || []).slice().sort();
+                if (ids.length > 1) {
+                    return 'd:' + ids.join(',');
                 }
-                return addMethodNode(
-                    occurrence.element, occurrence.method);
+                return 'v:' + (ids[0] || occurrence.name);
             }
 
-            function addVariableNode(variableId) {
-                const variable = variablesById.get(variableId);
-                if (!variable) {
-                    return null;
+            function keyLabel(key, occurrence) {
+                if (key.indexOf('d:') === 0) {
+                    return (occurrence && occurrence.name
+                        ? occurrence.name : key.slice(2)).replace(/_/g, ' ');
                 }
-                const id = 'v:' + variable.id;
+                const vid = key.slice(2);
+                const variable = variablesById.get(vid);
+                return variable ? variableLabel(vid) :
+                    ((occurrence && occurrence.name) || vid).replace(/_/g, ' ');
+            }
+
+            function addGeneralNode(key, occurrence) {
+                const id = 'g:' + key;
                 if (!nodes.has(id)) {
                     nodes.set(id, {
                         data: {
                             id: id,
                             type: 'variable',
-                            variable: variable.id,
-                            kind: variable.kind,
-                            label: variableLabel(variable.id),
-                            color: KIND_COLORS[variable.kind] ||
-                                KIND_COLORS.general,
+                            varKind: 'general',
+                            key: key,
+                            variable: key.indexOf('v:') === 0 ? key.slice(2) : null,
+                            label: keyLabel(key, occurrence),
+                            color: KIND_COLORS.general,
                         },
                     });
                 }
                 return id;
             }
 
-            for (const edge of traceEdges) {
-                const sourceNode = addOccurrenceNode(edge.source);
-                const targetNode = addOccurrenceNode(edge.target);
-                if (!sourceNode || !targetNode) {
-                    continue;
-                }
-                if (state.showVariables) {
-                    const variableNode = addVariableNode(edge.variable);
-                    if (!variableNode) {
-                        continue;
+            function addAnnualNode(key, phase, occurrence, insideAnnual) {
+                const id = 'a:' + phase + ':' + key;
+                if (!nodes.has(id)) {
+                    const data = {
+                        id: id,
+                        type: 'variable',
+                        varKind: 'annual',
+                        phase: phase,
+                        key: key,
+                        variable: key.indexOf('v:') === 0 ? key.slice(2) : null,
+                        label: keyLabel(key, occurrence) + ' (' + phase + ')',
+                        color: KIND_COLORS.annual,
+                    };
+                    if (insideAnnual) {
+                        ensureAnnualNetwork();
+                        data.parent = annualNetworkId;
                     }
-                    graphEdges.push({
-                        data: {
-                            id: 'e:' + edge.id + ':def',
-                            source: sourceNode,
-                            target: variableNode,
-                            kind: 'define',
-                            variable: edge.variable,
-                            backward: false,
-                        },
-                    });
-                    graphEdges.push({
-                        data: {
-                            id: 'e:' + edge.id + ':acc',
-                            source: variableNode,
-                            target: targetNode,
-                            kind: 'access',
-                            variable: edge.variable,
-                            backward: !!edge.backward,
-                        },
-                    });
-                } else {
-                    graphEdges.push({
-                        data: {
-                            id: 'e:' + edge.id,
-                            source: sourceNode,
-                            target: targetNode,
-                            kind: 'direct',
-                            variable: edge.variable,
-                            backward: !!edge.backward,
-                            label: variableLabel(edge.variable),
-                        },
-                    });
+                    nodes.set(id, { data: data });
+                }
+                return id;
+            }
+
+            function addCarryNode(key, phase, occurrence, insideAnnual) {
+                const id = 'c:' + phase + ':' + key;
+                if (!nodes.has(id)) {
+                    const data = {
+                        id: id,
+                        type: 'variable',
+                        varKind: 'carry',
+                        phase: phase,
+                        key: key,
+                        variable: key.indexOf('v:') === 0 ? key.slice(2) : null,
+                        label: keyLabel(key, occurrence) + ' (' + phase + ')',
+                        color: KIND_COLORS.carry,
+                    };
+                    if (insideAnnual) {
+                        ensureAnnualNetwork();
+                        data.parent = annualNetworkId;
+                    }
+                    nodes.set(id, { data: data });
+                }
+                return id;
+            }
+
+            function addEdge(id, source, target, kind, label, backward) {
+                if (!source || !target || edges.has(id)) {
+                    return;
+                }
+                edges.set(id, {
+                    data: {
+                        id: id,
+                        source: source,
+                        target: target,
+                        kind: kind,
+                        label: label || '',
+                        backward: !!backward,
+                    },
+                });
+            }
+
+            // Implied define_carry on annual_step when prepare defines carry
+            // and the element overrides model_element_annual_step (spec).
+            const impliedAnnualDefines = [];
+            for (const occurrence of selectedOccurrences) {
+                if (occurrence.method === 'prepare' &&
+                        occurrence.direction === 'define' &&
+                        occurrence.kind === 'carry') {
+                    const element = elementsById.get(occurrence.element);
+                    if (element && element.annual_step_overridden) {
+                        impliedAnnualDefines.push({
+                            element: occurrence.element,
+                            method: 'annual_step',
+                            direction: 'define',
+                            kind: 'carry',
+                            name: occurrence.name,
+                            attr: 'model_element_define_carry',
+                            variable_ids: occurrence.variable_ids || [],
+                            _implied: true,
+                            _sourceId: occurrence.id,
+                        });
+                    }
                 }
             }
 
-            if (state.focus && state.focus.type === 'variable') {
-                addVariableNode(state.focus.id);
+            const allActions = selectedOccurrences.concat(impliedAnnualDefines);
+
+            // Ensure method nodes that are explicitly required exist.
+            // (annual_step method node for implied define_carry is required
+            // by spec; other actions create method nodes via rules below.)
+            for (const action of impliedAnnualDefines) {
+                addMethodNode(action.element, action.method);
             }
-            if (state.focus && state.focus.type === 'element') {
-                const element = elementsById.get(state.focus.id);
-                if (element) {
-                    for (const method of METHOD_ORDER) {
-                        const methodData = element.methods &&
-                            element.methods[method];
-                        if (methodData &&
-                                ((methodData.defines || []).length ||
-                                 (methodData.accesses || []).length)) {
-                            addMethodNode(element.id, method);
+
+            function applyCarryLifecycle(methodId, key, occurrence, edgeBase, mode) {
+                const initial = addCarryNode(key, 'initial', occurrence, false);
+                const thisNode = addCarryNode(key, 'this', occurrence, true);
+                const nextNode = addCarryNode(key, 'next', occurrence, true);
+                const finalNode = addCarryNode(key, 'final', occurrence, false);
+                addEdge(edgeBase + ':bi', initial, thisNode, 'initial', '', false);
+                addEdge(edgeBase + ':bn', nextNode, thisNode, 'back', 'next→this', true);
+                addEdge(edgeBase + ':nf', nextNode, finalNode, 'final', '', false);
+                if (mode === 'access_this') {
+                    addEdge(edgeBase + ':ma', thisNode, methodId, 'access',
+                        occurrence.name, false);
+                } else if (mode === 'access_next') {
+                    addEdge(edgeBase + ':ma', nextNode, methodId, 'access',
+                        occurrence.name, false);
+                } else if (mode === 'define_next') {
+                    addEdge(edgeBase + ':md', methodId, nextNode, 'define',
+                        occurrence.name, false);
+                }
+            }
+
+            for (const occurrence of allActions) {
+                const key = occurrenceKey(occurrence);
+                const attr = occurrence.attr || '';
+                const method = occurrence.method;
+                const direction = occurrence.direction;
+                const kind = occurrence.kind;
+                const name = occurrence.name;
+
+                if (method === 'prepare' || method === 'postprocess') {
+                    const methodId = addMethodNode(occurrence.element, method);
+                    if (kind === 'carry' && direction === 'define') {
+                        const initial = addCarryNode(key, 'initial', occurrence, false);
+                        addEdge('d:' + (occurrence.id || occurrence._sourceId),
+                            methodId, initial, 'define', name, false);
+                        continue;
+                    }
+                    if (direction === 'access' && attr === 'model_element_access_val') {
+                        const g = addGeneralNode(key, occurrence);
+                        addEdge('a:' + occurrence.id, g, methodId, 'access', name, false);
+                        continue;
+                    }
+                    if (direction === 'access' && attr === 'model_element_access_annual') {
+                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        addEdge('a:' + occurrence.id, all, methodId, 'access', name, false);
+                        continue;
+                    }
+                    if (direction === 'define' && attr === 'model_element_define') {
+                        const g = addGeneralNode(key, occurrence);
+                        addEdge('d:' + occurrence.id, methodId, g, 'define', name, false);
+                        continue;
+                    }
+                    if (direction === 'define' && attr === 'model_element_define_annual') {
+                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        addEdge('d:' + occurrence.id, methodId, all, 'define', name, false);
+                        continue;
+                    }
+                    // Fallback for any other val/annual general cases.
+                    if (kind === 'general') {
+                        const g = addGeneralNode(key, occurrence);
+                        if (direction === 'define') {
+                            addEdge('d:' + occurrence.id, methodId, g, 'define', name, false);
+                        } else {
+                            addEdge('a:' + occurrence.id, g, methodId, 'access', name, false);
+                        }
+                    } else if (kind === 'annual') {
+                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        if (direction === 'define') {
+                            addEdge('d:' + occurrence.id, methodId, all, 'define', name, false);
+                        } else {
+                            addEdge('a:' + occurrence.id, all, methodId, 'access', name, false);
+                        }
+                    }
+                    continue;
+                }
+
+                if (method === 'annual_step') {
+                    const methodId = addMethodNode(occurrence.element, method);
+                    if (attr === 'model_element_access_this_carry') {
+                        applyCarryLifecycle(methodId, key, occurrence,
+                            'lc:' + occurrence.id, 'access_this');
+                        continue;
+                    }
+                    if (attr === 'model_element_access_next_carry') {
+                        applyCarryLifecycle(methodId, key, occurrence,
+                            'lc:' + occurrence.id, 'access_next');
+                        continue;
+                    }
+                    if (attr === 'model_element_define_carry') {
+                        const base = occurrence._implied
+                            ? ('lc:implied:' + occurrence.element + ':' + key)
+                            : ('lc:' + occurrence.id);
+                        applyCarryLifecycle(methodId, key, occurrence,
+                            base, 'define_next');
+                        continue;
+                    }
+                    if (attr === 'model_element_access_annual') {
+                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        const thisNode = addAnnualNode(key, 'this', occurrence, true);
+                        addEdge('aa:ba:' + occurrence.id, all, thisNode, 'annual', '', false);
+                        addEdge('aa:ma:' + occurrence.id, thisNode, methodId, 'access', name, false);
+                        continue;
+                    }
+                    if (attr === 'model_element_define_annual') {
+                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        const thisNode = addAnnualNode(key, 'this', occurrence, true);
+                        addEdge('ad:am:' + occurrence.id, methodId, thisNode, 'define', name, false);
+                        addEdge('ad:tb:' + occurrence.id, thisNode, all, 'annual', '', false);
+                        continue;
+                    }
+                    if (attr === 'model_element_access_val') {
+                        const g = addGeneralNode(key, occurrence);
+                        addEdge('a:' + occurrence.id, g, methodId, 'access', name, false);
+                        continue;
+                    }
+                    // Fallbacks (should be rare/forbidden cases handled gracefully)
+                    if (kind === 'annual') {
+                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        if (direction === 'define') {
+                            addEdge('d:' + occurrence.id, methodId, all, 'define', name, false);
+                        } else {
+                            addEdge('a:' + occurrence.id, all, methodId, 'access', name, false);
+                        }
+                    } else if (kind === 'general') {
+                        const g = addGeneralNode(key, occurrence);
+                        if (direction === 'define') {
+                            addEdge('d:' + occurrence.id, methodId, g, 'define', name, false);
+                        } else {
+                            addEdge('a:' + occurrence.id, g, methodId, 'access', name, false);
                         }
                     }
                 }
@@ -1706,7 +1683,7 @@
 
             return {
                 nodes: Array.from(nodes.values()),
-                edges: graphEdges,
+                edges: Array.from(edges.values()),
             };
         }
 
@@ -1729,7 +1706,12 @@
             if (!graphModel.nodes.length) {
                 graphEl.innerHTML =
                     '<div class="mcmc-trace-graph-message">' +
-                    'No dependencies match the current focus and filters.' +
+                    (state.traceElements.length
+                        ? 'The selected elements have no define-decorated ' +
+                            'methods to show.'
+                        : 'Tick up to ' + TRACE_ELEMENT_LIMIT +
+                            ' model elements in the Trace column of the ' +
+                            'Overview table to show them here.') +
                     '</div>';
                 return;
             }
@@ -1773,7 +1755,16 @@
                 if (nodeData.type === 'method') {
                     showMethodDetails(nodeData.element, nodeData.method);
                 } else if (nodeData.type === 'variable') {
-                    showVariableDetails(nodeData.variable);
+                    if (nodeData.variable && variablesById.has(nodeData.variable)) {
+                        showVariableDetails(nodeData.variable);
+                    } else {
+                        detailsEl.innerHTML =
+                            '<h3>' + esc(nodeData.label || 'Variable') + '</h3>' +
+                            '<div class="mcmc-details-meta">' +
+                            esc(nodeData.varKind || 'variable') +
+                            (nodeData.phase ? ' · ' + esc(nodeData.phase) : '') +
+                            '</div>';
+                    }
                 }
             });
 
@@ -1999,175 +1990,17 @@
          * Trace: path finder
          * ---------------------------------------------------------------- */
 
-        function elementAdjacency(allowBackward) {
-            const adjacency = new Map();
-            for (const edge of edges) {
-                if (!allowBackward && edge.backward) {
-                    continue;
-                }
-                if (edge.source_element === edge.target_element) {
-                    continue;
-                }
-                if (!adjacency.has(edge.source_element)) {
-                    adjacency.set(edge.source_element, new Set());
-                }
-                adjacency.get(edge.source_element).add(edge.target_element);
-            }
-            return adjacency;
-        }
 
-        function findDependencyPaths(fromId, toId, allowBackward) {
-            if (fromId === toId) {
-                return {
-                    paths: [[fromId]],
-                    distance: 0,
-                    from: fromId,
-                    to: toId,
-                };
-            }
-            const adjacency = elementAdjacency(allowBackward);
-            const distance = new Map();
-            distance.set(fromId, 0);
-            const queue = [fromId];
-            while (queue.length) {
-                const id = queue.shift();
-                for (const next of adjacency.get(id) || []) {
-                    if (!distance.has(next)) {
-                        distance.set(next, distance.get(id) + 1);
-                        queue.push(next);
-                    }
-                }
-            }
-            if (!distance.has(toId)) {
-                return {
-                    paths: [],
-                    distance: null,
-                    from: fromId,
-                    to: toId,
-                };
-            }
 
-            const maxLength = distance.get(toId) + 1;
-            const paths = [];
-            const stack = [fromId];
-            const visited = new Set([fromId]);
-            let steps = 0;
 
-            function dfs(id) {
-                if (paths.length >= MAX_PATHS ||
-                        steps >= MAX_PATH_SEARCH_STEPS) {
-                    return;
-                }
-                steps += 1;
-                if (id === toId) {
-                    paths.push(stack.slice());
-                    return;
-                }
-                if (stack.length - 1 >= maxLength) {
-                    return;
-                }
-                for (const next of adjacency.get(id) || []) {
-                    if (visited.has(next)) {
-                        continue;
-                    }
-                    visited.add(next);
-                    stack.push(next);
-                    dfs(next);
-                    stack.pop();
-                    visited.delete(next);
-                }
-            }
 
-            dfs(fromId);
-            paths.sort(function (a, b) {
-                return a.length - b.length;
-            });
-            return {
-                paths: paths.slice(0, MAX_PATHS),
-                distance: distance.get(toId),
-                from: fromId,
-                to: toId,
-            };
-        }
-
-        function renderPathResults(result) {
-            if (!result) {
-                pathResultsEl.innerHTML = '';
-                return;
-            }
-            if (!result.paths.length) {
-                pathResultsEl.innerHTML =
-                    '<div class="mcmc-path-results-inner">' +
-                    '<p class="mcmc-path-message">No directed path from ' +
-                    '<strong>' + esc(elementLabel(result.from)) +
-                    '</strong> to <strong>' +
-                    esc(elementLabel(result.to)) + '</strong>. ' +
-                    'Try enabling carry / backward links.</p>' +
-                    '</div>';
-                return;
-            }
-            const items = result.paths.map(function (path, index) {
-                const label = path.map(function (elementId, pathIndex) {
-                    return (pathIndex
-                        ? '<span class="mcmc-path-arrow-char">\u2192</span> '
-                        : '') + esc(elementLabel(elementId));
-                }).join(' ');
-                return '<li><button type="button" class="mcmc-path" ' +
-                    'data-path-index="' + index + '">' + label +
-                    '</button></li>';
-            }).join('');
-            pathResultsEl.innerHTML =
-                '<div class="mcmc-path-results-inner">' +
-                    '<h4>' + result.paths.length + ' path' +
-                        (result.paths.length === 1 ? '' : 's') +
-                        ' \u00b7 shortest ' + result.distance +
-                        ' hop' + (result.distance === 1 ? '' : 's') +
-                    '</h4>' +
-                    '<ul class="mcmc-path-list">' + items + '</ul>' +
-                '</div>';
-        }
-
-        function runPathFinder() {
-            const pathFrom = tracePane.querySelector(
-                '[data-role="pathFrom"]');
-            const pathTo = tracePane.querySelector(
-                '[data-role="pathTo"]');
-            const pathBackward = tracePane.querySelector(
-                '[data-role="pathBackward"]');
-            const fromId = pathFrom.value;
-            const toId = pathTo.value;
-            state.pathFrom = fromId;
-            state.pathTo = toId;
-            state.pathResults = findDependencyPaths(
-                fromId, toId, pathBackward.checked);
-            renderPathResults(state.pathResults);
-        }
-
-        function selectPath(index) {
-            const result = state.pathResults;
-            if (!result || !result.paths[index]) {
-                return;
-            }
-            const path = result.paths[index];
-            state.traceFilter = {
-                kind: 'path',
-                path: path,
-                label: path.map(elementLabel).join(' \u2192 '),
-            };
-            state.focus = { type: 'element', id: path[0] };
-            syncTraceControls();
-            renderTrace();
-            updateUrl();
-            graphEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
 
         /* -----------------------------------------------------------------
          * Trace: rendering
          * ---------------------------------------------------------------- */
 
         function renderTrace() {
-            const traceEdges = selectedTraceEdges();
-            const graphModel = buildGraphModel(traceEdges);
+            const graphModel = buildSelectionGraph();
             renderGraph(graphModel);
             showFocusDetails();
             renderFilterBar();
