@@ -1248,23 +1248,6 @@
                 },
             },
             {
-                selector: 'node[type="network"]',
-                style: {
-                    'background-color': 'rgba(247, 249, 251, 0.72)',
-                    'background-opacity': 0.6,
-                    'border-color': '#94a3b8',
-                    'border-style': 'dashed',
-                    'border-width': 1.5,
-                    'color': '#475569',
-                    'font-size': 11,
-                    'font-weight': 700,
-                    'label': 'data(label)',
-                    'padding': '1.4rem',
-                    'text-halign': 'left',
-                    'text-valign': 'top',
-                },
-            },
-            {
                 selector: 'node.focus-node',
                 style: {
                     'border-color': '#111827',
@@ -1379,41 +1362,21 @@
                 return selected.has(o.element);
             });
 
-            const annualNetworkId = 'annual-step-network';
-            let annualNetworkNeeded = false;
-
-            function ensureAnnualNetwork() {
-                if (annualNetworkNeeded) {
-                    return;
-                }
-                annualNetworkNeeded = true;
-                nodes.set(annualNetworkId, {
-                    data: {
-                        id: annualNetworkId,
-                        type: 'network',
-                        label: 'Annual step',
-                    },
-                });
-            }
-
             function addMethodNode(elementId, method) {
                 const id = methodNodeId(elementId, method);
                 if (!nodes.has(id)) {
-                    const data = {
-                        id: id,
-                        type: 'method',
-                        element: elementId,
-                        method: method,
-                        methodLabel: METHOD_LABELS[method] || method,
-                        label: elementLabel(elementId) + '\n[' +
-                            (METHOD_LABELS[method] || method) + ']',
-                        color: METHOD_COLORS[method] || '#64748b',
-                    };
-                    if (method === 'annual_step') {
-                        ensureAnnualNetwork();
-                        data.parent = annualNetworkId;
-                    }
-                    nodes.set(id, { data: data });
+                    nodes.set(id, {
+                        data: {
+                            id: id,
+                            type: 'method',
+                            element: elementId,
+                            method: method,
+                            methodLabel: METHOD_LABELS[method] || method,
+                            label: elementLabel(elementId) + '\n[' +
+                                (METHOD_LABELS[method] || method) + ']',
+                            color: METHOD_COLORS[method] || '#64748b',
+                        },
+                    });
                 }
                 return id;
             }
@@ -1455,54 +1418,55 @@
                 return id;
             }
 
-            function addAnnualNode(key, phase, occurrence, insideAnnual) {
+            function addAnnualNode(key, phase, occurrence) {
                 const id = 'a:' + phase + ':' + key;
                 if (!nodes.has(id)) {
-                    const data = {
-                        id: id,
-                        type: 'variable',
-                        varKind: 'annual',
-                        phase: phase,
-                        key: key,
-                        variable: key.indexOf('v:') === 0 ? key.slice(2) : null,
-                        label: keyLabel(key, occurrence) + ' (' + phase + ')',
-                        color: KIND_COLORS.annual,
-                    };
-                    if (insideAnnual) {
-                        ensureAnnualNetwork();
-                        data.parent = annualNetworkId;
-                    }
-                    nodes.set(id, { data: data });
+                    nodes.set(id, {
+                        data: {
+                            id: id,
+                            type: 'variable',
+                            varKind: 'annual',
+                            phase: phase,
+                            key: key,
+                            variable: key.indexOf('v:') === 0 ? key.slice(2) : null,
+                            label: keyLabel(key, occurrence) + ' (' + phase + ')',
+                            color: KIND_COLORS.annual,
+                        },
+                    });
                 }
                 return id;
             }
 
-            function addCarryNode(key, phase, occurrence, insideAnnual) {
+            function addCarryNode(key, phase, occurrence) {
                 const id = 'c:' + phase + ':' + key;
                 if (!nodes.has(id)) {
-                    const data = {
-                        id: id,
-                        type: 'variable',
-                        varKind: 'carry',
-                        phase: phase,
-                        key: key,
-                        variable: key.indexOf('v:') === 0 ? key.slice(2) : null,
-                        label: keyLabel(key, occurrence) + ' (' + phase + ')',
-                        color: KIND_COLORS.carry,
-                    };
-                    if (insideAnnual) {
-                        ensureAnnualNetwork();
-                        data.parent = annualNetworkId;
-                    }
-                    nodes.set(id, { data: data });
+                    nodes.set(id, {
+                        data: {
+                            id: id,
+                            type: 'variable',
+                            varKind: 'carry',
+                            phase: phase,
+                            key: key,
+                            variable: key.indexOf('v:') === 0 ? key.slice(2) : null,
+                            label: keyLabel(key, occurrence) + ' (' + phase + ')',
+                            color: KIND_COLORS.carry,
+                        },
+                    });
                 }
                 return id;
             }
 
+            const edgePairs = new Set();
+
             function addEdge(id, source, target, kind, label, backward) {
-                if (!source || !target || edges.has(id)) {
+                if (!source || !target) {
                     return;
                 }
+                const pair = source + '\0' + target;
+                if (edgePairs.has(pair)) {
+                    return;
+                }
+                edgePairs.add(pair);
                 edges.set(id, {
                     data: {
                         id: id,
@@ -1549,10 +1513,10 @@
             }
 
             function applyCarryLifecycle(methodId, key, occurrence, edgeBase, mode) {
-                const initial = addCarryNode(key, 'initial', occurrence, false);
-                const thisNode = addCarryNode(key, 'this', occurrence, true);
-                const nextNode = addCarryNode(key, 'next', occurrence, true);
-                const finalNode = addCarryNode(key, 'final', occurrence, false);
+                const initial = addCarryNode(key, 'initial', occurrence);
+                const thisNode = addCarryNode(key, 'this', occurrence);
+                const nextNode = addCarryNode(key, 'next', occurrence);
+                const finalNode = addCarryNode(key, 'final', occurrence);
                 addEdge(edgeBase + ':bi', initial, thisNode, 'initial', '', false);
                 addEdge(edgeBase + ':bn', nextNode, thisNode, 'back', 'next→this', true);
                 addEdge(edgeBase + ':nf', nextNode, finalNode, 'final', '', false);
@@ -1579,7 +1543,7 @@
                 if (method === 'prepare' || method === 'postprocess') {
                     const methodId = addMethodNode(occurrence.element, method);
                     if (kind === 'carry' && direction === 'define') {
-                        const initial = addCarryNode(key, 'initial', occurrence, false);
+                        const initial = addCarryNode(key, 'initial', occurrence);
                         addEdge('d:' + (occurrence.id || occurrence._sourceId),
                             methodId, initial, 'define', name, false);
                         continue;
@@ -1590,7 +1554,7 @@
                         continue;
                     }
                     if (direction === 'access' && attr === 'model_element_access_annual') {
-                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        const all = addAnnualNode(key, 'all', occurrence);
                         addEdge('a:' + occurrence.id, all, methodId, 'access', name, false);
                         continue;
                     }
@@ -1600,7 +1564,7 @@
                         continue;
                     }
                     if (direction === 'define' && attr === 'model_element_define_annual') {
-                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        const all = addAnnualNode(key, 'all', occurrence);
                         addEdge('d:' + occurrence.id, methodId, all, 'define', name, false);
                         continue;
                     }
@@ -1613,7 +1577,7 @@
                             addEdge('a:' + occurrence.id, g, methodId, 'access', name, false);
                         }
                     } else if (kind === 'annual') {
-                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        const all = addAnnualNode(key, 'all', occurrence);
                         if (direction === 'define') {
                             addEdge('d:' + occurrence.id, methodId, all, 'define', name, false);
                         } else {
@@ -1644,15 +1608,15 @@
                         continue;
                     }
                     if (attr === 'model_element_access_annual') {
-                        const all = addAnnualNode(key, 'all', occurrence, false);
-                        const thisNode = addAnnualNode(key, 'this', occurrence, true);
+                        const all = addAnnualNode(key, 'all', occurrence);
+                        const thisNode = addAnnualNode(key, 'this', occurrence);
                         addEdge('aa:ba:' + occurrence.id, all, thisNode, 'annual', '', false);
                         addEdge('aa:ma:' + occurrence.id, thisNode, methodId, 'access', name, false);
                         continue;
                     }
                     if (attr === 'model_element_define_annual') {
-                        const all = addAnnualNode(key, 'all', occurrence, false);
-                        const thisNode = addAnnualNode(key, 'this', occurrence, true);
+                        const all = addAnnualNode(key, 'all', occurrence);
+                        const thisNode = addAnnualNode(key, 'this', occurrence);
                         addEdge('ad:am:' + occurrence.id, methodId, thisNode, 'define', name, false);
                         addEdge('ad:tb:' + occurrence.id, thisNode, all, 'annual', '', false);
                         continue;
@@ -1664,7 +1628,7 @@
                     }
                     // Fallbacks (should be rare/forbidden cases handled gracefully)
                     if (kind === 'annual') {
-                        const all = addAnnualNode(key, 'all', occurrence, false);
+                        const all = addAnnualNode(key, 'all', occurrence);
                         if (direction === 'define') {
                             addEdge('d:' + occurrence.id, methodId, all, 'define', name, false);
                         } else {
@@ -1681,10 +1645,274 @@
                 }
             }
 
-            return {
+                return {
                 nodes: Array.from(nodes.values()),
                 edges: Array.from(edges.values()),
             };
+        }
+
+        /*
+         * Grid layout for the Trace graph.  The rules are in
+         * design/detailed_model_element_layout.txt.  Rows are assigned in
+         * section order A, B, C, D, E; columns go directly below a node's
+         * first placed neighbour when that grid point is free, otherwise to
+         * the next free grid point on the right.
+         */
+        const GRID_SPACING_X = 200;
+        const GRID_SPACING_Y = 110;
+        const SECTION_RANK = { A: 0, B: 1, C: 2, D: 3, E: 4 };
+        const METHOD_SECTION = {
+            prepare: 'A',
+            annual_step: 'C',
+            postprocess: 'E',
+        };
+
+        function computeGridLayout(graphModel) {
+            const nodeData = new Map();
+            for (const node of graphModel.nodes) {
+                nodeData.set(node.data.id, node.data);
+            }
+            const inEdges = new Map();
+            const outEdges = new Map();
+            for (const id of nodeData.keys()) {
+                inEdges.set(id, []);
+                outEdges.set(id, []);
+            }
+            for (const edge of graphModel.edges) {
+                if (edge.data.kind === 'back') {
+                    continue;
+                }
+                inEdges.get(edge.data.target).push(edge.data);
+                outEdges.get(edge.data.source).push(edge.data);
+            }
+
+            // Kahn's algorithm on the graph without next->this back edges.
+            const indegree = new Map();
+            const queue = [];
+            for (const id of nodeData.keys()) {
+                indegree.set(id, inEdges.get(id).length);
+                if (indegree.get(id) === 0) {
+                    queue.push(id);
+                }
+            }
+            const order = [];
+            for (let i = 0; i < queue.length; i++) {
+                const id = queue[i];
+                order.push(id);
+                for (const edge of outEdges.get(id)) {
+                    const deg = indegree.get(edge.target) - 1;
+                    indegree.set(edge.target, deg);
+                    if (deg === 0) {
+                        queue.push(edge.target);
+                    }
+                }
+            }
+            if (order.length !== nodeData.size) {
+                throw new Error('the trace graph contains a cycle');
+            }
+
+            const isMethod = (id) => nodeData.get(id).type === 'method';
+            const isAnnualThis = (id) => {
+                const d = nodeData.get(id);
+                return d.type === 'variable' && d.varKind === 'annual' &&
+                    d.phase === 'this';
+            };
+            const definerOf = (id) => {
+                const edge = inEdges.get(id).find(
+                    (e) => e.kind === 'define' && isMethod(e.source));
+                return edge ? edge.source : null;
+            };
+
+            function earliestConsumerSection(id) {
+                let best = null;
+                for (const edge of outEdges.get(id)) {
+                    const section = sectionOf(edge.target);
+                    if (best === null ||
+                            SECTION_RANK[section] < SECTION_RANK[best]) {
+                        best = section;
+                    }
+                }
+                return best || 'A';
+            }
+
+            // Section of each node.  FEED marks inputs that feed a B node;
+            // they are placed on the row immediately above section B.
+            function sectionOf(id) {
+                const d = nodeData.get(id);
+                if (d.type === 'method') {
+                    return METHOD_SECTION[d.method];
+                }
+                const definer = definerOf(id);
+                if (d.varKind === 'carry') {
+                    if (d.phase === 'this') {
+                        return 'B';
+                    }
+                    if (d.phase === 'final') {
+                        return 'D';
+                    }
+                    if (d.phase === 'next') {
+                        return 'C';
+                    }
+                    return definer ? 'A' : 'FEED';
+                }
+                if (isAnnualThis(id)) {
+                    return definer ? 'C' : 'B';
+                }
+                if (definer) {
+                    return METHOD_SECTION[nodeData.get(definer).method];
+                }
+                if (inEdges.get(id).some((e) => isAnnualThis(e.source))) {
+                    return 'D';
+                }
+                if (outEdges.get(id).some((e) => isAnnualThis(e.target))) {
+                    return 'FEED';
+                }
+                return earliestConsumerSection(id);
+            }
+
+            const sections = new Map();
+            for (const id of order) {
+                sections.set(id, sectionOf(id));
+            }
+            const members = (section) => order.filter(
+                (id) => sections.get(id) === section);
+
+            // Rows.  A method sits one row below its base (the section's
+            // non-method first row); every other node sits at or below the
+            // row of its inputs plus one.
+            const level = new Map();
+            const methodRows = new Set();
+            function place(id, base) {
+                let row = isMethod(id) ? base + 1 : base;
+                for (const edge of inEdges.get(id)) {
+                    if (level.has(edge.source)) {
+                        row = Math.max(row, level.get(edge.source) + 1);
+                    }
+                }
+                level.set(id, row);
+                if (isMethod(id)) {
+                    methodRows.add(row);
+                }
+            }
+            const maxRow = (ids) => Math.max(...ids.map((id) => level.get(id)));
+            function sectionEnd(lastRow) {
+                const endRow = methodRows.has(lastRow) ? lastRow + 1 : lastRow;
+                return endRow + 1;
+            }
+
+            let cursor = 0;
+
+            const sectionA = members('A');
+            for (const id of sectionA) {
+                place(id, 0);
+            }
+            if (sectionA.length) {
+                cursor = sectionEnd(maxRow(sectionA));
+            }
+
+            const sectionB = members('B');
+            const feeders = members('FEED');
+            if (sectionB.length) {
+                let row = cursor;
+                if (feeders.length && row === 0) {
+                    row = 1;
+                }
+                for (const id of sectionB) {
+                    level.set(id, row);
+                }
+                for (const id of feeders) {
+                    level.set(id, row - 1);
+                }
+                cursor = row + 1;
+            }
+
+            const sectionC = members('C');
+            const cBase = cursor;
+            for (const id of sectionC) {
+                place(id, cBase);
+            }
+            if (sectionC.length) {
+                cursor = sectionEnd(maxRow(sectionC));
+            }
+
+            const sectionD = members('D');
+            if (sectionD.length) {
+                for (const id of sectionD) {
+                    level.set(id, cursor);
+                }
+                cursor += 1;
+            }
+
+            const sectionE = members('E');
+            for (const id of sectionE) {
+                place(id, cursor);
+            }
+
+            for (const id of nodeData.keys()) {
+                if (!level.has(id)) {
+                    throw new Error('unplaced trace node ' + id);
+                }
+            }
+
+            // Columns.  Directly below the first placed neighbour when that
+            // grid point is free, otherwise the next free point on the right.
+            const cols = new Map();
+            const taken = new Map();
+            function claimColumn(row, preferred) {
+                if (!taken.has(row)) {
+                    taken.set(row, new Set());
+                }
+                const used = taken.get(row);
+                let col = preferred === undefined ? 0 : preferred;
+                while (used.has(col)) {
+                    col++;
+                }
+                used.add(col);
+                return col;
+            }
+            function placeColumn(id, neighbourIds) {
+                let preferred;
+                for (const neighbour of neighbourIds) {
+                    if (cols.has(neighbour)) {
+                        preferred = cols.get(neighbour);
+                        break;
+                    }
+                }
+                cols.set(id, claimColumn(level.get(id), preferred));
+            }
+            // Top to bottom, so each node sees its neighbour above (or, for
+            // feeders, its neighbour below) already placed.  Within a row the
+            // carry-this/carry-final pairs go first, feeders last.
+            const priorityOf = (id) => {
+                if (sections.get(id) === 'FEED') {
+                    return 2;
+                }
+                const d = nodeData.get(id);
+                const paired = d.varKind === 'carry' &&
+                    (d.phase === 'this' || d.phase === 'final');
+                return paired ? 0 : 1;
+            };
+            const columnOrder = order
+                .map((id, index) => ({ id, index }))
+                .sort((a, b) => level.get(a.id) - level.get(b.id) ||
+                    priorityOf(a.id) - priorityOf(b.id) ||
+                    a.index - b.index)
+                .map((item) => item.id);
+            for (const id of columnOrder) {
+                const neighbours = sections.get(id) === 'FEED'
+                    ? outEdges.get(id).map((e) => e.target)
+                    : inEdges.get(id).map((e) => e.source);
+                placeColumn(id, neighbours);
+            }
+
+            const positions = {};
+            for (const id of nodeData.keys()) {
+                positions[id] = {
+                    x: cols.get(id) * GRID_SPACING_X,
+                    y: level.get(id) * GRID_SPACING_Y,
+                };
+            }
+            return positions;
         }
 
         function renderGraph(graphModel) {
@@ -1716,19 +1944,29 @@
                 return;
             }
 
+            // Compute grid-based layout positions
+            const positions = computeGridLayout(graphModel);
+
+            // Add positions to node data
             const elementsForCy = graphModel.nodes.concat(graphModel.edges);
+            for (const el of elementsForCy) {
+                if (!el.data.source && positions[el.data.id]) {
+                    el.position = positions[el.data.id];
+                }
+            }
+
             cy = window.cytoscape({
                 container: graphEl,
                 elements: elementsForCy,
                 style: CY_STYLE,
                 layout: {
-                    name: 'breadthfirst',
-                    directed: true,
-                    padding: 24,
-                    spacingFactor: 1.15,
-                    nodeDimensionsIncludeLabels: true,
-                    animate: false,
+                    name: 'preset',
+                    positions: function(node) {
+                        return positions[node.data('id')] || { x: 0, y: 0 };
+                    },
                     fit: true,
+                    padding: 24,
+                    animate: false,
                 },
                 minZoom: 0.15,
                 maxZoom: 2.5,

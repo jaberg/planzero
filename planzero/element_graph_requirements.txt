@@ -91,11 +91,11 @@ then that method should also be considered to also have a `define_carry` decorat
 If a model_element_annual_step method is decorated by
 `access_this_carry`
 then there must be
-(a) a method node for that method of that model element inside of an "annual step" nested graph,
-(b) an "initial" carry node for the varkey_property-decorated method outside of the "annual step" nested graph,
-(c) a "this" carry node for the varkey_property-decorated method inside of the "annual step" nested graph,
-(d) a "next" carry node for the varkey_property-decorated method inside of the "annual step" nested graph,
-(e) a "final" carry node for the varkey_property-decorated method outside of the "annual step" nested graph.
+(a) a method node for that method of that model element,
+(b) an "initial" carry node for the varkey_property-decorated method,
+(c) a "this" carry node for the varkey_property-decorated method,
+(d) a "next" carry node for the varkey_property-decorated method,
+(e) a "final" carry node for the varkey_property-decorated method.
 A directed edge should connect from node (b) to node (c).
 A dotted backward edge should connect from node (d) to node (c).
 A directed edge should connect from node (d) to node (e).
@@ -105,11 +105,11 @@ annotated according to the varkey property.
 If a model_element_annual_step method is decorated by
 `access_next_carry`
 then there must be
-(a) a method node for that method of that model element inside of an "annual step" nested graph,
-(b) an "initial" carry node for the varkey_property-decorated method outside of the "annual step" nested graph,
-(c) a "this" carry node for the varkey_property-decorated method inside of the "annual step" nested graph,
-(d) a "next" carry node for the varkey_property-decorated method inside of the "annual step" nested graph,
-(e) a "final" carry node for the varkey_property-decorated method outside of the "annual step" nested graph.
+(a) a method node for that method of that model element,
+(b) an "initial" carry node for the varkey_property-decorated method,
+(c) a "this" carry node for the varkey_property-decorated method,
+(d) a "next" carry node for the varkey_property-decorated method,
+(e) a "final" carry node for the varkey_property-decorated method.
 A directed edge should connect from node (b) to node (c).
 A dotted backward edge should connect from node (d) to node (c).
 A directed edge should connect from node (d) to node (e).
@@ -125,11 +125,11 @@ If a model_element_annual_step method is decorated by
 or if the model_element_annual_step method already corresponds to a node and it is the model element's model_element_prepare method that is decorated
 by `define_carry`
 then there must be
-(a) a method node for that method of that model element inside of an "annual step" nested graph,
-(b) an "initial" carry node for the varkey_property-decorated method outside of the "annual step" nested graph,
-(c) a "this" carry node for the varkey_property-decorated method inside of the "annual step" nested graph,
-(d) a "next" carry node for the varkey_property-decorated method inside of the "annual step" nested graph,
-(e) a "final" carry node for the varkey_property-decorated method outside of the "annual step" nested graph.
+(a) a method node for that method of that model element,
+(b) an "initial" carry node for the varkey_property-decorated method,
+(c) a "this" carry node for the varkey_property-decorated method,
+(d) a "next" carry node for the varkey_property-decorated method,
+(e) a "final" carry node for the varkey_property-decorated method.
 A directed edge should connect from node (b) to node (c).
 A dotted backward edge should connect from node (d) to node (c).
 A directed edge should connect from node (d) to node (e).
@@ -139,9 +139,9 @@ annotated according to the varkey property.
 If a model_element_annual_step method is decorated by
 `access_annual`
 then there must be
-(a) a method node for that method of that model element inside of an "annual step" nested graph,
-(b) an "all" annual node for the varkey_property-decorated method, outside of the "annual step" nested graph,
-(c) a "this" annual node for the varkey_property-decorated method, inside of the "annual step" nested graph.
+(a) a method node for that method of that model element,
+(b) an "all" annual node for the varkey_property-decorated method,
+(c) a "this" annual node for the varkey_property-decorated method.
 A directed edge should connect from node (b) to node (c).
 A directed edge should connect from node (c) to node (a),
 annotated according to the varkey property.
@@ -149,17 +149,17 @@ annotated according to the varkey property.
 If a model_element_annual_step method is decorated by
 `access_val`
 then there must be
-(a) a method node for that method of that model element inside of an "annual step" nested graph,
-(b) a general node for that varkey_property-decorated method, outside the "annual step" nested graph.
+(a) a method node for that method of that model element,
+(b) a general node for that varkey_property-decorated method.
 A directed edge should connect from node (b) to node (a),
 annotated according to the varkey property.
 
 If a model_element_annual_step method is decorated by
 `define_annual`
 then there must be
-(a) a method node for that method of that model element inside of an "annual step" nested graph,
-(b) an "all" annual node for the varkey_property-decorated method, outside of the "annual step" nested graph,
-(c) a "this" annual node for the varkey_property-decorated method, inside of the "annual step" nested graph.
+(a) a method node for that method of that model element,
+(b) an "all" annual node for the varkey_property-decorated method,
+(c) a "this" annual node for the varkey_property-decorated method.
 A directed edge should connect from node (c) to node (b).
 A directed edge should connect from node (a) to node (c),
 annotated according to the varkey property.
