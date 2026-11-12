@@ -1654,9 +1654,11 @@
         /*
          * Grid layout for the Trace graph.  The rules are in
          * design/detailed_model_element_layout.txt.  Rows are assigned in
-         * section order A, B, C, D, E; columns go directly below a node's
-         * first placed neighbour when that grid point is free, otherwise to
-         * the next free grid point on the right.
+         * section order A, B, C, D, E.  Each model element's method nodes
+         * share one column, and element columns follow the order of the
+         * trace selection.  Other nodes go directly below their first placed
+         * neighbour when that grid point is free, otherwise to the next free
+         * grid point on the right, and otherwise to the leftmost free point.
          */
         const GRID_SPACING_X = 200;
         const GRID_SPACING_Y = 110;
@@ -1667,7 +1669,7 @@
             postprocess: 'E',
         };
 
-        function computeGridLayout(graphModel) {
+        function computeGridLayout(graphModel, elementOrder) {
             const nodeData = new Map();
             for (const node of graphModel.nodes) {
                 nodeData.set(node.data.id, node.data);
@@ -1854,22 +1856,53 @@
                 }
             }
 
-            // Columns.  Directly below the first placed neighbour when that
-            // grid point is free, otherwise the next free point on the right.
+            // Columns.  Method nodes take their element's column, and element
+            // columns follow the order of the trace selection.  Non-method
+            // nodes never share a row with methods, so they can use any
+            // column; they go directly below their first placed neighbour
+            // when that grid point is free, otherwise to the next free grid
+            // point on the right.
+            const methodElements = new Set();
+            for (const d of nodeData.values()) {
+                if (d.type === 'method') {
+                    methodElements.add(d.element);
+                }
+            }
+            const elementRank = new Map();
+            for (const elementId of elementOrder.concat(Array.from(methodElements))) {
+                if (methodElements.has(elementId) && !elementRank.has(elementId)) {
+                    elementRank.set(elementId, elementRank.size);
+                }
+            }
+
             const cols = new Map();
             const taken = new Map();
-            function claimColumn(row, preferred) {
+            function claim(row, col) {
                 if (!taken.has(row)) {
                     taken.set(row, new Set());
                 }
                 const used = taken.get(row);
-                let col = preferred === undefined ? 0 : preferred;
-                while (used.has(col)) {
-                    col++;
+                if (used.has(col)) {
+                    throw new Error('grid point ' + row + ',' + col + ' is shared');
                 }
                 used.add(col);
                 return col;
             }
+            function claimColumn(row, preferred) {
+                const used = taken.get(row) || new Set();
+                let col = preferred === undefined ? 0 : preferred;
+                while (used.has(col)) {
+                    col++;
+                }
+                return claim(row, col);
+            }
+            for (const id of nodeData.keys()) {
+                if (isMethod(id)) {
+                    cols.set(id, claim(level.get(id),
+                        elementRank.get(nodeData.get(id).element)));
+                }
+            }
+
             function placeColumn(id, neighbourIds) {
                 let preferred;
                 for (const neighbour of neighbourIds) {
@@ -1899,6 +1932,9 @@
                     a.index - b.index)
                 .map((item) => item.id);
             for (const id of columnOrder) {
+                if (isMethod(id)) {
+                    continue;
+                }
                 const neighbours = sections.get(id) === 'FEED'
                     ? outEdges.get(id).map((e) => e.target)
                     : inEdges.get(id).map((e) => e.source);
@@ -1945,7 +1981,7 @@
             }
 
             // Compute grid-based layout positions
-            const positions = computeGridLayout(graphModel);
+            const positions = computeGridLayout(graphModel, state.traceElements);
 
             // Add positions to node data
             const elementsForCy = graphModel.nodes.concat(graphModel.edges);

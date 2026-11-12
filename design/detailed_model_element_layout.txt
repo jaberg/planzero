@@ -28,6 +28,8 @@ Hard constraints
 * all "carry-final" and "output-annual-all" nodes must be on a single row (see below for definition of "output-annual-all" node), with no other kinds of node on that row
 * all outputs of a method node must be placed in the row immediately below that node
 * inputs (as defined above) placed according to cases (1) and (2) above
+* all of the method nodes from any one model_element must be placed in a single column, and such a column may not contain method nodes relating to multiple model elements
+* the left-to-right order of the model_element columns must match the order in which their element_ids were passed as arguments in the url of the model-explorer page request (the layout algorithm sets the spacing between them, but must not reorder them)
 
 The consequence of the hard constraints should be that the graph will have an A-B-C-D-E vertical structure, each of which may be an empty section depending on the types of nodes in the trace graph
 A: the top part of the graph will be alternating rows of non-method nodes, model_element_prepare nodes, starting with row-0 (if this section isn't empty) which will be non-method nodes with edges pointing downward into the first row of model_element_prepare nodes.
@@ -60,6 +62,7 @@ Wishes (non-constraints) for clarity of presentation
 * all edges should point downward (from row X to row Y with X < Y) with the exception of edges from a "next" carry node to a "this" carry node.
 * Recognizing that an edge starting from a method node always terminates at a non-method node, the non-method node (a) must be one row lower than the method node and (b) should be directly underneath it if possible, otherwise in the next available grid point to the right.
 * all nodes should be as high in the graph as they can be, without violating other constraints
+* all nodes should be as far to the left as they can be, without violating other constraints
 
 
 I believe that all nodes can be laid out greedily, after they have been sorted
