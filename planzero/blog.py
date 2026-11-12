@@ -132,19 +132,6 @@ class Glossary(BlogPost):
             status=BlogStatus.Planned,
             )
 
-    def efman_mermaid(self) -> str:
-        from .mermaid import render_mcmc_group_mermaid
-        from .scaling_model import Scaling_ScenarioModel
-        sm = Scaling_ScenarioModel(
-            data_cutoff=datetime.date(year=2024, month=12, day=31),
-            sectors=[],
-            num_warmup=1,
-            num_samples=1,
-            just_efman_testing=True)
-        rval = render_mcmc_group_mermaid(
-                sm,
-                "enteric_and_other_product_mfg")
-        return rval
 
 class NetZero2050Metric(BlogPost):
 

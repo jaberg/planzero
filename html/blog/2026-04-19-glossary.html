@@ -366,37 +366,6 @@ use the overview matrix to see which elements depend on which, then click a
 cell to trace the individual variables and paths.
 </p>
 
-<p>
-New diagram:
-{{ blog.efman_table() | safe}}
-</p>
-
-<p>
-New diagram:
-<pre class="mermaid">
-{{ blog.efman_mermaid() | safe}}
-</pre>
-</p>
-
-<p>
-An additional benefit of Inference Groups (beyond making inference possible) is that they 
-are, at least so far, about the right size to draw as a diagram.
-
-<pre class="mermaid">
-    flowchart TD
-    DE_scale[["Scale Bovaer (Strategy)"]] --> TS_frac_on_bovaer
-    TS_frac_on_bovaer(["Fraction of cattle on Bovaer (Time Series)"]) --> DE_cattle_enteric_emissions
-    DE_cattle_enteric_emissions["Cattle Enteric Emission Rates (Barrier)"] --> TS_cattle_emfacs
-    TS_cattle_emfacs(["Emission factor: annual methane per cattle type (Time Series)"])
-    DE_limit["Limit Bovaer Adoption (Barrier)"] --> TS_farmers_open_to_bovaer
-    TS_farmers_open_to_bovaer(["Driver: Farmers open to Bovaer (Time Series)"]) -.->|Back-link uses delayed value| DE_scale
-    TS_frac_on_bovaer --> DE_limit
-    TS_frac_on_bovaer --> DE_purchase_cost
-    DE_purchase_cost["Bovaer Purchasing (Barrier)"] --> TS_bovaer_cost
-    TS_bovaer_cost(["Cost: Annual Bovaer per cattle type (Time Series)"])
-</pre>
-</p>
-
 
 <h3 id="subphases">Computational subphases of model construction</h3>
 
