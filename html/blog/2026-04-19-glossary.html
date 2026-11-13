@@ -33,7 +33,11 @@
             <li><a href="#ablative-analysis">Ablative analysis</a></li>
         </ul>
     </li>
-    <li><a href="#appendix-full-glossary">Appendix 2: Glossary Snapshot</a></li>
+    <li><a href="#appendix-full-glossary">Appendix 2: Glossary Snapshot</a>
+        <ul>
+            <li><a href="#glossary-terms">Glossary terms</a></li>
+	</ul>
+    </li>
 </ul>
 </div>
 
@@ -96,13 +100,16 @@ so you could see that the variable in question is the number of farms in the sub
 Refer to <a href="#appendix-model-structure">Appendix 1: Model Structure</a>
 for more detail on the compositional elements of PlanZero models.
 </p>
+
 <img src="/images/2026-04-19-glossary-model-explorer-table.png"
      alt="Description" style="border: 5px solid #555;"
      width="100%">
 
 <p>
 The model explorer also features a second tab, a "Trace" tab, that
-shows the interactions between selected model elements in more detail.
+shows the interactions between selected model elements in more detail,
+including the use of variables to pass information between model elements,
+and use of those variables in specific computational subphases (screenshot below).
 </p>
 
 <img src="/images/2026-04-19-glossary-model-explorer-trace.png"
@@ -110,17 +117,18 @@ shows the interactions between selected model elements in more detail.
      width="100%">
 
 <p>
-Looking at the Trace tab screenshot, we should read construction of the variables in a model as proceeding from top to bottom,
-following the direction of the edges in the graph:
+In the Trace tab screenshot (above), variables are defined from top to bottom,
+following the direction of the edges in the graph (with the exception of dashed backward edges from "next" to "this" nodes, see
+<a href="#appendix-semantics-evaluation">Appendix 2</a>).
+The three computational subphases are:
 <ol>
-	<li>preparation computations (blue nodes, upper area) define variables that don't depend on any recursive annual definition</li>
-	<li>annual steps (teal nodes, middle area) define variables that do depend on recursive annual definitions</li>
-	<li>post-processing computations (purple nodes, lower area) define variables that are not needed until after recursive annual definitions</li>
+	<li>Preparation computations (blue nodes, upper area) define variables that don't depend on any recursive annual definition</li>
+	<li>Annual step computations (teal nodes, middle area) define variables that must be woven in among recursive annual definitions</li>
+	<li>Post-processing computations (purple nodes, lower area) define variables that are not needed until after recursive annual definitions</li>
 </ol>
-For a detailed explanation of what the screenshot reflects,
-as well as how model construction relates to probabilistic inference and data-fitting,
-refer to
-<a href="#appendix-semantics-evaluation">Appendix 2: Semantics and Evaluation</a>.
+<a href="#appendix-semantics-evaluation">Appendix 2: Semantics and Evaluation</a>
+provides more detail about how to read such graphs, as well as how model construction
+relates to probabilistic inference and data-fitting.
 For this overview, suffice it to say that the Trace tab shows the interactions between
 selected model elements and the variables accessed and defined by those elements.
 </p>
@@ -154,7 +162,7 @@ James Bergstra
 
 <h2 id="appendix-model-structure">Appendix 1: Model Structure</h2>
 
-<p>PlanZero models can be understood at the highest level as comprising:
+<p>{{siteref("PlanZero_Model", "PlanZero models")|safe}} can be understood at the highest level as comprising:
 <ul>
 	<li>Model Variables: specific numbers and distributions over possible numbers</li>
 	<li>Model Elements: mathematical relationships between variables</li>
@@ -175,20 +183,65 @@ make up a PlanZero model.
 
 <h3 id="model-variables">Model Variables</h3>
 
-<p>
-The purpose of PlanZero models is to model three kinds of quantities:
-<ul>
-	<li>[Always] Annual emission amounts associated with sector-gas-region combinations</li>
-	<li>[Sometimes] Annual cashflows associated with Special Project Entities (SPEs)</li>
-	<li>[Typically] Miscellaneous other quantities of relevance to specific sector-gas-region models</li>
-</ul>
-</p>
+<h4>Taxonomy of Model Variables by knowledge and observation</h4>
+
+<pre class="mermaid">
+graph TD
+      A["Model Variable"]
+
+      B["Known"]
+      A --> B
+
+      C["Unknown"]
+      A --> C
+
+      D["Observed"]
+      C --> D
+
+      E["Unobserved"]
+      C --> E
+</pre>
 
 <p>
-Annual emissions estimates are what got PlanZero modelling started, starting with the NIR-2025 data.
-PlanZero models are designed to make estimates for 
+{{siteref("Model_Variable", "Model variables")|safe}} in a PlanZero model can be classified according
+to (a) the knowledge about them in the model and (b) the availability of observation data.
+{{siteref("Known_Variable", "Known variables")|safe}} are associated with numbers that are known at the outset of modelling,
+such as data from statistical reports, and physical constants.
+If a variable depends in a known way on known variables, then it too is known.
+If, instead, a variable is modelled as a probability distribution, then it is an {{siteref("Unknown_Variable", "unknown variable")|safe}}.
+Every variable that is modelled as depending on that variable is also considered to be unknown.
+If we have data that we model as being a sample from the distribution of an unknown variable
+(or if we have a distribution from which to draw such data), then that unknown variable
+can be furthermore called an
+{{siteref("Observed_Variable", "observed variable")|safe}}.
+If it isn't observed, an unknown variable is considered to be {{siteref("Unobserved_Variable", "unobserved")|safe}}.
+The {{siteref("Joint_Distribution", "joint distribution")|safe}} over all of the unknown variables in a model
+is the probabilistic model induced by a PlanZero model.
+</p>
+
+
+<h4>Taxonomy of Model Variables by semantics</h4>
+
+<pre class="mermaid">
+graph TD
+      A["All Model Variables"]
+
+      B["Emission Variables"]
+      A --> B
+
+      C["Cashflow Variables"]
+      A -.-> C
+
+      D["Other Variables"]
+      A -.-> D
+</pre>
+
+<h5>Emission Variables</h5>
+<p>
+PlanZero models always have a full set of emissions variables, covering
 each year (from 1990 to some forecasting horizon such as 2050 or 2100), in units of ktCO2e, of each gas, from each region (province and territory), associated with each of the 71 NIR-2025 reporting sectors.
-The estimates from a given model may be more or less uncertain, but they'll all be there.
+The estimates from a given model may be more or less uncertain, but they must all be present
+in order for the pages on the site to render correctly.
 The visualizations of these estimates provide the main graphics for model summaries and per-sector summary pages featured on the site.
 I imagine at some point, a future NIR will change the reporting taxonomy
 from the 71 sectors of the NIR-2025 to some other set.
@@ -196,37 +249,47 @@ At such a time, PlanZero modelling will need to adapt to the new taxonomy in ord
 The NIR-2025 and Static-Normals models have only these emissions variables as modelling outputs.
 </p>
 
+<h5>Cashflow Variables</h5>
 <p>
-PlanZero models that contain strategies (more on strategies, below) explore how the movement of money might affect emissions.
-In these models (such as the Scaling model) there
-is a concept of Special Project Entities (SPEs),
-which are abstract economic entities with cash balances.
-PlanZero models may estimate movement of money between SPEs as a distinct kind of modelling output beyond emissions amounts.
+PlanZero models that contain strategies (more on strategies, below)
+may model how the movement of money might affect emissions.
+To use our running example of Bovaer, the Scale-Bovaer strategy works by defining
+a variable that represents the money available to fund the program to have a large available amount.
+Cash, in PlanZero models, is modelled as flowing among
+a fixed set of economic entities called 
+is a concept of {{siteref("Special_Project_Entity", "Special Project Entities (SPEs)")|safe}}.
+SPEs are abstract economic entities with cash balances.
 SPEs represent non-overlapping sets of actual or hypothetical individuals and corporate entities,
 such as e.g. "Farms administering Bovaer", "Farms not administering Bovaer", and a hypothetical federal "Bovaer Subsidy Program".
 Since PlanZero models only the flow of money from one SPE into another one, the annual sum of all cashflow is always zero.
-Cashflow estimtes can be combined with emissions estimates to estimate a strategy's efficiency of emissions reduction, in terms
-of e.g. cost per t{{CO2e}} abated.
+It is by combining cashflow estimates with emissions estimates that the PlanZero build system calculates
+a strategy's {{siteref("Emission_Reduction_Efficiency", "efficiency of emissions reduction")|safe}}, in terms of e.g. cost per t{{CO2e}} abated.
 </p>
 
+<h5>Other Variables</h5>
 <p>
-The final type of quantity, after emissions and cashflow, is, for lack of a better term: everything else.
+Beyond emissions and cashflow variables,
 A planzero model can include various other forecasts of contributing factors, or latent explanatory variables, in
 order to estimate emissions and cashflow.
 Such quantities can be modelled in various ways, and are expected to be documented where they arise by the
-so-called structural elements and strategy elements that define them. Structural elements and strategy elements
-are the subjects of the next sections.
+model elements that define them (see below).
+Other variables are necessary in PlanZero models, they are simply not directly used
+in standard visualizations of models or strategies,
+or to compute standard model metrics.
+Future work may add support for visualizing some/all of these so-called other variables to the site, but as of writing
+that functionality is not on the site.
 </p>
 
+
+<h3 id="model-elements">Model Elements</h3>
+
 <p>
-To summarize this first section on modelling outputs, PlanZero models (1) always
+To summarize this first section on model variables outputs, PlanZero models (1) always
 estimate emissions, and always do so in terms of emissions per year, per sector, per gas, and per provincial or territorial region;
 (2) sometimes estimate cashflows, but if they do so, they do so in a standard way in terms of a fixed set of SPEs; and
 (3) typically include other estimates as well, but not in a standardized way that qualify such things as full-model-level outputs.
 The next sections on strategy elements and structural elements explain how all of these variables are modelled.
 </p>
-
-<h3 id="model-elements">Model Elements</h3>
 
 <p>
 These element types are adapted from concepts from
@@ -539,7 +602,7 @@ the Posterior-phase sample distributions in an appropriate, contextualized way.
 <p>
 As of the writing of this post,
 PlanZero's <a href="/glossary/">glossary</a> defines and cross-references
-the following {{ len(planzero.glossary.registry) }} terms:
+the following {{ len(planzero.glossary.registry) }} terms.
 <table>
     <tbody>
         <tr>
@@ -552,48 +615,39 @@ the following {{ len(planzero.glossary.registry) }} terms:
 </table>
 </p>
 
-<p>
-The terms were chosen somewhat ad-hoc based on my recollection of key topics
-from posts to date.
-Terminology of emissions and greenhouse gases links to
-<a href="/blog/2026-01-21-unfccc">A Model of Greenhouse Gas Emissions</a>, from January 21.
-Terms relating to IPCC, Paris Agreements, UNFCC, CNZEAA and so on link to
-<a href="/blog/2026-02-02-cnzeaa">The Paris Agreement and the CNZEAA</a>.
-Several terms relating to NIR modelling e.g. NIR, NGGI, NEUD, NRCan, ECCC
-link implicitly and/or explicitly to NIR-modelling posts I've been writing over
-the past few months.
-Terms relating to git and GitHub relate somewhat to the previous
-"<a href="/blog/2026-04-12-about#revision-control">About This Project...</a>" post,
-but also aim to provide some onboarding documentation to future readers
-I hope to have, who might be interested in collaboration on this project.
-The glossary also defines terms that have been used implicitly in
-the recent post on <a href="/blog/2026-04-03-bovaer">Bovaer Modelling</a>,
-such as Model, Scenario, Simulation, Strategy, Barrier, and KPI.
-The glossary also defines key terms of the computational modelling framework
-that underlies PlanZero's simulation results, such as Time Series, Dynamic Element, and Scenario,
-because they are so closely related to the modelling terms, and
-they may some day be useful as preliminary developer documentation.
-</p>
-<p>
-I haven't written about how PlanZero works before, and writing about
-how it worked made me think about how it worked,
-which made me realize that it should work better.
-Writing this glossary post, has, consequently, been one of the largest
-efforts of any post written to date.
-Among many changes (see {{siteref("GH")|safe}} {{siteref("PR")|safe}}  <a href="https://github.com/jaberg/planzero/pull/78/changes">#78</a>)
-the most impactful is probably the conceptual clarification of Scenario and Simulation,
-which has led to improved visualizations, as well as the improved handling of KPIs (see below), which have enabled much better
-visualization of the impact of strategies.
-Visualizing and analyzing the impacts of strategies is one of the
-core capabilities that PlanZero needs to be good at, so I think the effort was time well spent.
-The rest of this post introduces the computational and modelling terms in
-narrative form, so that their entries in the glossary can be reasonably short,
-and link to this post for more context.
-</p>
+<h3 id="glossary-terms">Glossary Terms</h3>
 
+{% for clsname, obj in sorted(planzero.glossary.registry.items()) %}
+<h3 id="{{clsname}}">
+    {% for name in obj.pretty_names() %} {{name}}{%if not loop.last%}, {%endif%}{%endfor%}<a href="#{{clsname}}" class="anchor-link" title="Link to this section"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Chain_link_icon_slanted.png/250px-Chain_link_icon_slanted.png"
+        width="12.5px"/></a>
+</h3>
 
+{{obj.definition_html|safe}}
 
+{% if obj.code_refs %}
+    <p><strong style="color: #666;">Code References</strong>
+    <ul>
+    {% for ref_text, ref_url in obj.code_links.items() %}
+        <li><a href="{{ref_url}}">{{ref_text}}</a></li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
+{% if obj.see_also or obj.as_discussed_in_posts %}
+    <p><strong style="color: #666;">See Also</strong>
+    <ul>
+    {% for term, ref_text in sorted(obj.see_also.items()) %}
+    <li><a href="#{{planzero.glossary.aka_registry[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
+    {% endfor %}
+    {% for post_obj, hashref, descr in obj.as_discussed_in_posts %}
+    <li>[Post] <a href="{{post_obj.siteref}}{{hashref}}">{{post_obj.title}}</a> - {{descr}}</li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
 
+{% endfor %}
 
 <ul class="actions special">
     {% if prev_url_filename %}

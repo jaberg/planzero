@@ -27,7 +27,7 @@ class AKA_Registry:
             assert clsname not in self.aliases
             self.aliases[clsname] = clsname
             for alias in obj.all_names:
-                assert clsname == self.aliases.setdefault(alias, clsname)
+                assert clsname == self.aliases.setdefault(alias, clsname), (alias, clsname)
 
     def __getitem__(self, key):
         try:
@@ -37,6 +37,14 @@ class AKA_Registry:
             clsname = self.aliases[key]
         return registry[clsname]
 
+    def __contains__(self, key):
+        if key in self.aliases and self.aliases[key] in registry:
+            return True
+        self.refresh_alias_list()
+        rval = key in self.aliases and self.aliases[key] in registry
+        return rval
+
+
 aka_registry = AKA_Registry()
 
 # Block-level tags that must be flattened to inline text before they can be
@@ -44,7 +52,7 @@ aka_registry = AKA_Registry()
 # <p> blocks, so any block tag would close the surrounding paragraph).
 _BLOCK_TAG_RE = re.compile(
     r'</?(?:p|div|ul|ol|li|h[1-6]|blockquote|pre|table|thead|tbody|tr|td|th|figure|figcaption)\b[^>]*>',
-    re.I,
+    re.IGNORECASE,
 )
 
 def siteref(term, text=None):
@@ -186,6 +194,26 @@ class GlossaryTerm(BaseModel):
         if text is None:
             text = self.__class__.__name__.replace('_', ' ')
         return self._glossary_ref_markup(f'/glossary#{self.__class__.__name__}', text)
+
+
+class Ablative_Analysis(GlossaryTerm):
+    """
+    Ablative analysis in PlanZero is the study of models with and without
+    certain elements (namely strategies), in order to characterize the impact
+    of those elements on the behaviour of the whole model.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Ablation Study']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Strategy': 'Strategies within models are are ablated in order to assess their impact.',
+            'Simulation': 'Ablative analysis is part of model simulation.',
+            'Simulations_Section': 'Strategies within simulations are evaluated and characterized based on an ablative analysis.',
+        }
 
 
 class Concentrated_Distribution(GlossaryTerm):
@@ -338,6 +366,15 @@ class Dynamic_Element(GlossaryTerm):
     def code_refs(self) -> dict[str, object]:
         return {
             'Dynamic Element base class': DynamicElement,
+        }
+
+class Emission_Reduction_Efficiency(GlossaryTerm):
+    """A strategy's emission reduction efficiency is the cost (in CAD) per ton of abated {{CO2e}}"""
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Strategy_Element': 'emission reduction efficiency is one of the key metrics associated with strategies',
         }
 
 
@@ -678,8 +715,8 @@ class Model(GlossaryTerm):
         return [
             (blog.Glossary(),
              '#introduction',
-             'see sections "<a href="/blog/2026-04-19-glossary/#computation">Computation and Simulation</a>" '
-             'and "<a href="/blog/2026-04-19-glossary/#modelling">Modelling National Emissions</a>"'),
+             ('see sections "<a href="/blog/2026-04-19-glossary/#computation">Computation and Simulation</a>" '
+              'and "<a href="/blog/2026-04-19-glossary/#modelling">Modelling National Emissions</a>"')),
         ]
 
     @property
@@ -798,16 +835,15 @@ class Scenario(GlossaryTerm):
 
 
 class Model_Element(GlossaryTerm):
-    """An implementation element of a ScenarioModel,
+    """An implementation element of a PlanZero model,
     providing one or more computationl subphase implementations that define model variables.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Scenario': "the general form of PlanZero probabilistic models",
+            'PlanZero_Model': "the general form of PlanZero probabilistic models",
         }
-
 
 
 class Model_Metric(GlossaryTerm):
@@ -824,6 +860,18 @@ class Model_Metric(GlossaryTerm):
             'KPI': (
                 'A Key Performance Indicator is a standard'
                 ' time series associated with multiple models'),
+        }
+
+
+class Model_Variable(GlossaryTerm):
+    """A model variable is a known or unknown variable in a PlanZero Model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': "the general form of models on the PlanZero site",
+            'Model_Element': "the unit of modelling assumptions that relate variables in a PlanZero Model",
         }
 
 
@@ -887,6 +935,26 @@ class Git_Branch(GlossaryTerm):
         }
 
 
+class Known_Variable(GlossaryTerm):
+    """A known variable is a scalar- or vector-valued
+    term in a PlanZero model that is known from the outset of modelling,
+    with no dependency on an unknown variable.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unknown_Variable': 'A variable modelled in terms of a probability distribution',
+            'Model_Variable': 'the more general class of variables in a PlanZero Model'
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.StaticNormals(), '#appendix-notation', "Appendix 1: Probabilistic Modelling Notation"),
+        ]
+
+
 class Main_Branch(GlossaryTerm):
     """PlanZero on GitHub generally has multiple git branches.
     The "main branch" is special, in that it is the one used to deploy the
@@ -904,6 +972,34 @@ class Main_Branch(GlossaryTerm):
                 " preferred way to update the main branch of a project,"
                 " because it prompts discussion and consideration"),
         }
+
+
+class PlanZero_Model(GlossaryTerm):
+    """A PlanZero Model is the general form of model on the PlanZero site.
+    It is a graph of Model Variables and Model Elements,
+    the Unknown Variables of which make up a probabilistic model.
+    A PlanZero Model includes variables for annual emissions matching the structure of recent
+    National Inventory Reports, as well as variables for annual cashflow between economic entities called Special Project Entities (SPEs)
+    as a result of any strategies in the model, as well as any other variables involved in modelling emissions and cashflows.
+    """
+
+    @property
+    def hover_definition_html(self) -> str:
+        return "<p>A PlanZero Model is the general form of model on the PlanZero site.</p>"
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Variable': "a scalar- or vector-valued variable in a model",
+            'Model_Element': "a set of assumptions for defining one or more variables in a model",
+            'Stochastic_Model': "the joint distribution over unknown variables in a model correspond to a directed probabilistic graphical model",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#overview', "this entire post is dedicated to documenting PlanZero Models"),
+        ]
 
 
 class PlanZero_Site(GlossaryTerm):
@@ -1575,6 +1671,28 @@ class Simulation(GlossaryTerm):
         }
 
 
+class Special_Project_Entity(GlossaryTerm):
+    """SPEs are abstract economic entities with cash balances.
+    SPEs represent non-overlapping sets of actual or hypothetical individuals and corporate entities.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['SPE']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Emission_Reduction_Efficiency': 'for a strategy, the cost (in CAD) per ton of abated emissions',
+            }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#cashflow-variables', "SPEs are introduced in relation to cashflow variables"),
+        ]
+
+
 class Strategy_Element(GlossaryTerm):
     """Strategy elements are model elements within scenario models that stand for
     strategies that may be implemented or not implemented. The impact of a strategy
@@ -1612,26 +1730,6 @@ class Structural_Element(GlossaryTerm):
         return {
             'Model_Element': 'Structural elements are a type of Model Element',
             'Strategy_Element': 'Strategy elements work by overriding default values accessed by structural elements'
-        }
-
-
-class Ablative_Analysis(GlossaryTerm):
-    """
-    Ablative analysis in PlanZero is the study of models with and without
-    certain elements (namely strategies), in order to characterize the impact
-    of those elements on the behaviour of the whole model.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Ablation Study']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Strategy': 'Strategies within models are are ablated in order to assess their impact.',
-            'Simulation': 'Ablative analysis is part of model simulation.',
-            'Simulations_Section': 'Strategies within simulations are evaluated and characterized based on an ablative analysis.',
         }
 
 
@@ -1750,12 +1848,9 @@ class Observed_Variable(GlossaryTerm):
 
 class Unknown_Variable(GlossaryTerm):
     """An unknown variable is an unknown scalar- or vector-valued
-    term in a probabilistic model. Often it could be known, measured
-    or estimated, but we may lack sufficient information or equipment to do so.
-    Sometimes it's not theoretically possible to measure something (like
-    the number of cars on the road 10 years in the future,
-    because it hasn't happened yet) but we can still include it in a model
-    as an unknown variable.
+    term in a probabilistic model.
+    The model provides a probability distribution over its possible values.
+    That distribution may depend on the values of other known and unknown variables in the model.
     """
 
     @property
@@ -1763,7 +1858,7 @@ class Unknown_Variable(GlossaryTerm):
         return {
             'Stochastic_Model': 'A model associates unknown variables with probability distributions',
             'Probability_Distribution': 'In order to reason about a variable without knowing exactly what it is, we assume a set of values that it might have using a probability distribution.',
-            'Observed_Variable': 'A variable for which we have some [noisy] data exemplifying its probable value',
+            'Observed_Variable': 'A variable for which we have some [generally-]noisy data exemplifying its probable value',
             'Unobserved_Variable': 'A variable for which we have no direct data',
         }
 
