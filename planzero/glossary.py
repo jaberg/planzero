@@ -39,17 +39,24 @@ class AKA_Registry:
 
 aka_registry = AKA_Registry()
 
+# Block-level tags that must be flattened to inline text before they can be
+# used as tooltip content inside a <span> (tooltip content is inserted into
+# <p> blocks, so any block tag would close the surrounding paragraph).
+_BLOCK_TAG_RE = re.compile(
+    r'</?(?:p|div|ul|ol|li|h[1-6]|blockquote|pre|table|thead|tbody|tr|td|th|figure|figcaption)\b[^>]*>',
+    re.I,
+)
 
 def siteref(term, text=None):
-    try:
-        return aka_registry[term].site_reference(text or term)
-    except KeyError as exc:
-        raise exc
+    return aka_registry[term].site_reference(text or term)
 
 
-def template_globals() -> dict[str, object]:
+def template_globals(tooltips: bool = False) -> dict[str, object]:
     def lref(term, text=None):
-        return aka_registry[term].local_ref(text)
+        obj = aka_registry[term]
+        if tooltips:
+            return obj.local_ref(text)
+        return obj._plain_local_ref(text)
 
     return {
         'CO2e': latex(r'\mathrm{CO}_2\mathrm e '),

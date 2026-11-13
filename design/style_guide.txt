@@ -1,0 +1,42 @@
+
+Style guide for text on the site, especially within the html/ directory
+=======================================================================
+
+Canadian spelling conventions should be preferred,
+there should not be spelling errors or grammatical errors.
+
+Names of so-called IPCC Sectors relating to NIR documents should be capitalized,
+so e.g. Enteric Fermentation should be capitalized when it refers to the greenhouse gas accounting sector,
+and not capitalized when it refers to the physiologicaly phenomenon within ruminants generally.
+
+Top-level section headers in posts should be "h2" header elements, their subsections should be "h3" and so on.
+
+Tables of contents on posts should be unordered lists within a "div" html element with class "table-of-contents toc-rule".
+Each post's table of contents should match the structure established by header elements in the document,
+at least with regards to h2 and h3 headers.
+Sometimes h4, or any h5 or h6 headers are rightly omitted from from the table of contents for clarity.
+
+
+Update Posts
+------------
+
+Update posts are meant to encompass larger updates that may include insights in addition to larger changes to the site
+or underlying software underpinning the site.
+
+Update posts have an overview/appendix structure.
+1) start with an h2-level header called "Overview"
+2) have, as the remainder of h2-level headers, header titles prefixed with "Appendix {N}:" where {N} counts up e.g. 1, 2, 3, ...
+
+
+
+Insight Posts
+-------------
+Insight posts are meant to communicate a discovery that is revealed by e.g. new data, new modelling.
+
+The structure of an insight post should
+1) start with an h2-level header called "Introduction"
+2) end with an h2-level header called "Conclusion"
+
+Insight posts should draw meaningful conclusions from the content they present, and state
+those conclusions in the conclusions section. The introduction should set up whatever context is necessary to foreshadow
+those conclusions.

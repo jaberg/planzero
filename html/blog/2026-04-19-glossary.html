@@ -11,7 +11,7 @@
 <b>Contents:</b>
 <ul>
     <li><a href="#overview">Overview</a></li>
-    <li><a href="#appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</a>
+    <li><a href="#appendix-model-structure">Appendix 1: Model Structure</a>
         <ul>
             <li><a href="#model-variables">Model Variables</a></li>
             <li><a href="#model-elements">Model Elements</a>
@@ -24,7 +24,7 @@
             <li><a href="#model-explorer">Model Explorer Overview: model element connectivity within inference groups</a></li>
         </ul>
     </li>
-    <li><a href="#appendix-model-evaluation">Appendix 2: Model Evaluation</a>
+    <li><a href="#appendix-semantics-evaluation">Appendix 2: Semantics and Evaluation</a>
         <ul>
             <li><a href="#phases">Phases of inference: prior, inference, and posterior</a></li>
             <li><a href="#subphases">Computational subphases of model construction</a></li>
@@ -33,13 +33,13 @@
             <li><a href="#ablative-analysis">Ablative analysis</a></li>
         </ul>
     </li>
-    <li><a href="#appendix-full-glossary">Appendix 2: Full Glossary</a></li>
+    <li><a href="#appendix-full-glossary">Appendix 2: Glossary Snapshot</a></li>
 </ul>
 </div>
 
 <h2 id="overview">Overview</h2>
 
-<p>PlanZero models are large {{siteref("Probabilistic Model", "probabilistic models")|safe}}.
+<p>As of this post, PlanZero models are large {{siteref("Probabilistic Model", "probabilistic models")|safe}}.
 They encompass all of the emissions of the Canada's recent annual National Inventory Reports,
 and this site aims, in future, to extend the models with a growing number of driving factors of those emissions.
 There are 71 sectors in ICCC's interpretation of the IPCC protocol, and 173 non-neglibible sector-GHG combinations.
@@ -62,7 +62,7 @@ This post is about how PlanZero models can be understood in terms of smaller, mo
 </p>
 
 <p>
-PlanZero manages the semantic complexity of models by defining models from
+PlanZero models manage semantic complexity by building up from
 {{siteref("Model Element", "elements")|safe}}
 ({{siteref("Structural Element", "structural elements")|safe}} and
 {{siteref("Strategy Element", "strategy elements")|safe}})
@@ -70,75 +70,91 @@ and organizing those elements into {{siteref("Inference Group", "inference group
 Each element provides logic to define one or more variables in the model.
 An element might might define a variable in terms of numbers (e.g. a Statistics Canada table)
 or in terms of a distribution (e.g. the probabilistic interpretation of emissions from NIR-2025).
-The vast majority of elements in a PlanZero model are so-called <i>structural elements</i>
-because they define necessary relationships between variables in the model.
+Most, if not all, of the elements in a PlanZero model are structural elements.
+These elements define necessary relationships between variables in the model.
 Some models, such as the Scaling model, include one or more <i>strategy elements</i>, which offer
 optional variable definitions.
+Some elements are meant to work together &emdash; they wouldn't mean the right thing or wouldn't work at all
+without the presence of the others. Such a subset of elements in a PlanZero model is called an inference group.
+An inference group is the smallest piece of a PlanZero model that can be evaluated on its own, independently
+of the rest of the model.
 </p>
 
 <p>
-The following screenshot from the new <a href="/model-explorer/">Model Explorer's Overview tab</a>shows the Scaling model's
-inference group for enteric fermentation and Other Product Manufacturing.
+The screenshot below, from the new <a href="/model-explorer/">Model Explorer's Overview tab</a>,
+shows the Scaling model's
+inference group for Enteric Fermentation and Other Product Manufacturing.
 This inference group includes elements related to hypothesized dynamics of Bovaer adoption.
 On the model explorer page, mouseover effects provide more information about the
 meaning of the model elements, and the roles of the variables involved in the connections between the model elements.
 The number-cells in the table reflect connectivity between model elements;
-for example, the 1 in row E, column D, means there is one variable that is defined by model element E (Bovaer Farm Subsidy),
-and accessed by the model element D (Bovaer Adoption Limit). Hovering a mouse over that number 1 would reveal
-the roles of that variable in both model element (the variable is the number of farms in the program).
+for example, the blue-shaded "1" in row E, column D, means there is one (1) variable that is defined by model element E (Bovaer Farm Subsidy),
+and accessed by the model element D (Bovaer Adoption Limit).
+Hovering a mouse pointer over that blue-shaded "1" in the model explorer page would reveal
+the roles of that one connecting variable in both model elements,
+so you could see that the variable in question is the number of farms in the subsidy program.
+Refer to <a href="#appendix-model-structure">Appendix 1: Model Structure</a>
+for more detail on the compositional elements of PlanZero models.
+</p>
 <img src="/images/2026-04-19-glossary-model-explorer-table.png"
      alt="Description" style="border: 5px solid #555;"
      width="100%">
-Refer to <a href="#appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</a>
-for more detail regarding the semantics of model elements.
+
+<p>
+The model explorer also features a second tab, a "Trace" tab, that
+shows the interactions between selected model elements in more detail.
+</p>
+
+<img src="/images/2026-04-19-glossary-model-explorer-trace.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+
+<p>
+Looking at the Trace tab screenshot, we should read construction of the variables in a model as proceeding from top to bottom,
+following the direction of the edges in the graph:
+<ol>
+	<li>preparation computations (blue nodes, upper area) define variables that don't depend on any recursive annual definition</li>
+	<li>annual steps (teal nodes, middle area) define variables that do depend on recursive annual definitions</li>
+	<li>post-processing computations (purple nodes, lower area) define variables that are not needed until after recursive annual definitions</li>
+</ol>
+For a detailed explanation of what the screenshot reflects,
+as well as how model construction relates to probabilistic inference and data-fitting,
+refer to
+<a href="#appendix-semantics-evaluation">Appendix 2: Semantics and Evaluation</a>.
+For this overview, suffice it to say that the Trace tab shows the interactions between
+selected model elements and the variables accessed and defined by those elements.
 </p>
 
 <p>
-When a model includes strategy elements, PlanZero estimates the impact of each strategy by
-evaluating model variants with and without including the strategy.
-(The one and only strategy element implemented to date is the strategy of funding a government program
-to subsidize the administration of a feed additive such as Bovaer, but as an illustrative element it serves its purpose.)
-Inference groups are simply sets of elements that define some emissions variables, and don't rely on variables
-defined by elements outside the group. An inference group can be evaluated and investigated independently of other groups,
-which helps with the computation and visualization of the overall model.
-For a more detailed overview of PlanZero's semantic modelling framework,
-including also the outcomes (so far: emissions and costs) and the metrics used to evaluate models,
-see <a href="#appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</a>.
+The new modelling terms introduced in this post (and other terms that have come up so far in the course of developing
+PlanZero) are
+included as <a href="#appendix-full-glossary">Appendix 3: Glossary Snapshot</a>, which is a snapshot of a new <a href="/glossary/">Glossary page</a>.
+Before signing off, I'll indulge myself by stating that this post was a big job:
+it is the culmination of thinking about what PlanZero models <i>were</i> since I started PlanZero most of a year ago,
+and then, over the last few months,
+re-engineering how models are specified and evaluated, so that there could be
+(a) a reliable visual pathway on the site from an overall model view down into a detailed view of model evaluation,
+(b) an intuitive way to specifying model elements diagnose unexpected evaluation results, and
+(c) a practical build system that ensures PlanZero results are remain reproducible.
+With all these pieces in place, my next step will be to revisit an
+obviously-problematic assumption in the Static Normals model, namely that emissions have been static.
+The next post will introduce an alternative based on autoregressive processes.
+Beyond that, I aim to update to NIR-2026 data and incorporate this spring's sector-by-sector research into
+the new style of PlanZero model.
 </p>
 
 <p>
-PlanZero's updated computational framework is also apparent here on the site to some degree, and those
-terms that come through
-are explained in <a href="">Appendix 2: </a>, as well as added to the glossary.
-Such terms relate to the phases of computation in the model (e.g. prior and posterior phases of Bayesian inference)
-the sub-phases of computation within each phase (e.g. before, during, and after a recursive computation over the years
-of the modelled period) and the types of variable that can be accommodated within this computational framework
-(e.g. fixed-shape variables, variables that are defined for every year, and running statistics).
-Appendix 2 also explains terms relating to what PlanZero calls <i>aspects</i> of variables
-which relate to if (and how) an [unknown] variable should be considered to be <i>observed</i>,
-for the purpose of Bayesian inference.
-Finally <a href="#appendix-full-glossary">Appendix 3</a> includes a snapshot of the glossary at time of writing.
+Until then,
 </p>
 
 <p>
-PlanZero's <a href="/models">models</a> page has been updated and consolidated so that there
-are no longer two subsections (there used to be "simulation-based models" and "probabilistic Models" subsections)
-there is just one list of [probabilistic] models:
-<ul>
-	<li>NIR2025, the probabilistic interpretation of the NIR-2025 data</li>
-	<li>Static Normals, a baseline probabilistic model implementing an assumption that there will be no long-term trends in any of the NIR emissions sectors</li>
-	<li>Scaling, the model that is intended to include multiple scalable technologies, but currently includes just a hypothetical Bovaer program.</li>
-</ul>
-The so-called "simulation-based" models have been removed because they were redundant with the probabilistic models.
-What used to be simulation-based models were, conceptually, a restricted special case of probabilistic models.
-Furthermore, the way they were implemented was not amenable to Bayesian inference, so they've been replaced with
-fully probabilistic ones.
+James Bergstra
 </p>
 
 
-<h2 id="appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</h2>
+<h2 id="appendix-model-structure">Appendix 1: Model Structure</h2>
 
-<p>PlanZero models can be understood at the highest level as comprising two types of thing:
+<p>PlanZero models can be understood at the highest level as comprising:
 <ul>
 	<li>Model Variables: specific numbers and distributions over possible numbers</li>
 	<li>Model Elements: mathematical relationships between variables</li>
@@ -343,6 +359,52 @@ and those sub-phases help explain the three kinds of variable that PlanZero mode
 <h3 id="phases">Phases of model evaluation: prior, inference, and posterior</h3>
 
 <p>
+In future, a third Model Explorer tab or panel element may offer to show the numbers associated with each variable
+node in the Trace tab, but that functionality is not yet implemented.
+
+explains, in general terms and at a high level,
+how PlanZero models produce the numbers that are featured on the site.
+PlanZero models are evaluated in three phases, typical of probabilistic models: Prior, Inference, and Posterior.
+The numbers on the site are from the Posterior phase.
+Within each phase are three computational subphases of model construction, which allow model elements to share variable definitions
+while defining as many years' worth of modelled variables as are required, while also taking advantage of
+vectorized math libraries to perform the necessary computations quickly.
+Data flow through variables and computational subphases can now now visualized
+through a second tab, a <a href="/model-explorer/">Model Explorer Trace tab</a>.
+It can visualize model element interactions such as the ones in the screenshot below:
+
+Such terms relate to the phases of computation in the model (e.g. prior and posterior phases of Bayesian inference)
+the sub-phases of computation within each phase (e.g. before, during, and after a recursive computation over the years
+of the modelled period) and the types of variable that can be accommodated within this computational framework
+(e.g. fixed-shape variables, variables that are defined for every year, and running statistics).
+Appendix 2 also explains terms relating to what PlanZero calls <i>aspects</i> of variables
+which relate to if (and how) an [unknown] variable should be considered to be <i>observed</i>,
+for the purpose of Bayesian inference.
+Finally <a href="#appendix-full-glossary">Appendix 3</a> includes a snapshot of the glossary at time of writing.
+</p>
+
+<pre class="mermaid">
+graph LR
+      A["Prior (few seconds)"] --> B["Inference (hours)"]
+      B --> C["Posterior (many seconds)"]
+</pre>
+
+<p>
+PlanZero's <a href="/models">models</a> page has been updated and consolidated so that there
+are no longer two subsections (there used to be "simulation-based models" and "probabilistic Models" subsections)
+there is just one list of [probabilistic] models:
+<ul>
+	<li>NIR2025, the probabilistic interpretation of the NIR-2025 data</li>
+	<li>Static Normals, a baseline probabilistic model implementing an assumption that there will be no long-term trends in any of the NIR emissions sectors</li>
+	<li>Scaling, the model that is intended to include multiple scalable technologies, but currently includes just a hypothetical Bovaer program.</li>
+</ul>
+The so-called "simulation-based" models have been removed because they were redundant with the probabilistic models.
+What used to be simulation-based models were, conceptually, a restricted special case of probabilistic models.
+Furthermore, the way they were implemented was not amenable to Bayesian inference, so they've been replaced with
+fully probabilistic ones.
+</p>
+
+<p>
 The first phase starts by loading data and drawing random samples from
 any independent unknown variables, and then proceeds to compute or sample variables that depend on those variables,
 and then variables that depend on those variables and so on until all variables have <i>some</i> value.
@@ -455,9 +517,6 @@ in the case of a piece of the Bovaer-related inference group of the Scaling mode
 The "Overview" tab of the model explorer lets you check off a subset of the model elements
 in an inference group in order to see them in more detail in the "Trace" tab.
 The Trace tab features a graph view that shows renderings like the screenshot below:
-<img src="/images/2026-04-19-glossary-model-explorer-trace.png"
-     alt="Description" style="border: 5px solid #555;"
-     width="100%">
 Each selected model element corresponds to a column of filled nodes, which correspond to computational sub-phases.
 The outlined nodes stand for individual variables or sets of related variables,
 and the style of outlining indicates the kind of variable.
@@ -475,7 +534,7 @@ the Posterior-phase sample distributions in an appropriate, contextualized way.
 </p>
 
 
-<h2 id="appendix-full-glossary">Appendix 2: Full Glossary</h2>
+<h2 id="appendix-full-glossary">Appendix 3: Glossary Snapshot</h2>
 
 <p>
 As of the writing of this post,
