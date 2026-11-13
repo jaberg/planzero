@@ -15,18 +15,23 @@ Contents:
     <li><a href="#appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</a>
         <ul>
             <li><a href="#model-variables">Model Variables</a></li>
-            <li><a href="#model-elements">Model Elements</a></li>
-            <li><a href="#inference-groups">Inference Groups</a></li>
-            <li><a href="#model-explorer">Model Explorer: a new visualization on the PlanZero site</a></li>
+            <li><a href="#model-elements">Model Elements</a>
+		    <ul>
+			    <li><a href="#structural-elements">Structural Elements</a></li>
+			    <li><a href="#strategy-elements">Strategy Elements</a></li>
+			    <li><a href="#inference-groups">Inference Groups</a></li>
+		    </ul>
+	    </li>
+            <li><a href="#model-explorer">Model Explorer Overview: model element connectivity within inference groups</a></li>
         </ul>
     </li>
     <li><a href="#appendix-model-evaluation">Appendix 2: Model Evaluation</a>
         <ul>
-            <li><a href="#phases">phases of inference: prior and posterior</a></li>
-            <li><a href="#subphases">subphases of model construction</a></li>
-            <li><a href="#varkey-types">types of model variable</a></li>
-            <li><a href="#varkey-aspects">aspects of model variables</a></li>
-            <li><a href="#ablative-analysis">Ablative Analysis</a></li>
+            <li><a href="#phases">Phases of inference: prior, inference, and posterior</a></li>
+            <li><a href="#subphases">Computational subphases of model construction</a></li>
+            <li><a href="#varkey-types">General, annual, and carry variables</a></li>
+            <li><a href="#model-explorer-trace">Model Explorer Trace: element-variable computational flow</a></li>
+            <li><a href="#ablative-analysis">Ablative analysis</a></li>
         </ul>
     </li>
     <li><a href="#appendix-full-glossary">Appendix 2: Full Glossary</a>
@@ -215,6 +220,7 @@ and strategy elements represent "Strategies" (broad activities required to achie
 </p>
 
 
+<h4 id="structural-elements">Structural Elements</h4>
 <p>
 Structural elements are fragments of modelling logic that,
 taken together,
@@ -249,7 +255,7 @@ of the next section.
 </p>
 
 
-<h3 id="strategy-elements">Strategies: broad activities that could be pursued</h3>
+<h4 id="strategy-elements">Strategies: broad activities that could be pursued</h4>
 <p>
 Strategy elements are elements that are meant to be ablated (individually
 removed) in order to compare model outputs with and without the presence of the
@@ -283,15 +289,63 @@ PlanZero performs this comparison (called {{siteref("Ablative Analysis")|safe}})
 to produce charts and analysis for each strategy page.
 </p>
 
+<h4 id="inference-groups">Inference Groups</h4>
+
+<p>
+PlanZero models are too large for a direct application of NumPyro's standard inference algorithms.
+At the same time, it is also true that PlanZero models, to date, comprise many independent parts;
+each of these parts <i>is</i> of a suitable size for standard inference algorithms.
+For example, Oil and Gas Extraction emissions are independent of Venting emissions in the Static Normals model.
+In order to leverage this independence and use standard inference algorithms,
+PlanZero models are constructed with a concept of {{siteref("Inference Group", "Inference Groups")|safe}},
+which are non-overlapping sets of structural and strategy elements,
+each of which defines a submodel suitable for independent inference.
+Inference in such submodels is meant to take a few minutes (for each inference group).
+</p>
+
+<h3 id="model-explorer">Model Explorer</h3>
+
+<p>
+While inference groups are necessary for computational practicality,
+they also provide a communication benefit:
+a model's inference groups can fit in a readable list, even if it's a bit long (e.g. 100-200 groups).
+Browsing through inference groups lets a reader connect from a full model,
+down to the individual model elements, of which there may be thousands in total.
+The PlanZero now includes a
+<a href="/model-explorer/">Model Explorer</a> page,
+which uses inference groups to expose the elements of a model.
+The "Overview" tab on the model explorer shows a tabular view of the connectivity
+between elements in a model.
+The model explorer also include a "Trace" tab,
+that shows the computational relationships between variables and model elements,
+but to explain what's shown in that tab will require terminology from the next section,
+about model computation and variable types.
+</p>
+
+<p>
+The following screenshot shows the Scaling model's
+inference group for enteric fermentation and Other Product Manufacturing,
+including elements related to the hypothesized dynamics of Bovaer adoption.
+On the model explorer page, mouseover effects provide more information about the
+meaning of the model elements, and the roles of the variables involved in the connections between the model elements.
+<img src="/images/2026-04-19-glossary-model-explorer-table.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+</p>
+
 
 <h2 id="model-evaluation">Appendix 2: Model Evaluation</h2>
+
+Model evaluation is the computational task of determining a model's outputs
+(the variables outlined in the first section of Appendix 1.)
+PlanZero models are evaluated in three phases (prior, inference and posterior) as explained in the next section.
+Within each phase there are are three computational sub-phases (preparation, annual scan, and post-processing),
+and those sub-phases help explain the three kinds of variable that PlanZero models can have
+(general, annual, and carry variables).
 
 <h3 id="phases">Phases of model evaluation: prior, inference, and posterior</h3>
 
 <p>
-Model evaluation is the computational task of determining a model's outputs (the variables outlined in the first section
-of Appendix 1.)
-PlanZero models are evaluated in two phases.
 The first phase starts by loading data and drawing random samples from
 any independent unknown variables, and then proceeds to compute or sample variables that depend on those variables,
 and then variables that depend on those variables and so on until all variables have <i>some</i> value.
@@ -341,38 +395,87 @@ the upper and lower quantiles of emission amounts, strategy costs, and so on are
 associated with whatever is the relevant model output.
 </p>
 
-<h3 id="inference-groups">Inference Groups</h3>
-
-<p>
-PlanZero models are too large for a direct application of NumPyro's standard inference algorithms.
-At the same time, it is also true that PlanZero models, to date, comprise many independent parts, each of which
-is of a suitable size for standard inference algorithms.
-For example, in the Static Normals model, Oil and Gas Extraction emissions are independent of Venting emissions.
-But in that same model, modelled emissions from residential heating in British Columbia are not independent
-of modelled residential heating emissions from Newfoundland, because they both contribute to national total emissions data
-in NIR-2025 (in another model they might be further inter-related by e.g. the price of oil, but not in Static Normals).
-In order to leverage this independence and use standard inference algorithms,
-PlanZero models are constructed with a concept of {{siteref("Inference Group", "Inference Groups")|safe}},
-which are sets of structural and strategy elements that are meant to define a submodel suitable for independent inference.
-Inference in such submodels (at least for models to date) typically takes a few minutes.
-Prior computations go through the whole model, inference computations go group-by-group, and posterior computations
-currently go through the whole model again, although they may go partly group-by-group in future.
-</p>
-
-<p>
-The same define/access declarations can be explored interactively in the
-<a href="/model-explorer/?group=enteric_and_other_product_mfg">Model Explorer</a>:
-use the overview matrix to see which elements depend on which, then click a
-cell to trace the individual variables and paths.
-</p>
-
 
 <h3 id="subphases">Computational subphases of model construction</h3>
 
-<h3 id="varkey-types">Types of model variable</h3>
+<p>
+There are three computational subphases of model construction,
+based around however many years are being modelled.
+Model elements can participate in any or all of the following model-construction sub-phases:
+<ul>
+	<li>preparation: computation before any of the annual steps</li>
+	<li>annual steps: computation for each modelled year</li>
+	<li>post-processing: computation after the last annual step</li>
+</ul>
+Models are constructed by
+first doing all the preparation (of all the model elements),
+then doing some computation for each modelled year (giving every model element a chance to do something on each year),
+then finally giving each element a chance to do some post-processing computation.
+At each step of computation, the model elements can access variables that have already been defined,
+and the result of their computation is to define new variables.
+Eventually all the model elements have done all of their computations, and all
+of the model's variables are defined.
+This is how models are constructed in the Prior and Posterior phases.
+As was described above, Inference is a bit different because Inference Groups are evaluated independently;
+in the case of Inference, it is just each Inference Group that is constructed in this way, not the whole model.
+</p>
 
-<h3 id="varkey-aspects">Aspects of model variable</h3>
+<h3 id="varkey-types">General, annual, and carry variables</h3>
 
+<p>The nature of the computational subphases of model construction induce three types of variable:
+<ul>
+	<li>general: a variable whose array size is independent of the number of years, and whose value does not depend on the year</li>
+	<li>annual: a variable whose array size is the number of years</li>
+	<li>carry: a variable whose array size is independent of the number of years, whose value does depend on the year</li>
+</ul>
+General variables are perhaps the simplest: they have a certain size and value.
+When a model element loads up data about a certain sector to define a variable, that is naturally a "general" variable.
+A general variable can be just a single number (a scalar) or an array of any number of dimensions (n-dimenional array).
+Annual variables must be at least one-dimensional, but they can be n-dimensional too. The first dimension of an annual
+variable allows it to provide a value for each modelled year.
+Annual variables are natural for e.g. the emissions predicted for each certain sector-gas-region combination.
+Carry variables are natural for recursively-defined variables.
+For example, the number of farmers administering Bovaer in a given year is naturally defined as the
+number from the previous year plus or minus some delta.
+</p>
+
+<p>
+There are various constraints on how the computational subphases can access and define various variable types.
+For example, an annual step cannot define a general variable (the value of a general variable can't depend on the year),
+and a preparation computation
+cannot access the final value of a carry variable
+(it won't be defined until after the last annual step, which comes after preparation).
+Still, the modelling framework seems flexible enough,
+and the constraints ensure that PlanZero can run all of the model phases and subphases in a correct, predictable way,
+no matter what elements make up any given model.
+</p>
+
+<h3 id="model-explorer-trace">Model Explorer Trace: element-variable computational flow</h3>
+
+<p>
+The computational subphases and variable types are illustrated below
+in the case of a piece of the Bovaer-related inference group of the Scaling model.
+The "Overview" tab of the model explorer lets you check off a subset of the model elements
+in an inference group in order to see them in more detail in the "Trace" tab.
+The Trace tab features a graph view that shows renderings like the screenshot below:
+<img src="/images/2026-04-19-glossary-model-explorer-trace.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+Each selected model element corresponds to a column of filled nodes, which correspond to computational sub-phases.
+The outlined nodes stand for individual variables or sets of related variables,
+and the style of outlining indicates the kind of variable.
+There are actually four different variable nodes for carries: one variable for the initial value,
+one for current and next value after each annual computational step, and one for the final value.
+For annual variables there is sometimes just one node, or sometimes two ("all" and "this") if the annual variable
+is accessed or defined via an annual step computation.
+The solid arrows show how data flows mostly downward from inputs to outputs through the computational subphases
+and dependencies between model elements.
+The backward (up) arrows show the recursive definition of the next value of a carry variable
+becomes the current value for the next annual computation step.
+Load up different model elements in the model explorer to see how they interact.
+In future, a third tab of the model explorer might let you select individual variables and see
+the Posterior-phase sample distributions in an appropriate, contextualized way.
+</p>
 
 
 <h2 id="appendix-full-glossary">Appendix 2: Full Glossary</h2>
