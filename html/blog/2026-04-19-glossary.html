@@ -7,21 +7,20 @@
         <p>{{blog.about}}</p>
     </header>
 
-<p>
-Contents:
+<div class="table-of-contents toc-rule">
+<b>Contents:</b>
 <ul>
     <li><a href="#overview">Overview</a></li>
-
     <li><a href="#appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</a>
         <ul>
             <li><a href="#model-variables">Model Variables</a></li>
             <li><a href="#model-elements">Model Elements</a>
-		    <ul>
-			    <li><a href="#structural-elements">Structural Elements</a></li>
-			    <li><a href="#strategy-elements">Strategy Elements</a></li>
-			    <li><a href="#inference-groups">Inference Groups</a></li>
-		    </ul>
-	    </li>
+                <ul>
+                    <li><a href="#structural-elements">Structural Elements</a></li>
+                    <li><a href="#strategy-elements">Strategy Elements</a></li>
+                    <li><a href="#inference-groups">Inference Groups</a></li>
+                </ul>
+            </li>
             <li><a href="#model-explorer">Model Explorer Overview: model element connectivity within inference groups</a></li>
         </ul>
     </li>
@@ -34,29 +33,13 @@ Contents:
             <li><a href="#ablative-analysis">Ablative analysis</a></li>
         </ul>
     </li>
-    <li><a href="#appendix-full-glossary">Appendix 2: Full Glossary</a>
-    </li>
+    <li><a href="#appendix-full-glossary">Appendix 2: Full Glossary</a></li>
 </ul>
-</p>
+</div>
 
 <h2 id="overview">Overview</h2>
-<p>
-As the nature of PlanZero models continues to evolve, this post
-<ol>
-	<li>finally announces the addition
-		of the PlanZero <a href="/glossary/">glossary</a> to the site (the glossary has been present for some time), and</li>
-	<li>introduces a new interactive <i><a href="/model-explorer">model explorer</a></i> page to the site,
-		which uses the model concepts introduecd in this post to provide new options for visualizing PlanZero's
-		large probabilistic models of national emissions and possible technology roadmaps.</li>
-</ol>
-With the underlying changes accompanying this post,
-PlanZero has dropped the notion of so-called "simulation-based" models and is now entirely dedicated to
-probabilistic modelling.
-This post explains what PlanZero models <i>are</i>, adds the necessary new
-terminology to the glossary, and provides the model-explorer to query PlanZero models in those terms.
-</p>
 
-<p>PlanZero models are large probabilistic models.
+<p>PlanZero models are large {{siteref("Probabilistic Model", "probabilistic models")|safe}}.
 They encompass all of the emissions of the Canada's recent annual National Inventory Reports,
 and this site aims, in future, to extend the models with a growing number of driving factors of those emissions.
 There are 71 sectors in ICCC's interpretation of the IPCC protocol, and 173 non-neglibible sector-GHG combinations.
@@ -75,18 +58,42 @@ and many more.
 As PlanZero grows to model emissions drivers and interventions relating to
 specific sectors beyond enteric fermentation, the number of variables
 in the model will grow.
+This post is about how PlanZero models can be understood in terms of smaller, more-comprehensible elements.
 </p>
 
 <p>
-PlanZero manages the semantic complexity of models by defining models from pieces (structural elements and strategy elements)
-and organizing those pieces into <i>inference groups</i>.
+PlanZero manages the semantic complexity of models by defining models from
+{{siteref("Model Element", "elements")|safe}}
+({{siteref("Structural Element", "structural elements")|safe}} and
+{{siteref("Strategy Element", "strategy elements")|safe}})
+and organizing those elements into {{siteref("Inference Group", "inference groups")|safe}}.
 Each element provides logic to define one or more variables in the model.
 An element might might define a variable in terms of numbers (e.g. a Statistics Canada table)
 or in terms of a distribution (e.g. the probabilistic interpretation of emissions from NIR-2025).
 The vast majority of elements in a PlanZero model are so-called <i>structural elements</i>
 because they define necessary relationships between variables in the model.
 Some models, such as the Scaling model, include one or more <i>strategy elements</i>, which offer
-possible-but-not-necessary variable definitions.
+optional variable definitions.
+</p>
+
+<p>
+The following screenshot from the new <a href="/model-explorer/">Model Explorer's Overview tab</a>shows the Scaling model's
+inference group for enteric fermentation and Other Product Manufacturing.
+This inference group includes elements related to hypothesized dynamics of Bovaer adoption.
+On the model explorer page, mouseover effects provide more information about the
+meaning of the model elements, and the roles of the variables involved in the connections between the model elements.
+The number-cells in the table reflect connectivity between model elements;
+for example, the 1 in row E, column D, means there is one variable that is defined by model element E (Bovaer Farm Subsidy),
+and accessed by the model element D (Bovaer Adoption Limit). Hovering a mouse over that number 1 would reveal
+the roles of that variable in both model element (the variable is the number of farms in the program).
+<img src="/images/2026-04-19-glossary-model-explorer-table.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+Refer to <a href="#appendix-semantic-modelling">Appendix 1: Semantic Modelling Framework</a>
+for more detail regarding the semantics of model elements.
+</p>
+
+<p>
 When a model includes strategy elements, PlanZero estimates the impact of each strategy by
 evaluating model variants with and without including the strategy.
 (The one and only strategy element implemented to date is the strategy of funding a government program
@@ -322,16 +329,6 @@ but to explain what's shown in that tab will require terminology from the next s
 about model computation and variable types.
 </p>
 
-<p>
-The following screenshot shows the Scaling model's
-inference group for enteric fermentation and Other Product Manufacturing,
-including elements related to the hypothesized dynamics of Bovaer adoption.
-On the model explorer page, mouseover effects provide more information about the
-meaning of the model elements, and the roles of the variables involved in the connections between the model elements.
-<img src="/images/2026-04-19-glossary-model-explorer-table.png"
-     alt="Description" style="border: 5px solid #555;"
-     width="100%">
-</p>
 
 
 <h2 id="model-evaluation">Appendix 2: Model Evaluation</h2>

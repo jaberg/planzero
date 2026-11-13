@@ -4,9 +4,10 @@ so that it can import objects throughout the library, and retrieve
 their line numbers for constructing github links.
 """
 import functools
+import re
 
 import jinja2
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
 from . import blog, strategies
 from .base import DynamicElement
@@ -66,13 +67,13 @@ class GlossaryTerm(BaseModel):
 
     reserved: bool = False
 
-    @computed_field
+    @property
     def definition(self) -> str:
         assert self.__class__.__doc__, self.__class__
         return self.__class__.__doc__
 
-    @computed_field
-    def definition_html(self) -> str:
+    @property
+    def plain_definition_html(self) -> str:
         if self.definition.startswith('<p>'):
             source = self.definition
         else:
@@ -83,18 +84,43 @@ class GlossaryTerm(BaseModel):
         return rval
 
     @property
+    def definition_html(self) -> str:
+        # Rendered for page display: cross-references carry tooltips.
+        if self.definition.startswith('<p>'):
+            source = self.definition
+        else:
+            source = f'<p>{self.definition}</p>'
+
+        template = jinja2.Template(source=source)
+        rval = template.render(template_globals(tooltips=True))
+        return rval
+
+    @property
+    def hover_definition_html(self) -> str:
+        return self.plain_definition_html
+
+    @property
+    def tooltip_html(self) -> str:
+        # Flatten the hover definition into inline (phrasing) content so it can
+        # be safely embedded as a tooltip <span> inside a paragraph.
+        html = self.hover_definition_html.strip()
+        # Keep list items readable when flattened.
+        html = html.replace('<li>', ' \u00b7 ')
+        html = _BLOCK_TAG_RE.sub(' ', html)
+        return re.sub(r'\s+', ' ', html).strip()
+    @property
     def see_also(self) -> dict[str, str]:
         return {}
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return []
 
     def pretty_names(self):
-        pretty_names = set(name.replace('_', ' ') for name in self.all_names)
-        return list(sorted(pretty_names))
+        pretty_names = {name.replace('_', ' ') for name in self.all_names}
+        return sorted(pretty_names)
 
-    @computed_field
+    @property
     def all_names(self) -> list[str]:
         rval = [self.__class__.__name__]
         #rval = []
@@ -102,12 +128,12 @@ class GlossaryTerm(BaseModel):
             rval.append(self.__class__.__name__.replace('_', ' '))
         return rval + self.aka
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         # post, hashtarget, intro txt
         return []
 
-    @computed_field
+    @property
     def code_links(self) -> dict[str, str]:
         rval = {}
         for txt, thing in self.code_refs.items():
@@ -131,16 +157,28 @@ class GlossaryTerm(BaseModel):
         if getattr(cls, 'include_in_registry', True): # default to True for historical reasons
             registry.add_class(cls)
 
-    def local_ref(self, text=None) -> str:
+    def _glossary_ref_markup(self, href: str, text: str) -> str:
+        return (
+            f'<span class="glossary-ref">'
+            f'<a href="{href}">{text}</a>'
+            f'<span class="glossary-ref-tip" aria-hidden="true">{self.tooltip_html}</span>'
+            f'</span>'
+        )
+
+    def _plain_local_ref(self, text=None) -> str:
         if text is None:
             text = self.__class__.__name__.replace('_', ' ')
         return f'<a href="#{self.__class__.__name__}">{text}</a>'
 
+    def local_ref(self, text=None) -> str:
+        if text is None:
+            text = self.__class__.__name__.replace('_', ' ')
+        return self._glossary_ref_markup(f'#{self.__class__.__name__}', text)
 
     def site_reference(self, text=None) -> str:
         if text is None:
             text = self.__class__.__name__.replace('_', ' ')
-        return f'<a href="/glossary#{self.__class__.__name__}">{text}</a>'
+        return self._glossary_ref_markup(f'/glossary#{self.__class__.__name__}', text)
 
 
 class Concentrated_Distribution(GlossaryTerm):
@@ -174,7 +212,7 @@ class Time_Series(GlossaryTerm):
     </ul>
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#timeseries', "see section on Time Series"),
@@ -222,7 +260,7 @@ class Time_Series_Interpolation_Mode(GlossaryTerm):
                 " interpolation mode in their initialization logic"),
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#timeseries', "see section on Time Series"),
@@ -275,7 +313,7 @@ class Dynamic_Element(GlossaryTerm):
 
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#dynelem', "see section on Dynamic Elements"),
@@ -310,7 +348,7 @@ class Strategy(GlossaryTerm):
     where Strategies were defined as "broad activities required to achieve a goal, create a critical condition, or overcome a barrier."</p>
     """ 
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#strategy', "see modelling sub-section on strategies"),
@@ -358,7 +396,7 @@ class Barrier(GlossaryTerm):
     <p>The term is adapted from {{lref("EGFS")|safe}}.</p>
     """ 
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> dict[str, str]:
         return [
             (blog.Glossary(),
@@ -390,7 +428,7 @@ class Static_Variable(GlossaryTerm):
     is called Constant.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Constant']
 
@@ -542,7 +580,7 @@ class Critical_Success_Factor(GlossaryTerm):
             'KPI': 'Key Performance Indicators are the time series contemplated by Critical Success Factors',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> dict[str, str]:
         return [
             (blog.Glossary(),
@@ -550,7 +588,7 @@ class Critical_Success_Factor(GlossaryTerm):
              'see section "Emissions and Costs as Critical Success Factors"'),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['CSF']
 
@@ -565,7 +603,7 @@ class Key_Performance_Indicator(GlossaryTerm):
     together other derived KPIs toward e.g. national totals.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['KPI', 'Base KPI', 'Derived KPI']
 
@@ -628,7 +666,7 @@ class Model(GlossaryTerm):
     of implementing emission reduction measures.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(),
@@ -669,7 +707,7 @@ class Stochastic_Model(GlossaryTerm):
             'Simulation': 'The procedure for converting a stochastic model to one or more scenarios'
         }
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Probabilistic Model']
 
@@ -713,7 +751,7 @@ class About_Section(GlossaryTerm):
     """<p>The "About" section of the planzero.ca website:
     <a href="/about/">planzero.ca/about</a></p>"""
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['About Page']
 
@@ -723,13 +761,13 @@ class Scenario(GlossaryTerm):
     Typically in PlanZero it is the result of simulating a model.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#scenario', "see simulation sub-section on scenarios"),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Trajectory', 'Rollout (noun)']
 
@@ -750,6 +788,19 @@ class Scenario(GlossaryTerm):
             'Simulation': 'The construction of a Scenario from a model',
             #'Simulations_Section': 'the <a href="/models/#sim">Simulation-based models section</a> of the site analyzes and compares scenarios',
         }
+
+
+class Model_Element(GlossaryTerm):
+    """An implementation element of a ScenarioModel,
+    providing one or more computationl subphase implementations that define model variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Scenario': "the general form of PlanZero probabilistic models",
+        }
+
 
 
 class Model_Metric(GlossaryTerm):
@@ -876,7 +927,7 @@ class GitHub_Repository(GlossaryTerm):
     or "Upstream Repo".
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['GitHub Repo', 'repository', 'repo']
 
@@ -919,7 +970,7 @@ class Git_Commit(GlossaryTerm):
             'Git_Branch': "a named graph of commits corresponding to a single version of set of files",
         }
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Commit']
 
@@ -930,7 +981,7 @@ class Git_Graph(GlossaryTerm):
 or running a command such as <pre>git log --all --decorate --oneline --graph</pre>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Git History']
 
@@ -948,7 +999,7 @@ class GitHub(GlossaryTerm):
     control system over the internet to collaborate on software projects. Circa 2023, it was the world's largest source code host, with over 100 million developers, and 420 million code repositories.</p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['GH']
 
@@ -971,7 +1022,7 @@ class GitHub_Issue(GlossaryTerm):
     but in particular, those that have been mentioned in posts.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['gh issue']
 
@@ -992,7 +1043,7 @@ class GitHub_Pull_Request(GlossaryTerm):
     See <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests">Github documentation</a> for full description of this capability.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['pull request', 'PR']
 
@@ -1028,7 +1079,7 @@ class EGFS(GlossaryTerm):
             'KPI': "a time series registered to participate in emissions or subsidy calculations",
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#modelling', "see section on Modelling National Emissions"),
@@ -1065,7 +1116,7 @@ class National_Greenhouse_Gas_Inventory(GlossaryTerm):
     {{lref("NIR", "National Inventory Reports")|safe}}.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['NGGI']
 
@@ -1087,7 +1138,7 @@ class National_Energy_Use_Database(GlossaryTerm):
     {{lref("IPCC Sector", "IPCC sectors")|safe}}.
     </p>"""
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['NEUD']
 
@@ -1098,7 +1149,7 @@ class National_Energy_Use_Database(GlossaryTerm):
             'NEUD access, neud.py': neud,
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.IPCC_HeavyDutyDieselVehicles(),
@@ -1126,7 +1177,7 @@ class Statistics_Canada(GlossaryTerm):
     <a href="https://github.com/ianepreston/stats_can">stats_can</a>.
     """
     
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['StatsCan']
 
@@ -1147,7 +1198,7 @@ class Natural_Resources_Canada(GlossaryTerm):
     </p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['NRCan']
 
@@ -1171,7 +1222,7 @@ class Environment_and_Climate_Change_Canada(GlossaryTerm):
     </p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['ECCC', '"E-triple-C"']
 
@@ -1191,7 +1242,7 @@ class Net_Zero(GlossaryTerm):
     achieve net-zero.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Net-Zero']
 
@@ -1231,7 +1282,7 @@ class International_Panel_on_Climate_Change(GlossaryTerm):
     Canada uses this methodology to prepare its annual {{lref("NIR")|safe}}.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['IPCC']
 
@@ -1328,7 +1379,7 @@ class CNZEAA(GlossaryTerm):
     to uphold Canada's obligations under the Paris Agreement.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Canadian Net-Zero Accountability Act']
 
@@ -1403,7 +1454,7 @@ class Petrinex(GlossaryTerm):
     </p>
     """
     
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.IPCC_SCS_OilAndGas_Exploration(),
@@ -1437,7 +1488,7 @@ class Rollout(GlossaryTerm):
     resulting scenario, rather than the algorithm that built it.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#simulation', "see sub-sections about simulation and scenarios"),
@@ -1483,7 +1534,7 @@ class Simulation(GlossaryTerm):
     </p>
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#simulation', "see sub-section about simulation"),
@@ -1496,7 +1547,7 @@ class Simulation(GlossaryTerm):
             'The <code>simulation_result(...)</code> function implements PlanZero simulation': sim.simulation_result,
         }
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Rollout (verb)']
 
@@ -1516,6 +1567,47 @@ class Simulation(GlossaryTerm):
             "Simulations_Section": "Pages on the PlanZero site showing simulation results",
         }
 
+
+class Strategy_Element(GlossaryTerm):
+    """Strategy elements are model elements within scenario models that stand for
+    strategies that may be implemented or not implemented. The impact of a strategy
+    is evaluated by PlanZero by ablating it from the model and re-evaluating the model without the strategy.
+    A scenario model can be created without any strategy elements.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return []
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Element': 'Strategy elements are a type of Model Element',
+            'Ablative_Analysis': 'Strategy elements enable ablative analysis in PlanZero models',
+            'Structural_Element': 'Structural elements are the other type of Model Element',
+        }
+
+
+class Structural_Element(GlossaryTerm):
+    """Structural elements are model elements within scenario models that stand for
+    the modelled relationship between variables.
+    A scenario model must include structural elements, and
+    unlike strategy elements, structural elements will not be ablated.
+    Typically, most (if not all) elements in a model are structural ones.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return []
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Element': 'Structural elements are a type of Model Element',
+            'Strategy_Element': 'Strategy elements work by overriding default values accessed by structural elements'
+        }
+
+
 class Ablative_Analysis(GlossaryTerm):
     """
     Ablative analysis in PlanZero is the study of models with and without
@@ -1523,7 +1615,7 @@ class Ablative_Analysis(GlossaryTerm):
     of those elements on the behaviour of the whole model.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Ablation Study']
 
@@ -1543,7 +1635,7 @@ class Post(GlossaryTerm):
     includes some guidelines for post content.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
@@ -1558,7 +1650,7 @@ class Draft_Status(GlossaryTerm):
     clarifications and annoted links to relevant newer content.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
@@ -1586,7 +1678,7 @@ class Greenhouse_Gas(GlossaryTerm):
             'NGGI': 'National Greenhouse Gas Inventory tracks Canadian greenhouse gas emissions',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.GHG_Emissions(), '#h2_ghg', "see section on Greenhouse gases"),
@@ -1606,7 +1698,7 @@ class Inference_Algorithm(GlossaryTerm):
             'Latent_Variable': 'Inference algorithms provide samples for latent variables'
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
@@ -1622,7 +1714,7 @@ class Inference_Group(GlossaryTerm):
     upon which inference algorithms can operate effectively.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
@@ -1642,7 +1734,7 @@ class Observed_Variable(GlossaryTerm):
             'Unknown_Variable': 'A variable in a probabilistic model',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
@@ -1668,13 +1760,13 @@ class Unknown_Variable(GlossaryTerm):
             'Unobserved_Variable': 'A variable for which we have no direct data',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.StaticNormals(), '#appendix-notation', "Appendix 1: Probabilistic Modelling Notation"),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Random Variable']
 
@@ -1693,7 +1785,7 @@ class Unobserved_Variable(GlossaryTerm):
             'Unknown_Variable': 'A variable in a probabilistic model',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
@@ -1708,7 +1800,7 @@ class Posterior_Phase(GlossaryTerm):
     graphics on the site that characterize model evaluation.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
@@ -1755,7 +1847,7 @@ class Probability_Distribution(GlossaryTerm):
             'Probability_Density_Function': 'a description of how to distribute probability over a continuous set of possible values, such as a range of real numbers',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-model-distribution', "Appendix 1 is an introduction to probabilistic modelling"),
@@ -1840,7 +1932,7 @@ class Credible_Interval(GlossaryTerm):
     more appropriate for the estimates that arise from PlanZero modelling.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Confidence Interval']
 
@@ -1852,7 +1944,7 @@ class Credible_Interval(GlossaryTerm):
             'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-visualizing', "credibility intervals are used to visualize probabilistic models"),
@@ -1878,7 +1970,7 @@ class Bayesian_Inference(GlossaryTerm):
             'Inference_Algorithm': 'In probabilistic models that are defined within probabilistic programming systems, Bayesian inference can often be implemented automatically',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
@@ -1897,7 +1989,7 @@ class Pending_Prediction_Challenge_Results(GlossaryTerm):
     # TODO: Prediction Time
     # TODO: Prediction Challenge
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.registry['StaticNormals'], '#prenir', "prediction time vs. evaluation time"),
@@ -1943,13 +2035,13 @@ class NIR_Prediction(GlossaryTerm):
     evaluation metric.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.StaticNormals(), '#appendix-prenir', "Introduces the Pre-NIR-2025-06 prediction challenge, which uses a weighted KL-divergence to compare model predictions to reference distributions."),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['PreNIR']
 
@@ -1966,7 +2058,7 @@ class Weighted_KL_Divergence(GlossaryTerm):
     emissions that is used to score NIR-predicting models probabilistic models.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-evaluating', "Develops the weighted KL divergence formula for scoring NIR predictions against a reference probabilistic interprentation of an NIR"),
@@ -1992,7 +2084,7 @@ class Symmetric_Blended_Log_Normal_Distribution(GlossaryTerm):
 hosted on PlanZero's GitHub page.</p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['SBLN']
 
@@ -2002,7 +2094,7 @@ hosted on PlanZero's GitHub page.</p>
             'Probability_Distribution': 'The SBLN is a probability distribution',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-sbln', "Probabilistic NIR2025, Appendix 2"),

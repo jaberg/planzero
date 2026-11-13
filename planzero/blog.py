@@ -78,7 +78,7 @@ class BlogPost(BaseModel):
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
             template = jinja2.Template(source=self.__class__.__doc__)
-            rendered = template.render(template_globals())
+            rendered = template.render(template_globals(tooltips=True))
             kwargs = dict(kwargs, about=rendered)
         super().__init__(**kwargs)
 
@@ -106,30 +106,21 @@ from .nir_ar2_post import AR2
 
 
 class Glossary(BlogPost):
-    """This post announces a new page:
-    a glossary of terms and acronyms with specific meanings in the context of
-    PlanZero posts.
-    This glossary also introduces modelling terminology to support future posts.
-    The modelling terminology is used to reframe the NIR-reconstruction
-    project within languages of both strategic management and of statistical
-    modelling.
-    This post deprecates the non-probabilistic "Scaling" model
-    and in fact all of the non-probabilistic models in the Models tab in favour
-    of probabilistic modelling generally.
+    """PlanZero has two new pages: a model-explorer and a glossary.
+    This post explains what PlanZero models <i>are</i>, in general, in terms of
+    their internal elements, how they are built, and how they are evaluated.
+    The new model-explorer page provides an interactive view of model internals,
+    and the glossary tracks specific PlanZero terminology for future reference.
+    This post deprecates and removes PlanZero's non-probabilistic "simulation-based"
+    models; PlanZero models are now probabilistic models.
     """
     def __init__(self):
         super().__init__(
-            date=datetime.date(2026, 9, 25),
-            title='New: the PlanZero glossary',
+            date=datetime.date(2026, 10, 25),
+            title='What is a PlanZero Model? Introducing a glossary and model explorer tool',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
-            #tags={
-                # BlogTag.About, # Does it? How?
-                # BlogTag.Strategies,
-                # BlogTag.BarrierModelling,
-                # BlogTag.NIR_Modelling,
-            #},
-            status=BlogStatus.Planned,
+            status=BlogStatus.Draft,
             )
 
 
