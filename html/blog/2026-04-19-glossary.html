@@ -7,123 +7,635 @@
         <p>{{blog.about}}</p>
     </header>
 
-{% if blog.status == BlogStatus.Planned %}
-<div class="box">
-    <p>This post is "<a href="/about#planned-status">Planned</a>".
-    Please bear in mind that it is materially incomplete.
-    </p>
-</div>
-{% endif %}
-
-<p>
-Table of Contents:
+<div class="table-of-contents toc-rule">
+<b>Contents:</b>
 <ul>
-    <li><a href="#introduction">Introduction</a></li>
-    <li><a href="#overview">Glossary Overview</a></li>
-    <li><a href="#computation">Computation and Simulation</a>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#appendix-model-structure">Appendix 1: Model Structure</a>
         <ul>
-            <li><a href="#timeseries">Time Series</a></li>
-            <li><a href="#dynelem">Dynamic Element</a></li>
-            <li><a href="#simulation">Simulation</a></li>
-            <li><a href="#scenario">Scenario</a></li>
+            <li><a href="#model-variables">Model Variables</a></li>
+            <li><a href="#model-elements">Model Elements</a>
+                <ul>
+                    <li><a href="#structural-elements">Structural Elements</a></li>
+                    <li><a href="#strategy-elements">Strategy Elements</a></li>
+                    <li><a href="#inference-groups">Inference Groups</a></li>
+                </ul>
+            </li>
+            <li><a href="#model-explorer">Model Explorer Overview: model element connectivity within inference groups</a></li>
         </ul>
     </li>
-    <li><a href="#modelling">Modelling National Emissions</a>
+    <li><a href="#appendix-semantics-evaluation">Appendix 2: Semantics and Evaluation</a>
         <ul>
-            <li><a href="#formalizing_csfs">Emissions and Costs as Critical Success Factors</a></li>
-            <li><a href="#strategy">Strategies: broad activities that could be pursued, or not</a></li>
-            <li><a href="#barrier">Barriers: connecting strategies to outcomes</a></li>
-            <li><a href="#emissions-model">National Emissions Model</a></li>
+            <li><a href="#phases">Phases of inference: prior, inference, and posterior</a></li>
+            <li><a href="#subphases">Computational subphases of model construction</a></li>
+            <li><a href="#varkey-types">General, annual, and carry variables</a></li>
+            <li><a href="#model-explorer-trace">Model Explorer Trace: element-variable computational flow</a></li>
+            <li><a href="#ablative-analysis">Ablative analysis</a></li>
         </ul>
     </li>
-    <li><a href="#conclusion">Conclusion</a></li>
+    <li><a href="#appendix-full-glossary">Appendix 2: Glossary Snapshot</a>
+        <ul>
+            <li><a href="#glossary-terms">Glossary terms</a></li>
+	</ul>
+    </li>
 </ul>
-</p>
+</div>
 
-<h2 id="introduction">Introduction</h2>
-<p>
-In developing the post on
-<a href="/blog/2026-04-03-bovaer">modelling Bovaer adoption</a>,
-it became clear that PlanZero was entering a new phase.
-The first draft of that post was very long and difficult to follow.
-Not only did the writing need re-working, but PlanZero's implementation itself needed reworking.
-I wrote a post introducing <a href="/blog/2026-04-12-about#draft-status">"Draft Status"</a> to provide a process for the re-work.
-The subsequent work to incorporate uncertainty (LINK) applied even more design pressure on PlanZero.
-This post is about what a PlanZero model is.
-It defines a model in terms which are now available in a <a href="/glossary">glossary</a>.
-PlanZero's Models page has been updated and consolidated so that there aren't two sub-sections,
-there's just one list of models, and two models listed:
-* NIR2025, the probabilistic model introduced in THIS POST
-* Static Normals, a baseline probabilistic model implementing an assumption that there will be no long-term trends in any of the NIR emissions sectors.
-The strategy of Bovaer adoption has been reimplemented in terms of the Static Normals model (instead of the assumption that the future would be like 2023).
-</P>
+<h2 id="overview">Overview</h2>
 
-<p>
-This post provides an overview of the glossary's initial contents.
-This post is organized around three top-level content sections.
-The first section is an <a href="#overview">overview</a> of the terms in the <a href="/glossary">glossary</a> as of time of writing.
-</p>
-<p>
-Having a glossary, it also seems natural to add in a few terms with meanings that are somewhat particular to PlanZero.
-I hope the glossary provides the beginnings of some developer / contributor documentation,
-and of a bibliography of important sources and resources.
-For now, PlanZero has a glossary, and it is largely made up of terms relating to probabilistic modelling and software version control.
-With the publication of this post I'll amend some previous posts to link to the glossary as appropriate,
-and call out glossary additions in new posts going forward.
+<p>As of this post, PlanZero models are large {{siteref("Probabilistic Model", "probabilistic models")|safe}}.
+They encompass all of the emissions of the Canada's recent annual National Inventory Reports,
+and this site aims, in future, to extend the models with a growing number of driving factors of those emissions.
+There are 71 sectors in ICCC's interpretation of the IPCC protocol, and 173 non-neglibible sector-GHG combinations.
+Each of the 173 sector-GHG combinations is the sum of contributions across 12 or 13 regions (provinces and territories)
+depending on the year (the inventory starts in 1990 but Nunavut was created in 1998).
+For each sector-GHG-region combination, the NIRs include emissions data for some or all years in a
+reporting period starting in 1990,
+and PlanZero's NIR models extend those time series with forecasts until 2050.
+The models therefore contemplate a total of 137,189 emission amounts (173 sector-GHG combinations times 13 regions times 61 years).
+PlanZero models also contemplate variables beyond emissions amounts,
+such as, in the case of the Scaling model:
+the number of cattle of various types in each region over time,
+the amount of money available to fund Bovaer adoption,
+the emission factors of specific cattle types in the modelling of enteric fermentation emissions,
+and many more.
+As PlanZero grows to model emissions drivers and interventions relating to
+specific sectors beyond enteric fermentation, the number of variables
+in the model will grow.
+This post is about how PlanZero models can be understood in terms of smaller, more-comprehensible elements.
 </p>
 
 <p>
-The second section (mathematical and computational modelling elements) is about probabilistic models.
-At this level,
-<a href="#timeseries">time series</a>
-and <a href="#dynelem">dynamic elements</a>
-organize variables and specifiy how they relate to one another.
-Model descriptions at this level determine how to simulate PlanZero models and fit them to data.
+PlanZero models manage semantic complexity by building up from
+{{siteref("Model Element", "elements")|safe}}
+({{siteref("Structural Element", "structural elements")|safe}} and
+{{siteref("Strategy Element", "strategy elements")|safe}})
+and organizing those elements into {{siteref("Inference Group", "inference groups")|safe}}.
+Each element provides logic to define one or more variables in the model.
+An element might might define a variable in terms of numbers (e.g. a Statistics Canada table)
+or in terms of a distribution (e.g. the probabilistic interpretation of emissions from NIR-2025).
+Most, if not all, of the elements in a PlanZero model are structural elements.
+These elements define necessary relationships between variables in the model.
+Some models, such as the Scaling model, include strategy elements, which offer
+<i>optional</i> variable definitions.
+Some elements are meant to work together; they wouldn't mean the right thing or wouldn't work at all
+without the presence of the others. Such a subset of elements in a PlanZero model is called an inference group.
+An inference group is the smallest piece of a PlanZero model that can be evaluated on its own, independently
+of the rest of the model.
 </p>
 
 <p>
-The third section (strategic and economic modelling elements) is about how PlanZero models are described higher-level terms, such as
-<!--
-The third section is about how PlanZero models work at a <i>semantic level</i>,
-as <a href="#modelling">models of emissions and economic activity</a>, in terms of e.g.
--->
-drivers, <!-- aka activity -->
-emission factors,
-subsidy programs,
-emission contributions,
-strategies,
-and barriers.
-Model descriptions at this level highlight the scope and nature of a PlanZero model.
-<!--
-This section explains how  national emissions,
-as well as the possible effects of new technologies and government programs.
--->
-Bovaer adoption, as the first worked example, has driven many design choices
-here. As the set of strategies grows, I expect the modelling framework to grow too,
-but this is how it works for now.
+The screenshot below, from the new <a href="/model-explorer/">Model Explorer's Overview tab</a>,
+shows the Scaling model's
+inference group for Enteric Fermentation and Other Product Manufacturing.
+This inference group includes elements related to hypothesized dynamics of Bovaer adoption.
+On the model explorer page, mouseover effects provide more information about the
+meaning of the model elements, and the roles of the variables involved in the connections between the model elements.
+The number-cells in the table reflect connectivity between model elements;
+for example, the blue-shaded "1" in row E, column D, means there is one (1) variable that is defined by model element E (Bovaer Farm Subsidy),
+and accessed by the model element D (Bovaer Adoption Limit).
+Hovering a mouse pointer over that blue-shaded "1" in the model explorer page would reveal
+the roles of that one connecting variable in both model elements,
+so you could see that the variable in question is the number of farms in the subsidy program.
+Refer to <a href="#appendix-model-structure">Appendix 1: Model Structure</a>
+for more detail on the compositional elements of PlanZero models.
+</p>
+
+<img src="/images/2026-04-19-glossary-model-explorer-table.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+
+<p>
+The model explorer also features a second tab, a "Trace" tab, that
+shows the interactions between selected model elements in more detail,
+including the use of variables to pass information between model elements,
+and use of those variables in specific computational subphases (screenshot below).
+</p>
+
+<img src="/images/2026-04-19-glossary-model-explorer-trace.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+
+<p>
+In the Trace tab screenshot (above), variables are defined from top to bottom,
+following the direction of the edges in the graph (with the exception of dashed backward edges from "next" to "this" nodes, see
+<a href="#appendix-semantics-evaluation">Appendix 2</a>).
+The three computational subphases are:
+<ol>
+	<li>Preparation computations (blue nodes, upper area) define variables that don't depend on any recursive annual definition</li>
+	<li>Annual step computations (teal nodes, middle area) define variables that must be woven in among recursive annual definitions</li>
+	<li>Post-processing computations (purple nodes, lower area) define variables that are not needed until after recursive annual definitions</li>
+</ol>
+<a href="#appendix-semantics-evaluation">Appendix 2: Semantics and Evaluation</a>
+provides more detail about how to read such graphs, as well as how model construction
+relates to probabilistic inference and data-fitting.
+For this overview, suffice it to say that the Trace tab shows the interactions between
+selected model elements and the variables accessed and defined by those elements.
+</p>
+
+<p>
+The new modelling terms introduced in this post (and other terms that have come up so far in the course of developing
+PlanZero) are
+included as <a href="#appendix-full-glossary">Appendix 3: Glossary Snapshot</a>, which is a snapshot of a new <a href="/glossary/">Glossary page</a>.
+Before signing off, I'll indulge myself by stating that this post was a big job:
+it is the culmination of thinking about what PlanZero models <i>were</i> since I started PlanZero most of a year ago,
+and then, over the last few months,
+re-engineering how models are specified and evaluated, so that there could be
+(a) a reliable visual pathway on the site from an overall model view down into a detailed view of model evaluation,
+(b) an intuitive way to specifying model elements diagnose unexpected evaluation results, and
+(c) a practical build system that ensures PlanZero results are remain reproducible.
+With all these pieces in place, my next step will be to revisit an
+obviously-problematic assumption in the Static Normals model, namely that emissions have been static.
+The next post will introduce an alternative based on autoregressive processes.
+Beyond that, I aim to update to NIR-2026 data and incorporate this spring's sector-by-sector research into
+the new style of PlanZero model.
+</p>
+
+<p>
+Until then,
+</p>
+
+<p>
+James Bergstra
 </p>
 
 
-<!--
-<a href="#simulation">simulation</a>,
-and <a href="#scenario">scenario</a>.
-This section explains how dynamic elements define recurrent mathematical
-definitions (expressed in Python programming), how those definitions define time series,
-and how simulation of a set of dynamic elements produces a set of time series
-called a scenario.
-It is the closest thing to technical documentation that exists on the website to date,
-and might feel like low-level irrelevant details to some readers; if that's you,
-feel free to skip ahead to the next section on emissions modeling.
+<h2 id="appendix-model-structure">Appendix 1: Model Structure</h2>
+
+<p>{{siteref("PlanZero_Model", "PlanZero models")|safe}} can be understood at the highest level as comprising:
+<ul>
+	<li>Model Variables: specific numbers and distributions over possible numbers</li>
+	<li>Model Elements: mathematical relationships between variables</li>
+</ul>
+Model variables represent numbers.
+A variable can stand for a single number, such as a mean emission amount in the Static Normals) model.
+A variable can stand for annual time series, such as Canada's total national emissions since 1990 according to NIR-2025.
+A variable can also correspond to multi-dimensional tabular data such a matrix or a higher-dimentional table with 3 or more indices.
+Sometimes variables correspond to specific, known numbers
+(<i>known variable</i>),
+and sometimes they correspond to a probability distribution over possible numbers
+(<i>unknown variable</i>).
+Model elements implement the definitions of variables, and thereby establish the mathematical relationships between model variables.
+Model elements, and the model variables to which they refer,
+taken together,
+make up a PlanZero model.
 </p>
--->
+
+<h3 id="model-variables">Model Variables</h3>
+
+<h4>Taxonomy of Model Variables by knowledge and observation</h4>
+
+<pre class="mermaid">
+graph TD
+      A["Model Variable"]
+
+      B["Known"]
+      A --> B
+
+      C["Unknown"]
+      A --> C
+
+      D["Observed"]
+      C --> D
+
+      E["Unobserved"]
+      C --> E
+</pre>
+
+<p>
+{{siteref("Model_Variable", "Model variables")|safe}} in a PlanZero model can be classified according
+to (a) the knowledge about them in the model and (b) the availability of observation data.
+{{siteref("Known_Variable", "Known variables")|safe}} are associated with numbers that are known at the outset of modelling,
+such as data from statistical reports, and physical constants.
+If a variable depends in a known way on known variables, then it too is known.
+If, instead, a variable is modelled as a probability distribution, then it is an {{siteref("Unknown_Variable", "unknown variable")|safe}}.
+Every variable that is modelled as depending on that variable is also considered to be unknown.
+If we have data that we model as being a sample from the distribution of an unknown variable
+(or if we have a distribution from which to draw such data), then that unknown variable
+can be furthermore called an
+{{siteref("Observed_Variable", "observed variable")|safe}}.
+If it isn't observed, an unknown variable is considered to be {{siteref("Unobserved_Variable", "unobserved")|safe}}.
+The {{siteref("Joint_Distribution", "joint distribution")|safe}} over all of the unknown variables in a model
+is the probabilistic model induced by a PlanZero model.
+</p>
 
 
-<h2 id="overview">Glossary Overview</h2>
+<h4 id="semantic-variable-taxonomy">Taxonomy of Model Variables by semantics</h4>
+
+<pre class="mermaid">
+graph TD
+      A["All Model Variables"]
+
+      B["Emission Variables"]
+      A --"Always includes full set"--> B
+
+      C["Cashflow Variables"]
+      A -.-> |May include some| C
+
+      D["Other Variables"]
+      A -.-> |May include some| D
+</pre>
+
+<h5>Emission Variables</h5>
+<p>
+PlanZero models always have a full set of {{siteref("Emission_Variables", "emissions variables")|safe}}, covering
+each year (from 1990 to some forecasting horizon such as 2050 or 2100), in units of ktCO2e, of each gas, from each region (province and territory), associated with each of the 71 NIR-2025 reporting sectors.
+The estimates from a given model may be more or less uncertain, but they must all be present
+in order for the pages on the site to render correctly.
+The visualizations of these estimates provide the main graphics for model summaries and per-sector summary pages featured on the site.
+I imagine at some point, a future NIR will change the reporting taxonomy
+from the 71 sectors of the NIR-2025 to some other set.
+At such a time, PlanZero modelling will need to adapt to the new taxonomy in order to continue forecasting NIR data.
+The NIR-2025 and Static-Normals models have only these emissions variables as modelling outputs.
+</p>
+
+<h5>Cashflow Variables</h5>
+<p>
+PlanZero models that contain strategies (more on strategies, below)
+may model the movement of money with {{siteref("Cashflow_Variables", "cashflow variables")|safe}}.
+To use our running example of Bovaer, the Scale-Bovaer strategy works by defining
+a variable that represents the money available to fund the program to have a large available amount.
+Cash, in PlanZero models, is modelled as flowing among
+a fixed set of economic entities called 
+is a concept of {{siteref("Special_Project_Entity", "Special Project Entities (SPEs)")|safe}}.
+SPEs are abstract economic entities with cash balances.
+SPEs represent non-overlapping sets of actual or hypothetical individuals and corporate entities,
+such as e.g. "Farms administering Bovaer", "Farms not administering Bovaer", and a hypothetical federal "Bovaer Subsidy Program".
+Since PlanZero models only the flow of money from one SPE into another one, the annual sum of all cashflow is always zero.
+It is by combining cashflow estimates with emissions estimates that the PlanZero build system calculates
+a strategy's {{siteref("Emission_Reduction_Efficiency", "efficiency of emissions reduction")|safe}}, in terms of e.g. cost per t{{CO2e}} abated.
+</p>
+
+<h5>Other Variables</h5>
+<p>
+Beyond emissions and cashflow variables,
+A planzero model can include various other forecasts of contributing factors, or latent explanatory variables, in
+order to estimate emissions and cashflow.
+Such quantities can be modelled in various ways, and are expected to be documented where they arise by the
+model elements that define them (see below).
+Other variables are necessary in PlanZero models, they are simply not directly used
+in standard visualizations of models or strategies,
+or to compute standard model metrics.
+Future work may add support for visualizing some/all of these so-called other variables to the site, but as of writing
+that functionality is not on the site.
+</p>
+
+
+<h3 id="model-elements">Model Elements</h3>
+
+<pre class="mermaid">
+graph TD
+      A["All Model Elements"]
+
+      B["Structural Elements"]
+      A --> |Mostly| B
+
+      C["Strategy Elements"]
+      A -.-> |May include some| C
+</pre>
+
+<p>
+PlanZero Models expect {{siteref("Model_Element", "model elements")|safe}} to define the model's variables.
+The design and scope of model elements draws from two lines of thinking:
+<ol>
+	<li>Plugin architecture (from the discipline of <a href="https://en.wikipedia.org/wiki/Software_engineering">software engineering</a>)</li>
+	<li>Strategy communication (from the discipline of <a href="https://en.wikipedia.org/wiki/Strategic_management">strategic management</a>)</li>
+</ol>
+</p>
+
+<p>
+<a href="https://cs.uwaterloo.ca/~m2nagapp/courses/CS446/1195/Arch_Design_Activity/PlugIn.pdf">Plug-in architecture designs</a>
+are widely used in software engineering.
+Generally, the architecture "allows application logic to be divided between independent plug-in
+modules and a basic core system, providing extensibility, flexibility, and isolation of application features
+and custom processing logic."
+In the context of PlanZero models, it encourages a standard system for modelling so that
+model evaluation and model visualization here on the site can be done in a standard way across multiple models
+(e.g. supports the existence of the model-explorer page).
+At the same time, it supports flexible modelling logic so long as that logic resides within the model elements, which are
+the plugins (so to speak, in the language of the architectural design pattern.)
+</p>
+
+<p>Along the line of strategic management thinking: relative to at least
+"<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">The Executive's Guide to Facilitating Strategy
+</a>" by Michael Wilkinson (2011),
+we can think of Canada as an organization and PlanZero as aiming to support Canada's
+"Objective" (specific, quantifiable, realistic targets that measure accomplishment of a goal over a specific period)
+of emissions reduction to net zero by 2050.
+Wilkinson (2011) recommends to select strategies for achieving objectives
+on the basis of a characterization of related considerations in terms of
+(a) Critical Success Factors (necessary conditions for success)
+and (b) Barriers (existing or potential challenges that hinder the achievement of one or more objectives).
+PlanZero's strategy elements are like Wilkinson's strategies,
+in that the effect of a strategy element on a model should be to
+make success in an objective (e.g. of net zero by 2050) more likely.
+PlanZero's structural elements encompass Wilkinson's Barriers,
+in the sense that they formalize the relationship between strategies and emissions;
+this relationship can be seen, arguably, as "the challenge" to emission reduction in the model.
+</p>
+
+<p>
+When they are done well, PlanZero model elements should represent both good software,
+and also good communication of the modelling assumptions they bring to a PlanZero model.
+</p>
+
+<h4 id="structural-elements">Structural Elements</h4>
+<p>
+Structural elements are fragments of modelling logic that,
+taken together,
+represent the assumptions about what variables
+are in the model (other than the emissions variables, which are always present) and how
+those variables are related to one another, either deterministically or probabilistically.
+A deterministic relationship between variables A and B might be that A is twice B.
+A probabilistic relationship between variables A and B might be that A is Normally-distributed about a mean that is twice B,
+with such-and-such variance.
+(In either case, B might be known exactly, or it may be an unknown variable with its own distribution under the model.)
+Structural elements are required, and make up most if not all of the elements of a full model:
+the Static-Normals model, for example, is made up entirely of structural elements;
+the Scaling model, as of writing, is made up of hundreds of structural elements and a single strategy element.
+</p>
+
+<p>
+Structural elements do many kinds of work, such as e.g.
+<ul>
+    <li>loading data as observations of unknown variables</li>
+    <li>defining the priors on static normals in the Static Normals model</li>
+    <li>computing the weighted-KL divergence metric from NIR-2025 actuals</li>
+    <li>defining hypothetical dynamics of Bovaer uptake across Canadian farms</li>
+    <li>summing up emissions across regions, sectors, and gases</li>
+</ul>
+Any set of structural elements that defines all of the necessary emissions can be a valid PlanZero model.
+Two of the models currently listed on the PlanZero models page are composed entirely of structural elements:
+NIR-2025 and Static Normals.
+Models pages on the PlanZero site generally feature a listing of their key structural elements,
+and links to per-structural-element pages documenting those structural elements.
+The Scaling model has one additional type of element, a <i>strategy element</i>; strategy elements are the subject
+of the next section.
+</p>
+
+
+<h4 id="strategy-elements">Strategies: broad activities that could be pursued</h4>
+<p>
+Strategy elements are elements that are meant to be ablated (individually
+removed) in order to compare model outputs with and without the presence of the
+strategy element.
+Strategies are indended to explore opportunities for capital, labour, and technology to reduce emissions.
+In future, PlanZero could be perhaps be extended to evaluate strategies in terms of attracting investment,
+creating durable employment, affecting land use, or affecting trade, sovereignty, and other matters of policy, but those
+things are not currently modelled.
+PlanZero currently features just a single strategy element, which is to fund a hypothetical federal Bovaer subsidy program.
+When the hypothetical program SPE is funded, then pre-existing structural elements draw funds from the program to
+e.g. Bovaer purchase, farm subsidies, and monitoring programs. When the hypothetical program SPE is not funded,
+then the pre-existing structural elements have no effect.
+</p>
+
+<p>
+Strategy elements are similar in nature to structural elements, but they must be defined
+such that the model is still valid without their presence.
+So for example, they can't define emission variables directly.
+They must work by 
+offering definitions for variables that would otherwise assume default values.
+In the case of the Bovaer strategy, the default balance for the hypothetical program is 0, and the strategy
+implements a supposition that it were sufficiently funded to support as many farmers as would opt-in.
+</p>
+
+<p>
+PlanZero model pages list the strategies in a model,
+and link to per-strategy pages that document each strategy and its impact on the model outputs.
+The impact of a strategy is determined by evaluating the full model with the strategy included (which is the same for all strategies),
+and then again without including it (which is unique for each strategy), and comparing the two sets of results.
+PlanZero performs this comparison (called {{siteref("Ablative Analysis")|safe}}) automatically
+to produce charts and analysis for each strategy page.
+</p>
+
+<h4 id="inference-groups">Inference Groups</h4>
+
+<p>
+PlanZero models are too large for a direct application of NumPyro's standard inference algorithms.
+At the same time, it is also true that PlanZero models, to date, comprise many independent parts;
+each of these parts <i>is</i> of a suitable size for standard inference algorithms.
+For example, Oil and Gas Extraction emissions are independent of Venting emissions in the Static Normals model.
+In order to leverage this independence and use standard inference algorithms,
+PlanZero models are constructed with a concept of {{siteref("Inference Group", "Inference Groups")|safe}},
+which are non-overlapping sets of structural and strategy elements,
+each of which defines a submodel suitable for independent inference.
+Inference in such submodels is meant to take a few minutes (for each inference group).
+</p>
+
+<h3 id="model-explorer">Model Explorer</h3>
+
+<p>
+While inference groups are necessary for computational practicality,
+they also provide a communication benefit:
+a model's inference groups can fit in a readable list, even if it's a bit long (e.g. 100-200 groups).
+Browsing through inference groups lets a reader connect from a full model,
+down to the individual model elements, of which there may be thousands in total.
+The PlanZero now includes a
+<a href="/model-explorer/">Model Explorer</a> page,
+which uses inference groups to expose the elements of a model.
+The "Overview" tab on the model explorer shows a tabular view of the connectivity
+between elements in a model.
+The model explorer also include a "Trace" tab,
+that shows the computational relationships between variables and model elements,
+but to explain what's shown in that tab will require terminology from the next section,
+about model computation and variable types.
+</p>
+
+
+
+<h2 id="model-evaluation">Appendix 2: Model Evaluation</h2>
+
+Model evaluation is the computational task of determining a model's outputs
+(the variables outlined in the first section of Appendix 1.)
+PlanZero models are evaluated in three phases (prior, inference and posterior) as explained in the next section.
+Within each phase there are are three computational sub-phases (preparation, annual scan, and post-processing),
+and those sub-phases help explain the three kinds of variable that PlanZero models can have
+(general, annual, and carry variables).
+
+<h3 id="phases">Phases of model evaluation: prior, inference, and posterior</h3>
+
+<p>
+In future, a third Model Explorer tab or panel element may offer to show the numbers associated with each variable
+node in the Trace tab, but that functionality is not yet implemented.
+
+explains, in general terms and at a high level,
+how PlanZero models produce the numbers that are featured on the site.
+PlanZero models are evaluated in three phases, typical of probabilistic models: Prior, Inference, and Posterior.
+The numbers on the site are from the Posterior phase.
+Within each phase are three computational subphases of model construction, which allow model elements to share variable definitions
+while defining as many years' worth of modelled variables as are required, while also taking advantage of
+vectorized math libraries to perform the necessary computations quickly.
+Data flow through variables and computational subphases can now now visualized
+through a second tab, a <a href="/model-explorer/">Model Explorer Trace tab</a>.
+It can visualize model element interactions such as the ones in the screenshot below:
+
+Such terms relate to the phases of computation in the model (e.g. prior and posterior phases of Bayesian inference)
+the sub-phases of computation within each phase (e.g. before, during, and after a recursive computation over the years
+of the modelled period) and the types of variable that can be accommodated within this computational framework
+(e.g. fixed-shape variables, variables that are defined for every year, and running statistics).
+Appendix 2 also explains terms relating to what PlanZero calls <i>aspects</i> of variables
+which relate to if (and how) an [unknown] variable should be considered to be <i>observed</i>,
+for the purpose of Bayesian inference.
+Finally <a href="#appendix-full-glossary">Appendix 3</a> includes a snapshot of the glossary at time of writing.
+</p>
+
+<pre class="mermaid">
+graph LR
+      A["Prior (few seconds)"] --> B["Inference (hours)"]
+      B --> C["Posterior (many seconds)"]
+</pre>
+
+<p>
+PlanZero's <a href="/models">models</a> page has been updated and consolidated so that there
+are no longer two subsections (there used to be "simulation-based models" and "probabilistic Models" subsections)
+there is just one list of [probabilistic] models:
+<ul>
+	<li>NIR2025, the probabilistic interpretation of the NIR-2025 data</li>
+	<li>Static Normals, a baseline probabilistic model implementing an assumption that there will be no long-term trends in any of the NIR emissions sectors</li>
+	<li>Scaling, the model that is intended to include multiple scalable technologies, but currently includes just a hypothetical Bovaer program.</li>
+</ul>
+The so-called "simulation-based" models have been removed because they were redundant with the probabilistic models.
+What used to be simulation-based models were, conceptually, a restricted special case of probabilistic models.
+Furthermore, the way they were implemented was not amenable to Bayesian inference, so they've been replaced with
+fully probabilistic ones.
+</p>
+
+<p>
+The first phase starts by loading data and drawing random samples from
+any independent unknown variables, and then proceeds to compute or sample variables that depend on those variables,
+and then variables that depend on those variables and so on until all variables have <i>some</i> value.
+This is called the Prior phase, and even though PlanZero models are large, it can be completed in a few seconds.
+</p>
+
+<p>
+After the prior phase has completed, some analysis occurs around variables with both probability distributions and data,
+called <i>{{siteref("Observed Variable", "observed variables")|safe}}</i>.
+For each observed variable, PlanZero estimates the probability of the data
+according to the model. This is especially important in cases where the probability according to the model actually depends
+on other variables in the model, which have their own probabilities.
+Typically the parameters of the distribution over data
+(a) were themselves chosen randomly as part of the prior calculation,
+(b) don't make the data very probable,
+and (c) are <i>hardly</i> any more probable than some other parameter values that could have been chosen almost as easily,
+and which would have made the data appear <i>far</i> more probable.
+{{siteref("Bayesian Inference")|safe}} is about sampling,
+with the benefit of data, parameter values governing observed values that
+strike a balance between being probable themselves (according to the prior distribution) and making the data associated
+with observed variables also probable. 
+PlanZero uses NumPyro (a probabilistic programming system)
+to compute samples that implement Bayesian inference of the {{siteref("Unobserved Variable", "unobserved variables")|safe}}
+in PlanZero models.
+In contrast with the computation of the Prior phase, which takes a few seconds,
+this inference of posterior samples can take <i>hours</i> for e.g. 500 samples.
+PlanZero implements strategies for caching and piecewise computation to prevent this computation from taking longer,
+or from being repeated unnecessarily.
+See NumPyro documentation for an introduction to the
+<a href="https://num.pyro.ai/en/latest/getting_started.html">inference algorithms</a>
+used in this phase.
+</p>
+
+<p>
+The final phase of PlanZero model evaluation is called the {{siteref("Posterior Phase")|safe}},
+which is a re-computation of the whole model for each of the e.g. 500 inferred values of unobserved variables.
+The posterior phase involves recomputation of values for observed variables, the semantics of which are:
+<i>What is a plausible value for this observed variable, given all of the observations (with some amount of noise, which may or may not have been estimated) and any inferred values of governing model parameters?</i>
+Or, simply: <i>What does the model think the variable was?</i>
+This computation is currently memory-intensive
+because it involves computing statistics over e.g. 500 possible values of every
+variable in the already-large model, but larger models could be accommodated by a more careful sequencing of the computation of statistics.
+Whereas prior computations take seconds, and inference computations take hours,
+posterior computations take a few minutes.
+The result of posterior computations are the statistics displayed on the site:
+the upper and lower quantiles of emission amounts, strategy costs, and so on are all calculated across the e.g. 500 plausible values
+associated with whatever is the relevant model output.
+</p>
+
+
+<h3 id="subphases">Computational subphases of model construction</h3>
+
+<p>
+There are three computational subphases of model construction,
+based around however many years are being modelled.
+Model elements can participate in any or all of the following model-construction sub-phases:
+<ul>
+	<li>preparation: computation before any of the annual steps</li>
+	<li>annual steps: computation for each modelled year</li>
+	<li>post-processing: computation after the last annual step</li>
+</ul>
+Models are constructed by
+first doing all the preparation (of all the model elements),
+then doing some computation for each modelled year (giving every model element a chance to do something on each year),
+then finally giving each element a chance to do some post-processing computation.
+At each step of computation, the model elements can access variables that have already been defined,
+and the result of their computation is to define new variables.
+Eventually all the model elements have done all of their computations, and all
+of the model's variables are defined.
+This is how models are constructed in the Prior and Posterior phases.
+As was described above, Inference is a bit different because Inference Groups are evaluated independently;
+in the case of Inference, it is just each Inference Group that is constructed in this way, not the whole model.
+</p>
+
+<h3 id="varkey-types">General, annual, and carry variables</h3>
+
+<p>The nature of the computational subphases of model construction induce three types of variable:
+<ul>
+	<li>general: a variable whose array size is independent of the number of years, and whose value does not depend on the year</li>
+	<li>annual: a variable whose array size is the number of years</li>
+	<li>carry: a variable whose array size is independent of the number of years, whose value does depend on the year</li>
+</ul>
+General variables are perhaps the simplest: they have a certain size and value.
+When a model element loads up data about a certain sector to define a variable, that is naturally a "general" variable.
+A general variable can be just a single number (a scalar) or an array of any number of dimensions (n-dimenional array).
+Annual variables must be at least one-dimensional, but they can be n-dimensional too. The first dimension of an annual
+variable allows it to provide a value for each modelled year.
+Annual variables are natural for e.g. the emissions predicted for each certain sector-gas-region combination.
+Carry variables are natural for recursively-defined variables.
+For example, the number of farmers administering Bovaer in a given year is naturally defined as the
+number from the previous year plus or minus some delta.
+</p>
+
+<p>
+There are various constraints on how the computational subphases can access and define various variable types.
+For example, an annual step cannot define a general variable (the value of a general variable can't depend on the year),
+and a preparation computation
+cannot access the final value of a carry variable
+(it won't be defined until after the last annual step, which comes after preparation).
+Still, the modelling framework seems flexible enough,
+and the constraints ensure that PlanZero can run all of the model phases and subphases in a correct, predictable way,
+no matter what elements make up any given model.
+</p>
+
+<h3 id="model-explorer-trace">Model Explorer Trace: element-variable computational flow</h3>
+
+<p>
+The computational subphases and variable types are illustrated below
+in the case of a piece of the Bovaer-related inference group of the Scaling model.
+The "Overview" tab of the model explorer lets you check off a subset of the model elements
+in an inference group in order to see them in more detail in the "Trace" tab.
+The Trace tab features a graph view that shows renderings like the screenshot below:
+Each selected model element corresponds to a column of filled nodes, which correspond to computational sub-phases.
+The outlined nodes stand for individual variables or sets of related variables,
+and the style of outlining indicates the kind of variable.
+There are actually four different variable nodes for carries: one variable for the initial value,
+one for current and next value after each annual computational step, and one for the final value.
+For annual variables there is sometimes just one node, or sometimes two ("all" and "this") if the annual variable
+is accessed or defined via an annual step computation.
+The solid arrows show how data flows mostly downward from inputs to outputs through the computational subphases
+and dependencies between model elements.
+The backward (up) arrows show the recursive definition of the next value of a carry variable
+becomes the current value for the next annual computation step.
+Load up different model elements in the model explorer to see how they interact.
+In future, a third tab of the model explorer might let you select individual variables and see
+the Posterior-phase sample distributions in an appropriate, contextualized way.
+</p>
+
+
+<h2 id="appendix-full-glossary">Appendix 3: Glossary Snapshot</h2>
 
 <p>
 As of the writing of this post,
 PlanZero's <a href="/glossary/">glossary</a> defines and cross-references
-the following 58 terms:
+the following {{ len(planzero.glossary.registry) }} terms.
 <table>
     <tbody>
         <tr>
@@ -136,672 +648,39 @@ the following 58 terms:
 </table>
 </p>
 
-<p>
-The terms were chosen somewhat ad-hoc based on my recollection of key topics
-from posts to date.
-Terminology of emissions and greenhouse gases links to
-<a href="/blog/2026-01-21-unfccc">A Model of Greenhouse Gas Emissions</a>, from January 21.
-Terms relating to IPCC, Paris Agreements, UNFCC, CNZEAA and so on link to
-<a href="/blog/2026-02-02-cnzeaa">The Paris Agreement and the CNZEAA</a>.
-Several terms relating to NIR modelling e.g. NIR, NGGI, NEUD, NRCan, ECCC
-link implicitly and/or explicitly to NIR-modelling posts I've been writing over
-the past few months.
-Terms relating to git and GitHub relate somewhat to the previous
-"<a href="/blog/2026-04-12-about#revision-control">About This Project...</a>" post,
-but also aim to provide some onboarding documentation to future readers
-I hope to have, who might be interested in collaboration on this project.
-The glossary also defines terms that have been used implicitly in
-the recent post on <a href="/blog/2026-04-03-bovaer">Bovaer Modelling</a>,
-such as Model, Scenario, Simulation, Strategy, Barrier, and KPI.
-The glossary also defines key terms of the computational modelling framework
-that underlies PlanZero's simulation results, such as Time Series, Dynamic Element, and Scenario,
-because they are so closely related to the modelling terms, and
-they may some day be useful as preliminary developer documentation.
-</p>
-<p>
-I haven't written about how PlanZero works before, and writing about
-how it worked made me think about how it worked,
-which made me realize that it should work better.
-Writing this glossary post, has, consequently, been one of the largest
-efforts of any post written to date.
-Among many changes (see {{siteref("GH")|safe}} {{siteref("PR")|safe}}  <a href="https://github.com/jaberg/planzero/pull/78/changes">#78</a>)
-the most impactful is probably the conceptual clarification of Scenario and Simulation,
-which has led to improved visualizations, as well as the improved handling of KPIs (see below), which have enabled much better
-visualization of the impact of strategies.
-Visualizing and analyzing the impacts of strategies is one of the
-core capabilities that PlanZero needs to be good at, so I think the effort was time well spent.
-The rest of this post introduces the computational and modelling terms in
-narrative form, so that their entries in the glossary can be reasonably short,
-and link to this post for more context.
-</p>
+<h3 id="glossary-terms">Glossary Terms</h3>
 
+{% for clsname, obj in sorted(planzero.glossary.registry.items()) %}
+<h3 id="{{clsname}}">
+    {% for name in obj.pretty_names() %} {{name}}{%if not loop.last%}, {%endif%}{%endfor%}<a href="#{{clsname}}" class="anchor-link" title="Link to this section"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Chain_link_icon_slanted.png/250px-Chain_link_icon_slanted.png"
+        width="12.5px"/></a>
+</h3>
 
+{{obj.definition_html|safe}}
 
-<h2 id="simulation">Simulation Framework</h2>
+{% if obj.code_refs %}
+    <p><strong style="color: #666;">Code References</strong>
+    <ul>
+    {% for ref_text, ref_url in obj.code_links.items() %}
+        <li><a href="{{ref_url}}">{{ref_text}}</a></li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
+{% if obj.see_also or obj.as_discussed_in_posts %}
+    <p><strong style="color: #666;">See Also</strong>
+    <ul>
+    {% for term, ref_text in sorted(obj.see_also.items()) %}
+    <li><a href="#{{planzero.glossary.aka_registry[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
+    {% endfor %}
+    {% for post_obj, hashref, descr in obj.as_discussed_in_posts %}
+    <li>[Post] <a href="{{post_obj.siteref}}{{hashref}}">{{post_obj.title}}</a> - {{descr}}</li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
 
-<div class="box">
-    I've changed my mind about this since drafting it.
-    Probabilistic modelling is unavoidable, and needs to be
-    the foundation of this level of description.
-</div>
-
-<p>
-This section introduces the simulation system used in PlanZero, which involves four concepts:
-<ul>
-    <li>time series, which contain the data of time-varying quantities (such as e.g. temperature, or annual emissions)</li>
-    <li>dynamic elements, which implement rules for the evolution of time series data</li>
-    <li>simulation, which is the computational act of rolling out time series forward in time</li>
-    <li>scenarios, which are the result of simulation</li>
-</ul>
-The next subsections explain each of these in more detail.
-The modelling framework at this level aims to be somewhat flexible.
-For example, it is now used to run the planetary heat simulation
-powering this <a href="/blog/2026-01-21-unfccc">blog post from earlier this year</a>.
-Its main use though,
-is the <a href="#modelling">modelling of National Emissions</a>, which is the focus of
-the next top-level section.
-</p>
-
-<h3 id="timeseries">Time Series</h3>
-<p>
-A time series represents a time-varying quantity in some unit of measure.
-PlanZero posts have used time series
-objects already to represent just about everything that was plotted as a function of time,
-e.g. both the various sectoral emissions of greenhouse gases in the NIR,
-and the attempts to reconstruct them.
-The key attributes of a time series are:
-<ul>
-    <li>a set of <i>what</i> numeric values the series takes</li>
-    <li>a set of times marking <i>when</i> the series takes these values</li>
-    <li>a unit of measure for the values</li>
-    <li>an interpolation mode, indicating how to interpret the value for times other than the enumerated ones.</li>
-</ul>
-A time series is a bit like two matched columns in a spreadsheet:
-one column being the times, and the other being the values.
-Relative to columns in a spreadsheet,
-a time series object restricts all of its values to be in a single common unit of measure,
-and imposes <i>querying semantics</i> on the time series according to the interpolation mode.
-</p>
-<p>
-Time series are important in PlanZero because they are the basis of simulation.
-PlanZero simulates scenarios by repeatedly figuring out what the next value in each time series should be.
-The figuring-out of the next value is done by dynamic elements, which we'll talk about next.
-</p>
-
-<p>
-Time series always have an associated unit of measure,
-as guard against programming and modelling errors.
-Unit conversion is a notorious source of error in systems that are difficult to test.
-One recent high-profile example is the <a href="https://en.wikipedia.org/wiki/Mars_Climate_Orbiter">loss of the Mars Climate Orbiter in 1999</a>.
-PlanZero uses Python's <a href="https://pint.readthedocs.io/en/stable/">pint</a> package to handle units.
-PlanZero has also introduced additional units of measure, such as cattle, farms, CAD, kg-of-{{CO2e|safe}}, in order prevent, for example,
-adding rates of cost per head of cattle to a rate of cost per farm.
-Several programming errors so far in PlanZero development have been caught by this mechanism.
-</p>
-
-<p>
-The time series interpolation mode is a mechanism that is partly for convenience and partly for error prevention.
-There are currently two interpolation modes.
-The value of a time series at times other than those explicitly mentioned is either
-<ul>
-    <li>"current", defined to be the most recent value of the series</li>
-    <li>"no interpolation", which leaves such values undefined</li>
-</ul>
-Arithmetic is defined for time series, and the rules of arithmetic respect these interpolation modes, so that, for example,
-one time series representing the number of cars over time can be multiplied by another time series representing the average rate of emission per vehicle over time,
-and the result will be a time series of the average rate of emission from all vehicles.
-Both of these time series should have the first type of interpolation.
-</p>
-<p>
-If one of the time series represents an annual total though, it should have the second type of interpolation.
-To see why, consider the e.g.  annual total {{CH4|safe}} emissions for Quebec.
-It makes sense to represent annual totals as time series because there is a total for each year, at least over some period.
-However, the total represents a time integral of emissions over a certain period, typically January 1 to Dec 31;
-we can associate that total with a time within each year (such as the beginning or the end),
-but the intention for such totals is to handle them with precision, and the
-total was not meant to apply to other times of the year.
-The rules of time series arithmetic in PlanZero are that "no interpolation" tends to spread:
-adding a "no interpolation" time series to a "current" interpolation time series results in a "no interpolation" time series
-defined at the intersection of times where the argument time series were defined.
-Sometimes, after an elaborate computation, this intersection of times with an associated value is a smaller set than expected.
-It's usually a programming error on my part, that I <i>meant</i> to interpret some of the time series more broadly, but having to
-do this kind of debugging and fix it by choosing a specific point in the implementation logic at which to introduce more points or a "current" interpolation,
-results in implementation logic that I'm more confident in.
-</p>
-
-<p>
-These mechanisms don't guarantee a model is good, but they do
-help ensure that a simulation result reflects the intended modelling
-assumptions.
-</p>
-
-
-<h3 id="dynelem">Dynamic Element</h3>
-
-<p>
-If time series are like the tables of numbers you in spreadsheet columns,
-PlanZero's dynamic elements are like the formulas that define spreadsheet cells.
-Dynamic elements define time series;
-they associate time series with names (unique identifiers), and implement
-logic that defines the times and values of each time series.
-All of the modelling elements in PlanZero models, which define the time series shown in various charts etc., are dynamic elements.
-The logic for defining time series in a dynamic element is of two kinds:
-<ul>
-    <li>initialization, defining some time series regardless of other dynamic elements or time series in a simulation</li>
-    <li>recurrence, updating those time series by reading values from other dynamic elements and time series</li>
-</ul>
-</p>
-<p>
-Dynamic elements are meant to be loosely coupled, in the sense that you can
-define a simulation from any set of dynamic elements.
-This modularity helps with testing, because a dynamic element can be simulated on its own
-or with a small set of related ones, to verify its behaviour quickly and comprehensively.
-This design pattern comes with a danger though, which is that if simulating <i>any</i> set of dynamic elements does <i>something</i>,
-then the fact of many dynamic elements producing a scenario through simulation offers no evidence that the scenario reflects what it is <i>supposed to model</i>.
-Generally, it is hard to verify that a large system of variables governed by modular logic
-is behaving as it should.
-PlanZero helps produce sound models at a computational level by supporting modular testing, and
-<a href="https://github.com/jaberg/planzero/issues/74">could</a> validate that, for example, unused time series are <i>deliberately</i> unused.
-</p>
-
-<h4>Initialization</h4>
-<p>
-With initialization logic, a dynamic element creates time series (singular or
-plural) without reference to other dynamic elements or their time series.
-It declares all of the time series that it intends to read from once they are defined,
-and it declares the ones it intends to write.
-Only one dynamic element is allowed to write to each time series, but it can
-can read from many.
-I think of these time series (to which a dynamic element writes) as <i>belonging</i> to that dynamic element;
-when I refer to a dynamic element's time series, I am referring to these time series to which it defined, and to which it is able to write.
-When declaring an intention to read a time series, a dynamic element must also declare
-whether it intends to read the exactly-current value, or just historical values.
-This is important for scheduling the recurrence computation, the topic of the next section.
-The initialization also defines the <i>first time</i> at which the recurrence
-logic will be required, in order to extend its time series.
-</p>
-<h4>Recurrence</h4>
-<p>
-A dynamic element's recurrence logic serves to update its time series to the present moment of an in-progress simulation.
-Any recurrence logic required for simulation of time series up to some point
-in time is scheduled to run after all of the dynamic element initialization.
-After initialization, all of the time series are ready for reading, so that recurrence logic
-in each dynamic element can read from any time series defined by any dynamic element.
-These reads may only be of the past or present, and may only be of the present
-for the time series declared to be needed for exactly-current reads.
-Recurrence calculations are used to define time series that may change differently
-depending on what other dynamic elements are involved in a simulation.
-At the end of each recurrence calculation, the recurrence logic must report whether (and when) the recurrence should run again
-if the simulation continues to that point.
-</p>
-
-<p>
-Exactly-current reads are special, because it means that the dynamic element
-writing to the other one must update the value of that other time series
-first, before this dynamic element reads the value.
-This exactly-current reading can also create mutual dependency: two dynamic elements
-can define variables and declare that they need to read one another's variables all at exactly-current time.
-The PlanZero simulation engine will refuse to simulate anything in such a situation,
-one or the other of the dynamic elements will need to relax its requirement to read the exactly-current value from the other.
-</p>
-
-<h3 id="simulation">Simulation</h3>
-<p>
-Simulation in PlanZero is the computational process of turning set of dynamic elements into a
-set of time series covering a period of time, called a scenario (more on scenarios next section).
-Simulation begins with the initialization logic of each dynamic element,
-which, together, define all of the time series in a scenario.
-After initialization, the simulation algorithm
-has (1) each time series defined (if only for the earliest times and values), and
-(2) the next time each time series could be defined, by appealing to the recurrence logic of its owner.
-The current simulation algorithm then simply steps forward in chronological order,
-updating each time series until the whole time period required for the simulation has been covered.
-</p>
-<p>
-I believe it is possible to evaluate dynamic elements more efficiently by not
-always going in strictly chronological order, and sometimes evaluating multiple time points at once,
-but the implementation is not simple. There's a note about it in
-<a href="https://github.com/jaberg/planzero/issues/65">this github issue</a>.
-</p>
-
-<h3 id="scenario">Scenario</h3>
-<p>
-A PlanZero scenario is the set of time series that result from simulation, which
-are fully specified by times and values until the end time of the simulation.
-When visualizing a simulation within the <a href="/models/#sim">Simulation-based models</a> pages
-on this site, it is the scenario data that are used to draw the various
-figures and to compute various statistics.
-</p>
-
-<h2 id="modelling">Modelling National Emissions</h2>
-
-<p>The purpose of PlanZero is to model future scenarios,
-and to explore strategies for how Canada might achieve a net-zero economy.
-I think of this modelling as being a combination of
-strategic management, machine learning, and numerical optimization.
-Numerical optimization may perhaps some day play a role in optimizing the use
-of a large set of strategies, but that day is still some ways off.
-Machine learning may perhaps be useful in establishing good baselines for strategy evaluation,
-and I'd like to explore it in near-term future work.
-For now though, this section uses concepts from strategic management
-to explain how PlanZero models are organized and presented
-via the "Simulations" pages of this site.
-</p>
-
-<p>
-<a href="https://en.wikipedia.org/wiki/Strategic_management">Strategic management</a>, to quote wikipedia,
-"involves the formulation and implementation of the major goals and initiatives taken by an organization's managers on behalf of stakeholders, based on consideration of resources and an assessment of the internal and external environments in which the organization operates."
-If we consider Canada as an organization, the federal government has,
-among its many goals and initiatives, set a goal to achieve net-zero by 2050 (<a href="/blog/2026-02-02-cnzeaa">earlier post</a>, <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/net-zero-emissions-2050.html">government site</a>).
-The word "goal" has a common-sense definition,
-but in the context of governmental planning and legislation,
-it is also appropriate to interpret it more technically.
-For PlanZero, the technical definition leads goals to play a precise role in its modelling framework.
-</p>
-
-<p>
-Academics and practicing managers have developed numerous models and frameworks to assist in strategic decision-making, but for the formal modeling elements in PlanZero,
-I chose to draw from
-"<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">The
-    Executive's Guide to Facilitating Strategy</a>" by Michael Wilkinson (published 2011,
-which I'll refer to as EGFS).
-In the terminology of the EGFS, an organization's SMART goals (Specific, Measurable, Achievable, Relevant, and Time-bound)
-should be broken down during a planning process into three conceptual kinds of thing: barriers, critical success factors, and strategies.
-All of these things map onto elements of PlanZero models, and the mapping
-helps to explain how a PlanZero model can represent a plan for e.g. Canada's National Emissions.
-</p>
-<table>
-    <thead>
-        <tr>
-            <th>Term</th>
-            <th>EGFS</th>
-            <th>PlanZero</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td><strong>Critical Success Factor (CSF)</strong></td>
-            <td>key conditions that must be created to achieve one or more objectives</td>
-            <td>time series statistics: per-sector emissions being low, zero, or negative; minimal subsidy requirements</td>
-        </tr>
-        <tr>
-            <td><strong>Barrier</strong></td>
-            <td>existing or potential challenges that hinder the achievement of one or more objectives</td>
-            <td>dynamic elements modelling physical, economic, ecological, and social factors' influence on one another, emissions, and costs</td>
-        </tr>
-        <tr>
-            <td><strong>Strategy</strong></td>
-            <td>broad activities required to achieve a goal, create a critical condition, or overcome a barrier</td>
-            <td>dynamic elements that are optional, but which influence barriers when present, to create critical conditions</td>
-        </tr>
-    </tbody>
-</table>
-
-<p>
-PlanZero posts about replicating {{siteref("NIR")|safe}} estimates (such as <a href="/blog/2026-03-31-enteric">"Enteric Fermentation: Emissions Calculations"</a>) have included sections with these names (barriers, critical success factors, strategies),
-and informal thoughts aligned with the EGFS definitions in the table above.
-The modelling framework in this post introduces the PlanZero definitions in the rightmost column,
-as dynamic elements and time series.
-I believe that by organizing time series and dynamic elements according to these labels,
-PlanZero models will be easier to communicate.
-</p>
-
-<!--
-<p>
-The connection to numeric optimization (mentioned a few paragraphs back) is that strategies can be parameterized, and
-then the question would arise how each strategy in a simulation should be configured
-to e.g. minimize some balance of emissions and cost.
-This could, some day, be an interesting optimization problem.
-For now, however, there are not yet strategies in PlanZero that are configurable in this sense,
-and for the first few that <i>are</i> configurable, I expect manual configuration to be
-effective. It may be a long time before algorithmic search is useful. 
-</p>
--->
-
-<p>
-The next subsections explain how the EGFS concepts of critical success factor, barrier, and strategy
-can be formalized in terms of time series and dynamic elements,
-and used in that way to structure and interpret scenario simulations for the purpose of evaluating strategies.
-</p>
-
-<h3 id="formalizing_csfs">Emissions and Costs as Critical Success Factors</h3>
-
-<p>
-Critical success factors are introduced in EGFS as "key conditions that must be created to achieve one or more objectives"
-and the articulation of critical success factors is recommended
-as a prelude to building strategies.
-In PlanZero, there is a specific objective:
-the objective is to reduce emissions as much as possible for each IPCC sector, even producing negative emissions as applicable, and to achieve net zero emissions by 2050.
-PlanZero does not include explicitly-formalized critical success
-factors in its models, but if they were formalized, I expect they would be formalized as a
-triplet of 
-<ul>
-    <li>a time series, e.g. {{CO2e|safe}}/yr for an IPCC sector, greenhouse gas, and province / territory</li>
-    <li>a target value range</li>
-    <li>a target time range</li>
-</ul>
-wherein the first item, the time series, might be called a 
-<i>key performance indicator</i>, or KPI
-(see also
-<a href="https://en.wikipedia.org/wiki/Performance_indicator">wikipedia</a>,
-{{siteref("KPI", "glossary")|safe}}).
-PlanZero has formalized KPIs (more on these below), but it does not have formalized critical success factors.
-The reason is no modelling technicality, it is a very central, real issue.
-It is relatively obvious that
-the metrics of e.g. {{CO2e|safe}}/yr for each IPCC sector are imporant in tracking progress to net zero, because the objective is literally that these numbers sum to zero by 2050.
-However the question of exactly what each annual sector total needs to be,
-by what date, is hotly contested,
-because it's possible that some of these annual emissions may be negative by 2050,
-and that other of the sectors can therefore remain positive (which is expected to be easier).
-How negative some of them may be, and how positive some of them can
-get-away-with-being, so to speak, is one of the biggest real-life challenges
-in planning a net-zero feature.
-</p>
-<p>
-At some point, PlanZero may include explicit critical success factors
-in order to determine automatically whether or not (or with what
-probability) a model achieves net-zero by 2050.
-For now, no model comes close, so no automatic assessment is required.
-</p>
-
-
-<p>
-Coming back to Performance Indicators ({{siteref("KPI", "KPIs")|safe}}),
-specific KPIs have been formalized as being important to PlanZero models.
-The three types of <i>base KPI</i> in PlanZero are
-<ul>
-    <li>{{siteref("Driver", "drivers")|safe}},
-        which are measures of activity or stock, and which are
-        associated with a province or territory</li>
-    <li>{{siteref("Emission Factor", "emission factors")|safe}},
-        which are factors of proportionality between drivers
-        and greenhouse gases, specific to an IPCC Sector,
-        which may be associated with a specific province
-        or territory</li>
-    <li>{{siteref("Subsidy Factor", "subsidy factors")|safe}},
-        which are factors of proportionality between drivers
-        and dollar amounts, which are associated with real or hypothetical
-        public funding programs</li>
-</ul>
-Base KPIs are used to define <i>derived KPIs</i> by multiplying
-drivers with their corresponding emission factors (and/or subsidy factors),
-and adding up the resulting terms to calculate IPCC sectoral emissions totals,
-and total program subsidy requirements.
-</p>
-
-<p>
-For example, in the case of enteric fermentation
-(see this <a href="/blog/2026-03-31-enteric">earlier post approximating the enteric fermentation emissions</a>)
-the emissions calculation 
-can be approximated as the product of two terms (ignoring ruminants other than cattle): number of cattle, and average methane emitted per head of cattle.
-These two terms correspond to two base KPIs:
-<ul>
-    <li>number of cattle (a driver)</li>
-    <li>average amount of methane emitted per head of cattle per unit time (an emission factor)</li>
-</ul>
-Alternatively, there could be a larger set of base KPIs, such as separate driver and
-emissions factor terms for dairy cows, beef cows, and calves, and for each
-province and territory (currently this is how PlanZero does it).
-There's no uniquely optimal set of base KPIs.
-I am hoping, through the continued sector-by-sector research series, to find a relatively stable
-and useful decomposition for each sector, such that there is data for each term,
-and there can be sensible causal modelling of the interaction between time series.
-</p>
-<p>
-These KPIs are now used to illustrate the effect of strategies, on the
-one currently-implemented strategy page here (<a href="/models/sim/Scaling/strategies/Scale_Bovaer/">Scale Bovaer</a>).
-</p>
-
-<h3 id="strategy">Strategies: broad activities that could be pursued, or not</h3>
-
-<p>
-Strategies are defined in EGFS as
-"broad activities required to achieve a goal, create a critical condition, or overcome a barrier."
-In PlanZero,
-strategies are dynamic elements that influence barriers (see below) to affect
-KPIs such as emissions and costs.
-PlanZero barriers and strategies are both dynamic elements in PlanZero.
-The difference between them is that PlanZero strategies should be optional,
-whereas barriers should not.
-PlanZero strategy [dynamic] elements are meant to represent real-life strategies that could be pursued, or not pursued;
-including a strategy in a model means pursuing it,
-and not-including that strategy in the model should mean not-pursuing it.
-The effect of a strategy can be determined by simulating a model with the strategy included,
-and then again without including it, and comparing the two scenarios.
-PlanZero performs this comparison (called {{siteref("Ablative Analysis")|safe}}) automatically
-to produce charts and analysis for strategies in a simulation.
-What counts as a "broad activity" in EGFS is the <i>only</i> kind of activity reflected in PlanZero.
-Detailed planning of how to pursue a strategy in real life is beyond the scope of PlanZero modelling.
-</p>
-
-
-<h3 id="barrier">Barriers: connecting strategies to outcomes</h3>
-
-<p>
-Barriers are defined in EGFS as "existing or potential challenges that
-hinder the achievement of one or more objectives".
-In PlanZero, barriers are the dynamic elements that do almost all of the modelling work;
-they define time series for various physical, economic, ecological, or social
-factors, they relate these time series to one another, and
-they relate them as well to critical success factors
-such as emissions and costs.
-PlanZero barrier [dynamic] elements don't just aim to model
-challenges and hinderences, they collectively represent <i>all</i> of the modelled relationship between
-strategies and objectives.
-Barrier dynamic elements model, e.g.
-<ul>
-    <li>how fast strategies will take effect</li>
-    <li>what costs / profits are expected</li>
-    <li>what will happen in the meantime before / as they work</li>
-    <li>how will strategies affect one another</li>
-</ul>
-At first it seemed cynical to call everything in the model a "barrier" to the
-success of a strategy, but I have come to see this as a reasonable interpretation.
-That said, if there is a better term, I'd be open to adopting it.
-I hope, over time, to build up and refine the library of barriers in PlanZero,
-because I believe that this library will become the most valuable component of the project.
-</p>
-
-
-<h3 id="emissions-model">National Emissions Model</h3>
-
-<p>
-A National Emissions Model, sometimes what I just call a "model", is a set of
-dynamic elements that register time series as drivers and emissions factors, so that
-when they are simulated, the resulting scenario includes emissions of the kind that
-are reported in the National Inventory Reports.
-If a model attempts to be predictive of the future, these emissions time series
-are its predictions.
-The dynamic elements that register drivers and emissions factors are barrier elements,
-so for that reason barrier elements are required in a national emissions model.
-A national emissions model does not need any strategies.
-</p>
-
-<p>
-I would like to illustrate national emissions models, but they are
-hard to show.  The following diagram is a first attempt at drawing a part of
-PlanZero model. It looks only at the use of Bovaer model, looks only
-at one kind of cost, looks only at the effect on one IPCC Sector, and ignores that separate
-time series are defined for each of several cattle types, as well as most provinces
-and territories. Still it begins to show something of the kind of dependency relationship
-that flows through from strategies, through barriers, to emissions and costs.
-Perhaps some day, this sort of visualization can be used to explore implemented models
-rather than simplified caricatures.
-
-<pre class="mermaid">
-    flowchart TD
-    DE_scale[["Scale Bovaer (Strategy)"]] --> TS_frac_on_bovaer
-    TS_frac_on_bovaer(["Fraction of cattle on Bovaer (Time Series)"]) --> DE_cattle_enteric_emissions
-    DE_cattle_enteric_emissions["Cattle Enteric Emission Rates (Barrier)"] --> TS_cattle_emfacs
-    TS_cattle_emfacs(["Emission factor: annual methane per cattle type (Time Series)"])
-    DE_limit["Limit Bovaer Adoption (Barrier)"] --> TS_farmers_open_to_bovaer
-    TS_farmers_open_to_bovaer(["Driver: Farmers open to Bovaer (Time Series)"]) -.->|Back-link uses delayed value| DE_scale
-    TS_frac_on_bovaer --> DE_limit
-    TS_frac_on_bovaer --> DE_purchase_cost
-    DE_purchase_cost["Bovaer Purchasing (Barrier)"] --> TS_bovaer_cost
-    TS_bovaer_cost(["Cost: Annual Bovaer per cattle type (Time Series)"])
-</pre>
-</p>
-<p>
-Since the PlanZero site usually uses simulations to investigate national emissions models,
-I sometimes use the terms interchangeably, even though they refer
-to distinct conceptual levels.
-As of writing, the "Simulations" tab of the site lists two items,
-which correspond to two models.
-The first one, <a href="/models/sim/NIR2025/">NIR2025</a>,
-comprises a single barrier that initializes time series corresponding to the data from the 2025
-National Inventory Report. That dynamic element has no recurrent logic,
-so the time series do not change after year 2023.
-The second one, <a href="/models/sim/Scaling/">Scaling</a>,
-incorporates the NIR2025 data for all but two sectors (Enteric Fermentation, and Industrial Processes / Other Product Manufacture and Use), which are defined instead according to the model
-presented in <a href="/blog/2026-04-03-bovaer">modelling Bovaer adoption</a>.
-<table id="gemini-sort-data-table">
-    <thead>
-          <tr>
-              <th>
-                  Name
-              </th>
-              <th>
-                  Short Description
-              </th>
-              <th>
-                  Predicted Emissions 2050
-              </th>
-          </tr>
-    </thead>
-    <tbody>
-
-          <tr>
-              <td>
-                  <a href="/models/sim/NIR2025/">NIR2025</a>
-              </td>
-              <td>Visualize the data from National Greenhouse Gas Inventory Report
-    NIR-2025.</td>
-              <td>681.7
-                  Mt<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mrow><mi mathvariant="normal">C</mi><mi mathvariant="normal">O</mi></mrow><mn>2</mn></msub><mi mathvariant="normal">e</mi></mrow></math></td>
-          </tr>
-
-          <tr>
-              <td>
-                  <a href="/models/sim/Scaling/">Scaling</a>
-              </td>
-              <td>Model maximal deployment of existing products</td>
-              <td>671.5
-                  Mt<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow><msub><mrow><mi mathvariant="normal">C</mi><mi mathvariant="normal">O</mi></mrow><mn>2</mn></msub><mi mathvariant="normal">e</mi></mrow></math></td>
-          </tr>
-
-    </tbody>
-</table>
-Future work will extend this list with National Inventory Reports from more
-years (2026 was released recently), and with at least one "Extrapolation" model
-that predicts future emissions by extending statistical trends.
-The "Scaling" model will change in future with the addition of more strategies,
-and the incorporation of a baseline from the "Extrapolation" model.
-</p>
-
-<h2 id="conclusion">Conclusion</h2>
-
-<p>
-This post has introduced PlanZero's
-modelling and simulation framework in terms of
-computational elements (time series and dynamic elements)
-and in terms of strategic management (critical success factors,
-barriers, strategies).
-The post brings with it a new tab at the top of the PlanZero website:
-a <a href="/glossary/">glossary</a> listing these terms,
-as well as several other terms that have come up in previous posts
-(e.g. {{siteref("NIR")|safe}}, {{siteref("NEUD")|safe}}, {{siteref("Net Zero")|safe}}).
-The two previous posts, still in draft,
-which introduced the
-<a href="/blog/2026-04-03-bovaer">Bovaer strategy</a> and
-which presented the analogy of <a href="/blog/2026-04-12-about#revision-control">posts as revision announcements</a>,
-have been updated with glossary links and expanded
-to include the more-detailed ablative analysis made possible by
-the drivers and emissions factors now used by barrier elements.
-From now on, this glossary can provide a basis of general documentation, 
-and save me having to repeat definitions across posts (and you, dear reader, from having to read them).
-</p>
-
-<!--
-
-<h3>Future Work</h3>
-<p>
-In the course of preparing this post and the previous two,
-several areas of possible future work came a little more clearly into view.
-Model visualization was one such area: the graph above is neat and tidy, but
-it had to be made manually as an illustrative example. It would be more useful if
-such a graph could be rendered automatically from an actual model, perhaps via
-some kind of interactive interface that allowed a user to explore a few
-elements at a time.
-GH ISSUE
-</p>
-
-<p>A simpler application of graph analysis would be to calculate which IPCC
-sectors are affected by which strategies and barriers indirectly. In the graph above, we can
-see that the "Scale Bovaer" strategy affects enteric emissions because they
-are connected by a directed path in the graph.
-This is much easier than interactive graph visualization, and would help summarize
-the effects of barrier and strategy elements in the tables within the "Simulations" pages.
-<a href="https://github.com/jaberg/planzero/issues/72">Indirect barrier impact</a>.
-Similarly, it might be helpful to automatically generate "see also" links for barriers
-that have common influences and effects.
-<a href="https://github.com/jaberg/planzero/issues/73">Barrier impact pages, and see-also mechanism to jump between them</a>.
-</p>
--->
-
-<p>
-As of the authoring of this post, the modelling terms defined here now guide and inform
-the charts and page layouts in the model visualization section of the site,
-which is now, as per the new terminology, called "<a href="/models/">Models</a>".
-In the analysis of strategies, the charts now visualize the breakdown of emissions changes by sector,
-and the breakdown of subsidy costs by program and payee.
-In the analysis of simulations by IPCC sectors, it is possible to see a breakdown
-by contribution (the product of a driver and an emission factor).
-This style of visualization aims for alignment with the style of thinking
-at work in the preparation of e.g. the
-{{siteref("ECCC")|safe}}-maintained {{siteref("National Greenhouse Gas Inventory", "National Inventory")|safe}}, and the
-{{siteref("NRCan")|safe}}-maintained {{siteref("NEUD")|safe}}.
-In the "<a href="/models/sim/Scaling">Scaling</a>" simulation, only the
-"<a href="/models/sim/Scaling/ipcc-sectors/Enteric_Fermentation/">Enteric Fermentation</a>"
-{{siteref("IPCC Sector", "sector")|safe}} is structured in this way as of writing,
-but in future posts I will incorporate the per-sector models built for previous posts into this unified system.
-</p>
-
-<p>
-Before I incorporate the per-sector models though, I would like to make a post about predictions.
-I will continue to use enteric emissions and cattle as the working example,
-and compare two ways to make predictions about them based on historical patterns and trends,
-rather than hypothetical strategies.
-Assuming that goes well, I'll follow up with posts making similar kinds of predictions for
-other sectors studied in previous PlanZero posts.
-The result will be a new "Extrapolation" model carrying on current trends, and a
-better baseline against which to evaluate possible strategies in the "Scaling" model.
-</p>
-<p>
-Until next time,
-</p>
-<p>
-- James Bergstra
-</p>
-
-<h3>P.S. Link longevity and deprecation</h3>
-<p>
-In working on the glossary, I renamed most of the analysis pages
-from "Scenarios" to "Simulations", and then to "Models".
-Naturally, this has changed many urls, and I decided I'm okay with that.
-Candidly, there are many things that could change about the site, and I
-cannot commit to maintaining every url that ever worked.
-The general solution to retrieve an old version of the site would be to
-retrieve the source from GitHub, find the version of interest, and either link
-to content directly on GitHub and/or host some specific version of the site.
-</p>
-<p>
-The exception to this general rule, is the posts. I <i>do</i> intend to ensure
-those urls are persistent, and the posts do not substantially change (for non-Drafts).
-This policy has been added to the About page:
-<a href="/about/#link-lifetime">Page Post, and Link Lifetime and Durability</a>.
-</p>
-
+{% endfor %}
 
 <ul class="actions special">
     {% if prev_url_filename %}

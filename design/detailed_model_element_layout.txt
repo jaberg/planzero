@@ -1,0 +1,70 @@
+This document is about a visual grid-based layout for what is, for now, being called a "Trace Graph", described in ../planzero/element_graph_requirements.txt
+
+
+A grid-based layout for a trace graph is a layout in which there is a conceptual regular grid of points indexed by non-negative integers
+e.g. (0, 0) being the top left,
+(1, 0) being directly below in the first row, and
+(0, 1) being to the right in the first column.
+Each grid point has either zero or one node.
+Depending on the graph visualization library used, there might need to be some horizontal and vertical scaling of the grid points to get rendering coordinates.
+
+The large-scale structure of the graph should be such that directed edges mostly point downward, and the graph should generally reflect the subphases of computation associated with the method nodes.
+This should be achieved by the conjunction of several constraints and wishes:
+
+Regarding non-method nodes that either have no producer, or have a producer that is in the ScenarioModel but outside of the set of ticked model_elements that are the subject of the trace graph (call these inputs):
+(1) If the input is an output-annual-all (as defined below), it should be placed in the first available space to the right along the row that is section D (see below re: sections).
+(2) If the input is a carry-initial node, or an annual-all node that feeds an input-annual-this node, it should be placed in the row immediately above section B (see below), so that its edge to the carry-this or input-annual-this node points downward. If section A is empty, this is a new first row of the grid.
+(3) Otherwise, the input should be placed in the first row of the first section (see sections below) with a method-node that accesses it, which will, by definition, not be an empty section.
+A carry-next node with no producer in the trace graph (because the annual_step that defines it is not ticked) is placed in the first row of section C.
+By construction, a non-method node will only be included in the trace graph if it is accessed or defined by a method-node that is in the trace graph.
+
+
+Hard constraints
+----------------
+* a non-empty row of grid points must either have all method nodes or no method nodes, not a mixture
+* all of the model_element_prepare nodes must be above method nodes of other kinds
+* all of the model_element_annual_step nodes must be above model_element_postprocess nodes
+* all "carry-this" and "input-annual-this" nodes must be on a single row (see below for definition of "input-annual-this" node), with no other kinds of node on that row
+* all "carry-final" and "output-annual-all" nodes must be on a single row (see below for definition of "output-annual-all" node), with no other kinds of node on that row
+* all outputs of a method node must be placed in the row immediately below that node
+* inputs (as defined above) placed according to cases (1) and (2) above
+* all of the method nodes from any one model_element must be placed in a single column, and such a column may not contain method nodes relating to multiple model elements
+* the left-to-right order of the model_element columns must match the order in which their element_ids were passed as arguments in the url of the model-explorer page request (the layout algorithm sets the spacing between them, but must not reorder them)
+
+The consequence of the hard constraints should be that the graph will have an A-B-C-D-E vertical structure, each of which may be an empty section depending on the types of nodes in the trace graph
+A: the top part of the graph will be alternating rows of non-method nodes, model_element_prepare nodes, starting with row-0 (if this section isn't empty) which will be non-method nodes with edges pointing downward into the first row of model_element_prepare nodes.
+B: a row of "carry-this" and "input-annual-this" nodes (inputs to section C)
+C: a middle part of the graph will be alternating rows of non-method nodes, model_element_annual_step nodes
+D: a row of "carry-final" and "output-annual-all" nodes (outputs of section C)
+E: the bottom part of the graph will be alternating rows of non-method nodes, model_element_postprocess nodes
+
+Sections A, C, and E may be entirely absent, but if they are present, they will each have an odd number of rows that is at least 3.
+So, assuming for simplicity that all method nodes have both inputs and outputs,
+then if there is a dependency between e.g. two prepare methods, then section A would require at least 5 rows, rather than at least 3.
+Each present section starts on a non-method row and ends on a non-method row; if a section's last row would hold method nodes, an empty non-method row is added after it.
+B and D are rows of their own: section C starts on the row after section B, and section E starts on the row after section D.
+
+If the graph has no nodes corresponding to one of these A-B-C-D-E sections, then that section should not be allocated any rows in the grid layout.
+
+By construction, a non-method node cannot have two producers.
+A carry-this node is a non-method node that is expected to have two inbound edges: the edge from carry-initial is expected to be downward (forward) and the edge from carry-next is expected to be upward (backward), and drawn as a dashed, rather than solid line.
+
+N.B. By construction, an annual_step method node cannot access an output-annual-all node.
+
+This graph layout may result in downward edges that are mostly short, but sometimes long. For example, an input to a prepare node may be in row 0, but also serve as an input, in the worst case, to every other method node in the graph.
+
+Wishes (non-constraints) for clarity of presentation
+----------------------------------------------------
+* a "carry-this" node should be directly below its corresponding "carry-initial" node; if that isn't possible, it should be in the next available grid point to the right
+* a "annual-this" node should be directly below its corresponding "annual-all" node, when the "annual-all" node is defined by a prepare node in the larger ScenarioModel (call such an "annual-this" node an "input-annual-this" node); if that isn't possible, it should be in the next available grid point to the right
+* a "annual-this" node should be directly above its corresponding "annual-all" node, when the "annual-all" node is defined by an annual_step node in the larger ScenarioModel (call this "annual-all" node an "output-annual-all" node); if that isn't possible, it should be in the next available grid point to the right
+* a "carry-next" node should be directly above its corresponding "carry-final" node; if that isn't possible, it should be in the next available grid point to the right
+* all edges should point downward (from row X to row Y with X < Y) with the exception of edges from a "next" carry node to a "this" carry node.
+* Recognizing that an edge starting from a method node always terminates at a non-method node, the non-method node (a) must be one row lower than the method node and (b) should be directly underneath it if possible, otherwise in the next available grid point to the right.
+* all nodes should be as high in the graph as they can be, without violating other constraints
+* all nodes should be as far to the left as they can be, without violating other constraints
+
+
+I believe that all nodes can be laid out greedily, after they have been sorted
+topologically based on a modified trace graph, which has been modified by
+omitting the backward edges from "next" to "this" carry nodes.

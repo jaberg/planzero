@@ -1,0 +1,56 @@
+import datetime
+
+import pytest
+
+from .cattle_model import Cattle_StaticNormals_ModelElement
+from .enums import IPCC_Sector
+from .scaling_model import Scaling_ScenarioModel
+from .scenario_model import compute_model
+
+
+def test_compute_model_ef_man_other_smoke():
+    sm = Scaling_ScenarioModel(
+            data_cutoff=datetime.date(year=2024, month=12, day=31),
+            sectors=[IPCC_Sector.Enteric_Fermentation,
+                     IPCC_Sector.SCS__Manufacturing__Other],
+            num_warmup=90,
+            num_samples=11,
+            just_efman_testing=True,
+            )
+
+    comp = compute_model(sm, seed_or_key=1)
+    del comp
+
+
+@pytest.mark.slow
+def test_compute_model_ef_man_other_long():
+    sm = Scaling_ScenarioModel(
+            data_cutoff=datetime.date(year=2024, month=12, day=31),
+            sectors=[IPCC_Sector.Enteric_Fermentation,
+                     IPCC_Sector.SCS__Manufacturing__Other],
+            just_efman_testing=True,
+            #num_warmup=90,
+            #num_samples=11,
+            )
+    elem = sm.model_elements['Cattle_StaticNormals_ModelElement']
+    assert isinstance(elem, Cattle_StaticNormals_ModelElement)
+
+    comp = compute_model(sm, seed_or_key=1)
+    ktCO2e_ca = comp.ndarray_d[elem.ktCO2e_ca_key]
+    assert len(ktCO2e_ca) == 61, ktCO2e_ca.shape
+    print(ktCO2e_ca[0])
+
+
+@pytest.mark.skip  # compute_model doesn't work for multiple mcmc_groups
+def test_compute_model_ef_man_other_and_something_else():
+    sm = Scaling_ScenarioModel(
+            data_cutoff=datetime.date(year=2024, month=12, day=31),
+            sectors=[IPCC_Sector.Enteric_Fermentation,
+                     IPCC_Sector.SCS__Manufacturing__Other,
+                     IPCC_Sector.SCS__Public_Electricity_and_Heat],
+            num_warmup=90,
+            num_samples=11,
+            )
+
+    comp = compute_model(sm, seed_or_key=1)
+    del comp

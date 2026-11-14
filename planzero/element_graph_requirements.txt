@@ -1,0 +1,171 @@
+
+The element graph is a dependency diagram illustrating the relationship
+between variables associated with one or more model elements.
+
+
+The graph is based on an examination of the varkey_property-decorated
+methods
+referenced by `access*` and `define*` decorators on 
+model_element_prepare, model_element_annual_step,
+and model_element_postprocess methods of ModelElement instances.
+For clarity: each of these methods can have multiple decorators, including multiple instances of the same name of decorator (e.g. multiple `@define_annual(...)` calls.
+That said, it is unexpected, and should be prevented, for any one varkey_property to be referenced by multiple model_element_* decorator calls (
+so e.g. there should not be both an `@define_annual(foo)` and an `access_annual(foo)`, as that would not make sense).
+
+If varkey_property-decorated method resolves to a dictionary via property access, then it should correspond to a single node in this graph. If the keys of such a dictionary are not hashable, it can be considered a programming error.
+Properties that resolve to regular dictionaries should be considered as having resolved to frozendict objects instead.
+
+
+Treatment of string arguments to decorators:
+If a `define` decorator is called with a string argument, the string argument should be considered as a GeneralKey VarKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+If a `access_val` decorator is called with a string argument, the string argument should be considered as a GeneralKey VarKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+If a `access_annual` decorator is called with a string argument, the string argument should be considered as an AnnualKey VarKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+If a `define_annual` decorator is called with a string argument, the string argument should be considered as an AnnualKey VarKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+If a `define_carry` decorator is called with a string argument, the string argument should be considered as an ElementCarryKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+If a `define_carry` decorator is called with a string argument, the string argument should be considered as an ElementCarryKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+If an `access_this_carry` decorator is called with a string argument, the string argument should be considered as an ElementCarryKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+If an `access_next_carry` decorator is called with a string argument, the string argument should be considered as an ElementCarryKey with the element_id of the model_element instance and the name being the string argument to the decorator.
+
+
+varkey_property decorators may, in future contain annotating information provided at call sites. Currently there is no such information.
+The phrase "annotated according to the varkey property" in this document currently means "the name of the decorated method", but in future it may mean
+something related to optional information that could be provided at `@varkey_property(...)` call sites.
+
+
+The node type should be equivalent to a Union of
+* method node: tuple[str, "model_element_prepare"|"model_element_annual_step"|"model_element_postprocess"] , in which the first str element is an element_id within a model
+* general node: VarKey|frozendict[Hashable,VarKey]
+* carry node: tuple[VarKey|frozendict[Hashable,VarKey], "initial"|"this"|"next"|"final"]
+* annual node: tuple[VarKey|frozendict[Hashable,VarKey], "all"|"this"]
+
+
+All of the edges in the graph are directed and unique, identifiable as (node, node) pairs.
+There are annotations such as text and line style associated with edges, but there cannot be e.g. two different edges from a node X to a node Y, differentiated only by annotation or line style.
+Edges should be un-annotated and solid by default.
+
+
+If a model_element_prepare method or a model_element_postprocess
+method is decorated by
+access_val, then there must be
+(a) a method node for that method of that model element, and
+(b) a general node for that varkey_property-decorated method.
+A directed edge should connect from (b) to (a),
+annotated according to the varkey_property.
+
+If  a model_element_prepare method or a model_element_postprocess
+method is decorated by
+access_annual, then there must be
+(a) a method node for that method of that model element, and
+(b) an "all" annual node for that varkey_property-decorated method.
+A directed edge should connect from (b) to (a),
+annotated according to the varkey_property.
+
+
+If  a model_element_prepare method or a model_element_postprocess
+method is decorated by
+`define` then there must be
+(a) a method node for that method of that model element, and
+(b) a general node for that varkey_property-decorated method.
+A directed edge should connect from (a) to (b),
+annotated according to the varkey_property.
+
+If  a model_element_prepare method or a model_element_postprocess
+method is decorated by
+`define_annual` then there must be
+(a) a method node for that method of that model element, and
+(b) an "all" annual node for that varkey_property-decorated method.
+A directed edge should connect from (a) to (b),
+annotated according to the varkey_property.
+
+
+If a model_element_prepare method is decorated by `define_carry`,
+then there must be
+(a) a method node for that method of that model element, and
+(b) an initial carry node for the varkey_property-decorated method.
+A directed edge should connect from (a) to (b),
+annotated according to the varkey_property.
+If that same model element has overridden the base class model_element_annual_step,
+then that method should also be considered to also have a `define_carry` decorator on it, triggering the full carry-variable life-cycle subgraph as described below.
+
+
+If a model_element_annual_step method is decorated by
+`access_this_carry`
+then there must be
+(a) a method node for that method of that model element,
+(b) an "initial" carry node for the varkey_property-decorated method,
+(c) a "this" carry node for the varkey_property-decorated method,
+(d) a "next" carry node for the varkey_property-decorated method,
+(e) a "final" carry node for the varkey_property-decorated method.
+A directed edge should connect from node (b) to node (c).
+A dotted backward edge should connect from node (d) to node (c).
+A directed edge should connect from node (d) to node (e).
+A directed edge should connect from node (c) to node (a),
+annotated according to the varkey property.
+
+If a model_element_annual_step method is decorated by
+`access_next_carry`
+then there must be
+(a) a method node for that method of that model element,
+(b) an "initial" carry node for the varkey_property-decorated method,
+(c) a "this" carry node for the varkey_property-decorated method,
+(d) a "next" carry node for the varkey_property-decorated method,
+(e) a "final" carry node for the varkey_property-decorated method.
+A directed edge should connect from node (b) to node (c).
+A dotted backward edge should connect from node (d) to node (c).
+A directed edge should connect from node (d) to node (e).
+A directed edge should connect from node (d) to node (a),
+annotated according to the varkey property.
+
+It is uncommon, but technically possible for a model_element_annual_step method to feature both access_this_carry and access_next_carry, and if that happens,
+there should simply be the edges associated with each access included in the graph.
+
+
+If a model_element_annual_step method is decorated by
+`define_carry`
+or if the model_element_annual_step method already corresponds to a node and it is the model element's model_element_prepare method that is decorated
+by `define_carry`
+then there must be
+(a) a method node for that method of that model element,
+(b) an "initial" carry node for the varkey_property-decorated method,
+(c) a "this" carry node for the varkey_property-decorated method,
+(d) a "next" carry node for the varkey_property-decorated method,
+(e) a "final" carry node for the varkey_property-decorated method.
+A directed edge should connect from node (b) to node (c).
+A dotted backward edge should connect from node (d) to node (c).
+A directed edge should connect from node (d) to node (e).
+A directed edge should connect from node (a) to node (d),
+annotated according to the varkey property.
+
+If a model_element_annual_step method is decorated by
+`access_annual`
+then there must be
+(a) a method node for that method of that model element,
+(b) an "all" annual node for the varkey_property-decorated method,
+(c) a "this" annual node for the varkey_property-decorated method.
+A directed edge should connect from node (b) to node (c).
+A directed edge should connect from node (c) to node (a),
+annotated according to the varkey property.
+
+If a model_element_annual_step method is decorated by
+`access_val`
+then there must be
+(a) a method node for that method of that model element,
+(b) a general node for that varkey_property-decorated method.
+A directed edge should connect from node (b) to node (a),
+annotated according to the varkey property.
+
+If a model_element_annual_step method is decorated by
+`define_annual`
+then there must be
+(a) a method node for that method of that model element,
+(b) an "all" annual node for the varkey_property-decorated method,
+(c) a "this" annual node for the varkey_property-decorated method.
+A directed edge should connect from node (c) to node (b).
+A directed edge should connect from node (a) to node (c),
+annotated according to the varkey property.
+
+The following cases should never happen:
+* a model_element_annual_step method decorated by `define`
+* a model_element_prepare method decorated by access_this_carry or access_next_carry
+* a model_element_postprocess method decorated by access_this_carry, access_next_carry, or define_carry
+* define_carry, access_this_carry, access_next_carry receiving as argument a varkey_property that resolves to a dictionary. Only plain varkeys are supported as carry variables.

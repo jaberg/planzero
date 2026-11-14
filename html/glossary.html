@@ -58,8 +58,8 @@ Term list:
     {% for term, ref_text in sorted(obj.see_also.items()) %}
     <li><a href="#{{planzero.glossary.aka_registry[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
     {% endfor %}
-    {% for obj, hashref, descr in obj.as_discussed_in_posts %}
-    <li>[Post] <a href="{{obj.siteref}}{{hashref}}">{{obj.title}}</a> - {{descr}}</li>
+    {% for post_obj, hashref, descr in obj.as_discussed_in_posts %}
+    <li>[Post] <a href="{{post_obj.siteref}}{{hashref}}">{{post_obj.title}}</a> - {{descr}}</li>
     {% endfor %}
     </ul>
     </p>

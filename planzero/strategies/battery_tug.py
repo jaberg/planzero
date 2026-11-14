@@ -1,8 +1,15 @@
-from .. import SparseTimeSeries
-from .. import ureg as u
 from .. import mapml
-
-from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw, HTML_Markdown
+from ..html import (
+    HTML_Markdown,
+    HTML_raw,
+)
+from ..sts import SparseTimeSeries
+from ..ureg import ureg as u
+from .strategy import (
+    Strategy,
+    StrategyPage,
+    StrategyPageSection,
+)
 
 
 class BC_BatteryTug(Strategy):

@@ -22,7 +22,8 @@ def national_emissions_IPCC(year):
         'EN_Annex9_GHG_IPCC_Canada.xlsx')
 
     df = pd.read_excel(
-        file_path, sheet_name=f'{decade}{yod}', usecols='A:O',
+        file_path, engine='calamine', sheet_name=f'{decade}{yod}',
+        usecols='A:O',
         skiprows=5, nrows=92,
         names=['Category', # A
                'Sub-category', # B

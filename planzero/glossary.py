@@ -4,14 +4,20 @@ so that it can import objects throughout the library, and retrieve
 their line numbers for constructing github links.
 """
 import functools
-import jinja2
-from pydantic import BaseModel, computed_field
+import re
 
+import jinja2
+from pydantic import BaseModel
+
+from . import blog, strategies
+from .base import DynamicElement
+from .html import coderef_url, latex
 from .singleton_registry import SingletonRegistry
+from .sts import STS
 
 registry = SingletonRegistry()
 
-class AKA_Registry(object):
+class AKA_Registry:
     def __init__(self):
         self.aliases = {}
 
@@ -21,7 +27,7 @@ class AKA_Registry(object):
             assert clsname not in self.aliases
             self.aliases[clsname] = clsname
             for alias in obj.all_names:
-                assert clsname == self.aliases.setdefault(alias, clsname)
+                assert clsname == self.aliases.setdefault(alias, clsname), (alias, clsname)
 
     def __getitem__(self, key):
         try:
@@ -31,59 +37,105 @@ class AKA_Registry(object):
             clsname = self.aliases[key]
         return registry[clsname]
 
+    def __contains__(self, key):
+        if key in self.aliases and self.aliases[key] in registry:
+            return True
+        self.refresh_alias_list()
+        rval = key in self.aliases and self.aliases[key] in registry
+        return rval
+
+
 aka_registry = AKA_Registry()
 
+# Block-level tags that must be flattened to inline text before they can be
+# used as tooltip content inside a <span> (tooltip content is inserted into
+# <p> blocks, so any block tag would close the surrounding paragraph).
+_BLOCK_TAG_RE = re.compile(
+    r'</?(?:p|div|ul|ol|li|h[1-6]|blockquote|pre|table|thead|tbody|tr|td|th|figure|figcaption)\b[^>]*>',
+    re.IGNORECASE,
+)
 
 def siteref(term, text=None):
-    try:
-        return aka_registry[term].site_reference(text or term)
-    except KeyError as exc:
-        raise exc
+    return aka_registry[term].site_reference(text or term)
 
 
-from .blog import latex
-from . import blog
-from . import barriers
-from . import cattle
-from . import strategies
-from .sts import STS
-from .base import DynamicElement
-from .html import coderef_url
+def template_globals(tooltips: bool = False) -> dict[str, object]:
+    def lref(term, text=None):
+        obj = aka_registry[term]
+        if tooltips:
+            return obj.local_ref(text)
+        return obj._plain_local_ref(text)
+
+    return {
+        'CO2e': latex(r'\mathrm{CO}_2\mathrm e '),
+        'CO2': latex(r'\mathrm{CO}_2'),
+        'CH4': latex(r'\mathrm{CH}_4'),
+        'N2O': latex(r"\mathrm N_2 \mathrm O"),
+        'SF6': latex(r"\mathrm{SF}_6"),
+        'NF3': latex(r"\mathrm{NF}_3"),
+        'degrees': latex(r'^\circ'),
+        'lref': lref,
+    }
 
 
 class GlossaryTerm(BaseModel):
 
     reserved: bool = False
 
-    @computed_field
+    @property
     def definition(self) -> str:
         assert self.__class__.__doc__, self.__class__
         return self.__class__.__doc__
 
-    @computed_field
-    def definition_html(self) -> str:
+    @property
+    def plain_definition_html(self) -> str:
         if self.definition.startswith('<p>'):
             source = self.definition
         else:
             source = f'<p>{self.definition}</p>'
 
         template = jinja2.Template(source=source)
-        rval = template.render(self.template_globals())
+        rval = template.render(template_globals())
         return rval
 
+    @property
+    def definition_html(self) -> str:
+        # Rendered for page display: cross-references carry tooltips.
+        if self.definition.startswith('<p>'):
+            source = self.definition
+        else:
+            source = f'<p>{self.definition}</p>'
+
+        template = jinja2.Template(source=source)
+        rval = template.render(template_globals(tooltips=True))
+        return rval
+
+    @property
+    def hover_definition_html(self) -> str:
+        return self.plain_definition_html
+
+    @property
+    def tooltip_html(self) -> str:
+        # Flatten the hover definition into inline (phrasing) content so it can
+        # be safely embedded as a tooltip <span> inside a paragraph.
+        html = self.hover_definition_html.strip()
+        # Keep list items readable when flattened.
+        html = html.replace('<li>', ' \u00b7 ')
+        html = _BLOCK_TAG_RE.sub(' ', html)
+        return re.sub(r'\s+', ' ', html).strip()
     @property
     def see_also(self) -> dict[str, str]:
         return {}
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return []
 
     def pretty_names(self):
-        pretty_names = set(name.replace('_', ' ') for name in self.all_names)
-        return list(sorted(pretty_names))
+        pretty_names = {name.replace('_', ' ') for name in self.all_names}
+        return sorted(pretty_names)
 
-    @computed_field
+    @property
     def all_names(self) -> list[str]:
         rval = [self.__class__.__name__]
         #rval = []
@@ -91,12 +143,12 @@ class GlossaryTerm(BaseModel):
             rval.append(self.__class__.__name__.replace('_', ' '))
         return rval + self.aka
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         # post, hashtarget, intro txt
         return []
 
-    @computed_field
+    @property
     def code_links(self) -> dict[str, str]:
         rval = {}
         for txt, thing in self.code_refs.items():
@@ -120,31 +172,68 @@ class GlossaryTerm(BaseModel):
         if getattr(cls, 'include_in_registry', True): # default to True for historical reasons
             registry.add_class(cls)
 
-    def template_globals(self) -> dict[str, object]:
-        def lref(term, text=None):
-            return aka_registry[term].local_ref(text)
-
-        return dict(
-            CO2e=latex(r'\mathrm{CO}_2\mathrm e '),
-            CO2=latex(r'\mathrm{CO}_2'),
-            CH4=latex(r'\mathrm{CH}_4'),
-            N2O=latex(r"\mathrm N_2 \mathrm O"),
-            SF6=latex(r"\mathrm{SF}_6"),
-            NF3=latex(r"\mathrm{NF}_3"),
-            degrees=latex(r'^\circ'),
-            lref=lref,
+    def _glossary_ref_markup(self, href: str, text: str) -> str:
+        return (
+            f'<span class="glossary-ref">'
+            f'<a href="{href}">{text}</a>'
+            f'<span class="glossary-ref-tip" aria-hidden="true">{self.tooltip_html}</span>'
+            f'</span>'
         )
 
-    def local_ref(self, text=None) -> str:
+    def _plain_local_ref(self, text=None) -> str:
         if text is None:
             text = self.__class__.__name__.replace('_', ' ')
         return f'<a href="#{self.__class__.__name__}">{text}</a>'
 
+    def local_ref(self, text=None) -> str:
+        if text is None:
+            text = self.__class__.__name__.replace('_', ' ')
+        return self._glossary_ref_markup(f'#{self.__class__.__name__}', text)
 
     def site_reference(self, text=None) -> str:
         if text is None:
             text = self.__class__.__name__.replace('_', ' ')
-        return f'<a href="/glossary#{self.__class__.__name__}">{text}</a>'
+        return self._glossary_ref_markup(f'/glossary#{self.__class__.__name__}', text)
+
+
+class Ablative_Analysis(GlossaryTerm):
+    """
+    Ablative analysis in PlanZero is the study of models with and without
+    certain elements (namely strategies), in order to characterize the impact
+    of those elements on the behaviour of the whole model.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Ablation Study']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Strategy': 'Strategies within models are are ablated in order to assess their impact.',
+            'Simulation': 'Ablative analysis is part of model simulation.',
+            'Simulations_Section': 'Strategies within simulations are evaluated and characterized based on an ablative analysis.',
+        }
+
+
+class Cashflow_Variables(GlossaryTerm):
+    """Cashflow variables are the set of variables in a PlanZero model related to cashflow.
+    The Posterior phase values of cashflow variables are used to
+    calculate statistics and render summary graphics on the PlanZero site.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': 'May have cashflow variables, or not',
+            'Special_Project_Entity': 'Cashflow in a PlanZero model is between a pair of SPEs',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#semantic-variable-taxonomy', "Taxonomy of Model Variables by semantics"),
+        ]
 
 
 class Concentrated_Distribution(GlossaryTerm):
@@ -166,6 +255,25 @@ class Concentrated_Distribution(GlossaryTerm):
         }
 
 
+class Emission_Variables(GlossaryTerm):
+    """Emission variables are the set of variables in a PlanZero model related to emissions.
+    The Posterior phase values of emission variables are used to
+    calculate statistics and render summary graphics on the PlanZero site.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': 'Always have a full set of emission variables',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#semantic-variable-taxonomy', "Taxonomy of Model Variables by semantics"),
+        ]
+
+
 class Time_Series(GlossaryTerm):
     """A PlanZero time series is a modelling data structure for representing
     a time-varying quantity in some unit of measure.
@@ -177,12 +285,6 @@ class Time_Series(GlossaryTerm):
         <li>an interpolation mode, indicating how to interpret value for times other than the enumerated ones</li>
     </ul>
     """
-
-    @computed_field
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#timeseries', "see section on Time Series"),
-        ]
 
     @property
     def see_also(self) -> dict[str, str]:
@@ -226,7 +328,7 @@ class Time_Series_Interpolation_Mode(GlossaryTerm):
                 " interpolation mode in their initialization logic"),
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#timeseries', "see section on Time Series"),
@@ -279,7 +381,7 @@ class Dynamic_Element(GlossaryTerm):
 
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#dynelem', "see section on Dynamic Elements"),
@@ -299,12 +401,21 @@ class Dynamic_Element(GlossaryTerm):
             'Dynamic Element base class': DynamicElement,
         }
 
+class Emission_Reduction_Efficiency(GlossaryTerm):
+    """A strategy's emission reduction efficiency is the cost (in CAD) per ton of abated {{CO2e}}"""
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Strategy_Element': 'emission reduction efficiency is one of the key metrics associated with strategies',
+        }
+
 
 class Strategy(GlossaryTerm):
     """<p>A Strategy is a {{lref("Dynamic Element", "dynamic element")|safe}}
     that is meant to represent an inititive that could be undertaken within
     a model.
-    Strategies are optional; they can be omitted without sacrificing the validity of
+    Strategies are optional; they can be omitted without compromising the validity of
     a model.
     Indeed, simulating models with and without a strategy is how
     strategies are evaluated in the Simulations on the PlanZero site.
@@ -314,7 +425,7 @@ class Strategy(GlossaryTerm):
     where Strategies were defined as "broad activities required to achieve a goal, create a critical condition, or overcome a barrier."</p>
     """ 
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#strategy', "see modelling sub-section on strategies"),
@@ -344,27 +455,25 @@ class Strategy(GlossaryTerm):
 class Barrier(GlossaryTerm):
     """<p>A Barrier is a 
     {{lref("Dynamic Element", "dynamic element")|safe}}
-    that is not optional, that is, one whose omission would sacrifice the
-    validity of a model.</p>
-    <p>
-    PlanZero terminology may feel a bit cynical in this regard, but in
-    this terminology, all of the following would qualify as barriers:
+    that is not optional, that is, one whose omission would compromise the
+    validity of a model.
+    Barriers comprise most of what you might call "the modelling" in a PlanZero model.
+    The following would all qualify as barriers in PlanZero, to the reduction
+    of emissions:
     <ul>
     <li>regulations</li>
-    <li>the life cycle of assets</li>
-    <li>consumer behaviour</li>
-    <li>the length of research and development cycles</li>
-    <li>return on investment requirements</li>
+    <li>investor behaviour (e.g. to require certain rates of return)</li>
+    <li>consumer behaviour (especially habits and traditions that currently entail fossil fuel combustion)</li>
+    <li>the life cycle of assets (especially large, expensive, high-emission facilities)</li>
+    <li>the duration of research and development cycles</li>
     <li>the predictions of climate models</li>
     <li>the laws of physics</li>
     </ul>
     </p>
-    <p>I borrow the term from {{lref("EGFS")|safe}} but its
-    use in a computational modelling framework is, admittedly, a stretch.
-    </p>
+    <p>The term is adapted from {{lref("EGFS")|safe}}.</p>
     """ 
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> dict[str, str]:
         return [
             (blog.Glossary(),
@@ -374,6 +483,8 @@ class Barrier(GlossaryTerm):
 
     @property
     def code_refs(self) -> dict[str, object]:
+        from . import barriers, cattle
+
         return {
             'Barrier base class': barriers.Barrier,
             'Example Barrier class: Bovaer Adoption Limit': cattle.Bovaer_Adoption_Limit,
@@ -383,11 +494,20 @@ class Barrier(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Strategy': 'a dynamic element designed to change the input to one or more barriers',
-            'Model': 'a set of dynamic elements, including barriers, that make a prediction',
+            'Model': 'a set of dynamic elements, including barriers, that supports inference and/or prediction',
             'NIR_Model': "a model of Canada's future emissions",
-            'Simulation': 'the computation of scenarios from models',
             'EGFS': "PlanZero adopts the Barrier term and definition from The Executive Guide to Facilitating Strategy.",
         }
+
+
+class Static_Variable(GlossaryTerm):
+    """A variable in a model simulation that is not indexed by time
+    is called Constant.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Constant']
 
 
 class IPCC_Sector_Contribution(GlossaryTerm):
@@ -537,7 +657,7 @@ class Critical_Success_Factor(GlossaryTerm):
             'KPI': 'Key Performance Indicators are the time series contemplated by Critical Success Factors',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> dict[str, str]:
         return [
             (blog.Glossary(),
@@ -545,7 +665,7 @@ class Critical_Success_Factor(GlossaryTerm):
              'see section "Emissions and Costs as Critical Success Factors"'),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['CSF']
 
@@ -560,7 +680,7 @@ class Key_Performance_Indicator(GlossaryTerm):
     together other derived KPIs toward e.g. national totals.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['KPI', 'Base KPI', 'Derived KPI']
 
@@ -612,34 +732,39 @@ class NIR_Model(GlossaryTerm):
 
 
 class Model(GlossaryTerm):
-    """A model, in PlanZero, is a set of time series and dynamic elements that
-    can be simulated to generate one or more possible scenarios.
-    A model can be either deterministic or stochastic. 
+    """A model, in PlanZero, is a set of dynamic elements
+    (strategies and barriers).
+    Typically PlanZero models
+    define a probabilistic model of Canada's national emissions.
+    Sometimes a model also defines a probabilistic model of other
+    related quantities such as the factors that drive emissions calculations
+    (e.g. numbers of power plants, cars, trucks, livestock, landfills, etc.)
+    and the financial results (often costs)
+    of implementing emission reduction measures.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(),
              '#introduction',
-             'see sections "<a href="/blog/2026-04-19-glossary/#computation">Computation and Simulation</a>" '
-             'and "<a href="/blog/2026-04-19-glossary/#modelling">Modelling National Emissions</a>"'),
+             ('see sections "<a href="/blog/2026-04-19-glossary/#computation">Computation and Simulation</a>" '
+              'and "<a href="/blog/2026-04-19-glossary/#modelling">Modelling National Emissions</a>"')),
         ]
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'NIR_Model': """Model of Canada's national emissions in the style
-            of the National Inventory Reports submitted to UNFCCC""",
-            'Deterministic_Model': "A model that corresponds to a unique scenario",
-            'Stochastic_Model': "A model that corresponds to a distribution over possible scenarios",
+            #'Deterministic_Model': "A model that corresponds to a unique scenario",
+            "NIR_Model": "A model that generates emission results that are comparable to a National Inventory Report is called a NIR Model. The models features on the Models tab of the PlanZero site are NIR models.",
+            'Stochastic_Model': "A PlanZero model induces a probability distribution over possible scenarios",
             'Simulation': (
-                "Simulation is the building of a scenario with the"
-                " initialization and recurrence logic in a model's dynamic"
-                " elements"),
+                " Simulation is the computation of a set of scenarios according to the"
+                " initialization and recurrence logic of a model's dynamic"
+                " elements; the result is a sample from the model's implicit stochastic model"),
             'Scenario': (
-                'A scenario is the set of time series that results from'
-                ' simulating a model'),
+                "A scenario is single time series that is consistent with the"
+                " initialization and recurrence logic of a model's dynamic elements"),
         }
 
 
@@ -659,7 +784,7 @@ class Stochastic_Model(GlossaryTerm):
             'Simulation': 'The procedure for converting a stochastic model to one or more scenarios'
         }
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Probabilistic Model']
 
@@ -703,7 +828,7 @@ class About_Section(GlossaryTerm):
     """<p>The "About" section of the planzero.ca website:
     <a href="/about/">planzero.ca/about</a></p>"""
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['About Page']
 
@@ -713,13 +838,13 @@ class Scenario(GlossaryTerm):
     Typically in PlanZero it is the result of simulating a model.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#scenario', "see simulation sub-section on scenarios"),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Trajectory', 'Rollout (noun)']
 
@@ -742,6 +867,41 @@ class Scenario(GlossaryTerm):
         }
 
 
+class Model_Element(GlossaryTerm):
+    """An implementation element of a PlanZero model,
+    providing one or more computationl subphase implementations that define model variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': "the general form of PlanZero probabilistic models",
+        }
+
+
+class Model_Evaluation_Phase(GlossaryTerm):
+    """There are three phases of PlanZero model evaluation: Prior, Inference, and Posterior.
+    The prior evaluation is quick, and used primarily for basic model validation.
+    Inference is slow, and done piecewise on Inference Groups to draw samples from the posterior
+    distribution of unobserved variables.
+    The Posterior phase is a reconstruction of the model using the posterior samples instead of prior distributions
+    to define unknown variables.
+    Statistics of the Posterior phase are presented on this site as the results of model evaluation.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Inference_Phase': "",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
 class Model_Metric(GlossaryTerm):
     """A formula, procedure or rule for associating
     a single number to a {{lref("Model")|safe}}.
@@ -756,6 +916,18 @@ class Model_Metric(GlossaryTerm):
             'KPI': (
                 'A Key Performance Indicator is a standard'
                 ' time series associated with multiple models'),
+        }
+
+
+class Model_Variable(GlossaryTerm):
+    """A model variable is a known or unknown variable in a PlanZero Model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': "the general form of models on the PlanZero site",
+            'Model_Element': "the unit of modelling assumptions that relate variables in a PlanZero Model",
         }
 
 
@@ -819,6 +991,26 @@ class Git_Branch(GlossaryTerm):
         }
 
 
+class Known_Variable(GlossaryTerm):
+    """A known variable is a scalar- or vector-valued
+    term in a PlanZero model that is known from the outset of modelling,
+    with no dependency on an unknown variable.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unknown_Variable': 'A variable modelled in terms of a probability distribution',
+            'Model_Variable': 'the more general class of variables in a PlanZero Model'
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.StaticNormals(), '#appendix-notation', "Appendix 1: Probabilistic Modelling Notation"),
+        ]
+
+
 class Main_Branch(GlossaryTerm):
     """PlanZero on GitHub generally has multiple git branches.
     The "main branch" is special, in that it is the one used to deploy the
@@ -836,6 +1028,34 @@ class Main_Branch(GlossaryTerm):
                 " preferred way to update the main branch of a project,"
                 " because it prompts discussion and consideration"),
         }
+
+
+class PlanZero_Model(GlossaryTerm):
+    """A PlanZero Model is the general form of model on the PlanZero site.
+    It is a graph of Model Variables and Model Elements,
+    the Unknown Variables of which make up a probabilistic model.
+    A PlanZero Model includes variables for annual emissions matching the structure of recent
+    National Inventory Reports, as well as variables for annual cashflow between economic entities called Special Project Entities (SPEs)
+    as a result of any strategies in the model, as well as any other variables involved in modelling emissions and cashflows.
+    """
+
+    @property
+    def hover_definition_html(self) -> str:
+        return "<p>A PlanZero Model is the general form of model on the PlanZero site.</p>"
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Variable': "a scalar- or vector-valued variable in a model",
+            'Model_Element': "a set of assumptions for defining one or more variables in a model",
+            'Stochastic_Model': "the joint distribution over unknown variables in a model correspond to a directed probabilistic graphical model",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#overview', "this entire post is dedicated to documenting PlanZero Models"),
+        ]
 
 
 class PlanZero_Site(GlossaryTerm):
@@ -866,7 +1086,7 @@ class GitHub_Repository(GlossaryTerm):
     or "Upstream Repo".
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['GitHub Repo', 'repository', 'repo']
 
@@ -909,7 +1129,7 @@ class Git_Commit(GlossaryTerm):
             'Git_Branch': "a named graph of commits corresponding to a single version of set of files",
         }
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Commit']
 
@@ -920,7 +1140,7 @@ class Git_Graph(GlossaryTerm):
 or running a command such as <pre>git log --all --decorate --oneline --graph</pre>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Git History']
 
@@ -938,7 +1158,7 @@ class GitHub(GlossaryTerm):
     control system over the internet to collaborate on software projects. Circa 2023, it was the world's largest source code host, with over 100 million developers, and 420 million code repositories.</p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['GH']
 
@@ -961,7 +1181,7 @@ class GitHub_Issue(GlossaryTerm):
     but in particular, those that have been mentioned in posts.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['gh issue']
 
@@ -982,7 +1202,7 @@ class GitHub_Pull_Request(GlossaryTerm):
     See <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests">Github documentation</a> for full description of this capability.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['pull request', 'PR']
 
@@ -1018,7 +1238,7 @@ class EGFS(GlossaryTerm):
             'KPI': "a time series registered to participate in emissions or subsidy calculations",
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#modelling', "see section on Modelling National Emissions"),
@@ -1055,7 +1275,7 @@ class National_Greenhouse_Gas_Inventory(GlossaryTerm):
     {{lref("NIR", "National Inventory Reports")|safe}}.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['NGGI']
 
@@ -1077,7 +1297,7 @@ class National_Energy_Use_Database(GlossaryTerm):
     {{lref("IPCC Sector", "IPCC sectors")|safe}}.
     </p>"""
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['NEUD']
 
@@ -1088,7 +1308,7 @@ class National_Energy_Use_Database(GlossaryTerm):
             'NEUD access, neud.py': neud,
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.IPCC_HeavyDutyDieselVehicles(),
@@ -1116,7 +1336,7 @@ class Statistics_Canada(GlossaryTerm):
     <a href="https://github.com/ianepreston/stats_can">stats_can</a>.
     """
     
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['StatsCan']
 
@@ -1137,7 +1357,7 @@ class Natural_Resources_Canada(GlossaryTerm):
     </p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['NRCan']
 
@@ -1161,7 +1381,7 @@ class Environment_and_Climate_Change_Canada(GlossaryTerm):
     </p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['ECCC', '"E-triple-C"']
 
@@ -1181,7 +1401,7 @@ class Net_Zero(GlossaryTerm):
     achieve net-zero.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Net-Zero']
 
@@ -1221,7 +1441,7 @@ class International_Panel_on_Climate_Change(GlossaryTerm):
     Canada uses this methodology to prepare its annual {{lref("NIR")|safe}}.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['IPCC']
 
@@ -1318,7 +1538,7 @@ class CNZEAA(GlossaryTerm):
     to uphold Canada's obligations under the Paris Agreement.
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Canadian Net-Zero Accountability Act']
 
@@ -1393,7 +1613,7 @@ class Petrinex(GlossaryTerm):
     </p>
     """
     
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.IPCC_SCS_OilAndGas_Exploration(),
@@ -1427,7 +1647,7 @@ class Rollout(GlossaryTerm):
     resulting scenario, rather than the algorithm that built it.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#simulation', "see sub-sections about simulation and scenarios"),
@@ -1473,7 +1693,7 @@ class Simulation(GlossaryTerm):
     </p>
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.Glossary(), '#simulation', "see sub-section about simulation"),
@@ -1486,7 +1706,7 @@ class Simulation(GlossaryTerm):
             'The <code>simulation_result(...)</code> function implements PlanZero simulation': sim.simulation_result,
         }
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Rollout (verb)']
 
@@ -1506,19 +1726,66 @@ class Simulation(GlossaryTerm):
             "Simulations_Section": "Pages on the PlanZero site showing simulation results",
         }
 
-class Ablative_Analysis(GlossaryTerm):
+
+class Special_Project_Entity(GlossaryTerm):
+    """SPEs are abstract economic entities with cash balances.
+    SPEs represent non-overlapping sets of actual or hypothetical individuals and corporate entities.
     """
-    Ablative analysis in PlanZero is the study of models with and without
-    certain elements (namely strategies), in order to characterize the impact
-    of those elements on the behaviour of the whole model.
-    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['SPE']
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Strategy': 'Strategies within models are are ablated in order to assess their impact.',
-            'Simulation': 'Ablative analysis is part of model simulation.',
-            'Simulations_Section': 'Strategies within simulations are evaluated and characterized based on an ablative analysis.',
+            'Emission_Reduction_Efficiency': 'for a strategy, the cost (in CAD) per ton of abated emissions',
+            }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#cashflow-variables', "SPEs are introduced in relation to cashflow variables"),
+        ]
+
+
+class Strategy_Element(GlossaryTerm):
+    """Strategy elements are model elements within scenario models that stand for
+    strategies that may be implemented or not implemented. The impact of a strategy
+    is evaluated by PlanZero by ablating it from the model and re-evaluating the model without the strategy.
+    A scenario model can be created without any strategy elements.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return []
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Element': 'Strategy elements are a type of Model Element',
+            'Ablative_Analysis': 'Strategy elements enable ablative analysis in PlanZero models',
+            'Structural_Element': 'Structural elements are the other type of Model Element',
+        }
+
+
+class Structural_Element(GlossaryTerm):
+    """Structural elements are model elements within scenario models that stand for
+    the modelled relationship between variables.
+    A scenario model must include structural elements, and
+    unlike strategy elements, structural elements will not be ablated.
+    Typically, most (if not all) elements in a model are structural ones.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return []
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Element': 'Structural elements are a type of Model Element',
+            'Strategy_Element': 'Strategy elements work by overriding default values accessed by structural elements'
         }
 
 
@@ -1529,7 +1796,7 @@ class Post(GlossaryTerm):
     includes some guidelines for post content.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
@@ -1544,7 +1811,7 @@ class Draft_Status(GlossaryTerm):
     clarifications and annoted links to relevant newer content.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
@@ -1572,7 +1839,7 @@ class Greenhouse_Gas(GlossaryTerm):
             'NGGI': 'National Greenhouse Gas Inventory tracks Canadian greenhouse gas emissions',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.GHG_Emissions(), '#h2_ghg', "see section on Greenhouse gases"),
@@ -1592,21 +1859,118 @@ class Inference_Algorithm(GlossaryTerm):
             'Latent_Variable': 'Inference algorithms provide samples for latent variables'
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
         ]
 
 
+class Inference_Group(GlossaryTerm):
+    """
+    An inference group is a set of structural and strategy elements of
+    a PlanZero model for which an inference algorithm can operate independently
+    of other inference groups.
+    PlanZero models are large, and inference groups serve to define smaller submodels
+    upon which inference algorithms can operate effectively.
+    """
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
+
+
+class Inference_Phase(GlossaryTerm):
+    """
+    Inference is the second of the three phases of evaluating a PlanZero model.
+    Inference is the relatively-long computation of sampling values for unobserved variables
+    according to their posterior distribution under the model.
+    Inference typically uses an MCMC sampling algorithm.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
+            'Observed_Variable': 'A variable associated with conditioning data in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Posterior_Phase(GlossaryTerm):
+    """
+    The Posterior phase is the last of the three phases of evaluating a PlanZero model.
+    The Posterior phase is a reconstruction of the model using the posterior samples instead of prior distributions
+    to define unknown variables.
+    Statistics of the Posterior phase are presented on this site as the results of model evaluation.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Prior_Phase(GlossaryTerm):
+    """
+    The Prior phase is the first of the three phases of evaluating a PlanZero model.
+    The Prior phase establishes prior distributions over unknown variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unknown_Variable': 'All unknown variables have a prior distribution in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Observed_Variable(GlossaryTerm):
+    """An observed variable is an unknown variable for which we have
+    data that is modelled a sample from the variable's distribution.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unobserved_Variable': 'A variable for which we have no direct reading of its probable value',
+            'Unknown_Variable': 'A variable in a probabilistic model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
+
+
 class Unknown_Variable(GlossaryTerm):
     """An unknown variable is an unknown scalar- or vector-valued
-    term in a probabilistic model. Often it could be known, measured
-    or estimated, but we may lack sufficient information or equipment to do so.
-    Sometimes it's not theoretically possible to measure something (like
-    the number of cars on the road 10 years in the future,
-    because it hasn't happened yet) but we can still include it in a model
-    as an unknown variable.
+    term in a probabilistic model.
+    The model provides a probability distribution over its possible values.
+    That distribution may depend on the values of other known and unknown variables in the model.
     """
 
     @property
@@ -1614,17 +1978,40 @@ class Unknown_Variable(GlossaryTerm):
         return {
             'Stochastic_Model': 'A model associates unknown variables with probability distributions',
             'Probability_Distribution': 'In order to reason about a variable without knowing exactly what it is, we assume a set of values that it might have using a probability distribution.',
+            'Observed_Variable': 'A variable for which we have some [generally-]noisy data exemplifying its probable value',
+            'Unobserved_Variable': 'A variable for which we have no direct data',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.StaticNormals(), '#appendix-notation', "Appendix 1: Probabilistic Modelling Notation"),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['Random Variable']
+
+
+class Unobserved_Variable(GlossaryTerm):
+    """An unobserved variable is an unknown variable for which we have no
+    direct readings to inform a probability distribution over its possible values.
+    Inference algorithms draw samples for unobserved variables based on data
+    associated with observed variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Observed_Variable': 'A variable for which we have some [noisy] data exemplifying its probable value',
+            'Unknown_Variable': 'A variable in a probabilistic model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
 
 
 class Predictive_Model(GlossaryTerm):
@@ -1666,7 +2053,7 @@ class Probability_Distribution(GlossaryTerm):
             'Probability_Density_Function': 'a description of how to distribute probability over a continuous set of possible values, such as a range of real numbers',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-model-distribution', "Appendix 1 is an introduction to probabilistic modelling"),
@@ -1719,8 +2106,13 @@ class Posterior_Distribution(GlossaryTerm):
                 'Latent_Variable': 'Unobserved unknown variables in a probabilistic model are called latent variables; a posterior distribution is over latent variables.',
                 }
 
+
 class Latent_Variable(GlossaryTerm):
-    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data. """
+    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data.
+    Each time step in a time series variable is a unique variable,
+    so earlier time steps might be observed and later time steps (especially future time steps)
+    may be latent.
+    """
     @property
     def see_also(self) -> dict[str, str]:
         return {
@@ -1734,7 +2126,21 @@ class Credible_Interval(GlossaryTerm):
     random variable in a probabilistic model might most-credibly take.
     For example, a 95% credible interval is the smallest interval containing
     the 95% most-probable values for the random variable.
+    </p>
+    <p>
+    In PlanZero, Credibility and Confidence are used interchangeably.
+    In the field of statistics, the terms have distinct meanings that apply to
+    Bayesian and frequentist estimators respectively.
+    PlanZero strives to use Bayesian reasoning,
+    but with MCMC methods there can be significant uncertainty due to the
+    limited sample size, which is the the sort of uncertainty that frequentist
+    methods deal with. Candidly I don't honestly know whether either term is
+    more appropriate for the estimates that arise from PlanZero modelling.
     """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Confidence Interval']
 
     @property
     def see_also(self) -> dict[str, str]:
@@ -1744,7 +2150,7 @@ class Credible_Interval(GlossaryTerm):
             'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-visualizing', "credibility intervals are used to visualize probabilistic models"),
@@ -1770,7 +2176,7 @@ class Bayesian_Inference(GlossaryTerm):
             'Inference_Algorithm': 'In probabilistic models that are defined within probabilistic programming systems, Bayesian inference can often be implemented automatically',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
@@ -1789,7 +2195,7 @@ class Pending_Prediction_Challenge_Results(GlossaryTerm):
     # TODO: Prediction Time
     # TODO: Prediction Challenge
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.registry['StaticNormals'], '#prenir', "prediction time vs. evaluation time"),
@@ -1835,13 +2241,13 @@ class NIR_Prediction(GlossaryTerm):
     evaluation metric.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.StaticNormals(), '#appendix-prenir', "Introduces the Pre-NIR-2025-06 prediction challenge, which uses a weighted KL-divergence to compare model predictions to reference distributions."),
         ]
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['PreNIR']
 
@@ -1858,7 +2264,7 @@ class Weighted_KL_Divergence(GlossaryTerm):
     emissions that is used to score NIR-predicting models probabilistic models.
     """
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-evaluating', "Develops the weighted KL divergence formula for scoring NIR predictions against a reference probabilistic interprentation of an NIR"),
@@ -1884,7 +2290,7 @@ class Symmetric_Blended_Log_Normal_Distribution(GlossaryTerm):
 hosted on PlanZero's GitHub page.</p>
     """
 
-    @computed_field
+    @property
     def aka(self) -> list[str]:
         return ['SBLN']
 
@@ -1894,7 +2300,7 @@ hosted on PlanZero's GitHub page.</p>
             'Probability_Distribution': 'The SBLN is a probability distribution',
         }
 
-    @computed_field
+    @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-sbln', "Probabilistic NIR2025, Appendix 2"),

@@ -1,0 +1,99 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post model-explorer-page">
+    <header class="major">
+        <h1>Model Explorer</h1>
+        <p>Trace how variables flow between the model elements of one inference group.</p>
+    </header>
+
+    <p>
+    PlanZero models are built from model elements, and each element declares the
+    variables it defines and the variables it accesses. This page reads those
+    declarations and presents them in two linked views: an
+    <strong>Overview</strong> matrix of producer-to-consumer dependencies, and a
+    <strong>Trace</strong> view for following a particular variable, element, or
+    path. The explorer is an interactive companion to the
+    <a href="/blog/2026-04-19-glossary#inference-groups">Inference Groups</a>
+    section of the glossary and to the
+    <a href="/models/">Models</a> page.
+    </p>
+
+    <form class="model-explorer-group-picker" method="get" action="/model-explorer/">
+        <label>
+            <span>Model</span>
+            <select name="model" onchange="this.form.submit()">
+                {% for model in models %}
+                <option value="{{ model.name }}"{% if model.name == selected_model %} selected{% endif %}>{{ model.pretty_name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Inference group</span>
+            <select name="group" onchange="this.form.submit()">
+                {% for group in groups %}
+                <option value="{{ group.name }}"{% if group.name == selected_group %} selected{% endif %}>{{ group.name }} ({{ group.n_elements }} element{% if group.n_elements != 1 %}s{% endif %})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <input type="hidden" name="tab" value="overview" data-mcmc-tab-input>
+        <button type="submit" class="button small">Load</button>
+        <noscript>
+            <span style="align-self:center;color:#6b7280;font-size:0.8rem;">
+                JavaScript is disabled; use the button to load the selected group.
+            </span>
+        </noscript>
+    </form>
+
+    <div class="model-explorer-tabs-slot mcmc-explorer"
+         data-mcmc-tabs-slot></div>
+
+    <div class="model-explorer-help" data-mcmc-help>
+        <div data-help-tab="overview">
+            <h3>Overview</h3>
+            <p>
+            Rows are producer elements and columns are consumer elements. A cell
+            shows how many distinct variables flow from the row element to the
+            column element. Hover a cell for the variable names, and click it to
+            open exactly those dependencies in the Trace view.
+            </p>
+        </div>
+        <div data-help-tab="trace" hidden>
+            <h3>Trace</h3>
+            <p>
+            The graph shows the model elements ticked in the Trace column of the
+            Overview table. Each of the methods
+            <code>model_element_prepare</code>,
+            <code>model_element_annual_step</code>, and
+            <code>model_element_postprocess</code> that participates in a
+            declaration is drawn as a box. Variable nodes are created according
+            to the decorator and method: general values are single nodes; annual
+            variables use <code>(all)</code> and <code>(this)</code> nodes; carry
+            variables use <code>(initial)</code>, <code>(this)</code>,
+            <code>(next)</code>, and <code>(final)</code> nodes with the
+            lifecycle links
+            <code>initial→this</code>, dashed <code>next→this</code>, and
+            <code>next→final</code>. Edges run from defining methods to the
+            variables they define and from variables to the methods that access
+            them, annotated with the <code>varkey_property</code> name. A
+            dict-valued property is shown as a single node.
+            </p>
+        </div>
+
+    </div>
+
+    {{ explorer_html | safe }}
+
+    <p style="margin-top:1.5rem;color:#6b7280;font-size:0.8rem;">
+    The explorer is generated from decorator metadata on the model elements.
+    It does not modify the model or its inference groups. To inspect the same
+    declarations as a static table or a Mermaid diagram, see the
+    <a href="/blog/2026-04-19-glossary#inference-groups">glossary's Inference Groups</a>
+    section.
+    </p>
+
+</section>
+</div>
+
+{% include "post-main.html" %}

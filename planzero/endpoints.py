@@ -1,18 +1,39 @@
 import os
 
-from . import (
-    ipcc_canada,
-    enums,
-    blog,
-    strategies,
-    barriers,
-    sim,
-    prob,
-    )
-
 HOME_SHOW_UNPUBLISHED_POSTS = (os.environ['PLANZERO_HOME_SHOW_UNPUBLISHED_POSTS'] == '1')
 
+def completed_prob_registry():
+    from . import (
+            challenge,  # noqa: F401   # HACK to ensure loaded
+            nir2025_site,
+            #nir_ar2_site,
+            nir_static_normals_site,
+            scaling_site,
+    )
+    rval = {}
+
+    nir = nir2025_site.NIR2025()
+    rval[nir.url_name] = nir
+
+    static_normals = nir_static_normals_site.Static_Normals_2024_12_31()
+    rval[static_normals.url_name] = static_normals
+
+    scaling = scaling_site.ScalingSiteInference()
+    rval[scaling.url_name] = scaling
+
+    return rval
+
+
 def endpoints():
+    from . import (
+            blog,
+            challenge,  # noqa: F401
+            ipcc_canada,
+            sim,
+    )
+
+    prob_registry = completed_prob_registry()
+
     rval = []
 
     rval.extend([
@@ -34,19 +55,26 @@ def endpoints():
         for catpath in ipcc_canada.catpaths:
             rval.append(f"/models/sim/{sim_name}/ipcc-sectors/{catpath}/")
 
-    for model_name, site_inf in sorted(prob.site_inferences.items()):
+    for url_name, site_inf in sorted(prob_registry.items()):
         if not site_inf.show_on_models_page:
             continue
-        rval.append(f"/models/prob/{model_name}/")
+        rval.append(f"/models/prob/{url_name}/")
 
         for catpath in ipcc_canada.catpaths:
-            rval.append(f"/models/prob/{model_name}/sectors/{catpath}/")
+            rval.append(f"/models/prob/{url_name}/sectors/{catpath}/")
+
+        for strategy_name in site_inf.strategies:
+            rval.append(f"/models/prob/{url_name}/strategies/{strategy_name}/")
+
+        for barrier_name in site_inf.barriers:
+            rval.append(f"/models/prob/{url_name}/barriers/{barrier_name}/")
 
     rval.extend([
         "/",
         "/ipcc-sectors/",
         "/models",
-        #"/predictions/",
+        "/model-explorer/",
+        "/metrics/",
         "/strategies/",
         "/glossary/",
         "/about/",
