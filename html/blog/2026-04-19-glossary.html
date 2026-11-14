@@ -283,28 +283,61 @@ that functionality is not on the site.
 
 <h3 id="model-elements">Model Elements</h3>
 
+<pre class="mermaid">
+graph TD
+      A["All Model Elements"]
+
+      B["Structural Elements"]
+      A --> |Mostly| B
+
+      C["Strategy Elements"]
+      A -.-> |May include some| C
+</pre>
+
 <p>
-To summarize this first section on model variables outputs, PlanZero models (1) always
-estimate emissions, and always do so in terms of emissions per year, per sector, per gas, and per provincial or territorial region;
-(2) sometimes estimate cashflows, but if they do so, they do so in a standard way in terms of a fixed set of SPEs; and
-(3) typically include other estimates as well, but not in a standardized way that qualify such things as full-model-level outputs.
-The next sections on strategy elements and structural elements explain how all of these variables are modelled.
+PlanZero Models expect {{siteref("Model_Element", "model elements")|safe}} to define the model's variables.
+The design and scope of model elements draws from two lines of thinking:
+<ol>
+	<li>Plugin architecture (from the discipline of <a href="https://en.wikipedia.org/wiki/Software_engineering">software engineering</a>)</li>
+	<li>Strategy communication (from the discipline of <a href="https://en.wikipedia.org/wiki/Strategic_management">strategic management</a>)</li>
+</ol>
 </p>
 
 <p>
-These element types are adapted from concepts from
-<a href="https://en.wikipedia.org/wiki/Strategic_management">strategic management</a>,
-in consideration of Canada as an organization.
-In particular, relative to
-"<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">
-	The Executive's Guide to Facilitating Strategy
+<a href="https://cs.uwaterloo.ca/~m2nagapp/courses/CS446/1195/Arch_Design_Activity/PlugIn.pdf">Plug-in architecture designs</a>
+are widely used in software engineering.
+Generally, the architecture "allows application logic to be divided between independent plug-in
+modules and a basic core system, providing extensibility, flexibility, and isolation of application features
+and custom processing logic."
+In the context of PlanZero models, it encourages a standard system for modelling so that
+model evaluation and model visualization here on the site can be done in a standard way across multiple models
+(e.g. supports the existence of the model-explorer page).
+At the same time, it supports flexible modelling logic so long as that logic resides within the model elements, which are
+the plugins (so to speak, in the language of the architectural design pattern.)
+</p>
+
+<p>Along the line of strategic management thinking: relative to at least
+"<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">The Executive's Guide to Facilitating Strategy
 </a>" by Michael Wilkinson (2011),
-outcomes and metrics would be key performance indicators (KPIs) related to "Goals" (broad aims that define accomplishment of a mission of emissions reduction);
-structural elements would be a formalization of "Barriers"
-(existing or potential challenges that hinder the achievement of one or more objectives);
-and strategy elements represent "Strategies" (broad activities required to achieve an objective).
+we can think of Canada as an organization and PlanZero as aiming to support Canada's
+"Objective" (specific, quantifiable, realistic targets that measure accomplishment of a goal over a specific period)
+of emissions reduction to net zero by 2050.
+Wilkinson (2011) recommends to select strategies for achieving objectives
+on the basis of a characterization of related considerations in terms of
+(a) Critical Success Factors (necessary conditions for success)
+and (b) Barriers (existing or potential challenges that hinder the achievement of one or more objectives).
+PlanZero's strategy elements are like Wilkinson's strategies,
+in that the effect of a strategy element on a model should be to
+make success in an objective (e.g. of net zero by 2050) more likely.
+PlanZero's structural elements encompass Wilkinson's Barriers,
+in the sense that they formalize the relationship between strategies and emissions;
+this relationship can be seen, arguably, as "the challenge" to emission reduction in the model.
 </p>
 
+<p>
+When they are done well, PlanZero model elements should represent both good software,
+and also good communication of the modelling assumptions they bring to a PlanZero model.
+</p>
 
 <h4 id="structural-elements">Structural Elements</h4>
 <p>
