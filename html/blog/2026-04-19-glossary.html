@@ -76,9 +76,9 @@ An element might might define a variable in terms of numbers (e.g. a Statistics 
 or in terms of a distribution (e.g. the probabilistic interpretation of emissions from NIR-2025).
 Most, if not all, of the elements in a PlanZero model are structural elements.
 These elements define necessary relationships between variables in the model.
-Some models, such as the Scaling model, include one or more <i>strategy elements</i>, which offer
-optional variable definitions.
-Some elements are meant to work together &emdash; they wouldn't mean the right thing or wouldn't work at all
+Some models, such as the Scaling model, include strategy elements, which offer
+<i>optional</i> variable definitions.
+Some elements are meant to work together; they wouldn't mean the right thing or wouldn't work at all
 without the presence of the others. Such a subset of elements in a PlanZero model is called an inference group.
 An inference group is the smallest piece of a PlanZero model that can be evaluated on its own, independently
 of the rest of the model.
@@ -220,25 +220,25 @@ is the probabilistic model induced by a PlanZero model.
 </p>
 
 
-<h4>Taxonomy of Model Variables by semantics</h4>
+<h4 id="semantic-variable-taxonomy">Taxonomy of Model Variables by semantics</h4>
 
 <pre class="mermaid">
 graph TD
       A["All Model Variables"]
 
       B["Emission Variables"]
-      A --> B
+      A --"Always includes full set"--> B
 
       C["Cashflow Variables"]
-      A -.-> C
+      A -.-> |May include some| C
 
       D["Other Variables"]
-      A -.-> D
+      A -.-> |May include some| D
 </pre>
 
 <h5>Emission Variables</h5>
 <p>
-PlanZero models always have a full set of emissions variables, covering
+PlanZero models always have a full set of {{siteref("Emission_Variables", "emissions variables")|safe}}, covering
 each year (from 1990 to some forecasting horizon such as 2050 or 2100), in units of ktCO2e, of each gas, from each region (province and territory), associated with each of the 71 NIR-2025 reporting sectors.
 The estimates from a given model may be more or less uncertain, but they must all be present
 in order for the pages on the site to render correctly.
@@ -252,7 +252,7 @@ The NIR-2025 and Static-Normals models have only these emissions variables as mo
 <h5>Cashflow Variables</h5>
 <p>
 PlanZero models that contain strategies (more on strategies, below)
-may model how the movement of money might affect emissions.
+may model the movement of money with {{siteref("Cashflow_Variables", "cashflow variables")|safe}}.
 To use our running example of Bovaer, the Scale-Bovaer strategy works by defining
 a variable that represents the money available to fund the program to have a large available amount.
 Cash, in PlanZero models, is modelled as flowing among

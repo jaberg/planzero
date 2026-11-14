@@ -216,6 +216,26 @@ class Ablative_Analysis(GlossaryTerm):
         }
 
 
+class Cashflow_Variables(GlossaryTerm):
+    """Cashflow variables are the set of variables in a PlanZero model related to cashflow.
+    The Posterior phase values of cashflow variables are used to
+    calculate statistics and render summary graphics on the PlanZero site.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': 'May have cashflow variables, or not',
+            'Special_Project_Entity': 'Cashflow in a PlanZero model is between a pair of SPEs',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#semantic-variable-taxonomy', "Taxonomy of Model Variables by semantics"),
+        ]
+
+
 class Concentrated_Distribution(GlossaryTerm):
     """
     A concentrated distribution is a probability distribution
@@ -235,6 +255,25 @@ class Concentrated_Distribution(GlossaryTerm):
         }
 
 
+class Emission_Variables(GlossaryTerm):
+    """Emission variables are the set of variables in a PlanZero model related to emissions.
+    The Posterior phase values of emission variables are used to
+    calculate statistics and render summary graphics on the PlanZero site.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': 'Always have a full set of emission variables',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#semantic-variable-taxonomy', "Taxonomy of Model Variables by semantics"),
+        ]
+
+
 class Time_Series(GlossaryTerm):
     """A PlanZero time series is a modelling data structure for representing
     a time-varying quantity in some unit of measure.
@@ -246,12 +285,6 @@ class Time_Series(GlossaryTerm):
         <li>an interpolation mode, indicating how to interpret value for times other than the enumerated ones</li>
     </ul>
     """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#timeseries', "see section on Time Series"),
-        ]
 
     @property
     def see_also(self) -> dict[str, str]:
@@ -844,6 +877,29 @@ class Model_Element(GlossaryTerm):
         return {
             'PlanZero_Model': "the general form of PlanZero probabilistic models",
         }
+
+
+class Model_Evaluation_Phase(GlossaryTerm):
+    """There are three phases of PlanZero model evaluation: Prior, Inference, and Posterior.
+    The prior evaluation is quick, and used primarily for basic model validation.
+    Inference is slow, and done piecewise on Inference Groups to draw samples from the posterior
+    distribution of unobserved variables.
+    The Posterior phase is a reconstruction of the model using the posterior samples instead of prior distributions
+    to define unknown variables.
+    Statistics of the Posterior phase are presented on this site as the results of model evaluation.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Inference_Phase': "",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
 
 
 class Model_Metric(GlossaryTerm):
@@ -1826,10 +1882,74 @@ class Inference_Group(GlossaryTerm):
         ]
 
 
+class Inference_Phase(GlossaryTerm):
+    """
+    Inference is the second of the three phases of evaluating a PlanZero model.
+    Inference is the relatively-long computation of sampling values for unobserved variables
+    according to their posterior distribution under the model.
+    Inference typically uses an MCMC sampling algorithm.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
+            'Observed_Variable': 'A variable associated with conditioning data in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Posterior_Phase(GlossaryTerm):
+    """
+    The Posterior phase is the last of the three phases of evaluating a PlanZero model.
+    The Posterior phase is a reconstruction of the model using the posterior samples instead of prior distributions
+    to define unknown variables.
+    Statistics of the Posterior phase are presented on this site as the results of model evaluation.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Prior_Phase(GlossaryTerm):
+    """
+    The Prior phase is the first of the three phases of evaluating a PlanZero model.
+    The Prior phase establishes prior distributions over unknown variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unknown_Variable': 'All unknown variables have a prior distribution in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
 class Observed_Variable(GlossaryTerm):
-    """An observed variable is an unknown variable for which we do have
-    direct readings to inform a probability distribution over its possible values.
-    It is through observed variables that data informs model evaluation.
+    """An observed variable is an unknown variable for which we have
+    data that is modelled a sample from the variable's distribution.
     """
 
     @property
@@ -1892,22 +2012,6 @@ class Unobserved_Variable(GlossaryTerm):
         return [
                 (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
         ]
-
-
-class Posterior_Phase(GlossaryTerm):
-    """
-    The computation phase of model evaluation in which samples from
-    an inference algorithm are used to recompute all model variables.
-    The statistics computed in the posterior phase are the ones used to render
-    graphics on the site that characterize model evaluation.
-    """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
-        ]
-
 
 
 class Predictive_Model(GlossaryTerm):
