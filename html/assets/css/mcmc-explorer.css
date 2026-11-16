@@ -685,6 +685,15 @@
     text-align: center;
 }
 
+.mcmc-matrix-note {
+    background: #fcfdfe;
+    border-bottom: 1px solid var(--mcmc-border);
+    color: var(--mcmc-muted);
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+}
+
 /* Tooltip ----------------------------------------------------------------- */
 
 .mcmc-explorer-tooltip {

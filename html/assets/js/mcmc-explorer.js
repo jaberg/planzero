@@ -551,14 +551,20 @@
                 maxCount = Math.max(maxCount, cell.connections.size);
             }
 
-            if (!state.matrixCells.size) {
+            if (!ordered.length) {
                 matrixWrap.innerHTML =
                     '<div class="mcmc-matrix-empty-state">' +
-                    'No dependencies match the current matrix scope.' +
+                    'No elements to display.' +
                     '</div>';
                 applyMatrixFilter();
                 return;
             }
+
+            const noMatchesHtml = state.matrixCells.size
+                ? ''
+                : '<div class="mcmc-matrix-note">' +
+                  'No dependencies match the current matrix scope.' +
+                  '</div>';
 
             const headerCells = ordered.map(function (element, index) {
                 const code = spreadsheetColumnCode(index);
@@ -638,7 +644,7 @@
                     cells + '</tr>';
             }).join('');
 
-            matrixWrap.innerHTML =
+            matrixWrap.innerHTML = noMatchesHtml +
                 '<table class="mcmc-matrix">' +
                     '<thead><tr>' +
                         '<th class="mcmc-matrix-corner-index" ' +
