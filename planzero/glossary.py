@@ -867,6 +867,26 @@ class Scenario(GlossaryTerm):
         }
 
 
+class Model_Construction(GlossaryTerm):
+    """Model construction is the computational work of
+    using model elements to define variables in a PlanZero model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Construction_Subphase': "The subphases of model construction",
+            'Model_Element': 'Model elements provide variable definitions',
+            'Model_Variable': 'Model variables provide connectivity between model elements'
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#subphases', "Appendix 2: Model-construction subphases"),
+        ]
+
+
 class Model_Element(GlossaryTerm):
     """An implementation element of a PlanZero model,
     providing one or more computationl subphase implementations that define model variables.
@@ -878,6 +898,26 @@ class Model_Element(GlossaryTerm):
             'PlanZero_Model': "the general form of PlanZero probabilistic models",
         }
 
+
+class Model_Evaluation(GlossaryTerm):
+    """Model evaluation is the computational work of
+    determining statistics of the variables of a PlanZero model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'PlanZero_Model': "Model evaluation refers implicitly to PlanZero model evaluation",
+                'Model_Evaluation_Phase': "PlanZero performs model evaluation in three broad phases: Prior, Inference, and Posterior",
+                'Model_Construction_Subphase': "Each evaluation phase builds some or all of a PlanZero model using the same construction subphases",
+                'Model_Metric': 'Model-level metrics are calculated in the last evaluation phase'
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
 
 class Model_Evaluation_Phase(GlossaryTerm):
     """There are three phases of PlanZero model evaluation: Prior, Inference, and Posterior.
@@ -892,13 +932,33 @@ class Model_Evaluation_Phase(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Inference_Phase': "",
+            'Inference_Phase': "The inference phase generally uses an MCMC algorithm to draw posterior samples from PlanZero model",
         }
 
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Model_Explorer(GlossaryTerm):
+    """The model explorer is a page here on the site
+    that supports interactive exploration of inference groups and model element
+    interaction via variables.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'PlanZero_Model': "The model explorer works on PlanZero models",
+                'Inference_Group': "The model explorer looks at one inference group at a time",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#overview', "Overview and Appendix 1"),
         ]
 
 
@@ -1930,14 +1990,15 @@ class Posterior_Phase(GlossaryTerm):
 class Prior_Phase(GlossaryTerm):
     """
     The Prior phase is the first of the three phases of evaluating a PlanZero model.
-    The Prior phase establishes prior distributions over unknown variables.
+    The Prior phase establishes prior distributions over unknown variables,
+    and validates that inference groups are statistically independent.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
             'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
-            'Unknown_Variable': 'All unknown variables have a prior distribution in a PlanZero model',
+            'Unknown_Variable': 'All unknown variables are associated with a prior distribution by a PlanZero model',
         }
 
     @property
