@@ -6,8 +6,6 @@ It exposes two linked views:
 * an element-by-element dependency matrix for the overall structure, and
 * a focused dependency graph for tracing individual variables and paths.
 
-The JSON payload is generated from the same decorator metadata used by
-``planzero.mermaid``.  No ``ScenarioModel`` data structures are modified.
 """
 
 from __future__ import annotations
@@ -15,26 +13,52 @@ from __future__ import annotations
 import html
 import json
 import re
-from typing import Iterable
+from collections.abc import Iterable
+from dataclasses import dataclass
+from typing import Literal
 
-from .mermaid import (
-    _METHOD_ORDER,
-    _collect_property_occurrences,
-    _group_element_ids,
-)
-from .scenario_model import ScenarioModel, VarKey
-from .scenario_model.base import (
+from .scenario_model import (
+    ElementAnnualKey,
+    ElementCarryKey,
+    ElementGeneralKey,
     FinalCarry,
     InitialCarry,
+    ScenarioModel,
+    VarKey,
+)
+from .scenario_model.base import (
     NextCarry,
     ThisCarry,
-)
+    )
 
 __all__ = [
         "build_mcmc_group_dependency_data",
         "list_mcmc_groups",
         "render_mcmc_group_html_explorer",
         ]
+
+# These attribute names mirror the decorator metadata attributes in
+# scenario_model.scenario_model.  They are checked to distinguish a method
+# that declares variables from an inherited no-op method implementation.
+_DEFINE_ATTRS = (
+    ("model_element_define", "general"),
+    ("model_element_define_annual", "annual"),
+    ("model_element_define_carry", "carry"),
+)
+
+_ACCESS_ATTRS = (
+    ("model_element_access_val", "general", None),
+    ("model_element_access_annual", "annual", None),
+    ("model_element_access_this_carry", "carry", ThisCarry),
+    ("model_element_access_next_carry", "carry", NextCarry),
+)
+
+
+_METHOD_ORDER = (
+    "model_element_prepare",
+    "model_element_annual_step",
+    "model_element_postprocess",
+)
 
 
 _METHOD_KEYS = {
@@ -48,6 +72,159 @@ _METHOD_LABELS = {
         "model_element_postprocess": "Post",
         }
 _METHOD_KEYS_BY_ORDER = tuple(_METHOD_KEYS[m] for m in _METHOD_ORDER)
+
+
+_VARIABLE_KEY_CLASSES = {
+    "general": ElementGeneralKey,
+    "annual": ElementAnnualKey,
+    "carry": ElementCarryKey,
+}
+
+
+@dataclass(frozen=True)
+class _PropertyOccurrence:
+    elem_id: str
+    method: str
+    direction: Literal["define", "access"]
+    kind: str
+    name: str
+    lookup_keys: tuple[VarKey, ...]
+    attr: str | None = None
+
+
+def _resolve_decorator_keys(
+        element,
+        decorator_key: str | VarKey | property,
+        kind: str,
+        wrapper=None,
+        ) -> list[VarKey]:
+    """Resolve a decorator key to the VarKeys that add_element registered.
+
+    This mirrors the string/property/dict handling in
+    ``ScenarioModel.add_element`` without changing any scenario_model data
+    structures.
+    """
+    if isinstance(decorator_key, str):
+        key_class = _VARIABLE_KEY_CLASSES[kind]
+        decorator_key = key_class(
+                elem_id=element.identifier,
+                name=decorator_key)
+    elif isinstance(decorator_key, property):
+        decorator_key = decorator_key.__get__(element, type(element))
+
+    if isinstance(decorator_key, dict):
+        values = list(decorator_key.values())
+    else:
+        values = [decorator_key]
+
+    rval = []
+    for value in values:
+        if not isinstance(value, VarKey):
+            continue
+        if wrapper is not None:
+            if not isinstance(value, ElementCarryKey):
+                continue
+            value = wrapper(carry_key=value)
+        rval.append(value)
+    return rval
+
+
+def _carry_family(carry_key: ElementCarryKey) -> tuple[VarKey, ...]:
+    """All VarKeys that represent one carry variable's lifecycle."""
+    return (
+            carry_key,
+            InitialCarry(carry_key=carry_key),
+            ThisCarry(carry_key=carry_key),
+            NextCarry(carry_key=carry_key),
+            FinalCarry(carry_key=carry_key),
+            )
+
+
+def _decorator_name(decorator_key: str | VarKey | property) -> str:
+    """Return the property or string name used in a decorator."""
+    if isinstance(decorator_key, property):
+        if decorator_key.fget is None:
+            return str(decorator_key)
+        return decorator_key.fget.__name__
+    if isinstance(decorator_key, str):
+        return decorator_key
+    return getattr(decorator_key, "name", str(decorator_key))
+
+
+def _group_element_ids(model: ScenarioModel, mcmc_group: str) -> list[str]:
+    element_ids = [
+            elem_id
+            for elem_id in model.model_elements
+            if model.mcmc_group_by_elemid.get(elem_id) == mcmc_group
+            ]
+    if not element_ids:
+        available = sorted({
+            group
+            for group in model.mcmc_group_by_elemid.values()
+            if group is not None
+            })
+        raise ValueError(
+                f"unknown mcmc_group {mcmc_group!r};"
+                f" available groups: {available}")
+    return element_ids
+
+
+def _collect_property_occurrences(
+        model: ScenarioModel,
+        element_ids: Iterable[str],
+        ) -> list[_PropertyOccurrence]:
+    """Collect define/access decorator occurrences for the HTML table."""
+    occurrences = []
+    for elem_id in element_ids:
+        element = model.model_elements[elem_id]
+        for method in _METHOD_ORDER:
+            method_obj = getattr(element, method)
+            for attr, kind in _DEFINE_ATTRS:
+                decorator_d = getattr(method_obj, attr, None)
+                if not decorator_d:
+                    continue
+                for decorator_key in decorator_d:
+                    resolved_keys = _resolve_decorator_keys(
+                            element, decorator_key, kind)
+                    if not resolved_keys:
+                        continue
+                    lookup_keys = []
+                    for var_key in resolved_keys:
+                        if (kind == "carry"
+                                and isinstance(var_key, ElementCarryKey)):
+                            lookup_keys.extend(_carry_family(var_key))
+                        else:
+                            lookup_keys.append(var_key)
+                    occurrences.append(_PropertyOccurrence(
+                            elem_id=elem_id,
+                            method=method,
+                            direction="define",
+                            kind=kind,
+                            name=_decorator_name(decorator_key),
+                            lookup_keys=tuple(lookup_keys),
+                            attr=attr,
+                            ))
+
+            for attr, kind, wrapper in _ACCESS_ATTRS:
+                decorator_d = getattr(method_obj, attr, None)
+                if not decorator_d:
+                    continue
+                for key_metadata in decorator_d.values():
+                    for decorator_key in key_metadata:
+                        resolved_keys = _resolve_decorator_keys(
+                                element, decorator_key, kind, wrapper)
+                        if not resolved_keys:
+                            continue
+                        occurrences.append(_PropertyOccurrence(
+                                elem_id=elem_id,
+                                method=method,
+                                direction="access",
+                                kind=kind,
+                                name=_decorator_name(decorator_key),
+                                lookup_keys=tuple(resolved_keys),
+                                attr=attr,
+                                ))
+    return occurrences
 
 
 def _canonical_var_key(var_key: VarKey) -> VarKey:
@@ -98,11 +275,11 @@ def _site_model_element_metadata(
                 }
     try:
         pretty_name = element.pretty_name
-    except Exception:
+    except AttributeError:
         pretty_name = None
     try:
         short_description = _plain_text(element.short_description)
-    except Exception:
+    except AttributeError:
         short_description = None
     return {
             "site_model_element": True,

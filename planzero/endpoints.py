@@ -29,7 +29,6 @@ def endpoints():
             blog,
             challenge,  # noqa: F401
             ipcc_canada,
-            sim,
     )
 
     prob_registry = completed_prob_registry()
@@ -42,19 +41,6 @@ def endpoints():
         if post.published or HOME_SHOW_UNPUBLISHED_POSTS
     ])
 
-    for sim_name, site_sim in sorted(sim.site_simulations.items()):
-        rval.append(f"/models/sim/{sim_name}/")
-        
-        for dynelem in site_sim.dynamic_elements():
-            if 'strategy' in dynelem.tags:
-                rval.append(f"/models/sim/{sim_name}/strategies/{dynelem.identifier}/")
-
-            if 'barrier' in dynelem.tags:
-                rval.append(f"/models/sim/{sim_name}/barriers/{dynelem.identifier}/")
-
-        for catpath in ipcc_canada.catpaths:
-            rval.append(f"/models/sim/{sim_name}/ipcc-sectors/{catpath}/")
-
     for url_name, site_inf in sorted(prob_registry.items()):
         if not site_inf.show_on_models_page:
             continue
@@ -66,8 +52,13 @@ def endpoints():
         for strategy_name in site_inf.strategies:
             rval.append(f"/models/prob/{url_name}/strategies/{strategy_name}/")
 
-        for barrier_name in site_inf.barriers:
-            rval.append(f"/models/prob/{url_name}/barriers/{barrier_name}/")
+        if 0:  #re-enable this was /models/{url_name}/structural/{element_name}
+            for barrier_name in site_inf.barriers:
+                rval.append(f"/models/prob/{url_name}/barriers/{barrier_name}/")
+
+        rval.append(f"/model-explorer/?model={url_name}")
+        for igroup in site_inf.mcmc_submodels():
+            rval.append(f"/model-explorer/?model={url_name}&group={igroup}")
 
     rval.extend([
         "/",

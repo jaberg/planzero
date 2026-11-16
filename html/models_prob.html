@@ -63,7 +63,12 @@ For information about the model itself, refer to
 at the bottom of this page.
 </p>
 
-<h2 id="strategies"><a href="/glossary/#Strategy">Strategies</a> in this Model</h2>
+<h2 id="model-elements">Model Elements</h2>
+
+<p>Use the <a href="/model-explorer/?model={{ site_inference.url_name }}">Model Explorer</a> to browse the elements
+of the {{ site_inference.pretty_name }} model by {{siteref("Inference_Group", "inference group")|safe}}.</p>
+
+<h3 id="strategies"><a href="/glossary/#Strategy">Strategies</a> in this Model</h3>
     {% if site_inference.strategies %}
 	<table>
 	    <thead>
@@ -87,38 +92,6 @@ at the bottom of this page.
     {% else %}
     <p>This model does not include <a href="/glossary/#Strategy">strategy elements</a>.</p>
     {% endif %}
-
-    <h2 id="barriers"><a href="/glossary/#Barrier">Barrier Elements</a> in this Model</h2>
-    {% if site_inference.barriers %}
-	<table>
-	    <thead>
-		<tr>
-			<th>Name</th>
-			<th>Description</th>
-			<!--<th>Affected Sector(s)</th>-->
-		</tr>
-	    </thead>
-	    <tbody>
-    {% for barrier_name, barrier_obj in site_inference.barriers.items() %}
-		<tr>
-		    <td><a href="/models/prob/{{ ident }}/barriers/{{ barrier_name }}/">{{ barrier_obj.pretty_name }}</a></td>
-		    <td>{{ barrier_obj.short_description }}</td>
-		    <!--
-		    <td>
-			{% for ipcc_sector in barrier_obj.extra_ipcc_sectors %}
-			<a href="./sectors/{{ipcc_sector.catpath_no_whitespace}}/">{{ipcc_sector.value}}</a>
-			{% if not loop.last %},{% endif %}
-			{% endfor %}
-		    </td>
-		    -->
-		</tr>
-    {% endfor %}
-	    </tbody>
-    </table>
-    {% else %}
-    <p>This model does not include <a href="/glossary/#Barrier">barrier elements</a>.</p>
-    {% endif %}
-
 
 
 {% if site_inference.show_prediction_quality %}

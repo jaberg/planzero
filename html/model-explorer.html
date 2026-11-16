@@ -5,19 +5,19 @@
 <section class="post model-explorer-page">
     <header class="major">
         <h1>Model Explorer</h1>
-        <p>Trace how variables flow between the model elements of one inference group.</p>
+        <p>Explore the interactions between model elements by inference group.</p>
     </header>
 
     <p>
-    PlanZero models are built from model elements, and each element declares the
-    variables it defines and the variables it accesses. This page reads those
-    declarations and presents them in two linked views: an
-    <strong>Overview</strong> matrix of producer-to-consumer dependencies, and a
-    <strong>Trace</strong> view for following a particular variable, element, or
-    path. The explorer is an interactive companion to the
-    <a href="/blog/2026-04-19-glossary#inference-groups">Inference Groups</a>
-    section of the glossary and to the
-    <a href="/models/">Models</a> page.
+    PlanZero models are built from model elements, which work by
+    defining variables and accessing one anothers' variables. The Model Explorer
+    visualizes those interactions.
+    The <strong>Overview</strong>
+    tab displays a matrix of producer-to-consumer dependencies.
+    The <strong>Trace</strong> tab shows individual variable
+    definitions and accesses in terms of the subphases of model construction.
+    The explorer is an interactive companion to the <a href="/models/">Models</a>
+    page, which focuses on whole-model visualizations and metrics.
     </p>
 
     <form class="model-explorer-group-picker" method="get" action="/model-explorer/">
@@ -38,10 +38,9 @@
             </select>
         </label>
         <input type="hidden" name="tab" value="overview" data-mcmc-tab-input>
-        <button type="submit" class="button small">Load</button>
         <noscript>
             <span style="align-self:center;color:#6b7280;font-size:0.8rem;">
-                JavaScript is disabled; use the button to load the selected group.
+                JavaScript is disabled; Model Explorer requires JavaScript.
             </span>
         </noscript>
     </form>
@@ -56,28 +55,17 @@
             Rows are producer elements and columns are consumer elements. A cell
             shows how many distinct variables flow from the row element to the
             column element. Hover a cell for the variable names, and click it to
-            open exactly those dependencies in the Trace view.
+	    open the Trace tab for that (producer, consumer) pair of elements.
+	    Alternatively, check elements to trace via the Trace column.
             </p>
         </div>
         <div data-help-tab="trace" hidden>
             <h3>Trace</h3>
             <p>
-            The graph shows the model elements ticked in the Trace column of the
-            Overview table. Each of the methods
-            <code>model_element_prepare</code>,
-            <code>model_element_annual_step</code>, and
-            <code>model_element_postprocess</code> that participates in a
-            declaration is drawn as a box. Variable nodes are created according
-            to the decorator and method: general values are single nodes; annual
-            variables use <code>(all)</code> and <code>(this)</code> nodes; carry
-            variables use <code>(initial)</code>, <code>(this)</code>,
-            <code>(next)</code>, and <code>(final)</code> nodes with the
-            lifecycle links
-            <code>initial→this</code>, dashed <code>next→this</code>, and
-            <code>next→final</code>. Edges run from defining methods to the
-            variables they define and from variables to the methods that access
-            them, annotated with the <code>varkey_property</code> name. A
-            dict-valued property is shown as a single node.
+            The graph shows the
+	    interaction of model elements via variables
+	    in terms of {{siteref("Model_Construction", "model construction")|safe}}.
+	    See <a href="/post/2026-04-19-glossary/#">Model Explorer Post, Appendix 2: Model Semantics and Evaluation</a> for details.
             </p>
         </div>
 

@@ -544,6 +544,7 @@ async def get_models(request: Request):
 
 @app_cache
 def get_model_explorer_html(model: str | None = None, group: str | None = None):
+    # tab=foo might be in the url as well, but this handler ignores it
     from planzero.dependency_explorer import (
             list_mcmc_groups,
             render_mcmc_group_html_explorer,
@@ -551,7 +552,9 @@ def get_model_explorer_html(model: str | None = None, group: str | None = None):
     from planzero.endpoints import completed_prob_registry
     registry = completed_prob_registry()
     models = [
-            {'name': name, 'pretty_name': site_inf.pretty_name}
+            {'name': name,  # aka url_name
+             'pretty_name': site_inf.pretty_name,
+             }
             for name, site_inf in sorted(registry.items())
             ]
 
@@ -603,8 +606,9 @@ def get_model_explorer_html(model: str | None = None, group: str | None = None):
 @app.get("/model-explorer/", response_class=HTMLResponse)
 async def get_model_explorer(
         request: Request,
-        model: str | None = None,
-        group: str | None = None):
+        model:str|None = None,
+        group:str|None = None
+        ):
     html = get_model_explorer_html(model=model, group=group)
     return HTMLResponse(content=html)
 
