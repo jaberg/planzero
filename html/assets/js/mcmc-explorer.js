@@ -351,7 +351,6 @@
             syncTabButtons();
             syncHelpSections();
             if (tab === 'trace') {
-                syncTraceControls();
                 renderTrace();
             }
             updateUrl();
@@ -752,7 +751,6 @@
                 : null;
             syncTraceColumn();
             if (state.tab === 'trace') {
-                syncTraceControls();
                 renderTrace();
             }
             updateUrl();
@@ -1107,8 +1105,6 @@
          * ---------------------------------------------------------------- */
 
         tracePane.innerHTML =
-            '<div class="mcmc-trace-filter" data-role="filter" hidden>' +
-            '</div>' +
             '<div class="mcmc-trace-layout">' +
                 '<div class="mcmc-trace-graph-wrap">' +
                     '<div class="mcmc-trace-graph" data-role="graph">' +
@@ -1155,36 +1151,8 @@
                 '</aside>' +
             '</div>';
 
-        const filterBar = tracePane.querySelector('[data-role="filter"]');
         const graphEl = tracePane.querySelector('[data-role="graph"]');
         const detailsEl = tracePane.querySelector('[data-role="details"]');
-
-        function option(value, label) {
-            return '<option value="' + esc(value) + '">' +
-                esc(label) + '</option>';
-        }
-
-        function populateTraceSelects() {
-        }
-
-        function syncTraceControls() {
-            renderFilterBar();
-        }
-
-        function renderFilterBar() {
-            if (!state.traceElements.length) {
-                filterBar.hidden = true;
-                filterBar.innerHTML = '';
-                return;
-            }
-            const names = state.traceElements.map(elementLabel).join(
-                ' \u00b7 ');
-            filterBar.hidden = false;
-            filterBar.innerHTML =
-                '<span><strong>Selected:</strong> ' + esc(names) + '</span>' +
-                '<button type="button" class="mcmc-button" ' +
-                    'data-role="clearFilter">Clear</button>';
-        }
 
         function setFocus(kind, id) {
             if (kind === 'element') {
@@ -1208,11 +1176,6 @@
         }
 
         tracePane.addEventListener('click', function (event) {
-            const role = event.target.dataset.role;
-            if (role === 'clearFilter') {
-                setTraceElements([]);
-                return;
-            }
             const link = event.target.closest('[data-focus-kind]');
             if (link) {
                 setFocus(link.dataset.focusKind, link.dataset.focusId);
@@ -2283,21 +2246,18 @@
             const graphModel = buildSelectionGraph();
             renderGraph(graphModel);
             showFocusDetails();
-            renderFilterBar();
         }
 
         /* -----------------------------------------------------------------
          * Initialization
          * ---------------------------------------------------------------- */
 
-        populateTraceSelects();
         syncOverviewControls();
         syncTabButtons();
         syncHelpSections();
         renderMatrix();
 
         if (state.tab === 'trace') {
-            syncTraceControls();
             renderTrace();
         } else {
             showDetailsEmpty();
