@@ -2,12 +2,40 @@
 Style guide for text on the site, especially within the html/ directory
 =======================================================================
 
+Target Audience, Expected Background Knowledge
+----------------------------------------------
+
 Canadian spelling conventions should be preferred,
 there should not be spelling errors or grammatical errors.
+The writing should be clear and consise,
+with formality somewhere between prose for a general audience (e.g. newspaper)
+and scientific writing (e.g. conference or journal article).
+The target reader is university educated,
+in one of either social science, physical science, statistics, or engineering.
+All material that might be associated with high-school education in North America,
+can be considered as expected background knowledge.
+
+
+General Guidelines on Capitalization
+------------------------------------
 
 Names of so-called IPCC Sectors relating to NIR documents should be capitalized,
 so e.g. Enteric Fermentation should be capitalized when it refers to the greenhouse gas accounting sector,
 and not capitalized when it refers to the physiologicaly phenomenon within ruminants generally.
+
+Textual references to pages on the PlanZero site should typically be capitalized.
+E.g. <a href="/model-explorer">Model Explorer</a>, Model Explorer, the Glossary, or the About page.
+A lower-case model explorer should be capitalized.
+
+Textual references to PlanZero models should be capitalized, so it should be
+e.g. the NIR-2025 model, the Static Normals model, the Scaling model and so on.
+Textual mentions should use the `siteref` mechanism to provide hoverable,
+clickable context if the reader isn't familiar with these models.
+
+
+
+Blog/Post header structure
+--------------------------
 
 Top-level section headers in posts should be "h2" header elements, their subsections should be "h3" and so on.
 
@@ -15,6 +43,11 @@ Tables of contents on posts should be unordered lists within a "div" html elemen
 Each post's table of contents should match the structure established by header elements in the document,
 at least with regards to h2 and h3 headers.
 Sometimes h4, or any h5 or h6 headers are rightly omitted from from the table of contents for clarity.
+
+Top-level headings (h2) should typically be mostly capitalized
+For lower-level headings (h3+) the first word in the heading should be
+capitalized for being in the heading, other words should not be capitalized
+unless they should be capitalized for reason other than being in the heading.
 
 
 Update Posts

@@ -106,13 +106,13 @@ from .nir_ar2_post import AR2
 
 
 class Glossary(BlogPost):
-    """PlanZero has two new pages: a model-explorer and a glossary.
-    This post explains what PlanZero models <i>are</i>, in general, in terms of
-    their internal elements, how they are built, and how they are evaluated.
-    The new model-explorer page provides an interactive view of model internals,
-    and the glossary tracks specific PlanZero terminology for future reference.
-    This post deprecates and removes PlanZero's non-probabilistic "simulation-based"
-    models; PlanZero models are now probabilistic models.
+    """PlanZero has two new resources: a Model Explorer and a Glossary.
+    This post introduces these resources by way of new design documentation:
+    What are PlanZero models, how are they built, and how are they evaluated?
+    The Model Explorer provides an interactive view of model internals,
+    and the Glossary tracks PlanZero terminology for future reference.
+    This post deprecates and removes PlanZero's simulation-based
+    models; a PlanZero model now means a probabilistic model.
     """
     def __init__(self):
         super().__init__(

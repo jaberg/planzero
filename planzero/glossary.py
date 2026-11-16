@@ -943,7 +943,7 @@ class Model_Evaluation_Phase(GlossaryTerm):
 
 
 class Model_Explorer(GlossaryTerm):
-    """The model explorer is a page here on the site
+    """The <a href="/model-explorer/">Model Explorer</a> is a resource here on the site
     that supports interactive exploration of inference groups and model element
     interaction via variables.
     """
@@ -951,8 +951,10 @@ class Model_Explorer(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-                'PlanZero_Model': "The model explorer works on PlanZero models",
-                'Inference_Group': "The model explorer looks at one inference group at a time",
+                'PlanZero_Model': "The Model Explorer works on PlanZero models",
+                'Inference_Group': "The Model Explorer looks at one inference group at a time",
+                'Model_Explorer_Trace': "a detailed view of elements and variables in terms of model construction subphases",
+                'Model_Explorer_Overview': "an inference-group-level view of connectivity between model elements",
         }
 
     @property
@@ -960,6 +962,47 @@ class Model_Explorer(GlossaryTerm):
         return [
                 (blog.Glossary(), '#overview', "Overview and Appendix 1"),
         ]
+
+
+class Model_Explorer_Overview(GlossaryTerm):
+    """The Model Explorer - Overview tab is a visualization
+    tab within the Model Explorer that shows the interaction of
+    model elements within an inference group.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Inference_Group': "The Model Explorer looks at one inference group at a time",
+                'Model_Explorer': "an interactive visualization tool on the PlanZero site",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#overview', "Overview and Appendix 1"),
+        ]
+
+
+class Model_Explorer_Trace(GlossaryTerm):
+    """The Model Explorer - Trace tab is a visualization
+    tab within the Model Explorer that shows the interaction of
+    model elements and variables as a result of model construction.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Inference_Group': "The Model Explorer looks at one inference group at a time",
+                'Model_Explorer': "an interactive visualization tool on the PlanZero site",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#overview', "Overview and Appendix 1"),
+        ]
+
 
 
 class Model_Metric(GlossaryTerm):
@@ -1311,7 +1354,6 @@ class NIR(GlossaryTerm):
     Specific reports are referred to as e.g. NIR-2023, NIR-2024, NIR-2025,
     an so on in PlanZero.
     The first report was <a href="https://publications.gc.ca/site/eng/9.506002/publication.html">NIR-2004</a>.
-    The most recent as-of writing is <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/sources-sinks-executive-summary-2026.html">NIR-2026</a>.
     """
 
     @property
@@ -2025,6 +2067,21 @@ class Observed_Variable(GlossaryTerm):
         return [
                 (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
         ]
+
+
+class Scaling_Model(GlossaryTerm):
+    """The Scaling model is a PlanZero model, whose defining feature
+    is that it includes hypothetical adoption and standing of sufficiently-mature
+    technology and products.
+    """
+
+
+class Static_Normals_Model(GlossaryTerm):
+    """
+    The Static Normals model is a PlanZero model, whose defining feature
+    is that it assumes no change over time of any emissions, and attributes
+    all year-to-year differences in the data to observation noise.
+    """
 
 
 class Unknown_Variable(GlossaryTerm):
