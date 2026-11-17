@@ -131,9 +131,21 @@ class GlossaryTerm(BaseModel):
     def aka(self) -> list[str]:
         return []
 
-    def pretty_names(self):
-        pretty_names = {name.replace('_', ' ') for name in self.all_names}
-        return sorted(pretty_names)
+    def pretty_names(self) -> list[str]:
+        """Return the names of a term as they should appear in e.g. term list and per-term header.
+        The term's preferred form should be first, followed by pretty, de-duplicated AKA names.
+        """
+        # used in glossary.html in the term list and per-term header
+        list_pretty = [name.replace('_', ' ') for name in self.all_names]
+        assert list_pretty
+        first_pretty = list_pretty[0]
+        set_pretty = set(list_pretty)
+
+        assert len(set_pretty) >= 1
+        if len(set_pretty) == 1:
+            return [first_pretty]
+        else:
+            return [first_pretty] + sorted({name for name in set_pretty if name != first_pretty})
 
     @property
     def all_names(self) -> list[str]:
@@ -247,6 +259,57 @@ class Barrier(GlossaryTerm):
         }
 
 
+class Bayesian_Inference(GlossaryTerm):
+    """Bayesian inference is the use of
+    <a href="https://en.wikipedia.org/wiki/Bayes%27_theorem">Bayes' Theorem</a>
+    to define a posterior distribution over latent variables in a probabilistic
+    model, by conditioning on the observation of data.
+    Bayesian inference is one of the most compelling
+    features of probabilistic models.
+    Generally the result of inference is a sample of latent-variable values
+    drawn from the posterior distribution by an algorithm, although in
+    certain models Bayesian inference can be done analytically.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Inference_Algorithm': 'In probabilistic models that are defined within probabilistic programming systems, Bayesian inference can often be implemented automatically',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+
+class CNZEAA(GlossaryTerm):
+    """The Canadian Net-Zero Accountability Act legislates federal ministries and agencies
+    to uphold Canada's obligations under the Paris Agreement.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Canadian Net-Zero Accountability Act']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            "ECCC": (
+                "Environment and Climate Change Canada is responsible for"
+                " delivering an annual NIR to the UNFCCC"),
+            "UNFCCC": (
+                "As a Paris Agreement signatory, Canada"
+                " delivers an annual report to the Secretariat of the"
+                " United Nations Framework on Climate Change"),
+            "NIR": (
+                "National Inventory Reports, published by ECCC, are one of the"
+                " most critical data sources for PlanZero"
+            )
+        }
+
+
 class Cashflow_Variables(GlossaryTerm):
     """Cashflow variables are the set of variables in a PlanZero model related to cashflow.
     The Posterior phase values of cashflow variables are used to
@@ -265,6 +328,16 @@ class Cashflow_Variables(GlossaryTerm):
         return [
             (blog.Glossary(), '#semantic-variable-taxonomy', "Taxonomy of Model Variables by semantics"),
         ]
+
+
+class Code(GlossaryTerm):
+    """PlanZero is an open-source project, with [source] code on GitHub."""
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            "GitHub_Repository": "The development hub for PlanZero on GitHub",
+            "Python": "PlanZero's source code is mostly written in the Python programming language",
+        }
 
 
 class Concentrated_Distribution(GlossaryTerm):
@@ -286,115 +359,56 @@ class Concentrated_Distribution(GlossaryTerm):
         }
 
 
-class Emission_Variables(GlossaryTerm):
-    """Emission variables are the set of variables in a PlanZero model related to emissions.
-    The Posterior phase values of emission variables are used to
-    calculate statistics and render summary graphics on the PlanZero site.
+class Conditional_Distribution(GlossaryTerm):
+    """A conditional distribution is a probability distribution
+    over one or more unknown variables in a model,
+    conditioned on assumptions about other variables in the model.
+    If a conditional distribution is over multiple variables,
+    then it is called a conditional joint distribution.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'PlanZero_Model': 'Always have a full set of emission variables',
+                'Probability_Distribution': 'Conditional distributions are probability distributions.',
+                'Probabilistic_Model': 'Probabilistic models can be used to derive conditional distributions among their variables',
+                }
+
+
+class Credible_Interval(GlossaryTerm):
+    """A <a href="https://en.wikipedia.org/wiki/Credible_interval">credible interval</a> is the set of values that a
+    random variable in a probabilistic model might most-credibly take.
+    For example, a 95% credible interval is the smallest interval containing
+    the 95% most-probable values for the random variable.
+    </p>
+    <p>
+    In PlanZero, Credibility and Confidence are used interchangeably.
+    In the field of statistics, the terms have distinct meanings that apply to
+    Bayesian and frequentist estimators respectively.
+    PlanZero strives to use Bayesian reasoning,
+    but with MCMC methods there can be significant uncertainty due to the
+    limited sample size, which is the the sort of uncertainty that frequentist
+    methods deal with. Candidly I don't honestly know whether either term is
+    more appropriate for the estimates that arise from PlanZero modelling.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Confidence Interval']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unknown_Variable': 'the model element associated with a credible interval',
+            'Probabilistic Model': 'credible intervals arise only in probabilistic modelling',
+            'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
         }
 
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.Glossary(), '#semantic-variable-taxonomy', "Taxonomy of Model Variables by semantics"),
+            (blog.ProbabilisticNIR2025(), '#appendix-visualizing', "credibility intervals are used to visualize probabilistic models"),
         ]
-
-
-class Unit_of_Measure(GlossaryTerm):
-    """A PlanZero unit of measure is one that is registered
-    in the ureg.py file, using the <a
-    href="https://pint.readthedocs.io/en/stable/">Pint unit package</a>.
-    The registry includes standard units of measure in e.g. the metric SI
-    system in addition to various more traditional ones, and also
-    custom units related to PlanZero modelling such as types of coal,
-    greenhouse gases, farms, and vehicles.
-    """
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        return {
-            'ureg.py': 'https://github.com/jaberg/planzero/blob/main/planzero/ureg.py',
-        }
-
-
-class Emission_Reduction_Efficiency(GlossaryTerm):
-    """A strategy's emission reduction efficiency is the cost (in CAD) per ton of abated {{CO2e}}"""
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Strategy_Element': 'emission reduction efficiency is one of the key metrics associated with strategies',
-        }
-
-
-class Strategy(GlossaryTerm):
-    """<p>Strategy is a term adapted from {{lref("EGFS")|safe}} (which aims near the standard usage definition),
-    where it means
-    a <i>broad activity required to achieve a goal, create a critical condition, or overcome a barrier</i>.
-    In PlanZero, the term is used in two ways.
-    Firstly, it is used on per-sector analysis pages to call out things that could be done
-    to reduce emissions in a sector.
-    Secondly, it is sometimes used to describe Strategy Elements, which are formal model elements
-    used to evaluate strategy ideas within PlanZero models.
-    </p>
-    """ 
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Barrier': 'a related EGFS term, for hinderances to achieving a goal, which may be overcome by strategies',
-            'EGFS': 'The Executive Guide to Facilitating Strategy, providing strategic management term definitions',
-        }
-
-
-class Static_Variable(GlossaryTerm):
-    """A variable in a model simulation that is not indexed by time
-    is called Constant.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Constant']
-
-
-class IPCC_Sector_Contribution(GlossaryTerm):
-    """The emissions associated with an IPCC Sector are generally
-    computed as coming from one or more sources, each of which
-    is associated by PlanZero with the product of a driver and an emission factor.
-    This product is called a IPCC Sector Contribution.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'PlanZero_Model': "a model of Canada's future emissions",
-            'Emission Factor': 'the factor of proportionality between a driver and an IPCC Sector Contribution (generally a time series)',
-            'IPCC Sector': (
-                'the emissions for an IPCC Sector are calculated'
-                ' by summing one or more IPCC Sector Contributions'),
-            'KPI': 'IPCC Sector Contributions are Derived KPIs',
-        }
-
-
-class Emission_Factor(GlossaryTerm):
-    """<p>
-    An emission factor is a constant of proportionality between
-    an emission driver and the amount of some emitted greenhouse gas.
-    </p>"""
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'KPI': "an emission factor is one of PlanZero's base KPI types",
-            'PlanZero_Model': "a model of Canada's future emissions",
-            'Greenhouse Gas': "an emission factor is a constant of proportionality to one greenhouse gas",
-            'Emissions': "the result of multiplying an emission factor by a driver",
-        }
 
 
 class Critical_Success_Factor(GlossaryTerm):
@@ -426,6 +440,523 @@ class Critical_Success_Factor(GlossaryTerm):
         return ['CSF']
 
 
+class Draft_Status(GlossaryTerm):
+    """A PlanZero Post may be in Draft Status,
+    in which case it is still subject to significant change.
+    A post that is not in Draft Status should not be materially changed,
+    they should only be changed to include
+    clarifications and annoted links to relevant newer content.
+    """
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
+        ]
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'About_Section': 'more guidelines around draft status and posts generally',
+            'Post': 'Narrative descriptions of updates to PlanZero, which may be in Draft Status if the work is still in progress',
+        }
+
+
+class EGFS(GlossaryTerm):
+    """<p>Wilkinson, M., <i>The Executive Guide to Facilitating Strategy: featuring the Drivers Model</i>, Atlanta: Leadership Strategies Publishing, 2011. <a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">Amazon</a></p>
+    <p>
+    I've appropriated (hopefully not misappropriated) terms
+    of implementation planning ({{lref("Critical Success Factor")|safe}},
+    {{lref("Barrier")|safe}},
+    {{lref("Strategy")|safe}})
+    as defined in this book, to structure the visualization of model simulation.
+    I have also tried to insert aspects of directional strategy (mission,
+    vision, guiding principles, positioning) in the project overview on the
+    <a href="/about/">About page</a>.
+    </p>
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Strategy': "an ablatable model element, used to represent a strategy in a model",
+            'Barrier': "a non-ablatable model element, used to model the interactions of time series with KPIs",
+            'CSF': "target values for target times of a KPI time series, in order to achieve an objective",
+            'KPI': "a time series registered to participate in emissions or subsidy calculations",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#modelling', "see section on Modelling National Emissions"),
+        ]
+
+
+class Emission_Factor(GlossaryTerm):
+    """<p>
+    An emission factor is a constant of proportionality between
+    an emission driver and the amount of some emitted greenhouse gas.
+    </p>"""
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'KPI': "an emission factor is one of PlanZero's base KPI types",
+            'PlanZero_Model': "a model of Canada's future emissions",
+            'Greenhouse Gas': "an emission factor is a constant of proportionality to one greenhouse gas",
+            'Emissions': "the result of multiplying an emission factor by a driver",
+        }
+
+
+class Emission_Reduction_Efficiency(GlossaryTerm):
+    """A strategy's emission reduction efficiency is the cost (in CAD) per ton of abated {{CO2e}}"""
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Strategy_Element': 'emission reduction efficiency is one of the key metrics associated with strategies',
+        }
+
+
+class Emission_Variables(GlossaryTerm):
+    """Emission variables are the set of variables in a PlanZero model related to emissions.
+    The Posterior phase values of emission variables are used to
+    calculate statistics and render summary graphics on the PlanZero site.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': 'Always have a full set of emission variables',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#semantic-variable-taxonomy', "Taxonomy of Model Variables by semantics"),
+        ]
+
+
+class Emissions(GlossaryTerm):
+    """The combined emissions of the seven greenhouse gases, often quantified
+    in units of {{CO2e|safe}}.
+    Canada estimates rates of emissions in the
+    {{lref("National Greenhouse Gas Inventory")|safe}}.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Emission_Factor': 'a factor of proportionality between drivers and emissions',
+            'PlanZero_Model': "a model of Canada's future emissions, calculated by summing up emissions across IPCC Sectors",
+            "IPCC_Sector": "the lowest levels of granularity in National Greenhouse Gas Inventory",
+            "National Greenhouse Gas Inventory": "the data from which NIRs are generated"
+        }
+
+
+class Environment_and_Climate_Change_Canada(GlossaryTerm):
+    """<p><a href="https://www.canada.ca/en/environment-climate-change.html">Federal ministry</a> "<i>protecting and conserving our natural heritage,
+    predicting weather and environmental conditions, preventing and managing
+    pollution, promoting clean growth and a sustainable environment for
+    present and future generations.</i>"</p>
+    <p>
+    ECCC, among many activities and responsibilities,
+    prepares the annual {{lref("NIR")|safe}}, and maintains
+    the federal plan for <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/net-zero-emissions-2050.html">Net-Zero by 2050</a>.
+    </p>
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['ECCC', '"E-triple-C"']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Natural_Resources_Canada': 'peer federal ministry',
+            "NIR": "National Inventory Reports are prepared by ECCC",
+            "NGGI": "National Greenhouse Gas Inventory is maintained by ECCC",
+        }
+
+
+class Git(GlossaryTerm):
+    """<p><a href="https://git-scm.com/">Git</a> is a "free and open source
+    distributed version control system designed to handle everything from
+    small to very large projects with speed and efficiency."</p>
+    <p>PlanZero is developed with git, and hosted on
+    {{lref("GitHub")|safe}} as a 
+    <a href="https://github.com/jaberg/planzero">public code repository</a>.</p>
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'GitHub': "git hosting for PlanZero",
+            'Git Branch': "maintain versions of code with git branches",
+            'Git Commit': "record source file changes to a git branch",
+            'Git Merge': "merge changes from one branch into another",
+        }
+
+
+class GitHub(GlossaryTerm):
+    """<p>GitHub (<a href="https://github.com/">site</a>, <a href="https://en.wikipedia.org/wiki/GitHub">wikipedia</a>) is a web service for using the git version
+    control system over the internet to collaborate on software projects. Circa 2023, it was the world's largest source code host, with over 100 million developers, and 420 million code repositories.</p>
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['GH']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Git': "version control software upon which GitHub is based",
+            'GitHub_Repository': "git branches corresponding to one or more versions of a project's code and files",
+            'GitHub_Fork': "a copy of a GitHub repository into another user's GitHub account",
+            'GitHub_Issue': "a future-work item on the PlanZero project",
+        }
+
+
+class GitHub_Fork(GlossaryTerm):
+    """Public GitHub {{lref("repo", "repos")|safe}} can be "forked" by users
+    who wish to make and publish their own modifications. If you have a GitHub
+    account, you can <a href="https://github.com/jaberg/planzero/fork">fork
+    the PlanZero codebase</a>, to make
+    {{lref("Git Branch", "branches")|safe}} with your own modifications,
+    and then submit them back as
+    {{lref("GitHub Pull Request", "pull requests")|safe}}.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Git_Branch': "a codebase version within a fork",
+            'GitHub_Pull_Request': "a request to merge branches, possibly across forks",
+            'GitHub_Repository': "A GitHub repo may be a fork of another repo",
+        }
+
+
+class GitHub_Issue(GlossaryTerm):
+    """GitHub issues, such as the <a href="https://github.com/jaberg/planzero/issues">PlanZero issues</a>,
+    are notices / reminders of future work.
+    Issues are used differently by different projects, some projects don't use
+    GitHub's issues at all.
+    PlanZero uses GitHub issues to record a variety of ideas and To-Do items,
+    but in particular, those that have been mentioned in posts.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['gh issue']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'GitHub': """Code hosting for PlanZero""",
+            'Post': """A report on a piece of work on PlanZero, sometimes linking to GitHub issues corresponding to next steps beyond the scope of the post itself""",
+        }
+
+
+class GitHub_Pull_Request(GlossaryTerm):
+    """One of GitHub's main features is a web interface for people
+    to suggest code changes to each other. Pull requests
+    enable asynchronous loosely-coupled development over the net by
+    giving contributors and developers a place to talk about the changes,
+    and possibly even {{lref("Git Merge", "merge")|safe}} those changes.
+    See <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests">Github documentation</a> for full description of this capability.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['pull request', 'PR']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Git_Branch': "a pull request is a request to merge two branches",
+            'Main_Branch': "submit a pull request to this branch when a new development is ready",
+            'GitHub_Fork': "typically a pull request represents a request to merge code from a branch in one fork (maintained by one person) into a branch on another fork (maintained by another person)"
+        }
+
+
+class GitHub_Repository(GlossaryTerm):
+    """A GitHub code repository, or repo, is a GitHub-defined entity,
+    it is a major point of configuration,
+    especially for billing and permissions.
+    A repo contains all of the code and files
+    for one or more git branches.
+    A repo may be created from some standard initial state (such as being empty),
+    or it may be created by forking another repo.
+    My ("James Bergstra", aka "jaberg") PlanZero repo is <a
+    href="https://github.com/jaberg/planzero">here</a>.
+    If a repo is not created by forking, then it may be called a "Source Repo"
+    or "Upstream Repo".
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['GitHub Repo', 'repository', 'repo']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'GitHub': "the site that hosts GitHub code repositories",
+            'Git': "the version control system upon which GitHub operates",
+            'GitHub_Fork': "A repo can be forked to create a downstream copy of an upstream repo"
+        }
+
+
+class Git_Branch(GlossaryTerm):
+    """A git branch is a way of tracking a single version of a set of files.
+    Technically, it is a sequence of git commits (sometimes a graph)
+    to source files leading from the initially empty project
+    to some version that's full of files.
+    The PlanZero site is populated by deploying the "main" branch.
+    Anyone is welcome to suggest changes to main by creating a pull request on github,
+    requesting that the main branch merge changes from another branch that
+    they've created.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Main_Branch': "the branch from which the PlanZero site is generated",
+            'GitHub_Pull_Request': "a request to merge branches made via GitHub",
+            'Git_Commit': "change a branch by adding a commit, which incorporates changes to local files",
+            'Git_Merge': "changes from one branch can be merged into another",
+            'Git_Graph': "the commits and merges to a branch define a directed acyclic graph with a single source node (the beginning of development) and a single sink node (the current state of the branch)",
+        }
+
+
+class Git_Commit(GlossaryTerm):
+    """A "commit" is an increment of change to a codebase, across one or more
+    changed files. It is a node in the graph of changes that make up a git
+    repository.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Git_Branch': "a named graph of commits corresponding to a single version of set of files",
+        }
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Commit']
+
+
+class Git_Graph(GlossaryTerm):
+    """A set of commits and merges that build on one another form a graph
+    representing all of the development on a project.
+    Try visualizing the graph for any git project by using purpose-built visual tools, 
+or running a command such as <pre>git log --all --decorate --oneline --graph</pre>
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Git History']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Git_Commit': "a node of a git [change] graph",
+            'GitHub Repo': "a git graph hosted on GitHub",
+            'Git_Branch': "a named subgraph of ancestors of a particular commit",
+        }
+
+
+class Git_Merge(GlossaryTerm):
+    """A git "merge" is the operation of combining two
+    {{lref("Git Branch", "branches")|safe}} together into a coherent set
+    of files, extending one branch with
+    {{lref("Git Commit", "commits")|safe}} from the other.
+    Sometimes some fixing up is required, for example if both branches have
+    changed the same part of the same file, but usually merging is mostly
+    automatic. Merging is how people can contribute their changes
+    back to the {{lref("Main Branch", "main branch")|safe}}.
+    Merging can be done locally on a development computer,
+    or on {{lref("GitHub")|safe}} via a {{lref("GitHub Pull Request", "pull request")|safe}}.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Git_Branch': "a merge operation joins two branches",
+            'GitHub_Pull_Request': "a request to merge branches made via GitHub",
+        }
+
+
+class Greenhouse_Gas(GlossaryTerm):
+    """One, or a mixture, of the seven gases (or families of gases) assessed by the IPCC as
+    a significant factor in trapping heat within the Earth planetary system.
+    They are {{CO2|safe}}, {{CH4|safe}}, {{N2O|safe}},
+    HFCs, PFCs, {{NF3|safe}}, and {{SF6|safe}}.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'IPCC': 'International Panel on Climate Change defines greenhouse gases and reporting standards for signatories to the Paris Agreement',
+            'NGGI': 'National Greenhouse Gas Inventory tracks Canadian greenhouse gas emissions',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.GHG_Emissions(), '#h2_ghg', "see section on Greenhouse gases"),
+        ]
+
+
+class IPCC_Sector(GlossaryTerm):
+    """IPCC Sector is a PlanZero term, referring to
+    an economic area for which Canada tracks emissions
+    in the {{lref("NGGI")|safe}}.
+    Each such sector is analyzed in accordance
+    with IPCC emissions reporting guidelines,
+    but the UNFCCC leaves the level of granularity of each sector
+    up to each country, in order to report on its progress appropriately.
+    In PlanZero posts,
+    the term almost always refers to a sector that is not
+    a subtotal of other sectors.
+    PlanZero uses a set of 71 IPCC Sectors, which match
+    the ones used in NIR-2025.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'NIR': "National Inventory Reports of Greenhous Gases, organized in terms of [what PlanZero refers to as] IPCC Sectors",
+            'NGGI': 'The National Greenhouse Gas Inventory of emissions from which Canada produces annual reports',
+            "IPCC": "The International Panel on Climate Change, a scientific body that produces climate reports for the UN, and reporting guidelines for Paris Agreement signatories",
+            "Paris Agreement": "The international agreement on reporting guidelines for greenhouse gases",
+            "UNFCCC": "The United Nations Framework Convention on Climate Change is the primary international treaty aimed at stabilizing greenhouse gas concentrations in the atmosphere",
+            "PlanZero_Model": "A PlanZero Model models emission amounts for IPCC Sectors",
+        }
+
+
+class IPCC_Sector_Contribution(GlossaryTerm):
+    """The emissions associated with an IPCC Sector are generally
+    computed as coming from one or more sources, each of which
+    is associated by PlanZero with the product of a driver and an emission factor.
+    This product is called a IPCC Sector Contribution.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': "a model of Canada's future emissions",
+            'Emission Factor': 'the factor of proportionality between a driver and an IPCC Sector Contribution (generally a time series)',
+            'IPCC Sector': (
+                'the emissions for an IPCC Sector are calculated'
+                ' by summing one or more IPCC Sector Contributions'),
+            'KPI': 'IPCC Sector Contributions are Derived KPIs',
+        }
+
+
+class Inference_Algorithm(GlossaryTerm):
+    """An inference algorithm samples from the posterior distribution of latent variables in a probabilistic model,
+    often by applying Bayes' rule systematically across a formal specification of the model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Probabilistic_Model': 'Inference algorithms operate on probabilistic models',
+            'Posterior_Distribution': 'Inference algorithms sample from posterior distributions',
+            'Latent_Variable': 'Inference algorithms provide samples for latent variables'
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
+        ]
+
+
+class Inference_Group(GlossaryTerm):
+    """
+    An inference group is a set of structural and strategy elements of
+    a PlanZero model for which an inference algorithm can operate independently
+    of other inference groups.
+    PlanZero models are large, and inference groups serve to define smaller submodels
+    upon which inference algorithms can operate effectively.
+    """
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
+
+
+class Inference_Phase(GlossaryTerm):
+    """
+    Inference is the second of the three phases of evaluating a PlanZero model.
+    Inference is the relatively-long computation of sampling values for unobserved variables
+    according to their posterior distribution under the model.
+    Inference typically uses an MCMC sampling algorithm.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
+            'Observed_Variable': 'A variable associated with conditioning data in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class International_Panel_on_Climate_Change(GlossaryTerm):
+    """<a href="https://www.ipcc.ch/">International Panel on Climate Change
+    (IPCC)</a> is
+    the United Nations body for assessing the science related to climate
+    change.
+    Among many activities, and across many working groups,
+    the IPCC maintains the methodology for emissions estimation
+    that is to be used by signatories of the Paris Agreement.
+    Canada uses this methodology to prepare its annual {{lref("NIR")|safe}}.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['IPCC']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            "Paris Agreement": "The international agreement on reporting guidelines for greenhouse gases",
+            "UNFCCC": "The United Nations Framework Convention on Climate Change is the primary international treaty aimed at stabilizing greenhouse gas concentrations in the atmosphere",
+            "IPCC Sector": "PlanZero term for the most granular categories used in NIR documents",
+            'NIR': "National Inventory Reports of Greenhous Gases, prepared according to UNFCCC guidelines, which were developed by the IPCC",
+            "CNZEAA": (
+                "The Canadian Net-Zero Accountability Act, legislation to uphold"
+                " Canada's responsibilities under the Paris Agreement"),
+        }
+
+
+class Joint_Distribution(GlossaryTerm):
+    """A joint probability distribution is act or result of
+    distributing probability across possible values for multiple
+    unknown variables. If the probability of each value for each variable
+    does not depend on the others, then that variable is said to be "independent"
+    of the rest, but that's the exception to the rule that generally,
+    variables are not independent of each another.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Probability_Distribution': 'Joint distributions are probability distributions, over multiple unknown variables.',
+                'Probabilistic_Model': 'Probabilistic models define joint distributions over variables',
+                }
+
+
 class Key_Performance_Indicator(GlossaryTerm):
     """
     A Key Performance Indicator, in general, is any metric that is an important
@@ -446,11 +977,57 @@ class Key_Performance_Indicator(GlossaryTerm):
         }
 
 
-
-class Scenario(GlossaryTerm):
-    """A scenario is a set of time series covering a common time period.
-    Typically in PlanZero it is the result of simulating a model.
+class Known_Variable(GlossaryTerm):
+    """A known variable is a scalar- or vector-valued
+    term in a PlanZero model that is known from the outset of modelling,
+    with no dependency on an unknown variable.
     """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unknown_Variable': 'A variable modelled in terms of a probability distribution',
+            'Model_Variable': 'the more general class of variables in a PlanZero Model'
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.StaticNormals(), '#appendix-notation', "Appendix 1: Probabilistic Modelling Notation"),
+        ]
+
+
+class Latent_Variable(GlossaryTerm):
+    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data.
+    Each time step in a time series variable is a unique variable,
+    so earlier time steps might be observed and later time steps (especially future time steps)
+    may be latent.
+    """
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Inference_Algorithm': 'Inference of latent variables can sometimes be done by standard algorithms.',
+                'Posterior_Distribution': 'A posterior distribution is over latent variables.',
+                }
+
+
+class Main_Branch(GlossaryTerm):
+    """PlanZero on GitHub generally has multiple git branches.
+    The "main branch" is special, in that it is the one used to deploy the
+    {{lref("PlanZero Site", "PlanZero site")|safe}}.
+    New improvements to the codebase should be {{lref("Git Merge", "merged")|safe}}
+    to the main branch.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Git_Branch': "a version of a codebase",
+            'GitHub_Pull_Request': (
+                "a request to merge one branch into another is the"
+                " preferred way to update the main branch of a project,"
+                " because it prompts discussion and consideration"),
+        }
 
 
 class Model_Construction(GlossaryTerm):
@@ -676,103 +1253,129 @@ class Model_Variable(GlossaryTerm):
         }
 
 
-class Git(GlossaryTerm):
-    """<p><a href="https://git-scm.com/">Git</a> is a "free and open source
-    distributed version control system designed to handle everything from
-    small to very large projects with speed and efficiency."</p>
-    <p>PlanZero is developed with git, and hosted on
-    {{lref("GitHub")|safe}} as a 
-    <a href="https://github.com/jaberg/planzero">public code repository</a>.</p>
+class NIR2025_Model(GlossaryTerm):
+    """The NIR2025 model is a PlanZero model, whose defining feature
+    is that it strictly reflects the data of the NIR-2025 without imposing any
+    modelling assumptions upon it.
     """
+
+
+class NIR_Prediction(GlossaryTerm):
+    """
+    In the context of PlanZero, NIR prediction
+    refers either generally to the challenge of predicting
+    the final years' emissions in an National greenhouse gas Inventory Report (NIR)
+    prior to the report's publication,
+    or specifically to the PlanZero machine learning problem statements
+    reflecting that challenge with the weighted-KL divergence model
+    evaluation metric.
+    """
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.StaticNormals(), '#appendix-prenir', "Introduces the Pre-NIR-2025-06 prediction challenge, which uses a weighted KL-divergence to compare model predictions to reference distributions."),
+        ]
+
+    @property
+    def aka(self) -> list[str]:
+        return ['PreNIR']
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'GitHub': "git hosting for PlanZero",
-            'Git Branch': "maintain versions of code with git branches",
-            'Git Commit': "record source file changes to a git branch",
-            'Git Merge': "merge changes from one branch into another",
-        }
-
-class Git_Merge(GlossaryTerm):
-    """A git "merge" is the operation of combining two
-    {{lref("Git Branch", "branches")|safe}} together into a coherent set
-    of files, extending one branch with
-    {{lref("Git Commit", "commits")|safe}} from the other.
-    Sometimes some fixing up is required, for example if both branches have
-    changed the same part of the same file, but usually merging is mostly
-    automatic. Merging is how people can contribute their changes
-    back to the {{lref("Main Branch", "main branch")|safe}}.
-    Merging can be done locally on a development computer,
-    or on {{lref("GitHub")|safe}} via a {{lref("GitHub Pull Request", "pull request")|safe}}.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Git_Branch': "a merge operation joins two branches",
-            'GitHub_Pull_Request': "a request to merge branches made via GitHub",
-        }
-
-class Git_Branch(GlossaryTerm):
-    """A git branch is a way of tracking a single version of a set of files.
-    Technically, it is a sequence of git commits (sometimes a graph)
-    to source files leading from the initially empty project
-    to some version that's full of files.
-    The PlanZero site is populated by deploying the "main" branch.
-    Anyone is welcome to suggest changes to main by creating a pull request on github,
-    requesting that the main branch merge changes from another branch that
-    they've created.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Main_Branch': "the branch from which the PlanZero site is generated",
-            'GitHub_Pull_Request': "a request to merge branches made via GitHub",
-            'Git_Commit': "change a branch by adding a commit, which incorporates changes to local files",
-            'Git_Merge': "changes from one branch can be merged into another",
-            'Git_Graph': "the commits and merges to a branch define a directed acyclic graph with a single source node (the beginning of development) and a single sink node (the current state of the branch)",
+            'Weighted_KL_Divergence': 'The scoring method for model predictions',
+            'Prediction_Challenge': 'NIR prediction is the only type of prediction challenge in PlanZero so far',
         }
 
 
-class Known_Variable(GlossaryTerm):
-    """A known variable is a scalar- or vector-valued
-    term in a PlanZero model that is known from the outset of modelling,
-    with no dependency on an unknown variable.
-    """
+class National_Energy_Use_Database(GlossaryTerm):
+    """<p>The <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/data_e/databases.cfm">National Energy Usage Database</a>, is
+    developed and maintained by {{lref("Natural Resources Canada")|safe}}.
+    It reflects energy usage and movement by economic sector.
+    </p>
+    <p>
+    PlanZero uses this data to quantify drivers of emissions in certain
+    {{lref("IPCC Sector", "IPCC sectors")|safe}}.
+    </p>"""
 
     @property
-    def see_also(self) -> dict[str, str]:
+    def aka(self) -> list[str]:
+        return ['NEUD']
+
+    @property
+    def code_refs(self) -> dict[str, object]:
+        from . import neud
         return {
-            'Unknown_Variable': 'A variable modelled in terms of a probability distribution',
-            'Model_Variable': 'the more general class of variables in a PlanZero Model'
+            'NEUD access, neud.py': neud,
         }
 
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-                (blog.StaticNormals(), '#appendix-notation', "Appendix 1: Probabilistic Modelling Notation"),
+            (blog.IPCC_HeavyDutyDieselVehicles(),
+             '#quant',
+             "see section Estimating Emissions from the National Energy Use Database"),
+            (blog.IPCC_MCS_LightGasolineCarsAndTrucks(),
+             '#neud',
+             "see section An Estimator Based on Data from the National Energy Use Database"),
+            (blog.IPCC_SCS_Residential(),
+             '#estimation',
+             "see section Estimating Residential Stationary Combustion Emissions"),
         ]
-
-
-class Main_Branch(GlossaryTerm):
-    """PlanZero on GitHub generally has multiple git branches.
-    The "main branch" is special, in that it is the one used to deploy the
-    {{lref("PlanZero Site", "PlanZero site")|safe}}.
-    New improvements to the codebase should be {{lref("Git Merge", "merged")|safe}}
-    to the main branch.
-    """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Git_Branch': "a version of a codebase",
-            'GitHub_Pull_Request': (
-                "a request to merge one branch into another is the"
-                " preferred way to update the main branch of a project,"
-                " because it prompts discussion and consideration"),
+            'NRCan': "Natural Resources Canada develops and publishes the NEUD",
         }
+
+
+class National_Greenhouse_Gas_Inventory(GlossaryTerm):
+    """Canada's
+    <a
+    href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html">National
+    Greenhouse Gas Inventory</a> tracks emissions
+    across Canada, and is the basis for the annual
+    {{lref("NIR", "National Inventory Reports")|safe}}.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['NGGI']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            "ECCC": "Environment and Climate Change Canada maintains and publishes the NGGI",
+            "NIR": "National Inventory Reports are prepared from the NGGI",
+        }
+
+
+class National_Inventory_Report(GlossaryTerm):
+    """A National [Greenhouse Gas] Inventory Report,
+    is published annually by Environment and Climate Change Canada, and
+    submitted to the UNFCCC Secretariat.
+    Specific reports are referred to as e.g. NIR-2023, NIR-2024, NIR-2025,
+    an so on in PlanZero.
+    The first report was <a href="https://publications.gc.ca/site/eng/9.506002/publication.html">NIR-2004</a>.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['NIR']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            "UNFCCC": "The United Nations Framework Convention on Climate Change is the primary international treaty aimed at stabilizing greenhouse gas concentrations in the atmosphere",
+            "IPCC Sector": "PlanZero term for the most granular categories used in NIR documents",
+            "CNZEAA": (
+                "The Canadian Net-Zero Accountability Act commits ECCC"
+                " to problishing National Inventory Reports, setting"
+                " emissions targets, and developing a plan to hit those targets"),
+        }
+
 
 
 class PlanZero_Model(GlossaryTerm):
@@ -834,262 +1437,6 @@ class Probabilistic_Model(GlossaryTerm):
                 'PlanZero_Model': 'PlanZero models are probabilistic models, encompassing NIR emissions data',
                 }
 
-
-class GitHub_Repository(GlossaryTerm):
-    """A GitHub code repository, or repo, is a GitHub-defined entity,
-    it is a major point of configuration,
-    especially for billing and permissions.
-    A repo contains all of the code and files
-    for one or more git branches.
-    A repo may be created from some standard initial state (such as being empty),
-    or it may be created by forking another repo.
-    My ("James Bergstra", aka "jaberg") PlanZero repo is <a
-    href="https://github.com/jaberg/planzero">here</a>.
-    If a repo is not created by forking, then it may be called a "Source Repo"
-    or "Upstream Repo".
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['GitHub Repo', 'repository', 'repo']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'GitHub': "the site that hosts GitHub code repositories",
-            'Git': "the version control system upon which GitHub operates",
-            'GitHub_Fork': "A repo can be forked to create a downstream copy of an upstream repo"
-        }
-
-class GitHub_Fork(GlossaryTerm):
-    """Public GitHub {{lref("repo", "repos")|safe}} can be "forked" by users
-    who wish to make and publish their own modifications. If you have a GitHub
-    account, you can <a href="https://github.com/jaberg/planzero/fork">fork
-    the PlanZero codebase</a>, to make
-    {{lref("Git Branch", "branches")|safe}} with your own modifications,
-    and then submit them back as
-    {{lref("GitHub Pull Request", "pull requests")|safe}}.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Git_Branch': "a codebase version within a fork",
-            'GitHub_Pull_Request': "a request to merge branches, possibly across forks",
-            'GitHub_Repository': "A GitHub repo may be a fork of another repo",
-        }
-
-
-class Git_Commit(GlossaryTerm):
-    """A "commit" is an increment of change to a codebase, across one or more
-    changed files. It is a node in the graph of changes that make up a git
-    repository.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Git_Branch': "a named graph of commits corresponding to a single version of set of files",
-        }
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Commit']
-
-class Git_Graph(GlossaryTerm):
-    """A set of commits and merges that build on one another form a graph
-    representing all of the development on a project.
-    Try visualizing the graph for any git project by using purpose-built visual tools, 
-or running a command such as <pre>git log --all --decorate --oneline --graph</pre>
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Git History']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Git_Commit': "a node of a git [change] graph",
-            'GitHub Repo': "a git graph hosted on GitHub",
-            'Git_Branch': "a named subgraph of ancestors of a particular commit",
-        }
-
-
-class GitHub(GlossaryTerm):
-    """<p>GitHub (<a href="https://github.com/">site</a>, <a href="https://en.wikipedia.org/wiki/GitHub">wikipedia</a>) is a web service for using the git version
-    control system over the internet to collaborate on software projects. Circa 2023, it was the world's largest source code host, with over 100 million developers, and 420 million code repositories.</p>
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['GH']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Git': "version control software upon which GitHub is based",
-            'GitHub_Repository': "git branches corresponding to one or more versions of a project's code and files",
-            'GitHub_Fork': "a copy of a GitHub repository into another user's GitHub account",
-            'GitHub_Issue': "a future-work item on the PlanZero project",
-        }
-
-
-class GitHub_Issue(GlossaryTerm):
-    """GitHub issues, such as the <a href="https://github.com/jaberg/planzero/issues">PlanZero issues</a>,
-    are notices / reminders of future work.
-    Issues are used differently by different projects, some projects don't use
-    GitHub's issues at all.
-    PlanZero uses GitHub issues to record a variety of ideas and To-Do items,
-    but in particular, those that have been mentioned in posts.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['gh issue']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'GitHub': """Code hosting for PlanZero""",
-            'Post': """A report on a piece of work on PlanZero, sometimes linking to GitHub issues corresponding to next steps beyond the scope of the post itself""",
-        }
-
-
-class GitHub_Pull_Request(GlossaryTerm):
-    """One of GitHub's main features is a web interface for people
-    to suggest code changes to each other. Pull requests
-    enable asynchronous loosely-coupled development over the net by
-    giving contributors and developers a place to talk about the changes,
-    and possibly even {{lref("Git Merge", "merge")|safe}} those changes.
-    See <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests">Github documentation</a> for full description of this capability.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['pull request', 'PR']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Git_Branch': "a pull request is a request to merge two branches",
-            'Main_Branch': "submit a pull request to this branch when a new development is ready",
-            'GitHub_Fork': "typically a pull request represents a request to merge code from a branch in one fork (maintained by one person) into a branch on another fork (maintained by another person)"
-        }
-
-
-class EGFS(GlossaryTerm):
-    """<p>Wilkinson, M., <i>The Executive Guide to Facilitating Strategy: featuring the Drivers Model</i>, Atlanta: Leadership Strategies Publishing, 2011. <a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">Amazon</a></p>
-    <p>
-    I've appropriated (hopefully not misappropriated) terms
-    of implementation planning ({{lref("Critical Success Factor")|safe}},
-    {{lref("Barrier")|safe}},
-    {{lref("Strategy")|safe}})
-    as defined in this book, to structure the visualization of model simulation.
-    I have also tried to insert aspects of directional strategy (mission,
-    vision, guiding principles, positioning) in the project overview on the
-    <a href="/about/">About page</a>.
-    </p>
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Strategy': "an ablatable model element, used to represent a strategy in a model",
-            'Barrier': "a non-ablatable model element, used to model the interactions of time series with KPIs",
-            'CSF': "target values for target times of a KPI time series, in order to achieve an objective",
-            'KPI': "a time series registered to participate in emissions or subsidy calculations",
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#modelling', "see section on Modelling National Emissions"),
-        ]
-
-class NIR(GlossaryTerm):
-    """A National [Greenhouse Gas] Inventory Report,
-    is published annually by Environment and Climate Change Canada, and
-    submitted to the UNFCCC Secretariat.
-    Specific reports are referred to as e.g. NIR-2023, NIR-2024, NIR-2025,
-    an so on in PlanZero.
-    The first report was <a href="https://publications.gc.ca/site/eng/9.506002/publication.html">NIR-2004</a>.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            "UNFCCC": "The United Nations Framework Convention on Climate Change is the primary international treaty aimed at stabilizing greenhouse gas concentrations in the atmosphere",
-            "IPCC Sector": "PlanZero term for the most granular categories used in NIR documents",
-            "CNZEAA": (
-                "The Canadian Net-Zero Accountability Act commits ECCC"
-                " to problishing National Inventory Reports, setting"
-                " emissions targets, and developing a plan to hit those targets"),
-        }
-
-
-class National_Greenhouse_Gas_Inventory(GlossaryTerm):
-    """Canada's
-    <a
-    href="https://www.canada.ca/en/environment-climate-change/services/climate-change/greenhouse-gas-emissions/inventory.html">National
-    Greenhouse Gas Inventory</a> tracks emissions
-    across Canada, and is the basis for the annual
-    {{lref("NIR", "National Inventory Reports")|safe}}.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['NGGI']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            "ECCC": "Environment and Climate Change Canada maintains and publishes the NGGI",
-            "NIR": "National Inventory Reports are prepared from the NGGI",
-        }
-
-
-class National_Energy_Use_Database(GlossaryTerm):
-    """<p>The <a href="https://oee.nrcan.gc.ca/corporate/statistics/neud/dpa/data_e/databases.cfm">National Energy Usage Database</a>, is
-    developed and maintained by {{lref("Natural Resources Canada")|safe}}.
-    It reflects energy usage and movement by economic sector.
-    </p>
-    <p>
-    PlanZero uses this data to quantify drivers of emissions in certain
-    {{lref("IPCC Sector", "IPCC sectors")|safe}}.
-    </p>"""
-
-    @property
-    def aka(self) -> list[str]:
-        return ['NEUD']
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        from . import neud
-        return {
-            'NEUD access, neud.py': neud,
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.IPCC_HeavyDutyDieselVehicles(),
-             '#quant',
-             "see section Estimating Emissions from the National Energy Use Database"),
-            (blog.IPCC_MCS_LightGasolineCarsAndTrucks(),
-             '#neud',
-             "see section An Estimator Based on Data from the National Energy Use Database"),
-            (blog.IPCC_SCS_Residential(),
-             '#estimation',
-             "see section Estimating Residential Stationary Combustion Emissions"),
-        ]
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NRCan': "Natural Resources Canada develops and publishes the NEUD",
-        }
-
 class Statistics_Canada(GlossaryTerm):
     """<a href="https://www.statcan.gc.ca/en/start">Statistics Canada</a>,
     Canada's national statistical office.
@@ -1131,30 +1478,6 @@ class Natural_Resources_Canada(GlossaryTerm):
         }
 
 
-class Environment_and_Climate_Change_Canada(GlossaryTerm):
-    """<p><a href="https://www.canada.ca/en/environment-climate-change.html">Federal ministry</a> "<i>protecting and conserving our natural heritage,
-    predicting weather and environmental conditions, preventing and managing
-    pollution, promoting clean growth and a sustainable environment for
-    present and future generations.</i>"</p>
-    <p>
-    ECCC, among many activities and responsibilities,
-    prepares the annual {{lref("NIR")|safe}}, and maintains
-    the federal plan for <a href="https://www.canada.ca/en/services/environment/weather/climatechange/climate-plan/net-zero-emissions-2050.html">Net-Zero by 2050</a>.
-    </p>
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['ECCC', '"E-triple-C"']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Natural_Resources_Canada': 'peer federal ministry',
-            "NIR": "National Inventory Reports are prepared by ECCC",
-            "NGGI": "National Greenhouse Gas Inventory is maintained by ECCC",
-        }
-
 class Net_Zero(GlossaryTerm):
     """Net-zero is a hypothetical state, in which
     greenhouse gas {{lref("Emissions", "emissions")|safe}} across the sectors of an economy, average
@@ -1189,61 +1512,6 @@ class PlanZero(GlossaryTerm):
             "About Section": "Read more about this project on the About page",
             "GitHub_Repository": "The development hub for PlanZero on GitHub",
             "PlanZero_Site": "The site you probably used to access this page",
-        }
-
-
-class International_Panel_on_Climate_Change(GlossaryTerm):
-    """<a href="https://www.ipcc.ch/">International Panel on Climate Change
-    (IPCC)</a> is
-    the United Nations body for assessing the science related to climate
-    change.
-    Among many activities, and across many working groups,
-    the IPCC maintains the methodology for emissions estimation
-    that is to be used by signatories of the Paris Agreement.
-    Canada uses this methodology to prepare its annual {{lref("NIR")|safe}}.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['IPCC']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            "Paris Agreement": "The international agreement on reporting guidelines for greenhouse gases",
-            "UNFCCC": "The United Nations Framework Convention on Climate Change is the primary international treaty aimed at stabilizing greenhouse gas concentrations in the atmosphere",
-            "IPCC Sector": "PlanZero term for the most granular categories used in NIR documents",
-            'NIR': "National Inventory Reports of Greenhous Gases, prepared according to UNFCCC guidelines, which were developed by the IPCC",
-            "CNZEAA": (
-                "The Canadian Net-Zero Accountability Act, legislation to uphold"
-                " Canada's responsibilities under the Paris Agreement"),
-        }
-
-
-class IPCC_Sector(GlossaryTerm):
-    """IPCC Sector is a PlanZero term, referring to
-    an economic area for which Canada tracks emissions
-    in the {{lref("NGGI")|safe}}.
-    Each such sector is analyzed in accordance
-    with IPCC emissions reporting guidelines,
-    but the UNFCCC leaves the level of granularity of each sector
-    up to each country, in order to report on its progress appropriately.
-    In PlanZero posts,
-    the term almost always refers to a sector that is not
-    a subtotal of other sectors.
-    PlanZero uses a set of 71 IPCC Sectors, which match
-    the ones used in NIR-2025.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR': "National Inventory Reports of Greenhous Gases, organized in terms of [what PlanZero refers to as] IPCC Sectors",
-            'NGGI': 'The National Greenhouse Gas Inventory of emissions from which Canada produces annual reports',
-            "IPCC": "The International Panel on Climate Change, a scientific body that produces climate reports for the UN, and reporting guidelines for Paris Agreement signatories",
-            "Paris Agreement": "The international agreement on reporting guidelines for greenhouse gases",
-            "UNFCCC": "The United Nations Framework Convention on Climate Change is the primary international treaty aimed at stabilizing greenhouse gas concentrations in the atmosphere",
-            "PlanZero_Model": "A PlanZero Model models emission amounts for IPCC Sectors",
         }
 
 
@@ -1295,42 +1563,6 @@ class Paris_Agreement(GlossaryTerm):
         }
 
 
-class CNZEAA(GlossaryTerm):
-    """The Canadian Net-Zero Accountability Act legislates federal ministries and agencies
-    to uphold Canada's obligations under the Paris Agreement.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Canadian Net-Zero Accountability Act']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            "ECCC": (
-                "Environment and Climate Change Canada is responsible for"
-                " delivering an annual NIR to the UNFCCC"),
-            "UNFCCC": (
-                "As a Paris Agreement signatory, Canada"
-                " delivers an annual report to the Secretariat of the"
-                " United Nations Framework on Climate Change"),
-            "NIR": (
-                "National Inventory Reports, published by ECCC, are one of the"
-                " most critical data sources for PlanZero"
-            )
-        }
-
-
-class Code(GlossaryTerm):
-    """PlanZero is an open-source project, with [source] code on GitHub."""
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            "GitHub_Repository": "The development hub for PlanZero on GitHub",
-            "Python": "PlanZero's source code is mostly written in the Python programming language",
-        }
-
-
 class Python(GlossaryTerm):
     """<p>PlanZero is implemented in the <a href="https://www.python.org/">Python programming language</a></p>"""
 
@@ -1339,23 +1571,6 @@ class Python(GlossaryTerm):
         return {
             "GitHub_Repository": "The development hub for PlanZero on GitHub",
             "Code": "PlanZero's source code is mostly written in the Python programming language",
-        }
-
-
-class Emissions(GlossaryTerm):
-    """The combined emissions of the seven greenhouse gases, often quantified
-    in units of {{CO2e|safe}}.
-    Canada estimates rates of emissions in the
-    {{lref("National Greenhouse Gas Inventory")|safe}}.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Emission_Factor': 'a factor of proportionality between drivers and emissions',
-            'PlanZero_Model': "a model of Canada's future emissions, calculated by summing up emissions across IPCC Sectors",
-            "IPCC_Sector": "the lowest levels of granularity in National Greenhouse Gas Inventory",
-            "National Greenhouse Gas Inventory": "the data from which NIRs are generated"
         }
 
 
@@ -1492,108 +1707,6 @@ class Post(GlossaryTerm):
         ]
 
 
-class Draft_Status(GlossaryTerm):
-    """A PlanZero Post may be in Draft Status,
-    in which case it is still subject to significant change.
-    A post that is not in Draft Status should not be materially changed,
-    they should only be changed to include
-    clarifications and annoted links to relevant newer content.
-    """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
-        ]
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'About_Section': 'more guidelines around draft status and posts generally',
-            'Post': 'Narrative descriptions of updates to PlanZero, which may be in Draft Status if the work is still in progress',
-        }
-
-
-class Greenhouse_Gas(GlossaryTerm):
-    """One, or a mixture, of the seven gases (or families of gases) assessed by the IPCC as
-    a significant factor in trapping heat within the Earth planetary system.
-    They are {{CO2|safe}}, {{CH4|safe}}, {{N2O|safe}},
-    HFCs, PFCs, {{NF3|safe}}, and {{SF6|safe}}.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'IPCC': 'International Panel on Climate Change defines greenhouse gases and reporting standards for signatories to the Paris Agreement',
-            'NGGI': 'National Greenhouse Gas Inventory tracks Canadian greenhouse gas emissions',
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.GHG_Emissions(), '#h2_ghg', "see section on Greenhouse gases"),
-        ]
-
-
-class Inference_Algorithm(GlossaryTerm):
-    """An inference algorithm samples from the posterior distribution of latent variables in a probabilistic model,
-    often by applying Bayes' rule systematically across a formal specification of the model.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Probabilistic_Model': 'Inference algorithms operate on probabilistic models',
-            'Posterior_Distribution': 'Inference algorithms sample from posterior distributions',
-            'Latent_Variable': 'Inference algorithms provide samples for latent variables'
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
-        ]
-
-
-class Inference_Group(GlossaryTerm):
-    """
-    An inference group is a set of structural and strategy elements of
-    a PlanZero model for which an inference algorithm can operate independently
-    of other inference groups.
-    PlanZero models are large, and inference groups serve to define smaller submodels
-    upon which inference algorithms can operate effectively.
-    """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
-        ]
-
-
-class Inference_Phase(GlossaryTerm):
-    """
-    Inference is the second of the three phases of evaluating a PlanZero model.
-    Inference is the relatively-long computation of sampling values for unobserved variables
-    according to their posterior distribution under the model.
-    Inference typically uses an MCMC sampling algorithm.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
-            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
-            'Observed_Variable': 'A variable associated with conditioning data in a PlanZero model',
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
-        ]
-
-
 class Posterior_Phase(GlossaryTerm):
     """
     The Posterior phase is the last of the three phases of evaluating a PlanZero model.
@@ -1660,13 +1773,6 @@ class Scaling_Model(GlossaryTerm):
     """The Scaling model is a PlanZero model, whose defining feature
     is that it includes hypothetical adoption and standing of sufficiently-mature
     technology and products.
-    """
-
-
-class NIR2025_Model(GlossaryTerm):
-    """The NIR2025 model is a PlanZero model, whose defining feature
-    is that it strictly reflects the data of the NIR-2025 without imposing any
-    modelling assumptions upon it.
     """
 
 
@@ -1772,39 +1878,6 @@ class Probability_Distribution(GlossaryTerm):
         ]
 
 
-class Joint_Distribution(GlossaryTerm):
-    """A joint probability distribution is act or result of
-    distributing probability across possible values for multiple
-    unknown variables. If the probability of each value for each variable
-    does not depend on the others, then that variable is said to be "independent"
-    of the rest, but that's the exception to the rule that generally,
-    variables are not independent of each another.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-                'Probability_Distribution': 'Joint distributions are probability distributions, over multiple unknown variables.',
-                'Probabilistic_Model': 'Probabilistic models define joint distributions over variables',
-                }
-
-
-class Conditional_Distribution(GlossaryTerm):
-    """A conditional distribution is a probability distribution
-    over one or more unknown variables in a model,
-    conditioned on assumptions about other variables in the model.
-    If a conditional distribution is over multiple variables,
-    then it is called a conditional joint distribution.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-                'Probability_Distribution': 'Conditional distributions are probability distributions.',
-                'Probabilistic_Model': 'Probabilistic models can be used to derive conditional distributions among their variables',
-                }
-
-
 class Posterior_Distribution(GlossaryTerm):
     """A posterior distribution is the result of conditioning on stochastic model on the observation of data.
     The observation of data generally changes the distribution of probability for the remaining variables, called latent variables.
@@ -1817,81 +1890,6 @@ class Posterior_Distribution(GlossaryTerm):
                 'Conditional_Distribution': 'Posterior distributions are conditional distributions in which the conditioning is on observed data',
                 'Latent_Variable': 'Unobserved unknown variables in a probabilistic model are called latent variables; a posterior distribution is over latent variables.',
                 }
-
-
-class Latent_Variable(GlossaryTerm):
-    """A latent variable in a probabilistic model is one that remains unobserved when the model is conditioned on data.
-    Each time step in a time series variable is a unique variable,
-    so earlier time steps might be observed and later time steps (especially future time steps)
-    may be latent.
-    """
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-                'Inference_Algorithm': 'Inference of latent variables can sometimes be done by standard algorithms.',
-                'Posterior_Distribution': 'A posterior distribution is over latent variables.',
-                }
-
-
-class Credible_Interval(GlossaryTerm):
-    """A <a href="https://en.wikipedia.org/wiki/Credible_interval">credible interval</a> is the set of values that a
-    random variable in a probabilistic model might most-credibly take.
-    For example, a 95% credible interval is the smallest interval containing
-    the 95% most-probable values for the random variable.
-    </p>
-    <p>
-    In PlanZero, Credibility and Confidence are used interchangeably.
-    In the field of statistics, the terms have distinct meanings that apply to
-    Bayesian and frequentist estimators respectively.
-    PlanZero strives to use Bayesian reasoning,
-    but with MCMC methods there can be significant uncertainty due to the
-    limited sample size, which is the the sort of uncertainty that frequentist
-    methods deal with. Candidly I don't honestly know whether either term is
-    more appropriate for the estimates that arise from PlanZero modelling.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Confidence Interval']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Unknown_Variable': 'the model element associated with a credible interval',
-            'Probabilistic Model': 'credible intervals arise only in probabilistic modelling',
-            'Inference_Algorithm': 'the main use of credible intervals is to characterize the uncertainty remaining after inference of the latent random variables in a model',
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.ProbabilisticNIR2025(), '#appendix-visualizing', "credibility intervals are used to visualize probabilistic models"),
-        ]
-
-
-class Bayesian_Inference(GlossaryTerm):
-    """Bayesian inference is the use of
-    <a href="https://en.wikipedia.org/wiki/Bayes%27_theorem">Bayes' Theorem</a>
-    to define a posterior distribution over latent variables in a probabilistic
-    model, by conditioning on the observation of data.
-    Bayesian inference is one of the most compelling
-    features of probabilistic models.
-    Generally the result of inference is a sample of latent-variable values
-    drawn from the posterior distribution by an algorithm, although in
-    certain models Bayesian inference can be done analytically.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Inference_Algorithm': 'In probabilistic models that are defined within probabilistic programming systems, Bayesian inference can often be implemented automatically',
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            #(blog.TwoProbabilisticModels(), '#', "see most of first half of post"),
-        ]
 
 
 class Pending_Prediction_Challenge_Results(GlossaryTerm):
@@ -1941,34 +1939,6 @@ class Prediction_Date(GlossaryTerm):
             'Prediction_Challenge': 'Prediction challenges have prediction dates',
         }
 
-class NIR_Prediction(GlossaryTerm):
-    """
-    In the context of PlanZero, NIR prediction
-    refers either generally to the challenge of predicting
-    the final years' emissions in an National greenhouse gas Inventory Report (NIR)
-    prior to the report's publication,
-    or specifically to the PlanZero machine learning problem statements
-    reflecting that challenge with the weighted-KL divergence model
-    evaluation metric.
-    """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.StaticNormals(), '#appendix-prenir', "Introduces the Pre-NIR-2025-06 prediction challenge, which uses a weighted KL-divergence to compare model predictions to reference distributions."),
-        ]
-
-    @property
-    def aka(self) -> list[str]:
-        return ['PreNIR']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Weighted_KL_Divergence': 'The scoring method for model predictions',
-            'Prediction_Challenge': 'NIR prediction is the only type of prediction challenge in PlanZero so far',
-        }
-
 class Weighted_KL_Divergence(GlossaryTerm):
     """In PlanZero, the term "weighted KL divergence" typically refers
     to the specific weighting of KL divergences between actual and predicted
@@ -2016,3 +1986,57 @@ hosted on PlanZero's GitHub page.</p>
         return [
             (blog.ProbabilisticNIR2025(), '#appendix-sbln', "Probabilistic NIR2025, Appendix 2"),
         ]
+
+class Scenario(GlossaryTerm):
+    """A scenario is a set of time series covering a common time period.
+    Typically in PlanZero it is the result of simulating a model.
+    """
+
+
+
+class Strategy(GlossaryTerm):
+    """<p>Strategy is a term adapted from {{lref("EGFS")|safe}} (which aims near the standard usage definition),
+    where it means
+    a <i>broad activity required to achieve a goal, create a critical condition, or overcome a barrier</i>.
+    In PlanZero, the term is used in two ways.
+    Firstly, it is used on per-sector analysis pages to call out things that could be done
+    to reduce emissions in a sector.
+    Secondly, it is sometimes used to describe Strategy Elements, which are formal model elements
+    used to evaluate strategy ideas within PlanZero models.
+    </p>
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Barrier': 'a related EGFS term, for hinderances to achieving a goal, which may be overcome by strategies',
+            'EGFS': 'The Executive Guide to Facilitating Strategy, providing strategic management term definitions',
+        }
+
+
+class Static_Variable(GlossaryTerm):
+    """A variable in a model simulation that is not indexed by time
+    is called Constant.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Constant']
+
+
+
+class Unit_of_Measure(GlossaryTerm):
+    """A PlanZero unit of measure is one that is registered
+    in the ureg.py file, using the <a
+    href="https://pint.readthedocs.io/en/stable/">Pint unit package</a>.
+    The registry includes standard units of measure in e.g. the metric SI
+    system in addition to various more traditional ones, and also
+    custom units related to PlanZero modelling such as types of coal,
+    greenhouse gases, farms, and vehicles.
+    """
+
+    @property
+    def code_refs(self) -> dict[str, object]:
+        return {
+            'ureg.py': 'https://github.com/jaberg/planzero/blob/main/planzero/ureg.py',
+        }
