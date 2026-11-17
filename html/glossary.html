@@ -27,7 +27,7 @@
     </style>
 
 <p>
-Term list:
+Term list ({{ len(planzero.glossary.registry) }} items):
 <ol>
 {% for clsname, obj in sorted(planzero.glossary.registry.items()) %}
 <li><a href="#{{clsname}}">{% for name in obj.pretty_names() %} {{name}}{%if not loop.last%}, {%endif%}{%endfor%}</a></li>

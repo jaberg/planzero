@@ -212,7 +212,38 @@ class Ablative_Analysis(GlossaryTerm):
         return {
             'Strategy': 'Strategies within models are are ablated in order to assess their impact.',
             'Simulation': 'Ablative analysis is part of model simulation.',
-            'Simulations_Section': 'Strategies within simulations are evaluated and characterized based on an ablative analysis.',
+        }
+
+
+class About_Section(GlossaryTerm):
+    """<p>The "About" section of the planzero.ca website:
+    <a href="/about/">planzero.ca/about</a></p>"""
+
+    @property
+    def aka(self) -> list[str]:
+        return ['About Page']
+
+
+class Barrier(GlossaryTerm):
+    """<p>Barrier is a term adapted from {{lref("EGFS")|safe}},
+    where it means <i>an existing or potential challenge that hinders the achievement of one or more objectives</i>.
+    In PlanZero, the term is used on per-sector analysis pages to call out
+    key challenges in reducing emissions in each sector.
+    </p>
+    <p>
+    In the future, Barrier call-outs on per-sector analysis pages may link to specific
+    structural elements within certain models, which formalize some aspect of the Barrier.
+    For now, they are not formally part of PlanZero models.
+    </p>
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Strategy': "a related EGFS term, for a project or initiative that could address a barrier",
+                'IPCC_Sector': "An NIR emissions reporting sector, compatible with IPCC reporting guidelines",
+                'Structural_Element': "a Model Element that defines variables within a PlanZero model",
+                'EGFS': "the Barrier term and definition are adapted from The Executive Guide to Facilitating Strategy",
         }
 
 
@@ -274,67 +305,6 @@ class Emission_Variables(GlossaryTerm):
         ]
 
 
-class Time_Series(GlossaryTerm):
-    """A PlanZero time series is a modelling data structure for representing
-    a time-varying quantity in some unit of measure.
-    The key attributes of a time series are:
-    <ul>
-        <li>a sequence of numeric values the series takes</li>
-        <li>a sequence of times marking <i>when</i> the series takes these values</li>
-        <li>a unit of measure for the values</li>
-        <li>an interpolation mode, indicating how to interpret value for times other than the enumerated ones</li>
-    </ul>
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Unit_of_Measure': 'the values of a time series are associated with a single unit of measure',
-            'Time_Series_Interpolation_Mode': 'the rule for determining value for un-mentioned times',
-            'Dynamic Element': 'Dynamic Elements define time series',
-            'Simulation': 'Simulation constructs Scenarios from Models',
-            'Scenario': 'Scenarios are sets of time series covering a common time interval',
-        }
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        return {
-            'Time Series base class': STS,
-        }
-
-class Time_Series_Interpolation_Mode(GlossaryTerm):
-    """<p>The time series interpolation mode is a mechanism that is partly for
-    convenience and partly for error prevention.
-    There are currently two possible interpolation modes.
-    The value of a time series at times other than those explicitly mentioned is either
-    <ul>
-        <li>"current", defined to be the most recent value of the series</li>
-        <li>"no interpolation", which leaves such values undefined</li>
-    </ul>
-    The interpolation mode of a time series is configured by the initialization logic
-    of a dynamic element when it creates the time series.
-    Time series that are well-defined for continuous ranges of time, such as emission rates,
-    should typically be configured with "current" interpolation.
-    Time series that are well-defined only for specific points in time, such as annual totals,
-    should typically be configured with "no interpolation" as the interpolation mode.
-    </p>
-    """
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Time_Series': 'the data structure time series',
-            'Dynamic_Element': (
-                "Dynamic elements define each time series'"
-                " interpolation mode in their initialization logic"),
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#timeseries', "see section on Time Series"),
-        ]
-
-
 class Unit_of_Measure(GlossaryTerm):
     """A PlanZero unit of measure is one that is registered
     in the ureg.py file, using the <a
@@ -351,55 +321,6 @@ class Unit_of_Measure(GlossaryTerm):
             'ureg.py': 'https://github.com/jaberg/planzero/blob/main/planzero/ureg.py',
         }
 
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Time Series': 'Time Series are associated with a unit of measure',
-            'Dynamic Element': 'Dynamic Element initialization logic configures the unit of measure of each time series in a simulation',
-        }
-
-
-class Dynamic_Element(GlossaryTerm):
-    """A PlanZero modelling data structure for representing a modelling
-    assumption, and defining one or more
-    {{lref("Time Series", "time series")|safe}}.
-    A dynamic element is expected to be a Python code object, that is
-    a subclass of either a
-    {{lref("Strategy")|safe}} or a
-    {{lref("Barrier")|safe}}.
-    <p>
-    Dynamic elements provide two important kinds of logic for definining time series:
-    initialization logic and recurrence logic.
-    Initialization logic creates time series, sets their unit of measure,
-    their interpolation mode, and any initial values each time series should take.
-    The Initialization logic of a dynamic element
-    cannot refer to the values of other time series that aren't created by that element.
-    The recurrence logic of a dynamic element
-    can use the values of other time series to update its own time series for
-    times up to and including the current simulation time.
-    </p>
-
-    """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#dynelem', "see section on Dynamic Elements"),
-        ]
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Time Series': 'timeseries are the inputs and outputs of dynamic elements',
-            'Model': 'models are sets of dynamic elements',
-            'Simulation': 'dynamic elements provide the initialization and recurrence logic to define time series by simulation',
-        }
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        return {
-            'Dynamic Element base class': DynamicElement,
-        }
 
 class Emission_Reduction_Efficiency(GlossaryTerm):
     """A strategy's emission reduction efficiency is the cost (in CAD) per ton of abated {{CO2e}}"""
@@ -412,91 +333,22 @@ class Emission_Reduction_Efficiency(GlossaryTerm):
 
 
 class Strategy(GlossaryTerm):
-    """<p>A Strategy is a {{lref("Dynamic Element", "dynamic element")|safe}}
-    that is meant to represent an inititive that could be undertaken within
-    a model.
-    Strategies are optional; they can be omitted without compromising the validity of
-    a model.
-    Indeed, simulating models with and without a strategy is how
-    strategies are evaluated in the Simulations on the PlanZero site.
-    This is called Ablative Analysis.
+    """<p>Strategy is a term adapted from {{lref("EGFS")|safe}} (which aims near the standard usage definition),
+    where it means
+    a <i>broad activity required to achieve a goal, create a critical condition, or overcome a barrier</i>.
+    In PlanZero, the term is used in two ways.
+    Firstly, it is used on per-sector analysis pages to call out things that could be done
+    to reduce emissions in a sector.
+    Secondly, it is sometimes used to describe Strategy Elements, which are formal model elements
+    used to evaluate strategy ideas within PlanZero models.
     </p>
-    <p>I adapt the term from {{lref("EGFS")|safe}} 
-    where Strategies were defined as "broad activities required to achieve a goal, create a critical condition, or overcome a barrier."</p>
     """ 
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#strategy', "see modelling sub-section on strategies"),
-        ]
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        return {
-            'Strategy base class': strategies.Strategy2,
-            'Example Strategy: Scale Bovaer': strategies.strategy2.Scale_Bovaer,
-        }
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Ablative_Analysis': 'A strategy is evaluated in the context of a model by comparing scenarios with and without the strategy',
-            'Simulation': 'The construction of a scenarios from a model, sometimes including the ablative analysis of strategies',
-            'Simulations_Section': 'the <a href="/models/#sim">Simulation-based models</a> of the site features the strategies of each scenario',
-            'Barrier': 'Barriers are the other kind of dynamic element in a model, which define KPIs, and relate the time series of a model to one another',
-            'Model': 'Models are sets of dynamic elements, which may include Strategies',
-            'Dynamic_Element': 'at a computational level, a strategy is a type of dynamic element',
-            'EGFS': 'The Executive Guide to Facilitating Strategy provided the term definition adapted here in PlanZero',
-        }
-
-
-
-class Barrier(GlossaryTerm):
-    """<p>A Barrier is a 
-    {{lref("Dynamic Element", "dynamic element")|safe}}
-    that is not optional, that is, one whose omission would compromise the
-    validity of a model.
-    Barriers comprise most of what you might call "the modelling" in a PlanZero model.
-    The following would all qualify as barriers in PlanZero, to the reduction
-    of emissions:
-    <ul>
-    <li>regulations</li>
-    <li>investor behaviour (e.g. to require certain rates of return)</li>
-    <li>consumer behaviour (especially habits and traditions that currently entail fossil fuel combustion)</li>
-    <li>the life cycle of assets (especially large, expensive, high-emission facilities)</li>
-    <li>the duration of research and development cycles</li>
-    <li>the predictions of climate models</li>
-    <li>the laws of physics</li>
-    </ul>
-    </p>
-    <p>The term is adapted from {{lref("EGFS")|safe}}.</p>
-    """ 
-
-    @property
-    def as_discussed_in_posts(self) -> dict[str, str]:
-        return [
-            (blog.Glossary(),
-             '#barrier',
-             'see section "Barriers: Connecting Strategies to Outcomes"'),
-        ]
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        from . import barriers, cattle
-
-        return {
-            'Barrier base class': barriers.Barrier,
-            'Example Barrier class: Bovaer Adoption Limit': cattle.Bovaer_Adoption_Limit,
-        }
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Strategy': 'a dynamic element designed to change the input to one or more barriers',
-            'Model': 'a set of dynamic elements, including barriers, that supports inference and/or prediction',
-            'NIR_Model': "a model of Canada's future emissions",
-            'EGFS': "PlanZero adopts the Barrier term and definition from The Executive Guide to Facilitating Strategy.",
+            'Barrier': 'a related EGFS term, for hinderances to achieving a goal, which may be overcome by strategies',
+            'EGFS': 'The Executive Guide to Facilitating Strategy, providing strategic management term definitions',
         }
 
 
@@ -520,9 +372,8 @@ class IPCC_Sector_Contribution(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'NIR_Model': "a model of Canada's future emissions",
+            'PlanZero_Model': "a model of Canada's future emissions",
             'Emission Factor': 'the factor of proportionality between a driver and an IPCC Sector Contribution (generally a time series)',
-            'Driver': 'A quantity of activity or physical stock that causes emissions (generally a time series)',
             'IPCC Sector': (
                 'the emissions for an IPCC Sector are calculated'
                 ' by summing one or more IPCC Sector Contributions'),
@@ -540,130 +391,35 @@ class Emission_Factor(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'KPI': "an emission factor is one of PlanZero's base KPI types",
-            'NIR_Model': "a model of Canada's future emissions",
-            'Driver': "a quantity of activity or physical stock that causes emissions in proportion to one or more emission factors",
+            'PlanZero_Model': "a model of Canada's future emissions",
             'Greenhouse Gas': "an emission factor is a constant of proportionality to one greenhouse gas",
             'Emissions': "the result of multiplying an emission factor by a driver",
         }
 
 
-class Driver(GlossaryTerm):
-    """<p>A driver, in the context of a model,
-    is a quantity of activity or of physical stock,
-    that is typically associated with a province or territory.
-    {{lref("Barrier")|safe}} dynamic elements can register
-    {{lref("Time Series", "time series")|safe}} as drivers.
-    Drivers are meant to drive emission KPIs via emission factors,
-    and subsidy KPIs via subsidy factors.
-    </p>
-
-    <p>
-    IPCC sector emissions are typically a sum of products (e.g. amount of activity
-    multiplied by emissions per unit of activity,
-    summed over one or more activities that count toward the category);
-    in this typical case, each of the emission-contributing activities
-    corresponds
-    to a driver, and
-    the emission of each greenhouse gas per unit of activity is referred to as
-    an {{lref("Emission Factor")|safe}}.
-    </p>
-    <p>
-    An Driver is a time series, whose unit is typically an amount of
-    activity (in whatever unit is appropriate for the emissions source) totalled
-    per year in a non-interpolating time series.
-    </p>"""
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Model': 'a model of national emissions',
-            'Emission Factor': 'the constant of proportionality of a driver to emissions',
-            'Subsidy Factor': 'the constant of proportionality of a driver to subsidy',
-            'Barrier': 'Typically, Barriers are the dynamic elements that define Drivers',
-        }
-
-
-
-class Subsidy_Factor(GlossaryTerm):
-    """<p>A subsidy factor is a constant of proportionality between
-    a {{lref("Driver")|safe}} and a requirement of a real or hypothetical funding program.
-    Subsidy Factors are Base KPIs of NIR Models.
-    </p>
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Model': 'a model of national emissions, and of subsidy requirements',
-            'Driver': 'A level of activity or physical stock that drives a subsidy requirement by multiplication with a subsidy factor',
-            'Subsidy_Requirement': 'the annual subsidy amount associated with a driver',
-            'KPI': 'A standard metric associated with an NIR Model, subsidy factors are Base KPIs',
-        }
-
-
-class Subsidy_Requirement(GlossaryTerm):
-    """A subsidy requirement is derived KPI representing an amount of
-    funding required for something on an annual basis.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Model': 'a model of national emissions, and also of subsidies',
-            'Driver': 'A level of activity or physical stock that drives a subsidy requirement',
-            'Subsidy_Factor': 'The product of a Driver and a Subsidy Factor is a Subsidy Requirement',
-            'IPCC_Sector_Contribution': "the analogous term to a Subsidy Requirement in the calculation of emissions",
-            'KPI': 'Subsidy Requirements are a Derived KPI',
-        }
-
-
-class Subsidy_Program(GlossaryTerm):
-    """A Subsidy Program is an actual or hypothetical government program,
-    at any level of government, that directly or indirectly funds a set of
-    related activities.
-    A subsidy program is to total subsidies, 
-    as an IPCC Sector is to total national emissions.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Model': 'a model of national emissions and subsidies',
-            'Driver': 'A level of activity or physical stock that drives a subsidy requirement',
-            'Subsidy_Factor': 'The product of a Driver and a Subsidy Factor is a Subsidy Requirement',
-            'IPCC_Sector_Contribution': "the analogous term to a Subsidy Requirement in the calculation of emissions",
-            'KPI': 'Subsidy Requirements are a Derived KPI',
-            'Subsidy_Requirement': 'Subsidy Program totals are calculated by adding up one or more Subsidy Requirements, associated with different Drivers',
-        }
-
-
 class Critical_Success_Factor(GlossaryTerm):
-    """<p>A Critical Success Factor
-    is a necessary condition of a KPI to achieve an objective.
-    For example, the KPI must be within a certain range of values
-    for any or all of some period of time.
-    The term Critical Success Factor has a
-    <a href="https://en.wikipedia.org/wiki/Critical_success_factor">long history</a>.
-    PlanZero's use of the term is based on the definition from {{lref("EGFS")|safe}}, 
-    which is a "key conditions that must be created to achieve one or more objectives."
+    """<p>Critical Success Factor (CSF) is a term adapted from {{lref("EGFS")|safe}},
+    where it means a
+    <i>key condition that must be created to achieve one or more objectives</i>.
+    Wikipedia offers additional context on the 
+    <a href="https://en.wikipedia.org/wiki/Critical_success_factor">history of the term</a>.
+    In PlanZero, the term is used on per-sector analysis pages to call out
+    necessary conditions to achieve net-zero (or net-negative) emissions in that sector.
+    </p>
+    <p>
+    In the future, these call-outs may be formalized within PlanZero to link to Strategy Elements
+    involved in achieving CSFs in particular models.
+    For now, they are not formally part of PlanZero models.
     </p>
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'EGFS': 'The Executive Guide to Facilitating Strategy',
-            'IPCC_Sector_Contribution': 'an emissions contribution to an IPCC Sector',
-            'KPI': 'Key Performance Indicators are the time series contemplated by Critical Success Factors',
+                'IPCC_Sector': "An NIR emissions reporting sector, compatible with IPCC reporting guidelines",
+                'KPI': 'Key Performance Indicators sometimes provide scales on which Critical Success Factors are defined as thresholds',
+                'EGFS': "the CSF term and definition are adapted from The Executive Guide to Facilitating Strategy",
         }
-
-    @property
-    def as_discussed_in_posts(self) -> dict[str, str]:
-        return [
-            (blog.Glossary(),
-             '#formalizing_csfs',
-             'see section "Emissions and Costs as Critical Success Factors"'),
-        ]
 
     @property
     def aka(self) -> list[str]:
@@ -672,12 +428,10 @@ class Critical_Success_Factor(GlossaryTerm):
 
 class Key_Performance_Indicator(GlossaryTerm):
     """
-    A Key Performance Indicator (KPI) in PlanZero is a time series that
-    is registered to participate in the calculation of emissions or subsidies.
-    A <i>base KPI</i> is a driver, an emission factor, or a subsidy factor.
-    A <i>derived KPI</i> is the product of a driver with an emission factor,
-    or the product of a driver with a subsidy factor, or the result of summing
-    together other derived KPIs toward e.g. national totals.
+    A Key Performance Indicator, in general, is any metric that is an important
+    measure of system, or organization performance.
+    KPIs are not formally part of PlanZero modelling, but PlanZero Models are meant to include model variables
+    corresponding to many KPIs of Canada's emissions and emissions-reduction plans.
     """
 
     @property
@@ -687,184 +441,16 @@ class Key_Performance_Indicator(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'CSF': "target values for target times of a KPI time series, in order to achieve an objective",
-            'NIR_Model': "a model of Canada's future emissions",
-            'Driver': 'Base KPI in emissions calculation, referring to a level of activity or physical stock',
-            'Emission Factor': 'Base KPI in emissions calculations, referring to the factor of proportionality between a driver and an IPCC Sector Contribution',
-            'IPCC_Sector_Contribution': (
-                'The Derived KPIs added together to'
-                ' calculate various emissions totals'),
-            'Time Series': 'KPIs are time-varying quantities'
+            'CSF': "Sometimes it is easy to express a CSF in terms of a KPI (e.g. emissions &le; 0)",
+            'Emission_Variables': "Emission Variables model KPIs of Canada's emission-reduction plans",
         }
 
-
-
-class NIR_Model(GlossaryTerm):
-    """
-    An NIR model is a model that generates
-    emissions KPIs corresponding to the emission amounts in a
-    National Inventory Report.
-    </p><p>
-    NIR Models are also the fully-featured models featured
-    in the PlanZero <a href="/models/#sim/">Simulation-based models</a> section.
-    In addition to KPIs relating to emissions, these models
-    include KPIs relating to subsidy programs.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR': 'A National Inventory Report published by the ECCC with historical Canadian emissions data, organized by IPCC Sector',
-            'Model': 'Any set of dynamic elements makes a model, NIR models have dynamic elements that declare drivers and emission factors',
-            'Driver': 'A level of activity or physical stock that drives emissions',
-            'Emission Factor': 'A factor of proportionality of how much of a greenhouse gas is emitted by a driver',
-            'IPCC_Sector': 'NIR models calculate emissions for each IPCC Sector',
-            'IPCC_Sector_Contribution': (
-                'the emissions calculated by an NIR model are sums'
-                ' across per-sector contributions'),
-            'KPI': 'an emissions contribution to an IPCC Sector',
-            'Simulations_Section': 'NIR models are analyzed in this section of the PlanZero site',
-            'Subsidy_Program': 'NIR models calculate subsidy requirements for each Subsidy Program',
-            'Subsidy_Requirement': (
-                'the total subsidies calculated by an NIR model are sums'
-                ' across per-program requirements'),
-        }
-
-
-class Model(GlossaryTerm):
-    """A model, in PlanZero, is a set of dynamic elements
-    (strategies and barriers).
-    Typically PlanZero models
-    define a probabilistic model of Canada's national emissions.
-    Sometimes a model also defines a probabilistic model of other
-    related quantities such as the factors that drive emissions calculations
-    (e.g. numbers of power plants, cars, trucks, livestock, landfills, etc.)
-    and the financial results (often costs)
-    of implementing emission reduction measures.
-    """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(),
-             '#introduction',
-             ('see sections "<a href="/blog/2026-04-19-glossary/#computation">Computation and Simulation</a>" '
-              'and "<a href="/blog/2026-04-19-glossary/#modelling">Modelling National Emissions</a>"')),
-        ]
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            #'Deterministic_Model': "A model that corresponds to a unique scenario",
-            "NIR_Model": "A model that generates emission results that are comparable to a National Inventory Report is called a NIR Model. The models features on the Models tab of the PlanZero site are NIR models.",
-            'Stochastic_Model': "A PlanZero model induces a probability distribution over possible scenarios",
-            'Simulation': (
-                " Simulation is the computation of a set of scenarios according to the"
-                " initialization and recurrence logic of a model's dynamic"
-                " elements; the result is a sample from the model's implicit stochastic model"),
-            'Scenario': (
-                "A scenario is single time series that is consistent with the"
-                " initialization and recurrence logic of a model's dynamic elements"),
-        }
-
-
-class Stochastic_Model(GlossaryTerm):
-    """A stochastic model corresponds to a distribution over possible
-    scenarios.
-    Simulating a stochastic model using pseudo-random numbers draws
-    a sample from this distribution."""
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Model': """Model of Canada's national emissions in the style
-            of the National Inventory Reports submitted to UNFCCC""",
-            'Deterministic_Model': "A model that corresponds to a unique scenario",
-            'Model': "A set of dynamic elements that can be simulated",
-            'Simulation': 'The procedure for converting a stochastic model to one or more scenarios'
-        }
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Probabilistic Model']
-
-
-class Deterministic_Model(GlossaryTerm):
-    """A deterministic model is a model that corresponds to a specific
-    scenario, and has no randomness.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Model': """Model of Canada's national emissions in the style
-            of the National Inventory Reports submitted to UNFCCC""",
-            'Model': "A set of dynamic elements that can be simulated",
-            'Stochastic_Model': "A model that corresponds to a distribution over possible scenarios",
-        }
-
-
-class Simulations_Section(GlossaryTerm):
-    """The Simulations section of the planzero.ca website:
-    <a href="/models/#sim">https://planzero.ca/models/</a>"""
-
-    # XXX this is now the "Models Tab"
-
-    # XXX Change term Section -> Tab, because individual pages have "Sections"
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Model': """Models of Canada's national emissions provide content for the Simulations Section""",
-            'Model': "A set of dynamic elements that can be simulated",
-            'Simulation': 'The algorithm for generating the data for the Simulations Section',
-            'Ablative_Analysis': (
-                'For each simulation, each strategy in the '
-                'Simulations Section is evaluated by comparing scenarios'
-                ' with and without that strategy'),
-        }
-
-class About_Section(GlossaryTerm):
-    """<p>The "About" section of the planzero.ca website:
-    <a href="/about/">planzero.ca/about</a></p>"""
-
-    @property
-    def aka(self) -> list[str]:
-        return ['About Page']
 
 
 class Scenario(GlossaryTerm):
     """A scenario is a set of time series covering a common time period.
     Typically in PlanZero it is the result of simulating a model.
     """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#scenario', "see simulation sub-section on scenarios"),
-        ]
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Trajectory', 'Rollout (noun)']
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        from . import base
-        return {
-            'Scenario is called "State" in the source code': base.State,
-        }
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Deterministic_Model': "A model that corresponds to a unique scenario",
-            'Stochastic_Model': "A model that corresponds to a distribution over possible scenarios",
-            'Rollout': "A scenario is sometimes called a model rollout",
-            'Time Series': "A time series is a data structure representing a time-varying quantity, and a Scenario corresponds to a set of them",
-            'Simulation': 'The construction of a Scenario from a model',
-            #'Simulations_Section': 'the <a href="/models/#sim">Simulation-based models section</a> of the site analyzes and compares scenarios',
-        }
 
 
 class Model_Construction(GlossaryTerm):
@@ -909,6 +495,31 @@ class Model_Construction_Subphase(GlossaryTerm):
         ]
 
 
+class Model_Construction_Subphase_Annual_Iteration(GlossaryTerm):
+    """The model construction subphase of annual iteration defines annual variables and carry variables.
+    Model element logic operating in this subphase can access any variable defined in the preparation subphase,
+    and some current and next values of annual and carry variables, so long as all the definitions have a dependency ordering.
+    The annual iterations are handled with NumPyro's scan operation, so that a PlanZero model can be configured to forecast
+    any number of future years.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Construction': "Is made up of subphases of model construction",
+        }
+
+    @property
+    def aka(self) -> list[str]:
+        return ['Simulation']
+
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#subphases', "Appendix 2: Model-construction subphases"),
+        ]
+
 
 class Model_Element(GlossaryTerm):
     """An implementation element of a PlanZero model,
@@ -920,6 +531,18 @@ class Model_Element(GlossaryTerm):
         return {
             'PlanZero_Model': "the general form of PlanZero probabilistic models",
         }
+
+    @property
+    def code_refs(self) -> dict[str, object]:
+        from .nir_model import NIR_ModelElement
+        from .prob import SiteModelElement
+        from .scenario_model import ModelElement
+        return {
+                'ModelElement (basic model participation)': ModelElement,
+                'NIR ModelElement (define emissions and cashflow)': NIR_ModelElement,
+                'Site ModelElement (page documentation elements)': SiteModelElement,
+        }
+
 
 
 class Model_Evaluation(GlossaryTerm):
@@ -1030,18 +653,14 @@ class Model_Explorer_Trace(GlossaryTerm):
 
 class Model_Metric(GlossaryTerm):
     """A formula, procedure or rule for associating
-    a single number to a {{lref("Model")|safe}}.
+    a single number to a {{lref("PlanZero_Model")|safe}}.
     For example, NIR models could be evaluated in terms of
     prediction accuracy."""
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Model': "A set of assumptions that can be simulated to produce one or more scenarios",
-            'NIR Model': "NIR models have standard KPIs, which could support standard metrics",
-            'KPI': (
-                'A Key Performance Indicator is a standard'
-                ' time series associated with multiple models'),
+            'Weighted_KL_Divergence': "A prediction-quality metric for PlanZero Models",
         }
 
 
@@ -1166,6 +785,10 @@ class PlanZero_Model(GlossaryTerm):
     """
 
     @property
+    def aka(self) -> list[str]:
+        return ['NIR Model']
+
+    @property
     def hover_definition_html(self) -> str:
         return "<p>A PlanZero Model is the general form of model on the PlanZero site.</p>"
 
@@ -1174,7 +797,7 @@ class PlanZero_Model(GlossaryTerm):
         return {
             'Model_Variable': "a scalar- or vector-valued variable in a model",
             'Model_Element': "a set of assumptions for defining one or more variables in a model",
-            'Stochastic_Model': "the joint distribution over unknown variables in a model correspond to a directed probabilistic graphical model",
+            'Probabilistic_Model': "the joint distribution over unknown variables in a model correspond to a directed probabilistic graphical model",
         }
 
     @property
@@ -1196,6 +819,20 @@ class PlanZero_Site(GlossaryTerm):
             'PlanZero': "A collective term for the site, the supporting code, and the project to develop them",
             "GitHub_Repository": "The development hub for PlanZero on GitHub",
         }
+
+
+class Probabilistic_Model(GlossaryTerm):
+    """A probabilistic model, in general, is a specification of probability distribution over one or more unknown variables.
+    In PlanZero, it typically means the distribution of probability
+    over the unknown variables in a PlanZero model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Probability_Distribution': 'A model defines a joint probability distribution over all its variables',
+                'PlanZero_Model': 'PlanZero models are probabilistic models, encompassing NIR emissions data',
+                }
 
 
 class GitHub_Repository(GlossaryTerm):
@@ -1606,7 +1243,7 @@ class IPCC_Sector(GlossaryTerm):
             "IPCC": "The International Panel on Climate Change, a scientific body that produces climate reports for the UN, and reporting guidelines for Paris Agreement signatories",
             "Paris Agreement": "The international agreement on reporting guidelines for greenhouse gases",
             "UNFCCC": "The United Nations Framework Convention on Climate Change is the primary international treaty aimed at stabilizing greenhouse gas concentrations in the atmosphere",
-            "NIR_Model": "A PlanZero model that simulates emission amounts for IPCC Sectors",
+            "PlanZero_Model": "A PlanZero Model models emission amounts for IPCC Sectors",
         }
 
 
@@ -1715,11 +1352,9 @@ class Emissions(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Driver': 'a level of activity or physical stock, multiplied by an emission factor to calculate emissions',
             'Emission_Factor': 'a factor of proportionality between drivers and emissions',
-            'KPI': 'Emissions are Derived KPIs',
-            'NIR_Model': "a model of Canada's future emissions, calculated by summing up emissions across IPCC Sectors",
-            "IPCC Sector": "the lowest levels of granularity in National Greenhouse Gas Inventory",
+            'PlanZero_Model': "a model of Canada's future emissions, calculated by summing up emissions across IPCC Sectors",
+            "IPCC_Sector": "the lowest levels of granularity in National Greenhouse Gas Inventory",
             "National Greenhouse Gas Inventory": "the data from which NIRs are generated"
         }
 
@@ -1774,82 +1409,11 @@ class Rollout(GlossaryTerm):
 
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#simulation', "see sub-sections about simulation and scenarios"),
-        ]
+        return []
 
     @property
     def see_also(self) -> dict[str, str]:
-        return {
-            'Model': 'a set of dynamic elements that can be simulated (rolled out)',
-            "Simulation": "The process of building a scenario (rolling out the model)",
-            "Scenario": (
-                "The set of time series that result"
-                " from simulating a model (a scenario may be called a rollout)"),
-            'Time Series': "the data structures being rolled out, or making up a rollout",
-            'Dynamic Element': "the model elements being rolled out",
-        }
-
-
-class Simulation(GlossaryTerm):
-    """Simulation in PlanZero refers to the
-    the algorithm for building one or more Scenarios from a Model.
-    Models comprise dynamic elements, which provide initialization
-    and recurrence logic for defining time series.
-    Simulation is the algorithm of using initialization logic and then
-    iterative recurrence logic to extend time series forward in time (roll them out)
-    until all of the time series cover a required time interval.
-    </p>
-    <p>The strategies, in a model with strategies, are evaluated
-    for PlanZero's Simulations Section by an Ablative Analysis. That is to
-    say, the model with all of the strategies is simulated, and the model
-    without a given strategy is also simulated, and the difference in resulting scenarios
-    is shown on the site as the impact of the strategy.
-    Depending on context, simulation refer to either the creation of these individual scenarios,
-    or the creation of all of the scenarios necessary for ablative analysis.
-    </p>
-    <p>A deterministic model corresponds to a single scenario,
-    whereas a non-deterministic model corresponds to a distribution over possible scenarios.
-    Simulation of a non-deterministic model means sampling from this distribution over scenarios
-    by generating scenarios using pseudo-random numbers.
-    Ablative analysis of a strategy in a non-deterministic model means sampling from
-    the distributions both with and without the strategy. Simulation, in this context,
-    may refer to the computation of any or all of the scenarios involved.
-    </p>
-    """
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#simulation', "see sub-section about simulation"),
-        ]
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        from . import sim
-        return {
-            'The <code>simulation_result(...)</code> function implements PlanZero simulation': sim.simulation_result,
-        }
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Rollout (verb)']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Model': 'a set of dynamic elements that can be simulated (rolled out)',
-            'Deterministic_Model': 'a model that corresponds to a single scenario',
-            'Stochastic_Model': 'a model that corresponds to a distribution over scenarios',
-            'Ablative_Analysis': 'the evaluation of a strategy by comparing scenarios with and without the strategy',
-            "Scenario": (
-                "The set of time series that result"
-                " from simulating a model"),
-            'Time Series': "the data structures built up by simulation",
-            'Dynamic Element': "the model elements providing initialization and recurrence logic",
-            "Rollout": "a synonym for either simulation or scenario, depending on context",
-            "Simulations_Section": "Pages on the PlanZero site showing simulation results",
-        }
+        return {}
 
 
 class Special_Project_Entity(GlossaryTerm):
@@ -1875,10 +1439,10 @@ class Special_Project_Entity(GlossaryTerm):
 
 
 class Strategy_Element(GlossaryTerm):
-    """Strategy elements are model elements within scenario models that stand for
-    strategies that may be implemented or not implemented. The impact of a strategy
-    is evaluated by PlanZero by ablating it from the model and re-evaluating the model without the strategy.
-    A scenario model can be created without any strategy elements.
+    """A strategy element in a PlanZero model stands for
+    a project or initiative that may be undertaken (or have been undertaken) in the real world (that is, outside the model).
+    PlanZero model evaluation includes the assessment of strategy <i>impact</i>,
+    by evaluating and comparing variants with and without the strategy.
     """
 
     @property
@@ -1889,7 +1453,7 @@ class Strategy_Element(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Model_Element': 'Strategy elements are a type of Model Element',
-            'Ablative_Analysis': 'Strategy elements enable ablative analysis in PlanZero models',
+            'Ablative_Analysis': 'The impact of strategy elements is assessed by ablative analysis',
             'Structural_Element': 'Structural elements are the other type of Model Element',
         }
 
@@ -1979,7 +1543,7 @@ class Inference_Algorithm(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Stochastic_Model': 'Inference algorithms only make sense for stochastic models',
+            'Probabilistic_Model': 'Inference algorithms operate on probabilistic models',
             'Posterior_Distribution': 'Inference algorithms sample from posterior distributions',
             'Latent_Variable': 'Inference algorithms provide samples for latent variables'
         }
@@ -2099,6 +1663,13 @@ class Scaling_Model(GlossaryTerm):
     """
 
 
+class NIR2025_Model(GlossaryTerm):
+    """The NIR2025 model is a PlanZero model, whose defining feature
+    is that it strictly reflects the data of the NIR-2025 without imposing any
+    modelling assumptions upon it.
+    """
+
+
 class Static_Normals_Model(GlossaryTerm):
     """
     The Static Normals model is a PlanZero model, whose defining feature
@@ -2117,7 +1688,7 @@ class Unknown_Variable(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Stochastic_Model': 'A model associates unknown variables with probability distributions',
+            'Probabilistic_Model': 'A model associates unknown variables with probability distributions',
             'Probability_Distribution': 'In order to reason about a variable without knowing exactly what it is, we assume a set of values that it might have using a probability distribution.',
             'Observed_Variable': 'A variable for which we have some [generally-]noisy data exemplifying its probable value',
             'Unobserved_Variable': 'A variable for which we have no direct data',
@@ -2157,14 +1728,14 @@ class Unobserved_Variable(GlossaryTerm):
 
 class Predictive_Model(GlossaryTerm):
     """
-    A model that includes probability distributions for
-    events in the future.
+    A model that includes probability distributions for events in the future is called a <i>predictive</i> model.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Stochastic_Model': 'a more general class of models, which may or may not include distributions related to future events',
+            'NIR2025_Model': 'The NIR2025 model is not a predictive PlanZero model',
+            'Scaling_Model': 'The Scaling model is a predictive PlanZero model',
         }
 
 
@@ -2214,7 +1785,7 @@ class Joint_Distribution(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
                 'Probability_Distribution': 'Joint distributions are probability distributions, over multiple unknown variables.',
-                'Stochastic_Model': 'Probabilistic models define joint distributions over variables',
+                'Probabilistic_Model': 'Probabilistic models define joint distributions over variables',
                 }
 
 
@@ -2230,7 +1801,7 @@ class Conditional_Distribution(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
                 'Probability_Distribution': 'Conditional distributions are probability distributions.',
-                'Stochastic_Model': 'Probabilistic models can be used to derive conditional distributions among their variables',
+                'Probabilistic_Model': 'Probabilistic models can be used to derive conditional distributions among their variables',
                 }
 
 
@@ -2313,7 +1884,6 @@ class Bayesian_Inference(GlossaryTerm):
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Probabilistic Model': 'Only probabilistic models support Bayesian inference',
             'Inference_Algorithm': 'In probabilistic models that are defined within probabilistic programming systems, Bayesian inference can often be implemented automatically',
         }
 

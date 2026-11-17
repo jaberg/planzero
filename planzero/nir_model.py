@@ -689,7 +689,7 @@ class NIR_ScenarioModel(ScenarioModel):
 
     def add_cost_sums(self):
         """Extend self.model_elements with summing model elements elements as required
-        by NIR_ModelElements already in this model.
+        by NIR_ModelElement objects already in this model.
 
         * SPE_Cashflow_Sum_Over_Reasons for each necessary (SPE, SPE) pair
         * SPE_Net_Cashflow for each necessary SPE
