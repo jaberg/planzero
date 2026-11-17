@@ -2,6 +2,21 @@
 This file  should be imported last among library code files,
 so that it can import objects throughout the library, and retrieve
 their line numbers for constructing github links.
+
+Guidelines for Glossary Terms
+-----------------------------
+
+Multiple meanings: some terms (e.g. "rollout" at one point) have multiple meanings.
+(e.g. "rollout" as noun, "roll out" as verb). These should be listed as multiple Glossary Terms,
+and cross-linked via their "see_also" attributes, which should clarify the differences / relationships
+between the related terms.
+
+The dictionary returned by `see_also` of a GlossaryTerm A should have keys that are
+the class name of glossary terms (e.g. terms, B and C, different from A),
+and values that are one or more full sentences each.
+The sentences should relate the term of the GlossaryTerm class to the terms in the see_also dictionary
+(e.g. the sentence(s) associated with B should relate A and B;
+the sentence(s) associated with C should relate A and C.)
 """
 import functools
 import re
@@ -9,11 +24,8 @@ import re
 import jinja2
 from pydantic import BaseModel
 
-from . import blog, strategies
-from .base import DynamicElement
 from .html import coderef_url, latex
 from .singleton_registry import SingletonRegistry
-from .sts import STS
 
 registry = SingletonRegistry()
 
@@ -1377,86 +1389,6 @@ class National_Inventory_Report(GlossaryTerm):
         }
 
 
-
-class PlanZero_Model(GlossaryTerm):
-    """A PlanZero Model is the general form of model on the PlanZero site.
-    It is a graph of Model Variables and Model Elements,
-    the Unknown Variables of which make up a probabilistic model.
-    A PlanZero Model includes variables for annual emissions matching the structure of recent
-    National Inventory Reports, as well as variables for annual cashflow between economic entities called Special Project Entities (SPEs)
-    as a result of any strategies in the model, as well as any other variables involved in modelling emissions and cashflows.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['NIR Model']
-
-    @property
-    def hover_definition_html(self) -> str:
-        return "<p>A PlanZero Model is the general form of model on the PlanZero site.</p>"
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Model_Variable': "a scalar- or vector-valued variable in a model",
-            'Model_Element': "a set of assumptions for defining one or more variables in a model",
-            'Probabilistic_Model': "the joint distribution over unknown variables in a model correspond to a directed probabilistic graphical model",
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.Glossary(), '#overview', "this entire post is dedicated to documenting PlanZero Models"),
-        ]
-
-
-class PlanZero_Site(GlossaryTerm):
-    """The PlanZero site is the website hosted at <a
-    href="https://planzero.ca">https://planzero.ca</a>.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Main_Branch': "the code from which the site is generated",
-            'PlanZero': "A collective term for the site, the supporting code, and the project to develop them",
-            "GitHub_Repository": "The development hub for PlanZero on GitHub",
-        }
-
-
-class Probabilistic_Model(GlossaryTerm):
-    """A probabilistic model, in general, is a specification of probability distribution over one or more unknown variables.
-    In PlanZero, it typically means the distribution of probability
-    over the unknown variables in a PlanZero model.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-                'Probability_Distribution': 'A model defines a joint probability distribution over all its variables',
-                'PlanZero_Model': 'PlanZero models are probabilistic models, encompassing NIR emissions data',
-                }
-
-class Statistics_Canada(GlossaryTerm):
-    """<a href="https://www.statcan.gc.ca/en/start">Statistics Canada</a>,
-    Canada's national statistical office.
-    Much of the data used in PlanZero is drawn from Statistics Canada tables,
-    downloaded via open-source project
-    <a href="https://github.com/ianepreston/stats_can">stats_can</a>.
-    """
-    
-    @property
-    def aka(self) -> list[str]:
-        return ['StatsCan']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NGGI': 'The National Greenhouse Gas Inventory draws on data products from Statistics Canada',
-            'NEUD': 'The National Energy Use Database draws on data products from Statistics Canada',
-        }
-
-
 class Natural_Resources_Canada(GlossaryTerm):
     """<p><a href="https://natural-resources.canada.ca/">Natural Resources
     Canada</a> (sometimes, NRCan) is a federal ministry
@@ -1499,43 +1431,23 @@ class Net_Zero(GlossaryTerm):
         }
 
 
-class PlanZero(GlossaryTerm):
-    """This site and its supporting code, as well as the project of building
-    and continually improving the site and its supporting code,
-    is collectivey referred to as "PlanZero"
+class Observed_Variable(GlossaryTerm):
+    """An observed variable is an unknown variable for which we have
+    data that is modelled a sample from the variable's distribution.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'ECCC': 'The ECCC is preparing a plan for Canada to reach net-zero',
-            "About Section": "Read more about this project on the About page",
-            "GitHub_Repository": "The development hub for PlanZero on GitHub",
-            "PlanZero_Site": "The site you probably used to access this page",
+            'Unobserved_Variable': 'A variable for which we have no direct reading of its probable value',
+            'Unknown_Variable': 'A variable in a probabilistic model',
         }
-
-
-class UNFCCC(GlossaryTerm):
-    """United Nations Framework Convention on Climate Change is the primary
-    international treety aimed at stabilizing greenhouse gas concentrations in the atmosphere.
-    It has as an objective to limit global temperature rise to "well under 2{{degrees}}C".
-    It defined the annual "Conference Of the Parties (COP)" meetings to assess progress and
-    negotiate new treaties and initiatives, such as the Paris Agreement, which is based
-    upon the UNFCCC.
-    """
 
     @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            "IPCC": "The International Panel on Climate Change, a scientific body that provides scientific input for ongoing UNFCCC initiatives",
-            "CNZEAA": (
-                "The Canadian Net-Zero Accountability Act, legislation to uphold"
-                " Canada's responsibilities under the Paris Agreement"),
-            'Paris Agreement': (
-                "The international agreement that signatories would"
-                " report emissions in standard ways, and set"
-                " Nationally Determined Contribution (NDC) targets"),
-        }
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+        ]
 
 
 class Paris_Agreement(GlossaryTerm):
@@ -1563,16 +1475,23 @@ class Paris_Agreement(GlossaryTerm):
         }
 
 
-class Python(GlossaryTerm):
-    """<p>PlanZero is implemented in the <a href="https://www.python.org/">Python programming language</a></p>"""
+class Pending_Prediction_Challenge_Results(GlossaryTerm):
+    """
+    Prediction challenge results may be described as "Pending". That is
+    because it is not possible to compute them yet.
+    The prediction time has passed for the challenge, but the publication
+    of the predicted data (the challenge's evaluation time) has either
+    (a) not yet ocurred, or at least (b)
+    not yet been incorporated into the PlanZero site.
+    """
+    # TODO: Prediction Time
+    # TODO: Prediction Challenge
 
     @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            "GitHub_Repository": "The development hub for PlanZero on GitHub",
-            "Code": "PlanZero's source code is mostly written in the Python programming language",
-        }
-
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.registry['StaticNormals'], '#prenir', "prediction time vs. evaluation time"),
+        ]
 
 
 class Petrinex(GlossaryTerm):
@@ -1607,28 +1526,251 @@ class Petrinex(GlossaryTerm):
         }
 
 
-class Rollout(GlossaryTerm):
-    """Rollout is a conventionally used term in modelling and simulation,
-    which means one of a few related things depending on the context of usage.
-    A Scenario is constructed from a model by executing the
-    initialization and recurrence logic of the model's dynamic elements.
-    The recurrence logic is generally executed repeatedly, extending
-    time series one time step at a time, until all of the time series
-    in all of the dynamic elements are extended to at least the
-    end-time of the simulation. This proces of repeated extension
-    is sometimes called "rolling out" the model, perhaps like a carpet
-    that unrolls to take up more space and reveal the intracacies of its
-    design. Sometimes "rollout" is used as a noun, to refer to the
-    resulting scenario, rather than the algorithm that built it.
+class PlanZero(GlossaryTerm):
+    """This site and its supporting code, as well as the project of building
+    and continually improving the site and its supporting code,
+    is collectivey referred to as "PlanZero"
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'ECCC': 'The ECCC is preparing a plan for Canada to reach net-zero',
+            "About Section": "Read more about this project on the About page",
+            "GitHub_Repository": "The development hub for PlanZero on GitHub",
+            "PlanZero_Site": "The site you probably used to access this page",
+        }
+
+
+class PlanZero_Model(GlossaryTerm):
+    """A PlanZero Model is the general form of model on the PlanZero site.
+    It is a graph of Model Variables and Model Elements,
+    the Unknown Variables of which make up a probabilistic model.
+    A PlanZero Model includes variables for annual emissions matching the structure of recent
+    National Inventory Reports, as well as variables for annual cashflow between economic entities called Special Project Entities (SPEs)
+    as a result of any strategies in the model, as well as any other variables involved in modelling emissions and cashflows.
+    """
+
+    @property
+    def aka(self) -> list[str]:
+        return ['NIR Model', 'Model']
+
+    @property
+    def hover_definition_html(self) -> str:
+        return "<p>A PlanZero Model is the general form of model on the PlanZero site.</p>"
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Variable': "a scalar- or vector-valued variable in a model",
+            'Model_Element': "a set of assumptions for defining one or more variables in a model",
+            'Probabilistic_Model': "the joint distribution over unknown variables in a model correspond to a directed probabilistic graphical model",
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.Glossary(), '#overview', "this entire post is dedicated to documenting PlanZero Models"),
+        ]
+
+
+class PlanZero_Site(GlossaryTerm):
+    """The PlanZero site is the website hosted at <a
+    href="https://planzero.ca">https://planzero.ca</a>.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Main_Branch': "the code from which the site is generated",
+            'PlanZero': "A collective term for the site, the supporting code, and the project to develop them",
+            "GitHub_Repository": "The development hub for PlanZero on GitHub",
+        }
+
+
+class Post(GlossaryTerm):
+    """A post on this site (see e.g. <a href="/posts/">https://planzero.ca/posts/</a>).
+    </p><p>
+    The <a href="/about/">About</a> page
+    includes some guidelines for post content.
     """
 
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return []
+        return [
+            (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
+        ]
+
+
+class Posterior_Distribution(GlossaryTerm):
+    """A posterior distribution is the result of conditioning on stochastic model on the observation of data.
+    The observation of data generally changes the distribution of probability for the remaining variables, called latent variables.
+    """
 
     @property
     def see_also(self) -> dict[str, str]:
-        return {}
+        return {
+                'Inference_Algorithm': 'Inference in stochastic models can sometimes be done by standard algorithms.',
+                'Conditional_Distribution': 'Posterior distributions are conditional distributions in which the conditioning is on observed data',
+                'Latent_Variable': 'Unobserved unknown variables in a probabilistic model are called latent variables; a posterior distribution is over latent variables.',
+                }
+
+
+class Posterior_Phase(GlossaryTerm):
+    """
+    The Posterior phase is the last of the three phases of evaluating a PlanZero model.
+    The Posterior phase is a reconstruction of the model using the posterior samples instead of prior distributions
+    to define unknown variables.
+    Statistics of the Posterior phase are presented on this site as the results of model evaluation.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Prediction_Challenge(GlossaryTerm):
+    """
+    A Prediction Challenge in PlanZero is a machine learning problem statement
+    about predicting emissions before they are published by an NIR.
+    A challenge will specify what emissions to predict,
+    for what regions, for what years, and how the predictions will be evaluated.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'NIR_Prediction': 'NIR prediction is the only type of prediction challenge in PlanZero so far',
+            'Prediction_Date': 'The deadline after which new information cannot be used for prediction',
+        }
+
+
+
+class Prediction_Date(GlossaryTerm):
+    """
+    A Prediction Date is a point in time at which a prediction must be made,
+    in the context of e.g. a prediction challenge. Information published
+    after the prediction date cannot be used for prediction.
+    """
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Prediction_Challenge': 'Prediction challenges have prediction dates',
+        }
+
+
+class Predictive_Model(GlossaryTerm):
+    """
+    A model that includes probability distributions for events in the future is called a <i>predictive</i> model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'NIR2025_Model': 'The NIR2025 model is not a predictive PlanZero model',
+            'Scaling_Model': 'The Scaling model is a predictive PlanZero model',
+        }
+
+
+class Prior_Phase(GlossaryTerm):
+    """
+    The Prior phase is the first of the three phases of evaluating a PlanZero model.
+    The Prior phase establishes prior distributions over unknown variables,
+    and validates that inference groups are statistically independent.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
+            'Unknown_Variable': 'All unknown variables are associated with a prior distribution by a PlanZero model',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+        ]
+
+
+class Probabilistic_Model(GlossaryTerm):
+    """A probabilistic model, in general, is a specification of probability distribution over one or more unknown variables.
+    In PlanZero, it typically means the distribution of probability
+    over the unknown variables in a PlanZero model.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+                'Probability_Distribution': 'A model defines a joint probability distribution over all its variables',
+                'PlanZero_Model': 'PlanZero models are probabilistic models, encompassing NIR emissions data',
+                }
+
+
+class Probability_Density_Function(GlossaryTerm):
+    """A mathematical function that is never negative,
+    whose area under the curve is 1, and which is used to
+    describe the probability distrubtion for a random variable.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unknown_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
+        }
+
+
+class Probability_Distribution(GlossaryTerm):
+    """A probability distribution is the act or result of
+    distributing probability across the possibly true values of a
+    unknown variable.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Unknown_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
+            'Probability_Density_Function': 'a description of how to distribute probability over a continuous set of possible values, such as a range of real numbers',
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+            (blog.ProbabilisticNIR2025(), '#appendix-model-distribution', "Appendix 1 is an introduction to probabilistic modelling"),
+        ]
+
+
+class Python(GlossaryTerm):
+    """<p>PlanZero is implemented in the <a href="https://www.python.org/">Python programming language</a></p>"""
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            "GitHub_Repository": "The development hub for PlanZero on GitHub",
+            "Code": "PlanZero's source code is mostly written in the Python programming language",
+        }
+
+
+class Scaling_Model(GlossaryTerm):
+    """The Scaling model is a PlanZero model, whose defining feature
+    is that it includes hypothetical adoption and standing of sufficiently-mature
+    technology and products.
+    """
+
+
+class Scenario(GlossaryTerm):
+    """A scenario is a set of time series covering a common time period.
+    Typically in PlanZero it is the result of simulating a model.
+    """
 
 
 class Special_Project_Entity(GlossaryTerm):
@@ -1651,6 +1793,55 @@ class Special_Project_Entity(GlossaryTerm):
         return [
                 (blog.Glossary(), '#cashflow-variables', "SPEs are introduced in relation to cashflow variables"),
         ]
+
+
+class Static_Normals_Model(GlossaryTerm):
+    """
+    The Static Normals model is a PlanZero model, whose defining feature
+    is that it assumes no change over time of any emissions, and attributes
+    all year-to-year differences in the data to observation noise.
+    """
+
+
+
+class Statistics_Canada(GlossaryTerm):
+    """<a href="https://www.statcan.gc.ca/en/start">Statistics Canada</a>,
+    Canada's national statistical office.
+    Much of the data used in PlanZero is drawn from Statistics Canada tables,
+    downloaded via open-source project
+    <a href="https://github.com/ianepreston/stats_can">stats_can</a>.
+    """
+    
+    @property
+    def aka(self) -> list[str]:
+        return ['StatsCan']
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'NGGI': 'The National Greenhouse Gas Inventory draws on data products from Statistics Canada',
+            'NEUD': 'The National Energy Use Database draws on data products from Statistics Canada',
+        }
+
+
+class Strategy(GlossaryTerm):
+    """<p>Strategy is a term adapted from {{lref("EGFS")|safe}} (which aims near the standard usage definition),
+    where it means
+    a <i>broad activity required to achieve a goal, create a critical condition, or overcome a barrier</i>.
+    In PlanZero, the term is used in two ways.
+    Firstly, it is used on per-sector analysis pages to call out things that could be done
+    to reduce emissions in a sector.
+    Secondly, it is sometimes used to describe Strategy Elements, which are formal model elements
+    used to evaluate strategy ideas within PlanZero models.
+    </p>
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Barrier': 'a related EGFS term, for hinderances to achieving a goal, which may be overcome by strategies',
+            'EGFS': 'The Executive Guide to Facilitating Strategy, providing strategic management term definitions',
+        }
 
 
 class Strategy_Element(GlossaryTerm):
@@ -1693,95 +1884,74 @@ class Structural_Element(GlossaryTerm):
         }
 
 
-class Post(GlossaryTerm):
-    """A post on this site (see e.g. <a href="/posts/">https://planzero.ca/posts/</a>).
-    </p><p>
-    The <a href="/about/">About</a> page
-    includes some guidelines for post content.
+class Symmetric_Blended_Log_Normal_Distribution(GlossaryTerm):
+
+    """<p>A symmetric blended log-normal distribution is a
+    custom parametric probability distribution used in PlanZero
+    to model quantities that are characterized by relative uncertainty,
+    but which may sometimes be both negative and positive, such as
+    emissions in certain sectors.
+    </p>
+    <p>The details of this distribution can be found in a
+<a href="https://github.com/jaberg/planzero/blob/d1972c58f1b8463be5fb3462e7b1c3179d273fa0/SymmetricBlendedLogNormal.ipynb">Jupyter notebook</a>
+hosted on PlanZero's GitHub page.</p>
     """
 
     @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
-        ]
-
-
-class Posterior_Phase(GlossaryTerm):
-    """
-    The Posterior phase is the last of the three phases of evaluating a PlanZero model.
-    The Posterior phase is a reconstruction of the model using the posterior samples instead of prior distributions
-    to define unknown variables.
-    Statistics of the Posterior phase are presented on this site as the results of model evaluation.
-    """
+    def aka(self) -> list[str]:
+        return ['SBLN']
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
-            'Unobserved_Variable': 'A variable with a posterior distribution in a PlanZero model',
+            'Probability_Distribution': 'The SBLN is a probability distribution',
         }
 
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+            (blog.ProbabilisticNIR2025(), '#appendix-sbln', "Probabilistic NIR2025, Appendix 2"),
         ]
 
 
-class Prior_Phase(GlossaryTerm):
-    """
-    The Prior phase is the first of the three phases of evaluating a PlanZero model.
-    The Prior phase establishes prior distributions over unknown variables,
-    and validates that inference groups are statistically independent.
+class UNFCCC(GlossaryTerm):
+    """United Nations Framework Convention on Climate Change is the primary
+    international treety aimed at stabilizing greenhouse gas concentrations in the atmosphere.
+    It has as an objective to limit global temperature rise to "well under 2{{degrees}}C".
+    It defined the annual "Conference Of the Parties (COP)" meetings to assess progress and
+    negotiate new treaties and initiatives, such as the Paris Agreement, which is based
+    upon the UNFCCC.
     """
 
     @property
     def see_also(self) -> dict[str, str]:
         return {
-            'Model_Evaluation_Phase': 'Prior, Inference, and Posterior',
-            'Unknown_Variable': 'All unknown variables are associated with a prior distribution by a PlanZero model',
+            "IPCC": "The International Panel on Climate Change, a scientific body that provides scientific input for ongoing UNFCCC initiatives",
+            "CNZEAA": (
+                "The Canadian Net-Zero Accountability Act, legislation to uphold"
+                " Canada's responsibilities under the Paris Agreement"),
+            'Paris Agreement': (
+                "The international agreement that signatories would"
+                " report emissions in standard ways, and set"
+                " Nationally Determined Contribution (NDC) targets"),
         }
 
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
-        ]
 
-
-class Observed_Variable(GlossaryTerm):
-    """An observed variable is an unknown variable for which we have
-    data that is modelled a sample from the variable's distribution.
+class Unit_of_Measure(GlossaryTerm):
+    """A PlanZero unit of measure is one that is registered
+    in the ureg.py file, using the <a
+    href="https://pint.readthedocs.io/en/stable/">Pint unit package</a>.
+    The registry includes standard units of measure in e.g. the metric SI
+    system in addition to various more traditional ones, and also
+    custom units related to PlanZero modelling such as types of coal,
+    greenhouse gases, farms, and vehicles.
     """
 
     @property
-    def see_also(self) -> dict[str, str]:
+    def code_refs(self) -> dict[str, object]:
         return {
-            'Unobserved_Variable': 'A variable for which we have no direct reading of its probable value',
-            'Unknown_Variable': 'A variable in a probabilistic model',
+            'ureg.py': 'https://github.com/jaberg/planzero/blob/main/planzero/ureg.py',
         }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
-        ]
-
-
-class Scaling_Model(GlossaryTerm):
-    """The Scaling model is a PlanZero model, whose defining feature
-    is that it includes hypothetical adoption and standing of sufficiently-mature
-    technology and products.
-    """
-
-
-class Static_Normals_Model(GlossaryTerm):
-    """
-    The Static Normals model is a PlanZero model, whose defining feature
-    is that it assumes no change over time of any emissions, and attributes
-    all year-to-year differences in the data to observation noise.
-    """
 
 
 class Unknown_Variable(GlossaryTerm):
@@ -1832,113 +2002,6 @@ class Unobserved_Variable(GlossaryTerm):
         ]
 
 
-class Predictive_Model(GlossaryTerm):
-    """
-    A model that includes probability distributions for events in the future is called a <i>predictive</i> model.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR2025_Model': 'The NIR2025 model is not a predictive PlanZero model',
-            'Scaling_Model': 'The Scaling model is a predictive PlanZero model',
-        }
-
-
-class Probability_Density_Function(GlossaryTerm):
-    """A mathematical function that is never negative,
-    whose area under the curve is 1, and which is used to
-    describe the probability distrubtion for a random variable.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Unknown_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
-        }
-
-
-class Probability_Distribution(GlossaryTerm):
-    """A probability distribution is the act or result of
-    distributing probability across the possibly true values of a
-    unknown variable.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Unknown_Variable': 'a variable whose true value is not known, but with which we can associate a probability distribution',
-            'Probability_Density_Function': 'a description of how to distribute probability over a continuous set of possible values, such as a range of real numbers',
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.ProbabilisticNIR2025(), '#appendix-model-distribution', "Appendix 1 is an introduction to probabilistic modelling"),
-        ]
-
-
-class Posterior_Distribution(GlossaryTerm):
-    """A posterior distribution is the result of conditioning on stochastic model on the observation of data.
-    The observation of data generally changes the distribution of probability for the remaining variables, called latent variables.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-                'Inference_Algorithm': 'Inference in stochastic models can sometimes be done by standard algorithms.',
-                'Conditional_Distribution': 'Posterior distributions are conditional distributions in which the conditioning is on observed data',
-                'Latent_Variable': 'Unobserved unknown variables in a probabilistic model are called latent variables; a posterior distribution is over latent variables.',
-                }
-
-
-class Pending_Prediction_Challenge_Results(GlossaryTerm):
-    """
-    Prediction challenge results may be described as "Pending". That is
-    because it is not possible to compute them yet.
-    The prediction time has passed for the challenge, but the publication
-    of the predicted data (the challenge's evaluation time) has either
-    (a) not yet ocurred, or at least (b)
-    not yet been incorporated into the PlanZero site.
-    """
-    # TODO: Prediction Time
-    # TODO: Prediction Challenge
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.registry['StaticNormals'], '#prenir', "prediction time vs. evaluation time"),
-        ]
-
-class Prediction_Challenge(GlossaryTerm):
-    """
-    A Prediction Challenge in PlanZero is a machine learning problem statement
-    about predicting emissions before they are published by an NIR.
-    A challenge will specify what emissions to predict,
-    for what regions, for what years, and how the predictions will be evaluated.
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'NIR_Prediction': 'NIR prediction is the only type of prediction challenge in PlanZero so far',
-            'Prediction_Date': 'The deadline after which new information cannot be used for prediction',
-        }
-
-
-
-class Prediction_Date(GlossaryTerm):
-    """
-    A Prediction Date is a point in time at which a prediction must be made,
-    in the context of e.g. a prediction challenge. Information published
-    after the prediction date cannot be used for prediction.
-    """
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Prediction_Challenge': 'Prediction challenges have prediction dates',
-        }
-
 class Weighted_KL_Divergence(GlossaryTerm):
     """In PlanZero, the term "weighted KL divergence" typically refers
     to the specific weighting of KL divergences between actual and predicted
@@ -1956,87 +2019,4 @@ class Weighted_KL_Divergence(GlossaryTerm):
     def see_also(self) -> dict[str, str]:
         return {
             'Model_Metric': 'Weighted KL divergence is used to score how well (technicall, how poorly) a predictive model approximates a reference one.',
-        }
-
-class Symmetric_Blended_Log_Normal_Distribution(GlossaryTerm):
-
-    """<p>A symmetric blended log-normal distribution is a
-    custom parametric probability distribution used in PlanZero
-    to model quantities that are characterized by relative uncertainty,
-    but which may sometimes be both negative and positive, such as
-    emissions in certain sectors.
-    </p>
-    <p>The details of this distribution can be found in a
-<a href="https://github.com/jaberg/planzero/blob/d1972c58f1b8463be5fb3462e7b1c3179d273fa0/SymmetricBlendedLogNormal.ipynb">Jupyter notebook</a>
-hosted on PlanZero's GitHub page.</p>
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['SBLN']
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Probability_Distribution': 'The SBLN is a probability distribution',
-        }
-
-    @property
-    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
-        return [
-            (blog.ProbabilisticNIR2025(), '#appendix-sbln', "Probabilistic NIR2025, Appendix 2"),
-        ]
-
-class Scenario(GlossaryTerm):
-    """A scenario is a set of time series covering a common time period.
-    Typically in PlanZero it is the result of simulating a model.
-    """
-
-
-
-class Strategy(GlossaryTerm):
-    """<p>Strategy is a term adapted from {{lref("EGFS")|safe}} (which aims near the standard usage definition),
-    where it means
-    a <i>broad activity required to achieve a goal, create a critical condition, or overcome a barrier</i>.
-    In PlanZero, the term is used in two ways.
-    Firstly, it is used on per-sector analysis pages to call out things that could be done
-    to reduce emissions in a sector.
-    Secondly, it is sometimes used to describe Strategy Elements, which are formal model elements
-    used to evaluate strategy ideas within PlanZero models.
-    </p>
-    """
-
-    @property
-    def see_also(self) -> dict[str, str]:
-        return {
-            'Barrier': 'a related EGFS term, for hinderances to achieving a goal, which may be overcome by strategies',
-            'EGFS': 'The Executive Guide to Facilitating Strategy, providing strategic management term definitions',
-        }
-
-
-class Static_Variable(GlossaryTerm):
-    """A variable in a model simulation that is not indexed by time
-    is called Constant.
-    """
-
-    @property
-    def aka(self) -> list[str]:
-        return ['Constant']
-
-
-
-class Unit_of_Measure(GlossaryTerm):
-    """A PlanZero unit of measure is one that is registered
-    in the ureg.py file, using the <a
-    href="https://pint.readthedocs.io/en/stable/">Pint unit package</a>.
-    The registry includes standard units of measure in e.g. the metric SI
-    system in addition to various more traditional ones, and also
-    custom units related to PlanZero modelling such as types of coal,
-    greenhouse gases, farms, and vehicles.
-    """
-
-    @property
-    def code_refs(self) -> dict[str, object]:
-        return {
-            'ureg.py': 'https://github.com/jaberg/planzero/blob/main/planzero/ureg.py',
         }
