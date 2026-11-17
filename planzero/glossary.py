@@ -887,6 +887,29 @@ class Model_Construction(GlossaryTerm):
         ]
 
 
+class Model_Construction_Subphase(GlossaryTerm):
+    """Model construction subphases are preparation (before annual iterations),
+    annual iterations, and post-processing (after annual iterations). Model elements
+    can participate in these subphases to define model variables. The kinds of variables
+    that can be defined (and accessed) differ from phase to phase.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'Model_Construction': "Is made up of subphases of model construction",
+            'Model_Element': 'Model elements provide variable definitions by participating in one or more construction subphases',
+            'Model_Variable': 'The rules for Model variable definitions and access differ from subphase to subphase'
+        }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#subphases', "Appendix 2: Model-construction subphases"),
+        ]
+
+
+
 class Model_Element(GlossaryTerm):
     """An implementation element of a PlanZero model,
     providing one or more computationl subphase implementations that define model variables.

@@ -1,6 +1,4 @@
 import re
-import time
-import warnings
 from urllib.parse import urljoin
 
 import pytest
