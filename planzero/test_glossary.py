@@ -1,5 +1,5 @@
 from . import blog  # noqa: F401
-from .glossary import aka_registry, registry
+from .glossary import aka_registry, registry, siteref, template_globals
 
 
 def test_term_list():
@@ -28,3 +28,22 @@ def test_term_body():
                 assert isinstance(descr, str)
         n_checks += 1
     assert n_checks > 10, n_checks # sanity check, not e.g. 0
+
+
+def test_lref_link_contexts():
+    barrier = aka_registry['Barrier']
+
+    # Definitions displayed on the glossary page still use local anchors.
+    assert 'href="#EGFS"' in barrier.definition_html
+
+    # Tooltip content is rendered on other pages, so its lrefs must be
+    # site-anchored and must not recursively embed another tooltip.
+    assert 'href="/glossary#EGFS"' in barrier.tooltip_html
+    assert 'href="#EGFS"' not in barrier.tooltip_html
+    assert 'glossary-ref-tip' not in barrier.tooltip_html
+
+    rich_site_ref = template_globals(tooltips=True, site_links=True)['lref']('EGFS')
+    assert 'href="/glossary#EGFS"' in rich_site_ref
+    assert 'glossary-ref-tip' in rich_site_ref
+
+    assert 'href="/glossary#Barrier"' in siteref('Barrier')

@@ -78,7 +78,7 @@ class BlogPost(BaseModel):
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
             template = jinja2.Template(source=self.__class__.__doc__)
-            rendered = template.render(template_globals(tooltips=True))
+            rendered = template.render(template_globals(tooltips=True, site_links=True))
             kwargs = dict(kwargs, about=rendered)
         super().__init__(**kwargs)
 

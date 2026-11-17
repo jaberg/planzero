@@ -7,17 +7,18 @@
         <p>{{blog.about}}</p>
     </header>
 
-<p>
-Table of Contents:
+<div class="table-of-contents toc-rule">
+<b>Table of Contents</b>
 <ul>
-    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#introduction">Introduction</a>
     <li><a href="#impact">Probable Impact of Scaling Bovaer Adoption</a></li>
-    <li><a href="#prenir">NIR Prediction with the Scaling Model</a></li>
+    <li><a href="#PreNIR_2025_m04">NIR Prediction with the Scaling Model</a></li>
+    </li>
     <li><a href="#conclusion">Conclusion</a></li>
     <li><a href="#appendix-1-new-elements">Appendix 1: New and Modified Barrier Elements to Model Bovaer Adoption Probabilistically</a></li>
     <li><a href="#appendix-2-prob-modelling">Appendix 2: Probabilistic Modelling of Cattle Populations and Enteric Fermentation Emission Factors</a></li>
 </ul>
-</p>
+</div>
 
 <h2 id="introduction">Introduction</h2>
 
@@ -55,6 +56,10 @@ Differences relative to the previous deterministic model:
 	<li>Whereas the deterministic model fixed production emissions at 45 kg {{CO2e}} / head / year, the probabilistic model varies it uniformly from 20x to 50x less than the reduced methane {{CO2e}}.</li>
 	<li>Whereas the deterministic model ignored income tax, the probabilistic model includes recouping it at a rate of 25%.</li>
 </ul>
+</p>
+
+<h2 id="impact">Probable Impact of Scaling Bovaer Adoption</h2>
+<p>
 The probabilistic model estimates the
 cost per tonne {{CO2}}e abated over modelled period
 to lie in the range 188.99 - 200.08 (CAD / t{{CO2}}e) with 95% confidence.
@@ -91,7 +96,7 @@ The range of cost per ton is relatively tight because despite many sources of un
 </p>
 
 
-<h3 id="PreNIR_2025_m04">NIR Prediction with the Scaling Model (Pre-NIR-2025-m04)</h3>
+<h2 id="PreNIR_2025_m04">NIR Prediction with the Scaling Model (Pre-NIR-2025-m04)</h2>
 
 <p>
 One possible use of PlanZero's predictive probabilistic models is to anticipate the values in
@@ -112,7 +117,7 @@ Since the Scaling model introduced in this post is a predictive model,
 it can be evaluated according to the Pre-NIR-2025-m04 protocol and
 evaluation metrics. The national-total-level results are included below,
 the full sector-by-sector scores can be found on the
-<a href="/models/prob/Scaling/#prediction-quality">Scaling page</a>
+<a href="/models/prob/Scaling/">Scaling page</a>
 </p>
 
 <table class="gemini-sort-data-table">
@@ -166,7 +171,7 @@ enteric emissions, which is about
 <a href="/post/2026-03-31-enteric#qual">96-97% true</a>, but not 100% true.
 For all of these reasons, if not more, the resulting posterior estimate for the NIR totals
 isn't as accurate as the one in the
-<a href="/models/prob/Static_Normals_2024_12_31/#prediction-quality">Static Normals model</a>.
+<a href="/models/prob/Static_Normals_2024_12_31/">Static Normals model</a>.
 Predictive accuracy isn't the strengh of static normals models generally,
 so a slight degradation doesn't bother me.
 I expect a jump in predictive accuracy across almost every sector
@@ -182,15 +187,11 @@ For now, the details of modelling in the Scaling model are explained in
 <p>
 This post has introduced a probabilistic
 "<a href="/models/prob/Scaling/">Scaling</a>" model,
-which was created
-by combining the static normals probabilistic model
-with new probabilistic versions of the modelling elements
-used previously to estimate the impact of Bovaer adoption.
-This site also now includes pages
-for the strategy and structural elements in a model,
-which serve to organize the logic and computations associated with each model.
-For example,
-the strategy page for "<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above,
+which is a proof of concept that it is possible to
+define a probabilistic model (the Static Normals model)
+with a strategy,
+and estimate the impact of the strategy by ablative analysis.
+The strategk page for "<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above,
 and the Bovaer Adoption Limit page [edit: this information is now available via the
 {{siteref("Model_Explorer", "Model Explorer")|safe}}] describes and shows the
 assumption that just-over 2.5% to just-under 10% of farmers will start feeding Bovaer per year.

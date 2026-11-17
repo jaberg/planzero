@@ -72,12 +72,14 @@ def siteref(term, text=None):
     return aka_registry[term].site_reference(text or term)
 
 
-def template_globals(tooltips: bool = False) -> dict[str, object]:
+def template_globals(tooltips: bool = False, site_links: bool = False) -> dict[str, object]:
     def lref(term, text=None):
         obj = aka_registry[term]
+        href = obj.site_href if site_links else obj.local_href
+        text = obj._ref_text(text)
         if tooltips:
-            return obj.local_ref(text)
-        return obj._plain_local_ref(text)
+            return obj._glossary_ref_markup(href, text)
+        return obj._plain_ref(href, text)
 
     return {
         'CO2e': latex(r'\mathrm{CO}_2\mathrm e '),
@@ -100,32 +102,29 @@ class GlossaryTerm(BaseModel):
         assert self.__class__.__doc__, self.__class__
         return self.__class__.__doc__
 
-    @property
-    def plain_definition_html(self) -> str:
-        if self.definition.startswith('<p>'):
-            source = self.definition
-        else:
-            source = f'<p>{self.definition}</p>'
+    def _render_definition(self, globals_: dict[str, object]) -> str:
+        source = self.definition
+        if not source.startswith('<p>'):
+            source = f'<p>{source}</p>'
 
         template = jinja2.Template(source=source)
-        rval = template.render(template_globals())
-        return rval
+        return template.render(globals_)
+
+    @property
+    def plain_definition_html(self) -> str:
+        return self._render_definition(template_globals())
 
     @property
     def definition_html(self) -> str:
         # Rendered for page display: cross-references carry tooltips.
-        if self.definition.startswith('<p>'):
-            source = self.definition
-        else:
-            source = f'<p>{self.definition}</p>'
-
-        template = jinja2.Template(source=source)
-        rval = template.render(template_globals(tooltips=True))
-        return rval
+        return self._render_definition(template_globals(tooltips=True))
 
     @property
     def hover_definition_html(self) -> str:
-        return self.plain_definition_html
+        # Tooltip content is rendered outside the glossary page, so lref links
+        # must target the glossary page. Keep them plain to avoid recursion
+        # into another term's tooltip_html.
+        return self._render_definition(template_globals(site_links=True))
 
     @property
     def tooltip_html(self) -> str:
@@ -197,6 +196,22 @@ class GlossaryTerm(BaseModel):
         if getattr(cls, 'include_in_registry', True): # default to True for historical reasons
             registry.add_class(cls)
 
+    def _ref_text(self, text=None) -> str:
+        if text is None:
+            return self.__class__.__name__.replace('_', ' ')
+        return text
+
+    @property
+    def local_href(self) -> str:
+        return f'#{self.__class__.__name__}'
+
+    @property
+    def site_href(self) -> str:
+        return f'/glossary#{self.__class__.__name__}'
+
+    def _plain_ref(self, href: str, text=None) -> str:
+        return f'<a href="{href}">{self._ref_text(text)}</a>'
+
     def _glossary_ref_markup(self, href: str, text: str) -> str:
         return (
             f'<span class="glossary-ref">'
@@ -206,19 +221,13 @@ class GlossaryTerm(BaseModel):
         )
 
     def _plain_local_ref(self, text=None) -> str:
-        if text is None:
-            text = self.__class__.__name__.replace('_', ' ')
-        return f'<a href="#{self.__class__.__name__}">{text}</a>'
+        return self._plain_ref(self.local_href, text)
 
     def local_ref(self, text=None) -> str:
-        if text is None:
-            text = self.__class__.__name__.replace('_', ' ')
-        return self._glossary_ref_markup(f'#{self.__class__.__name__}', text)
+        return self._glossary_ref_markup(self.local_href, self._ref_text(text))
 
     def site_reference(self, text=None) -> str:
-        if text is None:
-            text = self.__class__.__name__.replace('_', ' ')
-        return self._glossary_ref_markup(f'/glossary#{self.__class__.__name__}', text)
+        return self._glossary_ref_markup(self.site_href, self._ref_text(text))
 
 
 class Ablative_Analysis(GlossaryTerm):
