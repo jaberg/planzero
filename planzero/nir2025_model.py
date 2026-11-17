@@ -9,7 +9,6 @@ from .nir_model import NIR_ModelElement, NIR_ScenarioModel, Sector_GHG_Observati
 from .scenario_model import (
     AnnualKey,
     GeneralKey,
-    ModelElement,
     Phase,
     VersionID,
     Workspace,

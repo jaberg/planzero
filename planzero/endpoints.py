@@ -57,8 +57,9 @@ def endpoints():
                 rval.append(f"/models/prob/{url_name}/barriers/{barrier_name}/")
 
         rval.append(f"/model-explorer/?model={url_name}")
-        for igroup in site_inf.mcmc_submodels():
-            rval.append(f"/model-explorer/?model={url_name}&group={igroup}")
+        for igroup in site_inf.scenario_model.mcmc_submodels():
+            if igroup != None:
+                rval.append(f"/model-explorer/?model={url_name}&group={igroup}")
 
     rval.extend([
         "/",
