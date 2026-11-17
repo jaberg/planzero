@@ -245,7 +245,7 @@ graph TD
       A -.-> |May include some| D
 </pre>
 
-<h5>Emission Variables</h5>
+<h5 id="emission-variables">Emission Variables</h5>
 <p>
 PlanZero models always have a full set of {{siteref("Emission_Variables", "emissions variables")|safe}}, covering
 each year (from 1990 to some forecasting horizon such as 2050 or 2100), in units of ktCO2e, of each gas, from each region (province and territory), associated with each of the 71 NIR-2025 reporting sectors.
@@ -258,7 +258,7 @@ At such a time, PlanZero modelling will need to adapt to the new taxonomy in ord
 The NIR-2025 and Static-Normals models have only these emissions variables as modelling outputs.
 </p>
 
-<h5>Model Metrics (Statistics)</h5>
+<h5 id="model-metrics">Model Metrics (Statistics)</h5>
 <p>
 Some variables are defined to be statistics of the distributions of other variables.
 This is the case for variables that represent {{siteref("Model_Metric", "model metrics")|safe}},
@@ -267,7 +267,7 @@ Variables of this kind are used to represent many of the quantities needed to re
 These variables are always part of the model.
 </p>
 
-<h5>Cashflow Variables</h5>
+<h5 id="cashflow-variables">Cashflow Variables</h5>
 <p>
 PlanZero models that contain strategies (more on strategies, below)
 may model the movement of money with {{siteref("Cashflow_Variables", "cashflow variables")|safe}}.
@@ -342,14 +342,16 @@ we can think of Canada as an organization and PlanZero as aiming to support Cana
 of emissions reduction to net zero by 2050.
 Wilkinson (2011) recommends to select strategies for achieving objectives
 on the basis of a characterization of related considerations in terms of
-(a) Critical Success Factors (necessary conditions for success)
-and (b) Barriers (existing or potential challenges that hinder the achievement of one or more objectives).
+(a) {{siteref("Critical_Success_Factor", "Critical Success Factors")|safe}} (necessary conditions for success)
+and (b) {{siteref("Barrier", "Barriers")|safe}} (existing or potential challenges that hinder the achievement of one or more objectives).
 PlanZero's strategy elements are like Wilkinson's strategies,
 in that the effect of a strategy element on a model should be to
 make success in an objective (e.g. of net zero by 2050) more likely.
 PlanZero's structural elements encompass Wilkinson's Barriers,
 in the sense that they formalize the relationship between strategies and emissions;
 this relationship can be seen, arguably, as "the challenge" to emission reduction in the model.
+EGFS terms aren't currently formalized as part of PlanZero models, but they are used semi-formally
+on the site's Sectors pages, and they may be formally linked to model elements in the future.
 </p>
 
 <p>
@@ -494,7 +496,7 @@ Screenshots of these two Model Explorer tabs were featured above in the Overview
 
 
 
-<h2 id="model-evaluation">Appendix 2: Model Semantics and Evaluation</h2>
+<h2 id="appendix-semantics-evaluation">Appendix 2: Model Semantics and Evaluation</h2>
 
 <p>
 {{siteref("Model_Evaluation", "Model evaluation")|safe}} is the computational task of estimating statistics of model variables.

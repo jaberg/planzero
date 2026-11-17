@@ -136,11 +136,7 @@ the full sector-by-sector scores can be found on the
                   <a href="/models/prob/Scaling/">Scaling</a>
               </td>
               <td>Hypothetical scaling of emission-reduction measures within an otherwise non-time-varying economy</td>
-              <td>
-                  
-		  <a href="/models/prob/Scaling/#PreNIR_2025_m04">3.376</a>
-                  
-                  </td>
+              <td>3.376 </td>
           </tr>
           
           <tr>
@@ -148,13 +144,8 @@ the full sector-by-sector scores can be found on the
                   <a href="/models/prob/Static_Normals_2024_12_31/">Static Normals (data-cutoff: 2024-12-31)</a>
               </td>
               <td>Very simple baseline model - non-time-varying estimates</td>
-              <td>
-                  
-		  <a href="/models/prob/Static_Normals_2024_12_31/#PreNIR_2025_m04">3.367</a>
-                  
-                  </td>
+              <td>3.367</td>
           </tr>
-          
     </tbody>
 </table>
 
@@ -195,17 +186,17 @@ which was created
 by combining the static normals probabilistic model
 with new probabilistic versions of the modelling elements
 used previously to estimate the impact of Bovaer adoption.
-The PlanZero pages for probabilistic models now feature
-strategies and barriers for models that have those sorts of elements.
 This site also now includes pages
-for the strategies and barrier elements in a model,
+for the strategy and structural elements in a model,
 which serve to organize the logic and computations associated with each model.
 For example,
 the strategy page for "<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above,
-and the "<a href="/models/prob/Scaling/barriers/Bovaer_Adoption_Limit/">Bovaer Adoption Limit</a>" barrier page describes and shows the
+and the Bovaer Adoption Limit page [edit: this information is now available via the
+{{siteref("Model_Explorer", "Model Explorer")|safe}}] describes and shows the
 assumption that just-over 2.5% to just-under 10% of farmers will start feeding Bovaer per year.
 The terms "strategy" and "barrier" will be explained in more detail in an upcoming
 post documenting PlanZero's computational modelling framework.
+[edit: that post renamed these terms to {{siteref("Strategy_Element")|safe}} and {{siteref("Structural_Element")|safe}}.]
 </p>
 
 <p>
@@ -225,22 +216,22 @@ Until then,
 - James Bergstra
 </p>
 
-<h2 id="appendix-1-new-elements">Appendix 1: New and Modified Barrier Elements to Model Bovaer Adoption Probabilistically</h2>
+<h2 id="appendix-1-new-elements">Appendix 1: New and Modified Model Elements to Model Bovaer Adoption Probabilistically</h2>
 
 <p>
 The Scaling Model is identical to the
-<a href="/models/prob/Static_Normals_2024_12_31/">Static Normals model (specifically with Dec 2024 data cutoff)</a> in every sector except
-"Enteric Fermentation"
-and "Other Product Manufacture and Use".
+{{siteref("Static_Normals_Model", "Static Normals")|safe}} model in every sector except
+Enteric Fermentation
+and Other Product Manufacture and Use.
 This appendix enumerates new 
-<a href="/models/prob/Scaling/#barriers">barrier elements in the Scaling model</a>, relative to the Static Normals model,
+{{siteref("Structural_Element", "structural elements")|safe}} in the Scaling model, relative to the Static Normals model,
 which combine to estimate the changes in those two sectors.
 The scaling model totally replaces the estimation of
 Enteric Fermentation
-and adds a new term that raises emissions in "Other Product Manufacture and Use".
+and adds a new term that raises emissions in Other Product Manufacture and Use.
 </p>
 <p>
-The new barrier elements are:
+The new structural elements are:
 <ul>
 	<li><a href="#a2-cattle">Cattle Population Static Normal</a></li>
 	<li><a href="#a2-bovaer-adoption">Bovaer Adoption Limit</a></li>
@@ -250,10 +241,7 @@ The new barrier elements are:
 
 <h3 id="a2-cattle">Cattle Population Static Normal</h3>
 
-<p>Link to barrier page: 
-<a href="/models/prob/Scaling/barriers/Cattle_StaticNormals_ModelElement/">Cattle Population Static Normal</a></p>
-
-<p>This barrier element makes static normal estimates of cattle populations
+<p>This structural element makes static normal estimates of cattle populations
     and enteric fermentation emission factors to explain three
     things:
     <ol>
@@ -275,9 +263,6 @@ Details of the probabilistic model are provided below in
 
 <h3 id="a2-bovaer-adoption">Bovaer Adoption Limit</h3>
 
-<p>Link to barrier page:
-<a href="/models/prob/Scaling/barriers/Bovaer_Adoption_Limit/">Barrier Adoption Limit</a></p>
-
 <p>
 Previously when modelling Bovaer deterministically,
 this element assumed that no more than 5.0 percent / year of farmers would switch to administering Bovaer in any given year,
@@ -290,9 +275,6 @@ this element assumes instead that 2.5-10.0% of farmers will switch to Bovaer in 
 
 <h3 id="a2-bovaer-production">Bovaer Production Emission Factors</h3>
 
-<p>Link to barrier page:
-<a href="/models/prob/Scaling/barriers/Bovaer_Production_Emissions/">Bovaer Production Emission Factors</a></p>
-
 <p>
 When used in deterministic models,
 this element assumes an extra 45.0 kg {{CO2}} / head / year
@@ -300,7 +282,7 @@ in the "Other Product Manufacture and Use" sector,
 in order to account for producing and distributing the Bovaer feed additive.
 </p>
 <p>
-In the probabilistic version of this barrier,
+In the probabilistic version of this structural element,
 the amount is based instead on a "20-50x" reduction in CO2e compared with methane emitted from cattle.
 This was the literal suggestion from an LLM-AI chat earlier this year,
 which was the original source for the 45.0 kg {{CO2}} / head / year value.
@@ -308,11 +290,10 @@ For each sampled scenario, a reduction factor is sampled uniformly from 20 to 50
 </p>
 
 <p>
-This barrier does not reflect manufacturer or 3rd party estimates of emission rates nor does it include any change in production emission efficiency over time.
+This element does not reflect manufacturer or 3rd party estimates of emission rates nor does it include any change in production emission efficiency over time.
 </p>
 
 <h3>Bovaer Monitoring</h3>
-<p>Link to barrier page: <a href="/models/prob/Scaling/barriers/Bovaer_Monitoring/">Bovaer Monitoring</a></p>
 <p>
 As before,
 this modelling element

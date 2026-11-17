@@ -24,6 +24,7 @@ import re
 import jinja2
 from pydantic import BaseModel
 
+from . import blog
 from .html import coderef_url, latex
 from .singleton_registry import SingletonRegistry
 
@@ -463,7 +464,7 @@ class Draft_Status(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
+            (blog.About(), '#draft-status', "see section on Draft Status"),
         ]
 
     @property
@@ -500,7 +501,7 @@ class EGFS(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.Glossary(), '#modelling', "see section on Modelling National Emissions"),
+            (blog.Glossary(), '#model-elements', "see strategic management and communication in the Model Elements section within Appendix 1"),
         ]
 
 
@@ -897,7 +898,7 @@ class Inference_Group(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+                (blog.Glossary(), '#inference-groups', "Section: Inference Groups in Appendix 1: Model Architecture"),
         ]
 
 
@@ -1151,7 +1152,7 @@ class Model_Evaluation(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+                (blog.Glossary(), '#appendix-semantics-evaluation', "Appendix 2: Model Semantics and Evaluation"),
         ]
 
 class Model_Evaluation_Phase(GlossaryTerm):
@@ -1446,7 +1447,7 @@ class Observed_Variable(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+                (blog.Glossary(), '#model-variables', "Section: Model Variables in Appendix 1: Model Architecture"),
         ]
 
 
@@ -1490,7 +1491,7 @@ class Pending_Prediction_Challenge_Results(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.registry['StaticNormals'], '#prenir', "prediction time vs. evaluation time"),
+            (blog.registry['StaticNormals'], '#appendix-prenir', "prediction time vs. evaluation time"),
         ]
 
 
@@ -1598,7 +1599,7 @@ class Post(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.About(), '#posting-policy', "see sections on Guidance Re: Posts"),
+            (blog.About(), '#stability', "see several sections regarding the handling of Posts"),
         ]
 
 
@@ -1733,6 +1734,8 @@ class Probability_Distribution(GlossaryTerm):
     """A probability distribution is the act or result of
     distributing probability across the possibly true values of a
     unknown variable.
+    PlanZero uses this standard term in the standard way, as defined more fully by e.g.
+    <a href="https://en.wikipedia.org/wiki/Probability_distribution">wikipedia</a>
     """
 
     @property
@@ -1745,7 +1748,7 @@ class Probability_Distribution(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-            (blog.ProbabilisticNIR2025(), '#appendix-model-distribution', "Appendix 1 is an introduction to probabilistic modelling"),
+            (blog.ProbabilisticNIR2025(), '#appendix-models', "Appendix 1 is an introduction to probabilistic modelling"),
         ]
 
 
@@ -1998,7 +2001,7 @@ class Unobserved_Variable(GlossaryTerm):
     @property
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
-                (blog.Glossary(), '#model-evaluation', "Appendix 2: Model Evaluation"),
+                (blog.Glossary(), '#model-variables', "Section: Model Variables in Appendix 1: Model Structure"),
         ]
 
 
