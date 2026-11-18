@@ -35,15 +35,15 @@ introduced a different way of predicting the future,
 namely by extending a statistical pattern.
 This post is about combining both:
 it introduces a probabilistic
-"<a href="/models/prob/Scaling/">Scaling</a>" model whose predictions are based
+"<a href="/models/Scaling/">Scaling</a>" model whose predictions are based
 both on statistical patterns <i>and</i> the influence of a
-<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">probabilistic interpretation of the "Scale Bovaer" strategy</a>
+<a href="/models/Scaling/strategies/Scale_Bovaer_2030/">probabilistic interpretation of the "Scale Bovaer" strategy</a>
 that is similar to the deterministic one <a href="/post/2026-04-03-bovaer#model">introduced previously</a>.
 </p>
 
 <p>
 As before, the
-"<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" strategy implements the idea that
+"<a href="/models/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" strategy implements the idea that
 some fraction of cattle farmers would be open to 
 starting to administer Bovaer if they were sufficiently incentivized
 by government subsidy (and that no statistically significant population
@@ -74,7 +74,7 @@ a complete listing of modelling changes.
 The cost per tonne estimate is the ratio of values in the following two figures.
 The first figure is the expected <i>change</i> in emissions for each sector affected
 by the strategy
-(<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/#emissions">figure on strategy page</a>).
+(<a href="/models/Scaling/strategies/Scale_Bovaer_2030/#emissions">figure on strategy page</a>).
 The vertical is in units of <b>Mt{{CO2e}}</b>,
 and the horizontal is in units of <b>years</b> (adjust the slider below to zoom).
 The dotted line indicates the mean and the shaded regions indicate a 95% credible internval.
@@ -85,7 +85,7 @@ Mouse-over the slider below the panels to see and change the years shown.
 The second figure is the expected change in government cashflow, due to spending
 on farm subsidies and monitoring programs, and income tax revenue from the
 work associated with monitoring.
-(<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/#subsidies">figure on strategy page</a>).
+(<a href="/models/Scaling/strategies/Scale_Bovaer_2030/#subsidies">figure on strategy page</a>).
 The vertical here in units of <b>billions of CAD</b>.
 Values above zero represent government revenue. Values below zero represent government spending.
 {% include "blog/2026-07-22-prob-bovaer-subsidies.html" %}
@@ -117,7 +117,7 @@ Since the Scaling model introduced in this post is a predictive model,
 it can be evaluated according to the Pre-NIR-2025-m04 protocol and
 evaluation metrics. The national-total-level results are included below,
 the full sector-by-sector scores can be found on the
-<a href="/models/prob/Scaling/">Scaling page</a>
+<a href="/models/Scaling/">Scaling page</a>
 </p>
 
 <table class="gemini-sort-data-table">
@@ -138,7 +138,7 @@ the full sector-by-sector scores can be found on the
         
           <tr>
               <td>
-                  <a href="/models/prob/Scaling/">Scaling</a>
+                  <a href="/models/Scaling/">Scaling</a>
               </td>
               <td>Hypothetical scaling of emission-reduction measures within an otherwise non-time-varying economy</td>
               <td>3.376 </td>
@@ -146,7 +146,7 @@ the full sector-by-sector scores can be found on the
           
           <tr>
               <td>
-                  <a href="/models/prob/Static_Normals_2024_12_31/">Static Normals (data-cutoff: 2024-12-31)</a>
+                  <a href="/models/Static_Normals_2024_12_31/">Static Normals (data-cutoff: 2024-12-31)</a>
               </td>
               <td>Very simple baseline model - non-time-varying estimates</td>
               <td>3.367</td>
@@ -171,7 +171,7 @@ enteric emissions, which is about
 <a href="/post/2026-03-31-enteric#qual">96-97% true</a>, but not 100% true.
 For all of these reasons, if not more, the resulting posterior estimate for the NIR totals
 isn't as accurate as the one in the
-<a href="/models/prob/Static_Normals_2024_12_31/">Static Normals model</a>.
+<a href="/models/Static_Normals_2024_12_31/">Static Normals model</a>.
 Predictive accuracy isn't the strengh of static normals models generally,
 so a slight degradation doesn't bother me.
 I expect a jump in predictive accuracy across almost every sector
@@ -186,12 +186,12 @@ For now, the details of modelling in the Scaling model are explained in
 
 <p>
 This post has introduced a probabilistic
-"<a href="/models/prob/Scaling/">Scaling</a>" model,
+"<a href="/models/Scaling/">Scaling</a>" model,
 which is a proof of concept that it is possible to
 define a probabilistic model (the Static Normals model)
 with a strategy,
 and estimate the impact of the strategy by ablative analysis.
-The strategk page for "<a href="/models/prob/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above,
+The strategk page for "<a href="/models/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above,
 and the Bovaer Adoption Limit page [edit: this information is now available via the
 {{siteref("Model_Explorer", "Model Explorer")|safe}}] describes and shows the
 assumption that just-over 2.5% to just-under 10% of farmers will start feeding Bovaer per year.
@@ -309,7 +309,7 @@ When used in probabilistic modelling, this element furthermore estimates that th
 <p>
 
 The
-<a href="/models/prob/Static_Normals_2024_12_31/">Static Normals model (specifically with Dec 2024 data cutoff)</a>
+<a href="/models/Static_Normals_2024_12_31/">Static Normals model (specifically with Dec 2024 data cutoff)</a>
 modelled every sector's national and regional (provincial and territorial) emissions
 in the same way, described in
 <a href="/post/2026-06-28-static-normals#appendix-model">Appendix 2 of the post introducing that model</a>.

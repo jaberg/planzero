@@ -590,7 +590,7 @@ class Scale_Bovaer(SiteModelElement):
              ' {% if sim_name %}'
              ' href="/models/sim/{{ sim_name }}/barriers/Bovaer_Adoption_Limit/">Bovaer'
              ' {% else %}'
-             ' href="/models/prob/{{ site_inference_name }}/barriers/Bovaer_Adoption_Limit/">Bovaer'
+             ' href="/models/{{ site_inference_name }}/barriers/Bovaer_Adoption_Limit/">Bovaer'
              ' {% endif %}'
              ' Adoption Limit</a>, which is the model barrier that sets the rate'
              ' of adoption for this strategy'),

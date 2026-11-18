@@ -77,7 +77,7 @@ of the {{ site_inference.pretty_name }} model by {{siteref("Inference_Group", "i
 	    <tbody>
     {% for strategy_name, strategy_obj in site_inference.strategies.items() %}
 		<tr>
-		    <td><a href="/models/prob/{{ ident }}/strategies/{{ strategy_name }}/">{{ strategy_obj.pretty_name }}</a></td>
+		    <td><a href="/models/{{ ident }}/strategies/{{ strategy_name }}/">{{ strategy_obj.pretty_name }}</a></td>
 		    <td>{{ strategy_obj.short_description }}</td>
 		    <td>
 			{% for ipcc_sector in strategy_obj.extra_ipcc_sectors %}
@@ -164,7 +164,7 @@ Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
     <tbody>
 	    {% for sector, ghg_KLs in site_inference.prediction_scores_prenir_2025_m04()['scores_ca'].items() %}
 	    <tr>
-		    <td><a href="/models/prob/{{ident}}/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
+		    <td><a href="/models/{{ident}}/sectors/{{ sector.catpath_no_whitespace }}/">{{sector.value}}</a></td>
 		    {% for ghg in planzero.enums.GHG %}
 		    <td>{% if ghg in ghg_KLs and ghg_KLs[ghg] > 0 %}{{ "%.2f"|format(ghg_KLs[ghg]) }}{% endif %}</td>
 		    {% endfor %}

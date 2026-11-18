@@ -372,7 +372,7 @@ class SiteModelElement(NIR_ModelElement):
     @property
     def extra_ipcc_sectors(self) -> list[IPCC_Sector]:
         """Sectors related to this modelling element.
-        To be shown in e.g. the table on the /models/prob/{model} page.
+        To be shown in e.g. the table on the /models/{model} page.
         """
         return []
 

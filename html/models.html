@@ -34,7 +34,7 @@ They are visualized in terms of the mean, and upper and lower bounds on probable
         {% for url_name, siteinf in sorted(model_registry.items()) %}
           <tr>
               <td>
-                  <a href="/models/prob/{{url_name}}/">{{siteinf.pretty_name}}</a>
+                  <a href="/models/{{url_name}}/">{{siteinf.pretty_name}}</a>
               </td>
               <td>{{siteinf.short_description}}</td>
               <td>{{siteinf.predicted_emissions_2050_MtCO2e_bounds_str}}</td>

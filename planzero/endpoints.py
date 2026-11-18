@@ -44,17 +44,17 @@ def endpoints():
     for url_name, site_inf in sorted(prob_registry.items()):
         if not site_inf.show_on_models_page:
             continue
-        rval.append(f"/models/prob/{url_name}/")
+        rval.append(f"/models/{url_name}/")
 
         for catpath in ipcc_canada.catpaths:
-            rval.append(f"/models/prob/{url_name}/sectors/{catpath}/")
+            rval.append(f"/models/{url_name}/sectors/{catpath}/")
 
         for strategy_name in site_inf.strategies:
-            rval.append(f"/models/prob/{url_name}/strategies/{strategy_name}/")
+            rval.append(f"/models/{url_name}/strategies/{strategy_name}/")
 
         if 0:  #re-enable this was /models/{url_name}/structural/{element_name}
             for barrier_name in site_inf.barriers:
-                rval.append(f"/models/prob/{url_name}/barriers/{barrier_name}/")
+                rval.append(f"/models/{url_name}/barriers/{barrier_name}/")
 
         rval.append(f"/model-explorer/?model={url_name}")
         for igroup in site_inf.scenario_model.mcmc_submodels():

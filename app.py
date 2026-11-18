@@ -5,7 +5,7 @@ import os
 import jinja2
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -176,13 +176,18 @@ def get_prob_barrier_impact_html(site_inf_name, barrier_name):
     return rval
 
 
-@app.get("/models/prob/{site_inf_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+@app.get("/models/{site_inf_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
 async def get_prob_barrier_impact(request: Request, site_inf_name: str, barrier_name: str):
     html = get_prob_barrier_impact_html(site_inf_name, barrier_name)
     if html:
         return HTMLResponse(content=html)
     else:
         raise HTTPException(status_code=404, detail="No such model / barrier")
+
+
+@app.get("/models/prob/{site_inf_name}/barriers/{barrier_name}/")
+async def redirect_prob_barrier_impact(site_inf_name: str, barrier_name: str):
+    return RedirectResponse(url=f"/models/{site_inf_name}/barriers/{barrier_name}/", status_code=307)
 
 
 
@@ -204,13 +209,18 @@ def get_models_prob_page_html(ident:str):
             ))
 
 
-@app.get("/models/prob/{ident}/", response_class=HTMLResponse)
+@app.get("/models/{ident}/", response_class=HTMLResponse)
 async def get_models_prob_page(ident:str, request: Request):
     html = get_models_prob_page_html(ident)
     if html:
         return HTMLResponse(content=html)
     else:
         raise HTTPException(status_code=404, detail="No such model")
+
+
+@app.get("/models/prob/{ident}/")
+async def redirect_models_prob_page(ident: str):
+    return RedirectResponse(url=f"/models/{ident}/", status_code=307)
 
 
 @app_cache
@@ -232,7 +242,7 @@ def get_models_prob_sector_page_html(ident:str, sector_path:str):
             ))
 
 
-@app.get("/models/prob/{ident}/sectors/{sector_path:path}", response_class=HTMLResponse)
+@app.get("/models/{ident}/sectors/{sector_path:path}", response_class=HTMLResponse)
 async def get_models_prob_sector_page(ident:str, sector_path:str, request: Request):
     while sector_path.endswith('/'):
         sector_path = sector_path[:-1]
@@ -241,6 +251,11 @@ async def get_models_prob_sector_page(ident:str, sector_path:str, request: Reque
         return HTMLResponse(content=html)
     else:
         raise HTTPException(status_code=404, detail="No such model or sector")
+
+
+@app.get("/models/prob/{ident}/sectors/{sector_path:path}")
+async def redirect_models_prob_sector_page(ident: str, sector_path: str):
+    return RedirectResponse(url=f"/models/{ident}/sectors/{sector_path}", status_code=307)
 
 
 @app_cache
@@ -280,7 +295,7 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
     return templates.get_template('strategy_impact_prob.html').render(context)
 
 
-@app.get("/models/prob/{site_inference_name}/strategies/{strategy_name}/",
+@app.get("/models/{site_inference_name}/strategies/{strategy_name}/",
          response_class=HTMLResponse)
 async def get_models_prob_strategy_impact(
         request: Request,
@@ -288,6 +303,13 @@ async def get_models_prob_strategy_impact(
         strategy_name: str):
     html = get_models_prob_strategy_impact_html(site_inference_name, strategy_name)
     return HTMLResponse(content=html)
+
+
+@app.get("/models/prob/{site_inference_name}/strategies/{strategy_name}/")
+async def redirect_models_prob_strategy_impact(site_inference_name: str, strategy_name: str):
+    return RedirectResponse(
+        url=f"/models/{site_inference_name}/strategies/{strategy_name}/",
+        status_code=307)
 
 
 @app_cache

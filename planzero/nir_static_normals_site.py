@@ -49,7 +49,7 @@ class Static_Normals_2024_12_31(SiteInference):
                 'PreNIR_2025_m04',
                 'NetZero_2050',
                 ):
-            return f'/models/prob/{self.scenario_model_registry_name}/#{challenge_name}'
+            return f'/models/{self.scenario_model_registry_name}/#{challenge_name}'
         else:
             return ''
 

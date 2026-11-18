@@ -570,7 +570,7 @@ class SparklineEChartHelperBase(BaseBase):
             self.grid_links.append(
                 GridLinkElem(
                     gridId=f'grid_{col}|{row}',
-                    url=f'/models/prob/{self.model_name}/sectors/{sector.catpath_no_whitespace}',
+                    url=f'/models/{self.model_name}/sectors/{sector.catpath_no_whitespace}',
                     ))
         self.xAxis_list.append(
             EChartMatrixXAxis(
@@ -991,7 +991,7 @@ def national_cost_impact_echart(
         n_years:int,
         v_unit:str,
         div_id:str,
-        model_name:str, # for linking charts to /models/prob/{model_name}/
+        model_name:str, # for linking charts to /models/{model_name}/
         ):
     helper = BaseBase(
             div_id=div_id,
@@ -1021,7 +1021,7 @@ def national_cost_impact_echart_from_stats(
         cost_impact_stats: dict[SpecialPurposeEntity, object],
         div_id:str,
         v_unit:str,
-        model_name:str, # for linking charts to /models/prob/{model_name}/
+        model_name:str, # for linking charts to /models/{model_name}/
         ):
     helper = BaseBase(
             div_id=div_id,

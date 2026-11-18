@@ -66,6 +66,6 @@ class ScalingSiteInference(prob.SiteInference):
                 'PreNIR_2025_m04',
                 'NetZero_2050',
                 ):
-            return f'/models/prob/{self.url_name}/#{challenge_name}'
+            return f'/models/{self.url_name}/#{challenge_name}'
         else:
             return ''
