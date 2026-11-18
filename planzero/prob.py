@@ -85,6 +85,16 @@ class SiteInference:
                     )
         return self._site_model_summary_stats
 
+    @property
+    def model_estimates_section_title(self) -> str:
+        # is this off-by-one?
+        last_year = (self._scenario_model.first_year
+                     + self._scenario_model.n_posterior_years)
+        if last_year > 2026: # TODO: don't hard-code this
+            return 'Model Estimates of Past and Future Emissions'
+        else:
+            return 'Model Estimates of Past Emissions'
+
     def _add_ablation(self, strategy_elem_id):
         assert strategy_elem_id not in self._ablations
         base = self._scenario_model

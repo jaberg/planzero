@@ -23,7 +23,7 @@
 <div class="table-of-contents toc-rule">
 <b>Table of Contents</b>
 <ul>
-	<li><a href="#emissions-estimates">Model Estimates of Past and Future Emissions</a></li>
+	<li><a href="#emissions-estimates">{{ site_inference.model_estimates_section_title }}</a></li>
 	<li><a href="#model-elements">Model Elements</a></li>
 	<li><a href="#metrics">Model Metrics</a></li>
 	{% if site_inference.show_prediction_quality %}
@@ -33,7 +33,7 @@
 </ul>
 </div>
 
-<h2 id="emissions-estimates">Model Estimates of Past and Future Emissions</h2>
+<h2 id="emissions-estimates">{{ site_inference.model_estimates_section_title }}</h2>
 
 {{site_inference.uncertain_sparkline_matrix_echart("banner_chart", v_unit="Mt_CO2e")|safe}}
 
