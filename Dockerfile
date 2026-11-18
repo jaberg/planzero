@@ -84,10 +84,6 @@ COPY ./app.py /content/app.py
 WORKDIR /content
 
 # Build app cache (and run unit tests)
-#RUN python -m planzero.model_db init
-#RUN python -m planzero inference_prep --model=Static_Normals_2024_12_31
-#RUN python -m planzero inference_work --model=Static_Normals_2024_12_31
-#RUN python -m planzero inference_work --model=ScalingStudy_All_Strategies
 COPY my_database.db /content/my_database.db
 COPY _planzero_model_cache_root /content/_planzero_model_cache_root
 

@@ -6,15 +6,12 @@ import jax.numpy as jnp
 import numpy as np
 
 from . import cattle, model_db, prob
-from .ablation import AblationStudy
 from .annual_emission_results import (
-    AnnualEmissionResults,
     aer_sectors,
     total_prediction_CI,
 )
-from .annual_subsidy_results import NationalAnnualProgramBalances
 from .challenge import NetZero_2050, PreNIR_2025_m04
-from .enums import GHG, Activity, GovernmentProgram, IPCC_Sector, LULUCF_Sectors
+from .enums import GHG, IPCC_Sector, LULUCF_Sectors
 from .model import compute_annual_emission_results
 from .nir_static_normals import (
     BNs_by_sector_ghg,
@@ -323,151 +320,3 @@ class ScalingSiteInference(prob.SiteInference):
         else:
             return ''
 
-
-class ScalingStudy(AblationStudy):
-
-    include_in_registry: ClassVar[bool] = False
-    site_inference_names: dict[str|None, str]|None = None
-
-    @property
-    def _baseline_siteinf(self):
-        baseline = prob.registry[self.site_inference_names[None]]
-        return baseline
-
-    @property
-    def barriers(self) -> dict:
-        return self._barriers
-
-    @property
-    def strategies(self) -> dict:
-        return self._strategies
-
-    def emission_results_delta(self, strategy_name:str):
-        #ablation = prob.registry[self.site_inference_names[strategy_name]]
-        assert strategy_name == 'Scale_Bovaer'
-
-        ktCO2e_sample = {}
-
-        results = self._baseline_siteinf.batch_rollout_barriers()
-
-        # Enteric Fermentation
-        sample_w_strategy = results['ys']['enteric_fermentation_ktCO2e_ca_sample']
-        n_years, n_per_post, n_samples = sample_w_strategy.shape
-        years = list(range(1990, 1990 + n_years))
-
-        # hack: estimate the emissions from not using the strategy
-        # from the initial years of using the strategy, rather than the ablated
-        # site inference.
-        sample_wo_strategy = np.zeros_like(sample_w_strategy)
-        sample_wo_strategy[:] = sample_w_strategy[0] # broadcast year 0
-        ktCO2e_sample[
-                IPCC_Sector.Enteric_Fermentation,
-                GHG.CH4,
-                Activity.Farming_Cattle] = (
-                        sample_w_strategy
-                        - sample_wo_strategy
-                        ).reshape(n_years, -1)
-
-        # Production Emissions delta
-        sample_w_strategy_opmu = (
-                np.zeros_like(sample_w_strategy)
-                + results['ys']['bovaer_production_emissions_ktCO2e_ca_sample'][:, None, :])
-        sample_wo_strategy_opmu = np.zeros_like(sample_w_strategy_opmu)
-
-        ktCO2e_sample[
-                IPCC_Sector.Other_Product_Manufacture_and_Use,
-                GHG.CO2,
-                Activity.Farming_Cattle] = (
-                        sample_w_strategy_opmu
-                        - sample_wo_strategy_opmu
-                        ).reshape(n_years, -1)
-
-        return AnnualEmissionResults(
-                ktCO2e_sample=ktCO2e_sample,
-                years=years,
-                n_samples=n_samples * n_per_post)
-
-    def national_annual_program_balances(
-            self,
-            strategy_name:str,
-            ) -> NationalAnnualProgramBalances:
-        assert strategy_name == 'Scale_Bovaer'
-
-        results = self._baseline_siteinf.batch_rollout_barriers()
-        CAD_sample = {}
-
-        sample_w_strategy = results['ys']['bovaer_farm_subsidy_ca'].T
-        n_samples, n_years = sample_w_strategy.shape
-        years = list(range(1990, 1990 + n_years))
-
-        CAD_sample[GovernmentProgram.Bovine_Feed_Farm_Subsidy] \
-                = -sample_w_strategy
-
-        CAD_sample[GovernmentProgram.Income_Tax] = (
-                   results['ys']['bovaer_farm_subsidy_ca_tax'].T
-                   + results['ys']['bovaer_monitoring_admin_ca'].T
-                   + results['ys']['bovaer_monitoring_onsite_ca'].T)
-
-        CAD_sample[GovernmentProgram.Bovine_Feed_Cost] \
-                = -results['ys']['bovaer_cost_ca'].T
-
-        CAD_sample[GovernmentProgram.Bovine_Feed_Monitoring] \
-                = -(results['ys']['bovaer_monitoring_admin_ca'].T
-                    + results['ys']['bovaer_monitoring_onsite_ca'].T)
-
-        # upsample to match emission results
-        CAD_sample = {
-                key: (
-                    np.zeros((n_years, 32, n_samples))
-                    + (val.T)[:, None, :]
-                    ).reshape((n_years, -1)).T
-                for key, val in CAD_sample.items()
-                }
-
-        napb_no_net = NationalAnnualProgramBalances(
-                CAD_sample=CAD_sample,
-                years=years,
-                n_samples=n_samples * 32)
-        from .results_ops import napb_refresh_net
-        napb = napb_refresh_net(napb_no_net)
-
-        return napb
-
-    @property
-    def basename(self) -> str:
-        return prob.registry[self.site_inference_names[None]].name
-
-    @property
-    def strategy_ids(self) -> list[str]:
-        return ['Scale_Bovaer']
-
-    def impact_chart(self, strategy_name:str):
-        # TODO: move this to base class
-        annual_emission_diffs = self.emission_results_delta(strategy_name)
-        helper = EmissionImpactChartHelper(
-                div_id=f'emission_impact_echart_{self.basename}_{strategy_name}',
-                v_unit='Mt_CO2e',
-                model_name=self.basename)
-        helper.load_data(annual_emission_diffs)
-        helper.order_sectors()
-        helper.add_total_cells(ymin_without_lulucf=None)
-        helper.add_non_lulucf_cells()
-        helper.add_lulucf_cells()
-        return helper.make_echart()
-
-    def government_impact_chart(self, strategy_name:str):
-        napb = self.national_annual_program_balances(strategy_name)
-        from .results_ops import napb_scale
-        rval = echart_from_napb(
-                napb=napb_scale(napb, 1 / 1_000_000_000),
-                div_id=f'government_impact_echart_{self.basename}_{strategy_name}',
-                model_name=self.basename)
-        return rval
-
-    def cost_per_tCO2e(self, strategy_name: str, q=(.025, .975)):
-        napb = self.national_annual_program_balances(strategy_name)
-        annual_emission_diffs = self.emission_results_delta(strategy_name)
-        from . import results_ops
-        rval_sample = results_ops.cost_per_tCO2e(napb=napb, aer=annual_emission_diffs)
-        lower, upper = np.quantile(rval_sample, q=q)
-        return lower, upper

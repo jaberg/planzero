@@ -177,21 +177,6 @@ class ProbabilisticBovaer(BlogPost):
             status=BlogStatus.Draft,
             )
 
-    def generate_assets(self):
-        from .endpoints import completed_prob_registry
-
-        reg = completed_prob_registry()
-        scaling = reg['ScalingStudy_All_Strategies']
-
-        impact_chart = scaling.ablation_study.impact_chart('Scale_Bovaer')
-        subsidies_chart = scaling.ablation_study.government_impact_chart('Scale_Bovaer')
-
-        base = f'html/blog/{self.url_filename}'
-        impact_chart.save_as(f'{base}-impact.html')
-        print(f'{base}-impact.html')
-        subsidies_chart.save_as(f'{base}-subsidies.html')
-        print(f'{base}-subsidies.html')
-
 
 from .nir_static_normals_post import StaticNormals  # noqa: F401
 

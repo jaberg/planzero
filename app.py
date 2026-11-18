@@ -194,6 +194,7 @@ def get_models_prob_page_html(ident:str):
     site_inference = prob_registry()[ident]
     if not site_inference.show_on_models_page:
         return None
+
     return templates.get_template("models_prob.html").render(
         get_context(
             title=f"PlanZero Model {ident}",
