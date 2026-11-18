@@ -73,7 +73,7 @@ class BlogPost(BaseModel):
 
     @property
     def siteref(self):
-        return f'/post/{self.url_filename}'
+        return f'/posts/{self.url_filename}'
 
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
@@ -151,9 +151,9 @@ class NetZero2050Metric(BlogPost):
 class ProbabilisticBovaer(BlogPost):
     """
     This post revisits the Bovaer strategy
-    (<a href="/post/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
+    (<a href="/posts/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
     and extends PlanZero's probabilistic modelling
-    (<a href="/post/2026-06-28-static-normals">Static Normals:
+    (<a href="/posts/2026-06-28-static-normals">Static Normals:
     a Baseline Predictive Model</a>)
     with support for strategy and barrier scenario modelling elements.
     Scaling the administration of Bovaer is estimated to reduce annual

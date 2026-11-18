@@ -44,7 +44,7 @@ reproduced below:
 
 <p>
 The visualization follows the style used in the previous post, which introduced
-the <a href="/post/2026-05-20-prob-nir">probabilistic NIR-2025</a>.
+the <a href="/posts/2026-05-20-prob-nir">probabilistic NIR-2025</a>.
 The visualization now includes
 both a predictive model (the static normals model,
 	based on NIR-2025 data up to 2022)
@@ -60,7 +60,7 @@ featuring a ranking of models in terms of how successful they are at
 predicting NIR-2025's 2023 data based on information available as of the
 December 31 prior to its April 2025 publication.
 The earlier post on the
-<a href="/post/2026-05-20-prob-nir">probabilistic NIR-2025</a>
+<a href="/posts/2026-05-20-prob-nir">probabilistic NIR-2025</a>
 introduced a model evaluation metric
 for scoring predictions in terms of their
 <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence">KL-divergence</a> from the probabilistic interpretation of the NIR-reported emissions.
@@ -138,7 +138,7 @@ Until next time,
 <p>
 Some probability notation is conventional, in order to express probabilistic models.
 It builds on the introduction to probability in
-<a href="/blog/2026-05-20-prob-nir#appendix-models">Appendix 1 of the Probabilistic NIR-2025 post</a>.
+<a href="/posts/2026-05-20-prob-nir#appendix-models">Appendix 1 of the Probabilistic NIR-2025 post</a>.
 Probabilistic modelling is a huge topic.
 Basic concepts of probability are introduced across many years of
 primary and secondary schooling,
@@ -342,7 +342,7 @@ The Static Normals model described in <a href="#appendix-model">Appendix 2: Mode
 includes a-priori probability distributions over {{latex("\\mu")}} and {{latex("\\sigma")}}
 that induce distributions over {{latex("X")}} and {{latex("Y")}}, which are meant to estimate quantities in an NIR.
 Yet we can observe the NIR-2025, in terms of either raw data, or the distributions developed in PlanZero's NIR-2025 model
-(see <a href="/post/2026-05-20-prob-nir">Probabilistic NIR-2025</a> post for details).
+(see <a href="/posts/2026-05-20-prob-nir">Probabilistic NIR-2025</a> post for details).
 [Bayesian] Inference algorithms can answer the question: <i>What are the conditional distributions over {{latex("\\mu")}} and {{latex("\\sigma")}} given
 	certain observable values for {{latex("X")}} and {{latex("Y")}}?</i>
 This specific kind of {{siteref("Conditional_Distribution", "conditional distribution")}}, being a distribution conditioned on data,
@@ -600,7 +600,7 @@ Since the Static Normals model developed in this post was only conditioned on da
 inference in the model induces a posterior distribution over unknown variables {{latex("X")}} and {{latex("Y")}} in the model,
 which can be interpreted as predictions of 2023 emissions (as well as every year beyond 2023, because the model is static).
 The table below lists the KL divergences between the NIR-2025 distributions for emissions year 2023
-(as developed in in the <a href="/blog/2026-05-20-prob-nir#appendix-models">Probabilistic NIR-2025 post</a>)
+(as developed in in the <a href="/posts/2026-05-20-prob-nir#appendix-models">Probabilistic NIR-2025 post</a>)
 and the posterior distribution in the static normals model (which is the same for all years).
 Weighting these divergences proportionally to the absolute value of the 2023 per-sector-gas emissions
 is the "weighted KL-divergence" model evaluation metric developed in that post.
@@ -752,10 +752,10 @@ fixes, or requiring code quality checks to pass on the main branch (<a href="htt
 
 <ul class="actions special">
     {% if prev_url_filename %}
-    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    <li><a href="/posts/{{prev_url_filename}}" class="button">Previous</a></li>
     {% endif %}
     {% if next_url_filename %}
-    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    <li><a href="/posts/{{next_url_filename}}" class="button">Next</a></li>
     {% endif %}
 </ul>
 </section>

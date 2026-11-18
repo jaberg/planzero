@@ -24,12 +24,12 @@
 
 <p>
 A few months ago, a post called
-<a href="/post/2026-04-03-bovaer">Modelling a Bovaer Strategy</a> showed
+<a href="/posts/2026-04-03-bovaer">Modelling a Bovaer Strategy</a> showed
 how predictions of the future might be influenced by a
 {{ siteref("Strategy", "strategy") }} (the strategy was about administering a feed additive to cattle that reduces emissions
 from enteric fermentation).
 The previous PlanZero post,
-<a href="/post/2026-06-28-static-normals">Static Normals:
+<a href="/posts/2026-06-28-static-normals">Static Normals:
 a Baseline Predictive Model</a>,
 introduced a different way of predicting the future,
 namely by extending a statistical pattern.
@@ -38,7 +38,7 @@ it introduces a probabilistic
 "<a href="/models/Scaling/">Scaling</a>" model whose predictions are based
 both on statistical patterns <i>and</i> the influence of a
 <a href="/models/Scaling/strategies/Scale_Bovaer_2030/">probabilistic interpretation of the "Scale Bovaer" strategy</a>
-that is similar to the deterministic one <a href="/post/2026-04-03-bovaer#model">introduced previously</a>.
+that is similar to the deterministic one <a href="/posts/2026-04-03-bovaer#model">introduced previously</a>.
 </p>
 
 <p>
@@ -106,7 +106,7 @@ based on data available at previous points in time,
 we might believe it will be good at anticipating not-yet-released NIRs
 based on data available now.
 So far PlanZero includes just one NIR-prediction challenge
-(Pre-NIR-2025-m04, described in <a href="/post/2026-06-28-static-normals#appendix-prenir">this post</a>)
+(Pre-NIR-2025-m04, described in <a href="/posts/2026-06-28-static-normals#appendix-prenir">this post</a>)
 which is about predicting the last year of NIR-2025 data
 (calendar year 2023), 4
 months ahead of publication.
@@ -168,7 +168,7 @@ emission factors for cattle, and the NIR also includes provincial and national
 enteric emission totals).
 Also this model assumes cattle are the only livestock type contributing
 enteric emissions, which is about
-<a href="/post/2026-03-31-enteric#qual">96-97% true</a>, but not 100% true.
+<a href="/posts/2026-03-31-enteric#qual">96-97% true</a>, but not 100% true.
 For all of these reasons, if not more, the resulting posterior estimate for the NIR totals
 isn't as accurate as the one in the
 <a href="/models/Static_Normals_2024_12_31/">Static Normals model</a>.
@@ -312,7 +312,7 @@ The
 <a href="/models/Static_Normals_2024_12_31/">Static Normals model (specifically with Dec 2024 data cutoff)</a>
 modelled every sector's national and regional (provincial and territorial) emissions
 in the same way, described in
-<a href="/post/2026-06-28-static-normals#appendix-model">Appendix 2 of the post introducing that model</a>.
+<a href="/posts/2026-06-28-static-normals#appendix-model">Appendix 2 of the post introducing that model</a>.
 The Scaling model handles Enteric Emissions differently, in order to introduce
 variables that could be acted-upon to simulate the effects of scaling Bovaer adoption.
 </p>
@@ -323,7 +323,7 @@ and of their respective emission factors, this post draws on more data sources.
 Statistics Canada publishes national and regional cattle populations for each
 January 1 and July 1 since the 1930s.
 That data was described and first used in PlanZero in
-<a href="/post/2026-03-31-enteric">this post</a>, which explored the causes of
+<a href="/posts/2026-03-31-enteric">this post</a>, which explored the causes of
 enteric fermentation emissions.
 The NIR-2025 document also publishes the emission factors it has used for cattle
 and other livestock for each year covered, from 1990-2023.
@@ -432,10 +432,10 @@ January and July headcounts to get annual headcounts.
 
 <ul class="actions special">
     {% if prev_url_filename %}
-    <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
+    <li><a href="/posts/{{prev_url_filename}}" class="button">Previous</a></li>
     {% endif %}
     {% if next_url_filename %}
-    <li><a href="/blog/{{next_url_filename}}" class="button">Next</a></li>
+    <li><a href="/posts/{{next_url_filename}}" class="button">Next</a></li>
     {% endif %}
 </ul>
 </section>

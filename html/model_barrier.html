@@ -126,7 +126,7 @@ Parameterization of modelling element: {{ str(barrier_obj) }}
 <h2 id="posts">Posts developing this page</h2>
 <ul>
 {% for ident in barrier_obj.posts_developing_this_page %}
-<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
+<li><a href="/posts/{{blog_registry[ident].url_filename}}">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 

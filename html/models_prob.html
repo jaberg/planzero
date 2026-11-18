@@ -178,7 +178,7 @@ Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:
 <h2 id="posts">Posts Developing this Page</h2>
 <ul>
 {% for ident in site_inference.posts_developing_this_page %}
-<li><a href="/post/{{blog_registry[ident].url_filename}}/">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
+<li><a href="/posts/{{blog_registry[ident].url_filename}}">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 

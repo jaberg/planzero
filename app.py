@@ -379,9 +379,12 @@ def get_blog_html(post_name: str):
         raise CannotRenderUnPublishedPost()
 
 
-@app.get("/blog/{post_name}", response_class=HTMLResponse)
-@app.get("/post/{post_name}", response_class=HTMLResponse)
-async def get_blog(request: Request, post_name:str):
+@app.get("/posts/{post_name}", response_class=HTMLResponse)
+async def get_blog(request: Request, post_name: str):
+    # Normalize canonical form (no trailing slash)
+    if post_name.endswith("/"):
+        post_name = post_name.rstrip("/")
+        return RedirectResponse(url=f"/posts/{post_name}", status_code=307)
     try:
         html = get_blog_html(post_name)
         return HTMLResponse(content=html)
@@ -390,6 +393,21 @@ async def get_blog(request: Request, post_name:str):
         raise HTTPException(status_code=404, detail="url not recognized")
     except CannotRenderUnPublishedPost:
         raise HTTPException(status_code=404, detail="cannot render unpublished post")
+
+
+@app.get("/post/{post_name}")
+@app.get("/post/{post_name}/")
+@app.get("/blog/{post_name}")
+@app.get("/blog/{post_name}/")
+async def redirect_post_to_posts(post_name: str):
+    if post_name.endswith("/"):
+        post_name = post_name.rstrip("/")
+    return RedirectResponse(url=f"/posts/{post_name}", status_code=307)
+
+
+@app.get("/posts/{post_name}/")
+async def redirect_posts_trailing_slash(post_name: str):
+    return RedirectResponse(url=f"/posts/{post_name.rstrip('/')}", status_code=307)
 
 ## MODELS
 

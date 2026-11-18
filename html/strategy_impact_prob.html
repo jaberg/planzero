@@ -93,7 +93,7 @@ Values below zero represent government spending.
 <h2 id="developments">Posts developing this page</h2>
 <ul>
 {% for blog in blogs_by_tag(strategy_name) %}
-<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+<li><a href="/posts/{{blog.url_filename}}">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 

@@ -36,7 +36,7 @@ def endpoints():
     rval = []
 
     rval.extend([
-        f"/post/{url_filename}/"
+        f"/posts/{url_filename}"
         for url_filename, post in blog._blogs_by_url_filename.items()
         if post.published or HOME_SHOW_UNPUBLISHED_POSTS
     ])
