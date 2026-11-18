@@ -493,17 +493,6 @@ class ModellingBovaer(BlogPost):
             draft=False,
             )
 
-    @staticmethod
-    def generate_assets():
-        from . import sim
-        scaling = sim.simulation_result('Scaling')
-        scaling.by_ipcc_sector.save_as(
-            'html/blog/2026-04-03-bovaer_by-ipcc-sector.html')
-        scaling.strategy_impact_echart('Scale_Bovaer').save_as(
-            'html/blog/2026-04-03-bovaer_strategy-emissions.html')
-        scaling.strategy_subsidies_echart('Scale_Bovaer').save_as(
-            'html/blog/2026-04-03-bovaer_strategy-subsidies.html')
-
 
 class IPCC_HeavyDutyDieselVehicles(BlogPost):
     """Eighth in the sector-by-sector National Greenhouse Gas Inventory series:
@@ -797,28 +786,6 @@ class GHG_Emissions(BlogPost):
                 'EmissionsImpulseResponse_NF3',
             ],
             )
-
-    @property
-    def figure_svgs(self):
-        # planet_model populates registry
-        from . import (
-            planet_model,  # noqa: F401
-            sim,
-        )
-
-        return {
-            "co2e_v_heat_remaining": GHG_Emissions_CO2e_v_Heat(
-                sim_result=sim.simulation_result('Planet_Model'),
-                sts_key='Cumulative_Heat_Energy',
-                title="Heat Remaining After 1-year CO2e-equivalent Emissions",
-                legend_loc='upper right').as_html(),
-            "co2e_v_heat_forcing": GHG_Emissions_CO2e_v_Heat(
-                sim_result=sim.simulation_result('Planet_Model'),
-                sts_key='Cumulative_Heat_Energy_forcing',
-                title="Cumulative GHG-Trapped Heat",
-                add_circle=True,
-                legend_loc='upper left').as_html(),
-        }
 
 
 class Contributing(BlogPost):
