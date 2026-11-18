@@ -155,33 +155,6 @@ async def get_ipcc_sectors_category(
             request, 
             error_text=f"Sorry, we don't have the analysis page for {catpath} yet")
 
-
-@app_cache
-def get_simulation_barrier_impact_html(sim_name, barrier_name):
-    import planzero.sim
-    sim = planzero.sim.simulation_result(sim_name)
-    template = templates.get_template("scenario_barrier.html")
-    rval = template.render(
-        get_context(
-            title=f"PlanZero - Simulation {sim_name} - Barrier {barrier_name}",
-            sim=sim,
-            active_tab='simulations',
-            sim_name=sim_name,
-            barrier_name=barrier_name,
-            ))
-    return rval
-
-
-@app.get("/models/sim/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
-async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier_name: str):
-    html = get_simulation_barrier_impact_html(sim_name, barrier_name)
-    if html:
-        return HTMLResponse(content=html)
-    else:
-        return await get_ipcc_sectors(
-            request,
-            error_text="Sorry, no such simulation and/or barrier")
-
 @app_cache
 def get_prob_barrier_impact_html(site_inf_name, barrier_name):
     from planzero.endpoints import completed_prob_registry as prob_registry
@@ -212,37 +185,6 @@ async def get_prob_barrier_impact(request: Request, site_inf_name: str, barrier_
         raise HTTPException(status_code=404, detail="No such model / barrier")
 
 
-
-
-@app_cache
-def get_simulations_page_html(ident:str):
-    import planzero.sim
-    site_sim = planzero.sim.site_simulations[ident]
-    sim_result = planzero.sim.simulation_result(ident)
-    sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
-
-    def ipcc_sectors_from_dynelem(dynelem):
-        sectors = sectors_by_de.get(dynelem.identifier, set())
-        if len(sectors) < 5:
-            return sectors
-        else:
-            return [] # TODO: better version of "many"
-
-    return templates.get_template("scenario_template.html").render(
-        get_context(
-            title=f"PlanZero Simulation {ident}",
-            active_tab='models',
-            ident=ident,
-            ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
-            site_sim=site_sim,
-            sim_result=sim_result,
-            ))
-
-
-@app.get("/models/sim/{ident}/", response_class=HTMLResponse)
-async def get_simulation_page(ident:str, request: Request):
-    html = get_simulations_page_html(ident)
-    return HTMLResponse(content=html)
 
 
 @app_cache
@@ -298,102 +240,6 @@ async def get_models_prob_sector_page(ident:str, sector_path:str, request: Reque
         return HTMLResponse(content=html)
     else:
         raise HTTPException(status_code=404, detail="No such model or sector")
-
-
-@app_cache
-def get_simulation_ipcc_sectors_category_html(sim_name, catpath):
-    import planzero.enums
-    import planzero.sim
-    sim = planzero.sim.simulation_result(sim_name)
-    chart = sim.echart_ipcc_sector(catpath)
-    template = templates.get_template("scenario_ipcc_sector.html")
-    rval = template.render(
-        get_context(
-            title=f"PlanZero Simulation {sim_name} - Sector {catpath}",
-            active_tab='simulations',
-            sim_name=sim_name,
-            ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
-            catpath=catpath,
-            chart=chart,
-            ))
-    return rval
-
-
-@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
-@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
-@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
-async def get_simulation_ipcc_sectors_category(
-    request: Request,
-    sim_name: str,
-    category: str,
-    subcategory: str|None = None,
-    subsubcategory: str|None = None):
-
-    if subsubcategory is not None:
-        catpath=f'{category}/{subcategory}/{subsubcategory}'
-    elif subcategory is not None:
-        catpath = f'{category}/{subcategory}'
-    else:
-        catpath = f'{category}'
-
-    html = get_simulation_ipcc_sectors_category_html(sim_name, catpath)
-    return HTMLResponse(content=html)
-
-
-@app_cache
-def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
-    import planzero.blog
-    import planzero.sim
-
-    sim = planzero.sim.simulation_result(sim_name)
-    baseline_state = sim.state
-    ablated_state = sim.ablations.get(strategy_name)
-    if not ablated_state:
-        raise HTTPException(status_code=404, detail="Strategy not found in this simulation")
-    
-    # Calculate impact (baseline - ablated)
-    # This assumes we want to show emissions saved
-    impact_chart = sim.strategy_impact_echart(strategy_name)
-    subsidies_chart = sim.strategy_subsidies_echart(strategy_name)
-
-    # Simple total emissions comparison for cost calculation
-    baseline_total = baseline_state.compute_annual_emissions().total()
-    ablated_total = ablated_state.compute_annual_emissions().total()
-
-    # Simple total subsidy comparison
-    subsidy_baseline_total = baseline_state.compute_annual_subsidies().total()
-    subsidy_ablated_total = ablated_state.compute_annual_subsidies().total()
-
-    try:
-        cost_per_tCO2e = (
-            (subsidy_baseline_total - subsidy_ablated_total).sum()
-            / (ablated_total - baseline_total).sum()).to(u.CAD / u.tonne_CO2e)
-    except AssertionError:
-        # this happens in Planet_Model
-        cost_per_tCO2e = float('nan') * u.CAD / u.tonne_CO2e
-
-    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
-
-    context = get_context(
-            title=f"PlanZero Simulation {sim_name} - Strategy {strategy_name}",
-            active_tab='simulations',
-            sim_name=sim_name,
-            strategy_name=strategy_name,
-            strategy_class=baseline_state.projects[strategy_name].__class__,
-            description_html=baseline_state.projects[strategy_name].description_html,
-            impact_chart=impact_chart,
-            subsidies_chart=subsidies_chart,
-            cost_per_tCO2e=cost_per_tCO2e,
-            )
-    strategy_obj = baseline_state.projects[strategy_name]
-    context['see_also'] = strategy_obj.see_also_html(context)
-    return templates.get_template('strategy_impact.html').render(context)
-
-
-@app.get("/models/sim/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
-async def get_simulations_strategy_impact(request: Request, sim_name: str, strategy_name: str):
-    html = get_simulations_strategy_impact_html(sim_name, strategy_name)
-    return HTMLResponse(content=html)
 
 
 @app_cache
