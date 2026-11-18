@@ -20,17 +20,18 @@
         <p>{{site_inference.short_description}}</p>
     </header>
 
-<p>
-Contents:
+<div class="table-of-contents toc-rule">
+<b>Table of Contents</b>
 <ul>
 	<li><a href="#emissions-estimates">Model Estimates of Past and Future Emissions</a></li>
 	<li><a href="#model-elements">Model Elements</a></li>
+	<li><a href="#metrics">Model Metrics</a></li>
 	{% if site_inference.show_prediction_quality %}
 	<li><a href="#prediction-quality">Prediction Quality</a></li>
 	{% endif %}
 	<li><a href="#posts">Posts Developing this Page</a></li>
 </ul>
-</p>
+</div>
 
 <h2 id="emissions-estimates">Model Estimates of Past and Future Emissions</h2>
 
@@ -89,9 +90,47 @@ of the {{ site_inference.pretty_name }} model by {{siteref("Inference_Group", "i
 	    </tbody>
     </table>
     {% else %}
-    <p>This model does not include <a href="/glossary/#Strategy">strategy elements</a>.</p>
+    <p>This model does not include {{siteref("Strategy_Element", "strategy elements")|safe}}.</p>
     {% endif %}
 
+
+<h2 id="metrics">Metrics</h2>
+
+<!-- logic matching html/metrics.html -->
+{% set ns = namespace(has_metrics=false) %}
+{% for challenge_name, challenge_obj in sorted(planzero.challenge.registry.items())
+   if challenge_obj.show_on_predictions_page
+   and challenge_obj.results_available
+   and site_inference.challenge_result_url(challenge_name) %}
+    {% set ns.has_metrics = true %}
+{% endfor %}
+
+{% if ns.has_metrics %}
+<p>
+Scores for this model on PlanZero's evaluation metrics. For details about each
+metric, and to see how other models compare, visit the <a href="/metrics/">Metrics</a> page.
+</p>
+
+<table>
+    <thead>
+        <tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>
+    </thead>
+    <tbody>
+{% for challenge_name, challenge_obj in sorted(planzero.challenge.registry.items())
+   if challenge_obj.show_on_predictions_page
+   and challenge_obj.results_available
+   and site_inference.challenge_result_url(challenge_name) %}
+        <tr>
+            <td>{{ challenge_obj.pretty_name }} &mdash; {{ challenge_obj.short_description }}</td>
+	    <td id="metrics-{{ challenge_name }}"><a href="/metrics/#{{ challenge_name }}">{{ challenge_obj.overall_loss_str(site_inference) }}</a></td>
+            <td>{{ challenge_obj.overall_loss_column_title }}</td>
+        </tr>
+{% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Metric results are not yet available for this model.</p>
+{% endif %}
 
 {% if site_inference.show_prediction_quality %}
 
@@ -105,8 +144,7 @@ of the {{ site_inference.pretty_name }} model by {{siteref("Inference_Group", "i
 The predictions themselves are shown above.
 The table below lists KL divergences between the reference
 and predicted emissions at the level of national totals.
-For more detail,
-see post <a href="/posts/2026-06-28-static-normals/#appendix-prenir">Static Normals: a baseline predictive model, appendix on NIR-Prediction</a>.
+For more detail, see {{siteref("Weighted_KL_Divergence", "weighted KL divergence")|safe}} glossary term.
 </p>
 <p>
 Overall weighted KL-divergence over all sectors, regions, and greenhouse gases:

@@ -54,7 +54,7 @@
               <td>{{site_inf.one_line_description() }}</td>
               <td>
                   {% if challenge_obj.results_available %}
-		  <a href="/models/prob/{{url_name}}/#{{challenge_name}}">{{ challenge_obj.overall_loss_str(site_inf) }}</a>
+		  <a href="/models/prob/{{url_name}}/#metrics-{{challenge_name}}">{{ challenge_obj.overall_loss_str(site_inf) }}</a>
                   {% else %}
                   {{siteref("Pending Prediction Challenge Results", "Pending")|safe}}
                   {% endif %}

@@ -37,6 +37,7 @@
             <li><a href="#glossary-terms">Glossary terms</a></li>
 	</ul>
     </li>
+    <li><a href="#appendix-misc-improvements">Appendix 4: Other Site Improvements</a></li>
 </ul>
 </div>
 
@@ -135,6 +136,7 @@ along with other terms that have come in the course of developing PlanZero,
 are included as <a href="#appendix-full-glossary">Appendix 3: Glossary Snapshot</a>,
 which is a snapshot of a finally-launched <a href="/glossary/">Glossary page</a>.
 The glossary has been in development for some time, it currently features {{len(planzero.glossary.registry)}} terms.
+<a href="#appendix-misc-improvements">Appendix 4</a> lists other technical improvements made in the course of work on this post.
 </p>
 
 <p>
@@ -149,7 +151,8 @@ re-architecting how models are specified and evaluated, so that there could be
 	<li>a sufficient variety of mechanisms for detecting and diagnosing unexpected evaluation results</li>
 	<li>a practical build system that ensures PlanZero results remain reproducible</li>
 </ul>
-These criteria are largely satisfied now. My next step will be to revisit an
+These criteria are largely satisfied now.
+My next step will be to revisit an
 obviously-problematic assumption in the {{siteref("Static_Normals_Model", "Static Normals")|safe}} model,
 namely that all year-over-year changes in reported emissions are measurement noise rather than true changes.
 The next post will introduce an alternative based on autoregressive processes.
@@ -787,6 +790,64 @@ the following {{ len(planzero.glossary.registry) }} terms.
 
 {% endfor %}
 
+<h2 id="appendix-misc-improvements">Appendix 4: Misc Technical Improvements</h2>
+
+<p>
+The algorithm for estimating the likelihood of emissions data has been adjusted to use a different,
+more-accurate estimator. This has resulted in a change to how the Static Normals and Scaling models are fit to
+emissions data. I assume the new fit is better.
+</p>
+
+<p>
+A validation check was inserted into the Inference Phase computations, that required 0 "divergences"
+during the computation of posterior samples. This revealed that the samples for several inference groups
+of the Static Normals model were affected by divergences. These divergences were addressed by adjusting the
+prior over parameter values for some sectors (especially for tiny sectors and sectors with unexpected exact zeros),
+and adjusting the parameters of the MCMC sampling algorithm to
+be more conservative (and slower). Future work could look at how to avoid divergences with MCMC algorithm
+parameters at their default values, and more-standard priors across inference groups for the various sector-gas
+combinations.
+</p>
+
+<p>
+The algorithm for estimating Weighted KL Divergence has been adjusted to use a different, more-accurate estimator.
+This has resulted in a change to the values of some model metrics. I believe that the new value is more accurate,
+and the values are lower because the models are better-fit (see above).
+</p>
+
+<p>
+PlanZero's automated tests now check for broken links when they link to headings within pages
+(such as glossary tooltips, and tables of contents). This testing revealed many errors, which have been fixed,
+and PlanZero should not have such broken-link errors in future.
+</p>
+
+<p>
+The subsystem for specifying and evaluating models was totally rewritten, in order to work more like
+what is described in this post.
+That included developing and documenting the modelling framework both in terms of architecture and syntax,
+and designing it to support saving and loading intermediate results at several points
+in order to complete successfully on computers with 8 GB of memory, and in order to reuse saved inference results
+in the GitHub workflows that validates and deploys PlanZero's evolving code.
+The previously-documented probabilistic models were reimplemented in this new style.
+</p>
+
+<p>
+The code for rendering echarts to summarize model evaluation and strategy impact was rewritten to be standard
+across models. Previously it appeared this was the case, but as of this post it is actually the case.
+</p>
+
+<p>
+PlanZero's access of .xls and .xlsx files was upgraded to use the more-modern "Calamine" access engine.
+</p>
+
+<p>
+The PlanZero GitHub project was configured to deploy an entire PlanZero site for active Pull Requests,
+in order to let people preview changes as they would appear if GitHub were to deploy them as the main site.
+I am not sure how to to incorporate this capability into my development process, but I expect it will be part
+of standard procedure to use these preview sites in the future.
+</p>
+
+
 <ul class="actions special">
     {% if prev_url_filename %}
     <li><a href="/blog/{{prev_url_filename}}" class="button">Previous</a></li>
@@ -797,6 +858,8 @@ the following {{ len(planzero.glossary.registry) }} terms.
 </ul>
 </section>
 </div>
+
+
     <script type="module">
       import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
       mermaid.initialize({ startOnLoad: true });
