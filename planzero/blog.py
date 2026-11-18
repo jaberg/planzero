@@ -242,7 +242,7 @@ class ProbabilisticNIR2025(BlogPost):
         from . import prob
         from .enums import GHG, IPCC_Sector
 
-        base = 'html/blog/2026-05-20-prob-nir'
+        base = 'html/posts/2026-05-20-prob-nir'
         model_name = 'NIR2025'
         site_inference = prob.site_inferences['NIR2025']
         site_inference.uncertain_sparkline_matrix_echart(

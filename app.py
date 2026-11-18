@@ -367,7 +367,7 @@ def get_blog_html(post_name: str):
         raise OSError() # hack to trigger 404 below
 
     if blog.published or HOME_SHOW_UNPUBLISHED_POSTS:
-        return templates.get_template(f"/blog/{post_name}.html").render(
+        return templates.get_template(f"/posts/{post_name}.html").render(
                 get_context(
                     title=f"PlanZero - {blog.title}",
                     active_tab='blog',

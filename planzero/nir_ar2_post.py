@@ -35,7 +35,7 @@ class AR2(BlogPost):
         from . import prob
 
         for model_name, site_inference in prob.registry.items():
-            base = 'html/blog/2026-04-26-probabilistic-modelling'
+            base = 'html/posts/2026-04-26-probabilistic-modelling'
             if model_name in ('Static_Normals', 'AR2'):
                 site_inference.uncertain_sparkline_matrix_echart(
                     div_id=f"{model_name}_all_sectors",
