@@ -1,4 +1,4 @@
-This document is about a visual grid-based layout for what is, for now, being called a "Trace Graph", described in ../planzero/element_graph_requirements.txt
+This document is about a visual grid-based layout for what is, for now, being called a "Trace Graph", described in ./element_graph_requirements.txt
 
 
 A grid-based layout for a trace graph is a layout in which there is a conceptual regular grid of points indexed by non-negative integers
@@ -30,13 +30,15 @@ Hard constraints
 * inputs (as defined above) placed according to cases (1) and (2) above
 * all of the method nodes from any one model_element must be placed in a single column, and such a column may not contain method nodes relating to multiple model elements
 * the left-to-right order of the model_element columns must match the order in which their element_ids were passed as arguments in the url of the model-explorer page request (the layout algorithm sets the spacing between them, but must not reorder them)
+* membership-dependency edges must always run visually downward (from a lower row number, to a higher row number)
 
 The consequence of the hard constraints should be that the graph will have an A-B-C-D-E vertical structure, each of which may be an empty section depending on the types of nodes in the trace graph
 A: the top part of the graph will be alternating rows of non-method nodes, model_element_prepare nodes, starting with row-0 (if this section isn't empty) which will be non-method nodes with edges pointing downward into the first row of model_element_prepare nodes.
+   That said, sometimes it may be required to allocate two consecutive rows of non-method nodes in order to accommodate membership-dependency edges without introducing a blank row.
 B: a row of "carry-this" and "input-annual-this" nodes (inputs to section C)
-C: a middle part of the graph will be alternating rows of non-method nodes, model_element_annual_step nodes
+C: a middle part of the graph will be alternating rows of non-method nodes, model_element_annual_step nodes, similar to part A.
 D: a row of "carry-final" and "output-annual-all" nodes (outputs of section C)
-E: the bottom part of the graph will be alternating rows of non-method nodes, model_element_postprocess nodes
+E: the bottom part of the graph will be alternating rows of non-method nodes, model_element_postprocess nodes, similar to part A.
 
 Sections A, C, and E may be entirely absent, but if they are present, they will each have an odd number of rows that is at least 3.
 So, assuming for simplicity that all method nodes have both inputs and outputs,
@@ -61,7 +63,10 @@ Wishes (non-constraints) for clarity of presentation
 * a "carry-next" node should be directly above its corresponding "carry-final" node; if that isn't possible, it should be in the next available grid point to the right
 * all edges should point downward (from row X to row Y with X < Y) with the exception of edges from a "next" carry node to a "this" carry node.
 * Recognizing that an edge starting from a method node always terminates at a non-method node, the non-method node (a) must be one row lower than the method node and (b) should be directly underneath it if possible, otherwise in the next available grid point to the right.
-* all nodes should be as high in the graph as they can be, without violating other constraints
+* membership-dependency edges also ideally point straight downward
+* method-nodes should be as high in the graph as they can be, without violating other constraints
+* non-method nodes with producers should be as high in the graph as they can be
+* non-method nodes without producers should be as low in the graph as they can be, without violating other constraints (to avoid long edges)
 * all nodes should be as far to the left as they can be, without violating other constraints
 
 

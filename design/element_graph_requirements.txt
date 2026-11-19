@@ -1,5 +1,5 @@
 
-The element graph is a dependency diagram illustrating the relationship
+The element graph (sometimes referred to as a "Trace graph") is a data structure for a dependency diagram illustrating the relationship
 between variables associated with one or more model elements.
 
 
@@ -8,12 +8,15 @@ methods
 referenced by `access*` and `define*` decorators on 
 model_element_prepare, model_element_annual_step,
 and model_element_postprocess methods of ModelElement instances.
-For clarity: each of these methods can have multiple decorators, including multiple instances of the same name of decorator (e.g. multiple `@define_annual(...)` calls.
-That said, it is unexpected, and should be prevented, for any one varkey_property to be referenced by multiple model_element_* decorator calls (
-so e.g. there should not be both an `@define_annual(foo)` and an `access_annual(foo)`, as that would not make sense).
+N.B.: each of these methods can have multiple decorators, including multiple instances of the same name of decorator (e.g. multiple `@define_annual(...)` calls.
+That said, it is unexpected, and should be prevented, for any one varkey_property to be referenced by multiple decorators on a single model_element_{...} method (
+so e.g. there should not be both an `@define_annual(foo)` and an `access_annual(foo)` on the same method as it would be redundant, and
+e.g. there should not be both a `@define_annual(foo)` and a `@define(foo)` because these contradict each other).
 
-If varkey_property-decorated method resolves to a dictionary via property access, then it should correspond to a single node in this graph. If the keys of such a dictionary are not hashable, it can be considered a programming error.
-Properties that resolve to regular dictionaries should be considered as having resolved to frozendict objects instead.
+If varkey_property-decorated method resolves to a dictionary via property access, then it should correspond to a single node in this graph.
+This helps the clarity of the resulting graph by bundling varkeys that are accessed together.
+If the keys of such a dictionary are not hashable, it can be considered a programming error.
+Properties that resolve to regular dictionaries should be considered as having resolved to frozendict objects instead (consider these dictionaries as immutable).
 
 
 Treatment of string arguments to decorators:
@@ -32,7 +35,7 @@ The phrase "annotated according to the varkey property" in this document current
 something related to optional information that could be provided at `@varkey_property(...)` call sites.
 
 
-The node type should be equivalent to a Union of
+The node type of the element graph should be equivalent to a Union of
 * method node: tuple[str, "model_element_prepare"|"model_element_annual_step"|"model_element_postprocess"] , in which the first str element is an element_id within a model
 * general node: VarKey|frozendict[Hashable,VarKey]
 * carry node: tuple[VarKey|frozendict[Hashable,VarKey], "initial"|"this"|"next"|"final"]
@@ -163,6 +166,20 @@ then there must be
 A directed edge should connect from node (c) to node (b).
 A directed edge should connect from node (a) to node (c),
 annotated according to the varkey property.
+
+There is another kind of relationship that should exist in the graph sometimes as well,
+which is edges between nodes (call them N1 and N2) based on varkey set membership.
+This type of edge may exist only between nodes that are non-method nodes.
+For the purpose of establishing such edges, each [non-method] node is identified by a set of (hashable, varkey object) pairs,
+which is
+(a) a set of size 1 for non-dictionary nodes, or else
+(b) the items of the dictionary for dictionary nodes.
+If an accessed node N1 contains any varkey elements from a defined node N2, then the edge (N2, N1) must be in the graph.
+Such an edge may be referred to as a membership-dependency edge.
+Multiple membership dependency edges may, in some cases, fan in, or fan out, from a node.
+That said, it is not possible for any node to have both an incoming edge from a definition *and* an incoming membership-dependency edge.
+For that reason, it is fine if these edges are styled the same way. They can be distinguished by the type of source node.
+
 
 The following cases should never happen:
 * a model_element_annual_step method decorated by `define`

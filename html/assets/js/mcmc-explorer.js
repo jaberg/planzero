@@ -1426,6 +1426,7 @@
             }
 
             const edgePairs = new Set();
+            const occurrencePrimaryNode = new Map();
 
             function addEdge(id, source, target, kind, label, backward) {
                 if (!source || !target) {
@@ -1446,6 +1447,35 @@
                         backward: !!backward,
                     },
                 });
+            }
+
+            function primaryNodeIdForOccurrence(occurrence) {
+                const key = occurrenceKey(occurrence);
+                const attr = occurrence.attr || '';
+                const method = occurrence.method;
+                const kind = occurrence.kind;
+                if (kind === 'carry') {
+                    if (method === 'prepare' || method === 'postprocess') {
+                        return 'c:initial:' + key;
+                    }
+                    if (method === 'annual_step') {
+                        if (attr === 'model_element_access_this_carry') {
+                            return 'c:this:' + key;
+                        }
+                        if (attr === 'model_element_access_next_carry') {
+                            return 'c:next:' + key;
+                        }
+                        if (attr === 'model_element_define_carry') {
+                            return 'c:next:' + key;
+                        }
+                        return 'c:next:' + key;
+                    }
+                }
+                if (kind === 'annual' || attr === 'model_element_define_annual' ||
+                        attr === 'model_element_access_annual') {
+                    return 'a:all:' + key;
+                }
+                return 'g:' + key;
             }
 
             // Implied define_carry on annual_step when prepare defines carry
@@ -1473,6 +1503,12 @@
             }
 
             const allActions = selectedOccurrences.concat(impliedAnnualDefines);
+
+            for (const occurrence of selectedOccurrences) {
+                occurrencePrimaryNode.set(
+                    occurrence.id,
+                    primaryNodeIdForOccurrence(occurrence));
+            }
 
             // Ensure method nodes that are explicitly required exist.
             // (annual_step method node for implied define_carry is required
@@ -1612,6 +1648,31 @@
                         }
                     }
                 }
+            }
+
+            // Membership-dependency edges: connect defined non-method bundle nodes
+            // to accessed non-method bundle nodes when they share varkey elements
+            // (element_graph_requirements.txt). Use explicit membership edges when
+            // provided; fall back to per-variable occurrence edges.
+            const membershipSource = Array.isArray(data.membership_edges) ?
+                data.membership_edges : (data.edges || []);
+            for (const depEdge of membershipSource) {
+                if (!selected.has(depEdge.source_element) ||
+                        !selected.has(depEdge.target_element)) {
+                    continue;
+                }
+                const sourceNode = occurrencePrimaryNode.get(depEdge.source);
+                const targetNode = occurrencePrimaryNode.get(depEdge.target);
+                if (!sourceNode || !targetNode || sourceNode === targetNode) {
+                    continue;
+                }
+                addEdge(
+                    'mem:' + depEdge.id,
+                    sourceNode,
+                    targetNode,
+                    'membership',
+                    '',
+                    false);
             }
 
                 return {
@@ -1772,6 +1833,9 @@
             }
 
             let cursor = 0;
+            let bSectionRow = null;
+            let dSectionRow = null;
+            let feedSectionRow = null;
 
             const sectionA = members('A');
             for (const id of sectionA) {
@@ -1788,8 +1852,12 @@
                 if (feeders.length && row === 0) {
                     row = 1;
                 }
+                bSectionRow = row;
                 for (const id of sectionB) {
                     level.set(id, row);
+                }
+                if (feeders.length) {
+                    feedSectionRow = row - 1;
                 }
                 for (const id of feeders) {
                     level.set(id, row - 1);
@@ -1808,6 +1876,7 @@
 
             const sectionD = members('D');
             if (sectionD.length) {
+                dSectionRow = cursor;
                 for (const id of sectionD) {
                     level.set(id, cursor);
                 }
@@ -1823,6 +1892,48 @@
                 if (!level.has(id)) {
                     throw new Error('unplaced trace node ' + id);
                 }
+            }
+
+            // Wish: non-method nodes without producers (no in-trace method
+            // definition or membership-dependency source) should be as low as
+            // possible without violating constraints, to shorten edges.
+            // Excludes nodes with fixed placements (B, D, FEED above B).
+            for (let i = order.length - 1; i >= 0; i--) {
+                const id = order[i];
+                if (isMethod(id)) {
+                    continue;
+                }
+                const section = sections.get(id);
+                if (section === 'B' || section === 'D' || section === 'FEED') {
+                    continue;
+                }
+                if (inEdges.get(id).length > 0) {
+                    continue;
+                }
+                const consumers = outEdges.get(id);
+                if (!consumers.length) {
+                    continue;
+                }
+                let maxLevel = Infinity;
+                for (const edge of consumers) {
+                    maxLevel = Math.min(maxLevel, level.get(edge.target) - 1);
+                }
+                if (!isFinite(maxLevel)) {
+                    continue;
+                }
+                let target = level.get(id);
+                for (let row = maxLevel; row > level.get(id); row--) {
+                    if (methodRows.has(row)) {
+                        continue;
+                    }
+                    if (row === bSectionRow || row === dSectionRow ||
+                            row === feedSectionRow) {
+                        continue;
+                    }
+                    target = row;
+                    break;
+                }
+                level.set(id, target);
             }
 
             // Columns.  Method nodes take their element's column, and element

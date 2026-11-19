@@ -6,6 +6,8 @@ It exposes two linked views:
 * an element-by-element dependency matrix for the overall structure, and
 * a focused dependency graph for tracing individual variables and paths.
 
+See ../design/element_graph_requirements.txt for a specification of this data structure.
+See ../design/detailed_model_element_layout.txt for layout guidance that is meant to be applied downstream in the js that uses Cytoscape.
 """
 
 from __future__ import annotations
@@ -296,6 +298,8 @@ def build_mcmc_group_dependency_data(
 
     The result contains elements, decorator occurrences, canonical variables,
     define/access dependency edges, and an element-level matrix.
+
+    See ../design/element_graph_requirements.txt for a specification of this data structure.
     """
     element_ids = _group_element_ids(model, mcmc_group)
     occurrences = _collect_property_occurrences(model, element_ids)
@@ -506,6 +510,32 @@ def build_mcmc_group_dependency_data(
                         != access_occurrence["element"]),
                     })
 
+    # Membership-dependency edges: connect a defined non-method bundle node to
+    # an accessed non-method bundle node when they share varkey elements
+    # (see design/element_graph_requirements.txt). These are occurrence/node-
+    # level edges derived from per-variable define/access dependencies.
+    membership_edges = []
+    seen_membership_pairs = set()
+    for edge in edges:
+        pair = (edge["source"], edge["target"])
+        if pair in seen_membership_pairs:
+            continue
+        seen_membership_pairs.add(pair)
+        membership_edges.append({
+            "id": f"m{len(membership_edges)}",
+            "source": edge["source"],
+            "target": edge["target"],
+            "source_element": edge["source_element"],
+            "source_method": edge["source_method"],
+            "source_property": edge["source_property"],
+            "target_element": edge["target_element"],
+            "target_method": edge["target_method"],
+            "target_property": edge["target_property"],
+            "backward": edge["backward"],
+            "cross_element": edge["cross_element"],
+            "kind": "membership",
+            })
+
     matrix_by_pair: dict[tuple[str, str], dict] = {}
     for edge in edges:
         pair = (edge["source_element"], edge["target_element"])
@@ -568,6 +598,7 @@ def build_mcmc_group_dependency_data(
         "properties": property_data,
         "variables": variables,
         "edges": edges,
+        "membership_edges": membership_edges,
         "matrix": matrix,
         "summary": {
             "n_elements": len(element_ids),
