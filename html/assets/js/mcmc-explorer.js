@@ -1246,6 +1246,7 @@
             {
                 selector: 'edge[kind="define"]',
                 style: {
+                    'width': 2.6,
                     'line-color': '#cbd5e1',
                     'target-arrow-color': '#cbd5e1',
                     'label': 'data(label)',
