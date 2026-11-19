@@ -5,6 +5,7 @@ import numpyro
 from numpyro.distributions.distribution import Distribution
 
 from .base import (
+    DefinitionError,
     ElementAnnualKey,
     ElementCarryKey,
     ElementGeneralKey,
@@ -151,15 +152,21 @@ class ValGeneral:
             self.ws.comp._record_assignment(var_key)
 
         elif self.attr == 'obs_val':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'general', var_key)
             obs_var_key = Observation(prior_var_key=var_key)
             self.ws.comp.ndarray_d[obs_var_key] = value
 
         elif self.attr == 'obs_valid':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'general', var_key)
             obsvalid_var_key = ObservationValid(
                    obs_var_key=Observation(prior_var_key=var_key))
             self.ws.comp.ndarray_d[obsvalid_var_key] = value
 
         elif self.attr == 'obs_weight':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'general', var_key)
             obs_var_key = ObservationWeight(
                    obs_var_key=Observation(
                        prior_var_key=var_key))
@@ -216,13 +223,19 @@ class ValAnnual:
             self.ws.comp.ndarray_d[var_key] = value
             self.ws.comp._record_assignment(var_key)
         elif self.attr == 'obs_val':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'annual', var_key)
             obs_key = Observation(prior_var_key=var_key)
             self.ws.comp.ndarray_d[obs_key] = value
         elif self.attr == 'obs_valid':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'annual', var_key)
             obs_key = Observation(prior_var_key=var_key)
             obs_valid_key = ObservationValid(obs_var_key=obs_key)
             self.ws.comp.ndarray_d[obs_valid_key] = value
         elif self.attr == 'obs_weight':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'annual', var_key)
             obs_key = Observation(prior_var_key=var_key)
             obs_weight_key = ObservationWeight(obs_var_key=obs_key)
             self.ws.comp.ndarray_d[obs_weight_key] = value
@@ -339,6 +352,8 @@ class DistGeneral:
             self.ws.comp.dist_d[var_key] = dist
             self.ws.comp._record_assignment(var_key)
         elif self.attr == 'obs_dist':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'general', var_key)
             # ws.obs_dist.general[item] = dist
             self.ws.comp.dist_d[Observation(prior_var_key=var_key)] = dist
         else:
@@ -398,6 +413,8 @@ class DistAnnual:
             self.ws.comp.dist_d[var_key] = dist
             self.ws.comp._record_assignment(var_key)
         elif self.attr == 'obs_dist':
+            self.ws._ensure_observation_write_allowed(
+                    self.attr, 'annual', var_key)
             # handles syntax: ws.obs_dist.annual[item] = dist
             self.ws.comp.dist_d[Observation(prior_var_key=var_key)] = dist
         else:
@@ -735,6 +752,21 @@ class Workspace:
 
     def _access_default(self, var_key:VarKey) -> jnp.ndarray|None:
         return self.comp.access_default(self.elem_id, self.subphase, var_key)
+
+    def _ensure_observation_write_allowed(
+            self, attr: str, namespace: str, key: VarKey) -> None:
+        """Reject observation writes by elements that are not in an MCMC group,
+        because the function of observations is to influence MCMC.
+        An mcmc_group of None is only allowed for definitions that are downstream
+        of observed variables.
+
+        Writes only: reads of observation data are not guarded here.
+        """
+        if self.model.mcmc_group_by_elemid.get(self.elem_id) is None:
+            raise DefinitionError(
+                    f"{self.elem_id}: cannot write ws.{attr}.{namespace}"
+                    f"[{key!r}] in subphase {self.subphase.value}"
+                    " because mcmc_group is None")
 
     @property
     def dist(self) -> WorkspaceAttrDist:
