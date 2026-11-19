@@ -1010,8 +1010,14 @@ def _obs_guard_test_model(element: ModelElement, mcmc_group, n_years: int = 3):
     ("obs_weight", "annual"),
 ])
 def test_observation_write_rejected_when_mcmc_group_none(attr, namespace):
+    if namespace == "general":
+        deco = define('x', prior_shape=[])
+    elif namespace == "annual":
+        deco = define_annual('x', annual_shape=[])
+    else:
+        raise NotImplementedError(namespace)
     class ObsWriter(ModelElement):
-        # TODO: in future it may be required to decorate this with e.g. @define('x')
+        @deco
         def model_element_prepare(self, ws: Workspace):
             if namespace == "general":
                 target = getattr(ws, attr).general
@@ -1038,34 +1044,3 @@ def test_observation_write_rejected_when_mcmc_group_none(attr, namespace):
     msg = str(excinfo.value)
     assert f"cannot write ws.{attr}.{namespace}" in msg
     assert "because mcmc_group is None" in msg
-
-
-@pytest.mark.parametrize("attr,namespace", [
-    ("obs_val", "general"),
-    ("obs_dist", "annual"),
-])
-def test_observation_write_not_guarded_when_mcmc_group_set(attr, namespace):
-    class ObsWriter(ModelElement):
-        # TODO: in future it may be required to decorate this with e.g. @define('x')
-        def model_element_prepare(self, ws: Workspace):
-            if namespace == "general":
-                target = getattr(ws, attr).general
-                if attr == "obs_dist":
-                    target["x"] = dist_module.Normal(0.0, 1.0)
-                else:
-                    target["x"] = jnp.array(1.0)
-            else:
-                target = getattr(ws, attr).annual
-                if attr == "obs_dist":
-                    target["x"] = dist_module.Normal(
-                            jnp.zeros(ws.n_years), jnp.ones(ws.n_years))
-                else:
-                    target["x"] = jnp.ones(ws.n_years)
-
-    model = _obs_guard_test_model(ObsWriter(), mcmc_group="default_mcmc_group")
-    comp = Computation(model=model, rng_key=1)
-    try:
-        comp.run()
-        assert 0
-    except DefinitionError as err:
-        assert "because mcmc_group is None" not in str(err)
