@@ -22,7 +22,7 @@ class StaticNormals(BlogPost):
         super().__init__(
             date=datetime.date(2026, 6, 28),
             title='Static Normals: A baseline predictive model',
-            # html/blog/2026-06-28-static-normals.html
+            # html/posts/2026-06-28-static-normals.html
             url_filename="2026-06-28-static-normals",
             author="James Bergstra",
             tags={#BlogTag.NIR_Modelling,
@@ -59,7 +59,7 @@ class StaticNormals(BlogPost):
         from . import prob
         model_name = 'Static_Normals_2024_12_31'
         site_inference = prob.registry[model_name]
-        base = f'html/blog/{self.url_filename}'
+        base = f'html/posts/{self.url_filename}'
 
         site_inference.uncertain_sparkline_matrix_echart(
             div_id=f"{model_name}_all_sectors",

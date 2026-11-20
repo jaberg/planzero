@@ -76,6 +76,19 @@ def np_data(farm_type):
                 data[:, i, j] = val.magnitude
     return data
 
+@memcache
+def np_emission_factors(farm_type) -> np.ndarray: # (years, n_livestock_types)
+    years_of_interest = sorted_years(farm_type)
+    year_to_idx = {year: i for i, year in enumerate(sorted_years(farm_type))}
+    table = table_A3p4_11()
+    rval = np.zeros((len(years_of_interest), len(Livestock_nonsums)))
+    for jj, livestock in enumerate(Livestock_nonsums):
+        for ii, year in enumerate(years_of_interest):
+            amt = table[livestock].query(year * u.years)
+            rval[year_to_idx[year], jj] = amt.to(
+                    u.kg_CH4 / u.cattle / u.year).magnitude
+    return np.array(rval)
+
 
 def Xy(farm_type, context_size, pt_idx, start_year_inclusive, cutoff_year_inclusive) -> tuple[list, list]:
     """Return a feature matrix, target matrix pair"""

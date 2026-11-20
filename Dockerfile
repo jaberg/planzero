@@ -39,6 +39,8 @@ RUN echo 'export OPENBLAS_NUM_THREADS=1' >> /root/.bashrc
 RUN echo 'export JAX_ENABLE_X64=1' >> /root/.bashrc
 RUN echo 'export JAX_CHECK_STATIC_INDICES=1' >> /root/.bashrc
 RUN echo 'export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1 inter_op_parallelism_threads=1"' >> /root/.bashrc
+RUN echo 'export PLANZERO_MODEL_REGISTRY_ROOT=_model_registry' >> /root/.bashrc
+RUN echo 'export PLANZERO_SITE_MODEL_SUMMARY_STATS_ROOT=_site_model_summary_stats' >> /root/.bashrc
 
 
 # built on dev machine
@@ -82,10 +84,6 @@ COPY ./app.py /content/app.py
 WORKDIR /content
 
 # Build app cache (and run unit tests)
-#RUN python -m planzero.model_db init
-#RUN python -m planzero inference_prep --model=Static_Normals_2024_12_31
-#RUN python -m planzero inference_work --model=Static_Normals_2024_12_31
-#RUN python -m planzero inference_work --model=ScalingStudy_All_Strategies
 COPY my_database.db /content/my_database.db
 COPY _planzero_model_cache_root /content/_planzero_model_cache_root
 

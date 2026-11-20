@@ -1,8 +1,8 @@
 import enum
 
+import jax.numpy as jnp
 import numpy as np
 
-from . import nir2025
 from .enums import GHG, PT, IPCC_Sector, LULUCF_Sectors, col_by_pt, col_ca
 from .html import (
     EChartDataZoomElem,
@@ -21,17 +21,8 @@ from .html import (
     GridLinkElem,
     UncertainSparklineMatrixEChart,
 )
-
-
-class PseudoSectors(str, enum.Enum):
-    Total_with_LULUCF = 'Total with LULUCF'
-    Total_without_LULUCF = 'Total without LULUCF'
-
-
-# TODO: if enums.Regions becomes a thing,
-# then no need for this anymore
-class PseudoRegion(str, enum.Enum):
-    NationalTotal = 'National Total'
+from .regional_total_emissions_element import PseudoRegion
+from .sector_total_emissions_element import PseudoSector
 
 
 class BaseBase:
@@ -39,10 +30,12 @@ class BaseBase:
     n_cols = 7
 
     credibility_interval_95 = (.025, .975)
+    actuals_q = (.025, .5, .975)
 
     def __init__(self, div_id, model_name):
+        # TODO: move div_id to make_echart() param
         self.div_id = div_id
-        self.model_name = model_name
+        self.model_name = model_name  # used to construct urls
         self.grid_list = []
         self.xAxis_list = []
         self.yAxis_list = []
@@ -52,13 +45,16 @@ class BaseBase:
         self.sorted_keys = [] # list of keys in raster order of panels
         self.color_by_key = {}
 
+        # TODO: parameterize constructor as e.g. (year_0, n_years)
         # has to be every year or else scaling doesn't work properly
         # when combined with historic actuals
         self.years = np.arange(1990, 2050 + 1)
 
-    def update_stats_from_means_bounds(self, key, means, lbounds, ubounds):
+    def update_stats_from_means_bounds(self, key, means, lbounds, ubounds,
+                                       years=None):
         assert np.all(ubounds >= lbounds)
         self.stats_d[key] = {
+            'years': np.asarray(self.years if years is None else years),
             'ubound': np.max(ubounds),
             'lbound': np.min(lbounds),
             'means': means,
@@ -73,6 +69,15 @@ class BaseBase:
         self.stats_d[key]['spread'] = (
                 self.stats_d[key]['ubound']
                 - self.stats_d[key]['lbound'])
+
+    def update_stats_from_annual_stats(self, key, stats, scale=1.0):
+        lower_q, upper_q = self.credibility_interval_95
+        return self.update_stats_from_means_bounds(
+                key,
+                means=np.asarray(stats.mean) * scale,
+                lbounds=np.asarray(stats.quantiles[lower_q]) * scale,
+                ubounds=np.asarray(stats.quantiles[upper_q]) * scale,
+                years=stats.years)
 
     def update_stats_from_sample(self, key, sample):
         lbounds, ubounds = np.quantile(
@@ -159,6 +164,7 @@ class BaseBase:
 
     def append_cell_data(self, key, xaxis_id, yaxis_id):
         data = self.stats_d[key]
+        years = data.get('years', self.years)
         color = self.color_by_key[key]
         self.series_list.append(
             EChartSeriesBase(
@@ -171,7 +177,7 @@ class BaseBase:
                     width=2,
                     type='dotted',
                     color=color),
-                data=list(zip(self.years, data['means'])),
+                data=list(zip(years, data['means'])),
                 ))
         if data['lbound'] < 0:
             self.series_list.append(
@@ -184,7 +190,7 @@ class BaseBase:
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
-                    data=list(zip(self.years, data['neg_shift'])),
+                    data=list(zip(years, data['neg_shift'])),
                     stack=f'stack_{key!s}_neg'
                     ))
             self.series_list.append(
@@ -199,7 +205,7 @@ class BaseBase:
                     lineStyle=EChartLineStyle(opacity=0),
                     areaStyle=dict(opacity=.25),
                     itemStyle=EChartItemStyle(color=color),
-                    data=list(zip(self.years, data['neg_shade'])),
+                    data=list(zip(years, data['neg_shade'])),
                     stack=f'stack_{key!s}_neg'
                     ))
         if data['ubound'] >= 0:
@@ -213,7 +219,7 @@ class BaseBase:
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
-                    data=list(zip(self.years, data['pos_shift'])),
+                    data=list(zip(years, data['pos_shift'])),
                     stack=f'stack_{key!s}_pos'
                     ))
             self.series_list.append(
@@ -226,9 +232,9 @@ class BaseBase:
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0),
-                    areaStyle=dict(opacity=.25),
+                    areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
-                    data=list(zip(self.years, data['pos_shade'])),
+                    data=list(zip(years, data['pos_shade'])),
                     stack=f'stack_{key!s}_pos'
                     ))
 
@@ -332,7 +338,8 @@ class SparklineEChartHelperBase(BaseBase):
 
     n_non_lulucf_rows = 10
     n_total_rows = n_non_lulucf_rows + 2
-    cells_include_actuals = True
+    cells_include_actuals:bool
+    nir2025_stats: dict[IPCC_Sector|PseudoSector, object]
 
     @property
     def v_unit_scale(self) -> float:
@@ -343,18 +350,31 @@ class SparklineEChartHelperBase(BaseBase):
         else:
             raise NotImplementedError(self.v_unit)
 
-    def __init__(self, div_id, v_unit, model_name):
+    def __init__(self, div_id, v_unit, model_name,
+                 cells_include_actuals:bool=True):
         super().__init__(div_id=div_id, model_name=model_name)
         self.data_by_sector = {}
         self.data_by_sector = self.stats_d
         self.v_unit = v_unit
 
-        self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
+        self.nir2025_stats = {}
+        self.cells_include_actuals = cells_include_actuals
+        if self.cells_include_actuals:
+            from .nir2025_site import NIR2025
+            site_model = NIR2025()
+            self.nir2025_stats = (
+                    site_model.site_model_summary_stats.all_sector_echart_ktCO2e)
 
     def add_data_for_sector(self, sector, sector_means, lbounds, ubounds):
         assert sector not in self.data_by_sector
         return self.update_stats_from_means_bounds(
                 sector, sector_means, lbounds, ubounds)
+
+    def add_stats_for_sector(self, sector, stats, scale=None):
+        assert sector not in self.data_by_sector
+        if scale is None:
+            scale = self.v_unit_scale
+        return self.update_stats_from_annual_stats(sector, stats, scale=scale)
 
     def compute_stats_and_add_data_for_sector(self, sector, sample):
         self.update_stats_from_sample(sector, sample)
@@ -373,7 +393,7 @@ class SparklineEChartHelperBase(BaseBase):
             axis=0)
 
         self.add_data_for_sector(
-            PseudoSectors.Total_with_LULUCF,
+            PseudoSector.Total_with_LULUCF,
             mean_with_lulucf,
             lbounds=lbounds_with_lulucf,
             ubounds=ubounds_with_lulucf)
@@ -384,7 +404,7 @@ class SparklineEChartHelperBase(BaseBase):
             axis=0)
 
         self.add_data_for_sector(
-            PseudoSectors.Total_without_LULUCF,
+            PseudoSector.Total_without_LULUCF,
             mean_without_lulucf,
             lbounds=lbounds_without_lulucf,
             ubounds=ubounds_without_lulucf)
@@ -482,12 +502,14 @@ class SparklineEChartHelperBase(BaseBase):
             row_ymin = min(row_ymin, min(data['lbounds']))
 
             if self.cells_include_actuals:
-                if 'Total' in sector:
-                    actuals = np.sum(self.arr_ca, axis=(0, 1)) * self.v_unit_scale
-                else:
-                    actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0) * self.v_unit_scale
-                row_ymax = max(row_ymax, np.nanmax(actuals))
-                row_ymin = min(row_ymin, np.nanmin(actuals))
+                stats = self.nir2025_stats[sector]
+                lower_q, upper_q = self.credibility_interval_95
+                row_ymax = max(
+                        row_ymax,
+                        max(stats.quantiles[upper_q]) * self.v_unit_scale)
+                row_ymin = min(
+                        row_ymin,
+                        min(stats.quantiles[lower_q]) * self.v_unit_scale)
 
         # round up to nearest 2-significant-digit number
         row_ymax = max(0, float(f'{row_ymax * 1.06:.2g}'))
@@ -498,9 +520,9 @@ class SparklineEChartHelperBase(BaseBase):
         #color = self.palette[(row * self.n_cols + col - 1) % len(self.palette)]
         if sector in LULUCF_Sectors:
             color = self.palette[9]
-        elif sector == PseudoSectors.Total_without_LULUCF:
+        elif sector == PseudoSector.Total_without_LULUCF:
             color = self.palette[10]
-        elif sector == PseudoSectors.Total_with_LULUCF:
+        elif sector == PseudoSector.Total_with_LULUCF:
             color = self.palette[11]
         else:
             color = {
@@ -548,7 +570,7 @@ class SparklineEChartHelperBase(BaseBase):
             self.grid_links.append(
                 GridLinkElem(
                     gridId=f'grid_{col}|{row}',
-                    url=f'/models/prob/{self.model_name}/sectors/{sector.catpath_no_whitespace}',
+                    url=f'/models/{self.model_name}/sectors/{sector.catpath_no_whitespace}',
                     ))
         self.xAxis_list.append(
             EChartMatrixXAxis(
@@ -580,74 +602,59 @@ class SparklineEChartHelperBase(BaseBase):
 
         if self.cells_include_actuals:
             # historical actuals
-            if hasattr(self, 'nir2025_sparkline_echart_helper'):
-                nir2025_means = self.nir2025_sparkline_echart_helper.data_by_sector[sector]['means']
-                nir2025_lbounds = self.nir2025_sparkline_echart_helper.data_by_sector[sector]['lbounds']
-                nir2025_ubounds = self.nir2025_sparkline_echart_helper.data_by_sector[sector]['ubounds']
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=2,
-                            type='dotted',
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, nir2025_means)),
-                        ))
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=1,
-                            type='solid',
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, nir2025_lbounds)),
-                        ))
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=1,
-                            type='solid',
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, nir2025_ubounds)),
-                        ))
-            else:
-                if sector == PseudoSectors.Total_without_LULUCF:
-                    mask = [(sec not in LULUCF_Sectors) for sec in IPCC_Sector]
-                    actuals = np.sum(self.arr_ca[mask], axis=(0, 1))
-                elif sector == PseudoSectors.Total_with_LULUCF:
-                    actuals = np.sum(self.arr_ca, axis=(0, 1))
-                else:
-                    actuals = np.sum(self.arr_ca[nir2025.idx_of_sector[sector]], axis=0)
+            stats = self.nir2025_stats[sector]
+            years = stats.years
+            lower_q, median_q, upper_q = self.actuals_q
 
-                actuals = actuals * self.v_unit_scale
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} NIR2025',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(
+                        width=2,
+                        type='dotted',
+                        color='#000'),
+                    data=list(zip(years,
+                                  np.asarray(stats.quantiles[median_q])
+                                  * self.v_unit_scale)),
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} NIR2025',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(
+                        width=1,
+                        type='solid',
+                        color='#000'),
+                    data=list(zip(years,
+                                  np.asarray(stats.quantiles[lower_q])
+                                  * self.v_unit_scale)),
+                    ))
+            self.series_list.append(
+                EChartSeriesBase(
+                    name=f'{sector} NIR2025',
+                    xAxisId=f'xAxis_{col}|{row}',
+                    yAxisId=f'yAxis_{col}|{row}',
+                    type='line',
+                    symbol='none',
+                    lineStyle=EChartLineStyle(
+                        width=1,
+                        type='solid',
+                        color='#000'),
+                    data=list(zip(years,
+                                  np.asarray(stats.quantiles[upper_q])
+                                  * self.v_unit_scale)),
+                    ))
 
-                self.series_list.append(
-                    EChartSeriesBase(
-                        name=f'{sector} NIR2025',
-                        xAxisId=f'xAxis_{col}|{row}',
-                        yAxisId=f'yAxis_{col}|{row}',
-                        type='line',
-                        symbol='none',
-                        lineStyle=EChartLineStyle(
-                            width=2,
-                            color='#000'),
-                        data=list(zip(nir2025.nir2025_year_ints, actuals)),
-                        ))
 
         data = self.data_by_sector[sector]
+        years = data.get('years', self.years)
         self.series_list.append(
             EChartSeriesBase(
                 name=f'{sector} mean',
@@ -659,7 +666,7 @@ class SparklineEChartHelperBase(BaseBase):
                     width=2,
                     type='dotted',
                     color=color),
-                data=list(zip(self.years, data['means'])),
+                data=list(zip(years, data['means'])),
                 ))
         key = sector
         if data['lbound'] < 0:
@@ -673,7 +680,7 @@ class SparklineEChartHelperBase(BaseBase):
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
-                    data=list(zip(self.years, data['neg_shift'])),
+                    data=list(zip(years, data['neg_shift'])),
                     stack=f'stack_{sector:s}'
                     ))
             self.series_list.append(
@@ -688,7 +695,7 @@ class SparklineEChartHelperBase(BaseBase):
                     lineStyle=EChartLineStyle(opacity=0),
                     areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
-                    data=list(zip(self.years, data['neg_shade'])),
+                    data=list(zip(years, data['neg_shade'])),
                     stack=f'stack_{sector:s}'
                     ))
         if data['ubound'] >= 0:
@@ -702,7 +709,7 @@ class SparklineEChartHelperBase(BaseBase):
                     type='line',
                     symbol='none',
                     lineStyle=EChartLineStyle(opacity=0, color=color),
-                    data=list(zip(self.years, data['pos_shift'])),
+                    data=list(zip(years, data['pos_shift'])),
                     stack=f'stack_{sector:s}'
                     ))
             self.series_list.append(
@@ -717,7 +724,7 @@ class SparklineEChartHelperBase(BaseBase):
                     lineStyle=EChartLineStyle(opacity=0),
                     areaStyle={'opacity': .25},
                     itemStyle=EChartItemStyle(color=color),
-                    data=list(zip(self.years, data['pos_shade'])),
+                    data=list(zip(years, data['pos_shade'])),
                     stack=f'stack_{sector:s}'
                     ))
 
@@ -747,12 +754,12 @@ class SparklineEChartHelperBase(BaseBase):
 
     def add_total_cells(self, ymin_without_lulucf=0):
         self.append_cell(0, 0,
-                         sector=PseudoSectors.Total_without_LULUCF,
+                         sector=PseudoSector.Total_without_LULUCF,
                          ymin=ymin_without_lulucf,
                          ymax=None)
         if self.sorted_lulucf:
             self.append_cell(self.n_total_rows - 1, 0,
-                             sector=PseudoSectors.Total_with_LULUCF,
+                             sector=PseudoSector.Total_with_LULUCF,
                              ymin=0,
                              ymax=None)
 
@@ -822,6 +829,7 @@ class RegionalSparklineEChartHelperBase(BaseBase):
 
     n_rows = 2
     n_cols = 7
+    nir2025_stats: dict[PT|PseudoRegion, object]
 
     @property
     def v_unit_scale(self) -> float:
@@ -840,13 +848,24 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         self.data_by_region = self.stats_d
         self.v_unit = v_unit
 
-        self.arr_pt, self.arr_ca = nir2025.ktCO2e_dense_w_nan()
         self.color_by_key[PseudoRegion.NationalTotal] = col_ca
         self.color_by_key.update(col_by_pt)
+
+        from .nir2025_site import NIR2025
+        site_model = NIR2025()
+        self.nir2025_stats = (
+                site_model.site_model_summary_stats
+                .per_sector_echart_ktCO2e[sector][ghg])
 
     def add_data_for_region(self, region, means, lbounds, ubounds):
         assert region not in self.data_by_region
         self.update_stats_from_means_bounds(region, means, lbounds, ubounds)
+
+    def add_stats_for_region(self, region, stats, scale=None):
+        assert region not in self.data_by_region
+        if scale is None:
+            scale = self.v_unit_scale
+        self.update_stats_from_annual_stats(region, stats, scale=scale)
 
     def add_data_from_estimates(self, estimates_pt, estimates_ca):
         for ii, pt in enumerate(PT):
@@ -878,36 +897,6 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         _, self.sorted_keys = zip(*scores)
         self.sorted_keys = [PseudoRegion.NationalTotal] + list(self.sorted_keys)
 
-    def actuals_in_v_unit_scale(self, region):
-        if 'National' in region:
-            if self.ghg:
-                actuals = (
-                    self.arr_ca[nir2025.idx_of_sector[self.sector],
-                                nir2025.idx_of_ghg[self.ghg]]
-                    * self.v_unit_scale)
-            else:
-                actuals = (
-                    np.sum(self.arr_ca[nir2025.idx_of_sector[self.sector]], axis=0)
-                    * self.v_unit_scale)
-        else:
-            if self.ghg:
-                actuals = (
-                    self.arr_pt[nir2025.idx_of_sector[self.sector],
-                                nir2025.idx_of_ghg[self.ghg],
-                                nir2025.idx_of_pt[region]]
-                    * self.v_unit_scale)
-            else:
-                actuals = (
-                    np.sum(self.arr_pt[nir2025.idx_of_sector[self.sector],
-                                       :, 
-                                       nir2025.idx_of_pt[region]], axis=0)
-                    * self.v_unit_scale)
-        try:
-            assert len(actuals), (region, self.sector, self.ghg)
-        except TypeError:
-            assert 0, (region, self.sector, self.ghg)
-        return actuals
-
     def row_minmax(self, regions):
         row_ymax = -float('inf')
         row_ymin = float('inf')
@@ -916,9 +905,14 @@ class RegionalSparklineEChartHelperBase(BaseBase):
             row_ymax = max(row_ymax, max(data['ubounds']))
             row_ymin = min(row_ymin, min(data['lbounds']))
 
-            actuals = self.actuals_in_v_unit_scale(region)
-            row_ymax = max(row_ymax, np.nanmax(actuals))
-            row_ymin = min(row_ymin, np.nanmin(actuals))
+            stats = self.nir2025_stats[region]
+            lower_q, upper_q = self.credibility_interval_95
+            row_ymax = max(
+                    row_ymax,
+                    max(stats.quantiles[upper_q]) * self.v_unit_scale)
+            row_ymin = min(
+                    row_ymin,
+                    min(stats.quantiles[lower_q]) * self.v_unit_scale)
 
         # round up to nearest 2-significant-digit number
         row_ymax = max(0, float(f'{row_ymax * 1.06:.2g}'))
@@ -929,64 +923,56 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         xaxis_id, yaxis_id = self.append_cell_grid_and_axes(
                 row, col, row_ymin, row_ymax)
 
-        if hasattr(self, 'nir2025_regional_sparkline_echart_helper'):
-            nir2025_means = self.nir2025_regional_sparkline_echart_helper.data_by_region[region]['means']
-            nir2025_lbounds = self.nir2025_regional_sparkline_echart_helper.data_by_region[region]['lbounds']
-            nir2025_ubounds = self.nir2025_regional_sparkline_echart_helper.data_by_region[region]['ubounds']
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=2,
-                        type='dotted',
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, nir2025_means)),
-                    ))
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=1,
-                        type='solid',
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, nir2025_lbounds)),
-                    ))
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=1,
-                        type='solid',
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, nir2025_ubounds)),
-                    ))
-        else:
-            actuals = self.actuals_in_v_unit_scale(region)
+        stats = self.nir2025_stats[region]
+        years = stats.years
+        lower_q, median_q, upper_q = self.actuals_q
 
-            self.series_list.append(
-                EChartSeriesBase(
-                    name=f'{region} NIR2025',
-                    xAxisId=xaxis_id,
-                    yAxisId=yaxis_id,
-                    type='line',
-                    symbol='none',
-                    lineStyle=EChartLineStyle(
-                        width=2,
-                        color='#000'),
-                    data=list(zip(nir2025.nir2025_year_ints, actuals)),
-                    ))
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{region} NIR2025',
+                xAxisId=xaxis_id,
+                yAxisId=yaxis_id,
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=2,
+                    type='dotted',
+                    color='#000'),
+                data=list(zip(years,
+                              self.v_unit_scale
+                              * np.asarray(stats.quantiles[median_q]))),
+                ))
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{region} NIR2025',
+                xAxisId=xaxis_id,
+                yAxisId=yaxis_id,
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=1,
+                    type='solid',
+                    color='#000'),
+                data=list(zip(years,
+                              self.v_unit_scale
+                              * np.asarray(stats.quantiles[lower_q]))),
+                ))
+        self.series_list.append(
+            EChartSeriesBase(
+                name=f'{region} NIR2025',
+                xAxisId=xaxis_id,
+                yAxisId=yaxis_id,
+                type='line',
+                symbol='none',
+                lineStyle=EChartLineStyle(
+                    width=1,
+                    type='solid',
+                    color='#000'),
+                data=list(zip(years,
+                              self.v_unit_scale
+                              * np.asarray(stats.quantiles[upper_q]))),
+                ))
+
         self.append_cell_data(region, xaxis_id, yaxis_id)
 
 
@@ -995,32 +981,315 @@ class RegionalSparklineEChartHelperBase(BaseBase):
         self.append_all_cells()
 
 
-from .annual_subsidy_results import NationalAnnualProgramBalances
-from .enums import GovernmentProgram
+from .enums import SpecialPurposeEntity
 
 
-def echart_from_napb(
-        napb:NationalAnnualProgramBalances,
+def national_cost_impact_echart(
+        costs_with_strategy:dict[SpecialPurposeEntity, np.ndarray],
+        costs_without_strategy:dict[SpecialPurposeEntity, np.ndarray],
+        year_0:int,
+        n_years:int,
+        v_unit:str,
         div_id:str,
-        model_name:str, # for linking charts to /models/prob/{model_name}/
+        model_name:str, # for linking charts to /models/{model_name}/
         ):
     helper = BaseBase(
             div_id=div_id,
             model_name=model_name,
             )
-    assert GovernmentProgram.Net in napb.CAD_sample
-    for program, balance_sample in napb.CAD_sample.items():
-        helper.update_stats_from_sample(program, balance_sample)
-    non_net_programs = [
-            prog for prog in napb.CAD_sample
-            if prog != GovernmentProgram.Net]
+    assert len(costs_with_strategy) == len(costs_without_strategy)
+    if v_unit == 'Billions CAD':
+        v_unit_scale = 1 / 1_000_000_000
+    else:
+        raise NotImplementedError(v_unit)
+
+    for spe, cost_sample in costs_with_strategy.items():
+        delta = cost_sample - costs_without_strategy[spe]
+        helper.update_stats_from_sample(
+                spe,
+                delta.T * v_unit_scale)
+    non_net_programs = list(costs_with_strategy) # keys
     non_net_programs.sort(key=lambda prog: helper.stats_d[prog]['spread'])
-    helper.sorted_keys.append(GovernmentProgram.Net)
     helper.sorted_keys.extend(non_net_programs)
     helper.determine_n_total_rows()
-    helper.color_by_key = {
-        GovernmentProgram.Net: col_ca,
-    }
     helper.assign_default_colors()
     helper.append_all_cells()
+    return helper.make_echart()
+
+
+def national_cost_impact_echart_from_stats(
+        cost_impact_stats: dict[SpecialPurposeEntity, object],
+        div_id:str,
+        v_unit:str,
+        model_name:str, # for linking charts to /models/{model_name}/
+        ):
+    helper = BaseBase(
+            div_id=div_id,
+            model_name=model_name,
+            )
+    if v_unit == 'Billions CAD':
+        v_unit_scale = 1 / 1_000_000_000
+    else:
+        raise NotImplementedError(v_unit)
+
+    for spe, stats in cost_impact_stats.items():
+        helper.update_stats_from_annual_stats(
+                spe,
+                stats,
+                scale=v_unit_scale)
+    non_net_programs = list(cost_impact_stats) # keys
+    non_net_programs.sort(key=lambda prog: helper.stats_d[prog]['spread'])
+    helper.sorted_keys.extend(non_net_programs)
+    helper.determine_n_total_rows()
+    helper.assign_default_colors()
+    helper.append_all_cells()
+    return helper.make_echart()
+
+
+def national_emissions_by_sector_echart_from_sample(
+        ktCO2e_sample: dict[IPCC_Sector|PseudoSector, jnp.ndarray],
+        year_0: int,
+        n_years: int,
+        n_samples: int,
+        div_id:str,
+        v_unit:str,
+        model_name:str,
+        ) -> UncertainSparklineMatrixEChart:
+
+    helper = SparklineEChartHelperBase(div_id=div_id,
+                                       v_unit=v_unit,
+                                       model_name=model_name)
+    helper.years = np.arange(year_0, n_years + year_0)
+
+    for sector in IPCC_Sector:
+        helper.compute_stats_and_add_data_for_sector(
+            sector,
+            ktCO2e_sample[sector].T * helper.v_unit_scale)
+
+    estimates_with_lulucf = ktCO2e_sample[PseudoSector.Total_with_LULUCF]
+    estimates_without_lulucf = ktCO2e_sample[PseudoSector.Total_without_LULUCF]
+
+    helper.add_data_for_LULUCF_totals(
+        estimates_with_lulucf.T * helper.v_unit_scale,
+        estimates_with_lulucf.mean(axis=1) * helper.v_unit_scale,
+        estimates_without_lulucf.T * helper.v_unit_scale,
+        estimates_without_lulucf.mean(axis=1) * helper.v_unit_scale,
+        )
+
+    helper.order_sectors()
+    helper.add_total_cells()
+    helper.add_non_lulucf_cells()
+    helper.add_lulucf_cells()
+    return helper.make_echart()
+
+
+def sectoral_emissions_by_region_echart_from_sample(
+        ktCO2e_sample: dict[PT|PseudoRegion, jnp.ndarray],
+        year_0: int,
+        n_years: int,
+        n_samples: int,
+        sector:IPCC_Sector,
+        ghg: GHG|None,
+        div_id:str,
+        v_unit:str,
+        ) -> UncertainSparklineMatrixEChart:
+
+    helper = RegionalSparklineEChartHelperBase(
+            sector=sector,
+            ghg=ghg,
+            div_id=div_id,
+            v_unit=v_unit)
+    helper.years = np.arange(year_0, n_years + year_0)
+
+    estimates_ca = ktCO2e_sample[PseudoRegion.NationalTotal]
+    # shape (n_pt, n_years, n_samples)
+    estimates_pt = np.asarray([ktCO2e_sample[pt] for pt in PT if pt != PT.XX])
+    helper.add_data_from_estimates(
+            estimates_pt=estimates_pt.transpose(2, 1, 0) * helper.v_unit_scale,
+            estimates_ca=estimates_ca.T * helper.v_unit_scale)
+
+    helper.order_regions()
+    helper.add_regional_cells()
+    return helper.make_echart()
+
+
+def national_emissions_by_sector_echart_from_stats(
+        ktCO2e_stats: dict[IPCC_Sector|PseudoSector, object],
+        div_id:str,
+        v_unit:str,
+        model_name:str,
+        ) -> UncertainSparklineMatrixEChart:
+
+    helper = SparklineEChartHelperBase(div_id=div_id,
+                                       v_unit=v_unit,
+                                       model_name=model_name)
+    if ktCO2e_stats:
+        helper.years = np.asarray(next(iter(ktCO2e_stats.values())).years)
+
+    for sector in IPCC_Sector:
+        helper.add_stats_for_sector(sector, ktCO2e_stats[sector])
+
+    for total in (PseudoSector.Total_with_LULUCF,
+                  PseudoSector.Total_without_LULUCF):
+        helper.add_stats_for_sector(total, ktCO2e_stats[total])
+
+    helper.order_sectors()
+    helper.add_total_cells()
+    helper.add_non_lulucf_cells()
+    helper.add_lulucf_cells()
+    return helper.make_echart()
+
+
+def sectoral_emissions_by_region_echart_from_stats(
+        ktCO2e_stats: dict[PT|PseudoRegion, object],
+        sector:IPCC_Sector,
+        ghg: GHG|None,
+        div_id:str,
+        v_unit:str,
+        ) -> UncertainSparklineMatrixEChart:
+
+    helper = RegionalSparklineEChartHelperBase(
+            sector=sector,
+            ghg=ghg,
+            div_id=div_id,
+            v_unit=v_unit)
+    if ktCO2e_stats:
+        helper.years = np.asarray(next(iter(ktCO2e_stats.values())).years)
+
+    for region, stats in ktCO2e_stats.items():
+        helper.add_stats_for_region(region, stats)
+
+    helper.order_regions()
+    helper.add_regional_cells()
+    return helper.make_echart()
+
+
+def _annual_stats_max_abs(stats) -> float:
+    arrays = [np.asarray(stats.mean)]
+    arrays.extend(np.asarray(values) for values in stats.quantiles.values())
+    return max(float(np.max(np.abs(array))) for array in arrays)
+
+
+def national_emissions_impact_echart_from_stats(
+        impact_stats: dict[IPCC_Sector|PseudoSector, object],
+        div_id:str,
+        v_unit:str,
+        model_name:str,
+        ) -> UncertainSparklineMatrixEChart:
+    helper = SparklineEChartHelperBase(
+            div_id=div_id,
+            v_unit=v_unit,
+            model_name=model_name,
+            cells_include_actuals=False)
+
+    eps = 1
+    nonzero_deltas = {
+            sector: stats
+            for sector, stats in impact_stats.items()
+            if _annual_stats_max_abs(stats) > eps}
+    assert nonzero_deltas
+
+    if nonzero_deltas:
+        helper.years = np.asarray(next(iter(nonzero_deltas.values())).years)
+
+    helper.n_non_lulucf_rows = 0
+    while helper.n_cols * helper.n_non_lulucf_rows < len(nonzero_deltas):
+        helper.n_non_lulucf_rows += 1
+    helper.n_total_rows = helper.n_non_lulucf_rows
+
+    for sector in IPCC_Sector:
+        if sector in nonzero_deltas:
+            helper.add_stats_for_sector(sector, nonzero_deltas[sector])
+
+    for total in (PseudoSector.Total_with_LULUCF,
+                  PseudoSector.Total_without_LULUCF):
+        if total in nonzero_deltas:
+            helper.add_stats_for_sector(total, nonzero_deltas[total])
+
+    # begin logic in place of helper.order_sectors()
+    non_lulucf_scores = [
+        (-helper.data_by_sector[sector]['ubound'], sector)
+        for sector in nonzero_deltas
+        if isinstance(sector, IPCC_Sector) and sector not in LULUCF_Sectors]
+    if any(sector in LULUCF_Sectors for sector in nonzero_deltas):
+        raise NotImplementedError()
+    non_lulucf_scores.sort()
+    helper.sorted_non_lulucf = [sector for _, sector in non_lulucf_scores]
+    helper.sorted_lulucf = []
+    # end logic in place of helper.order_sectors()
+
+    helper.add_total_cells(ymin_without_lulucf=None)
+    helper.add_non_lulucf_cells()
+
+    # there won't be any because `n_non_lulucf_rows = 0` above
+    # helper.add_lulucf_cells()
+
+    return helper.make_echart()
+
+
+def national_emissions_impact_echart(
+        with_strategy_ktCO2e_sample: dict[IPCC_Sector|PseudoSector, jnp.ndarray],
+        without_strategy_ktCO2e_sample: dict[IPCC_Sector|PseudoSector, jnp.ndarray],
+        year_0: int,
+        n_years: int,
+        n_samples: int,
+        div_id:str,
+        v_unit:str,
+        model_name:str,
+        ) -> UncertainSparklineMatrixEChart:
+    helper = SparklineEChartHelperBase(
+            div_id=div_id,
+            v_unit=v_unit,
+            model_name=model_name,
+            cells_include_actuals=False)
+    helper.years = np.arange(year_0, n_years + year_0)
+
+    nonzero_deltas = {}
+    eps = 1
+    for sector, sample in with_strategy_ktCO2e_sample.items():
+        delta = (sample - without_strategy_ktCO2e_sample[sector])
+        if abs(delta).max() > eps:
+            nonzero_deltas[sector] = delta
+
+    assert nonzero_deltas
+
+    helper.n_non_lulucf_rows = 0
+    while helper.n_cols * helper.n_non_lulucf_rows < len(nonzero_deltas):
+        helper.n_non_lulucf_rows += 1
+    helper.n_total_rows = helper.n_non_lulucf_rows
+
+    for sector in IPCC_Sector:
+        if sector in nonzero_deltas:
+            helper.compute_stats_and_add_data_for_sector(
+                sector,
+                nonzero_deltas[sector].T * helper.v_unit_scale)
+
+    estimates_with_lulucf = nonzero_deltas[PseudoSector.Total_with_LULUCF]
+    estimates_without_lulucf = nonzero_deltas[PseudoSector.Total_without_LULUCF]
+
+    helper.add_data_for_LULUCF_totals(
+        estimates_with_lulucf.T * helper.v_unit_scale,
+        estimates_with_lulucf.mean(axis=1) * helper.v_unit_scale,
+        estimates_without_lulucf.T * helper.v_unit_scale,
+        estimates_without_lulucf.mean(axis=1) * helper.v_unit_scale,
+        )
+
+    # begin logic in place of helper.order_sectors()
+    non_lulucf_scores = [
+        (-helper.data_by_sector[sector]['ubound'], sector)
+        for sector in nonzero_deltas
+        if isinstance(sector, IPCC_Sector) and sector not in LULUCF_Sectors]
+    if any(sector in LULUCF_Sectors for sector in nonzero_deltas):
+        raise NotImplementedError()
+    non_lulucf_scores.sort()
+    helper.sorted_non_lulucf = [sector for _, sector in non_lulucf_scores]
+    helper.sorted_lulucf = []
+    # end logic in place of helper.order_sectors()
+
+    helper.add_total_cells(ymin_without_lulucf=None)
+    helper.add_non_lulucf_cells()
+
+    # there won't be any because `n_non_lulucf_rows = 0` above
+    # helper.add_lulucf_cells()
+
     return helper.make_echart()

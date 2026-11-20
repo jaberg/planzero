@@ -5,11 +5,15 @@ import os
 import jinja2
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+print("app.py: loaded 3rd party imports")
+
 app = FastAPI()
+
+print("app.py: created FastAPI handle")
 
 htmlroot = 'html'
 
@@ -22,6 +26,8 @@ templates = Jinja2Templates(
         loader=jinja2.FileSystemLoader(htmlroot),
         ))
 
+print("app.py: mounted template resources")
+
 import planzero.blog
 import planzero.enums
 import planzero.est_nir
@@ -30,6 +36,8 @@ import planzero.ipcc_canada
 import planzero.ipcc_home
 import planzero.singleton_registry
 import planzero.ureg
+
+print("app.py: completed planzero imports")
 
 u = planzero.ureg.ureg
 
@@ -41,6 +49,8 @@ try:
     import diskcache
 except ImportError:
     diskcache = None
+
+print("app.py: imported diskcache")
 
 APP_CACHE_DIR = os.environ['PLANZERO_APP_CACHE_DIR']
 USE_DISK_CACHE = (os.environ['PLANZERO_USE_DISK_CACHE'] == '1')
@@ -145,39 +155,14 @@ async def get_ipcc_sectors_category(
             request, 
             error_text=f"Sorry, we don't have the analysis page for {catpath} yet")
 
-
-@app_cache
-def get_simulation_barrier_impact_html(sim_name, barrier_name):
-    import planzero.sim
-    sim = planzero.sim.simulation_result(sim_name)
-    template = templates.get_template("scenario_barrier.html")
-    rval = template.render(
-        get_context(
-            title=f"PlanZero - Simulation {sim_name} - Barrier {barrier_name}",
-            sim=sim,
-            active_tab='simulations',
-            sim_name=sim_name,
-            barrier_name=barrier_name,
-            ))
-    return rval
-
-
-@app.get("/models/sim/{sim_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
-async def get_simulation_barrier_impact(request: Request, sim_name: str, barrier_name: str):
-    html = get_simulation_barrier_impact_html(sim_name, barrier_name)
-    if html:
-        return HTMLResponse(content=html)
-    else:
-        return await get_ipcc_sectors(
-            request,
-            error_text="Sorry, no such simulation and/or barrier")
-
 @app_cache
 def get_prob_barrier_impact_html(site_inf_name, barrier_name):
     from planzero.endpoints import completed_prob_registry as prob_registry
     template = templates.get_template("model_barrier.html")
     site_inference = prob_registry()[site_inf_name]
     barrier_obj = site_inference.barriers[barrier_name]
+    def var_name_fn(vk, nchars:int):
+        return str(vk)[:nchars]
     rval = template.render(
         get_context(
             title=f"PlanZero - Model {site_inf_name} - Barrier {barrier_name}",
@@ -186,11 +171,12 @@ def get_prob_barrier_impact_html(site_inf_name, barrier_name):
             barrier_name=barrier_name,
             barrier_obj=barrier_obj,
             site_inference=site_inference,
+            var_name_fn=var_name_fn,
             ))
     return rval
 
 
-@app.get("/models/prob/{site_inf_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
+@app.get("/models/{site_inf_name}/barriers/{barrier_name}/", response_class=HTMLResponse)
 async def get_prob_barrier_impact(request: Request, site_inf_name: str, barrier_name: str):
     html = get_prob_barrier_impact_html(site_inf_name, barrier_name)
     if html:
@@ -199,37 +185,11 @@ async def get_prob_barrier_impact(request: Request, site_inf_name: str, barrier_
         raise HTTPException(status_code=404, detail="No such model / barrier")
 
 
+@app.get("/models/prob/{site_inf_name}/barriers/{barrier_name}/")
+async def redirect_prob_barrier_impact(site_inf_name: str, barrier_name: str):
+    return RedirectResponse(url=f"/models/{site_inf_name}/barriers/{barrier_name}/", status_code=307)
 
 
-@app_cache
-def get_simulations_page_html(ident:str):
-    import planzero.sim
-    site_sim = planzero.sim.site_simulations[ident]
-    sim_result = planzero.sim.simulation_result(ident)
-    sectors_by_de = sim_result.state.ipcc_sectors_by_dynamic_element()
-
-    def ipcc_sectors_from_dynelem(dynelem):
-        sectors = sectors_by_de.get(dynelem.identifier, set())
-        if len(sectors) < 5:
-            return sectors
-        else:
-            return [] # TODO: better version of "many"
-
-    return templates.get_template("scenario_template.html").render(
-        get_context(
-            title=f"PlanZero Simulation {ident}",
-            active_tab='models',
-            ident=ident,
-            ipcc_sectors_from_dynelem=ipcc_sectors_from_dynelem,
-            site_sim=site_sim,
-            sim_result=sim_result,
-            ))
-
-
-@app.get("/models/sim/{ident}/", response_class=HTMLResponse)
-async def get_simulation_page(ident:str, request: Request):
-    html = get_simulations_page_html(ident)
-    return HTMLResponse(content=html)
 
 
 @app_cache
@@ -239,6 +199,7 @@ def get_models_prob_page_html(ident:str):
     site_inference = prob_registry()[ident]
     if not site_inference.show_on_models_page:
         return None
+
     return templates.get_template("models_prob.html").render(
         get_context(
             title=f"PlanZero Model {ident}",
@@ -248,13 +209,18 @@ def get_models_prob_page_html(ident:str):
             ))
 
 
-@app.get("/models/prob/{ident}/", response_class=HTMLResponse)
+@app.get("/models/{ident}/", response_class=HTMLResponse)
 async def get_models_prob_page(ident:str, request: Request):
     html = get_models_prob_page_html(ident)
     if html:
         return HTMLResponse(content=html)
     else:
         raise HTTPException(status_code=404, detail="No such model")
+
+
+@app.get("/models/prob/{ident}/")
+async def redirect_models_prob_page(ident: str):
+    return RedirectResponse(url=f"/models/{ident}/", status_code=307)
 
 
 @app_cache
@@ -276,7 +242,7 @@ def get_models_prob_sector_page_html(ident:str, sector_path:str):
             ))
 
 
-@app.get("/models/prob/{ident}/sectors/{sector_path:path}", response_class=HTMLResponse)
+@app.get("/models/{ident}/sectors/{sector_path:path}", response_class=HTMLResponse)
 async def get_models_prob_sector_page(ident:str, sector_path:str, request: Request):
     while sector_path.endswith('/'):
         sector_path = sector_path[:-1]
@@ -287,125 +253,29 @@ async def get_models_prob_sector_page(ident:str, sector_path:str, request: Reque
         raise HTTPException(status_code=404, detail="No such model or sector")
 
 
-@app_cache
-def get_simulation_ipcc_sectors_category_html(sim_name, catpath):
-    import planzero.enums
-    import planzero.sim
-    sim = planzero.sim.simulation_result(sim_name)
-    chart = sim.echart_ipcc_sector(catpath)
-    template = templates.get_template("scenario_ipcc_sector.html")
-    rval = template.render(
-        get_context(
-            title=f"PlanZero Simulation {sim_name} - Sector {catpath}",
-            active_tab='simulations',
-            sim_name=sim_name,
-            ipcc_sector=planzero.enums.IPCC_Sector.from_catpath(catpath),
-            catpath=catpath,
-            chart=chart,
-            ))
-    return rval
-
-
-@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/", response_class=HTMLResponse)
-@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/", response_class=HTMLResponse)
-@app.get("/models/sim/{sim_name}/ipcc-sectors/{category}/{subcategory}/{subsubcategory}/", response_class=HTMLResponse)
-async def get_simulation_ipcc_sectors_category(
-    request: Request,
-    sim_name: str,
-    category: str,
-    subcategory: str|None = None,
-    subsubcategory: str|None = None):
-
-    if subsubcategory is not None:
-        catpath=f'{category}/{subcategory}/{subsubcategory}'
-    elif subcategory is not None:
-        catpath = f'{category}/{subcategory}'
-    else:
-        catpath = f'{category}'
-
-    html = get_simulation_ipcc_sectors_category_html(sim_name, catpath)
-    return HTMLResponse(content=html)
-
-
-@app_cache
-def get_simulations_strategy_impact_html(sim_name: str, strategy_name: str):
-    import planzero.blog
-    import planzero.sim
-
-    sim = planzero.sim.simulation_result(sim_name)
-    baseline_state = sim.state
-    ablated_state = sim.ablations.get(strategy_name)
-    if not ablated_state:
-        raise HTTPException(status_code=404, detail="Strategy not found in this simulation")
-    
-    # Calculate impact (baseline - ablated)
-    # This assumes we want to show emissions saved
-    impact_chart = sim.strategy_impact_echart(strategy_name)
-    subsidies_chart = sim.strategy_subsidies_echart(strategy_name)
-
-    # Simple total emissions comparison for cost calculation
-    baseline_total = baseline_state.compute_annual_emissions().total()
-    ablated_total = ablated_state.compute_annual_emissions().total()
-
-    # Simple total subsidy comparison
-    subsidy_baseline_total = baseline_state.compute_annual_subsidies().total()
-    subsidy_ablated_total = ablated_state.compute_annual_subsidies().total()
-
-    try:
-        cost_per_tCO2e = (
-            (subsidy_baseline_total - subsidy_ablated_total).sum()
-            / (ablated_total - baseline_total).sum()).to(u.CAD / u.tonne_CO2e)
-    except AssertionError:
-        # this happens in Planet_Model
-        cost_per_tCO2e = float('nan') * u.CAD / u.tonne_CO2e
-
-    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
-
-    context = get_context(
-            title=f"PlanZero Simulation {sim_name} - Strategy {strategy_name}",
-            active_tab='simulations',
-            sim_name=sim_name,
-            strategy_name=strategy_name,
-            strategy_class=baseline_state.projects[strategy_name].__class__,
-            description_html=baseline_state.projects[strategy_name].description_html,
-            impact_chart=impact_chart,
-            subsidies_chart=subsidies_chart,
-            cost_per_tCO2e=cost_per_tCO2e,
-            )
-    strategy_obj = baseline_state.projects[strategy_name]
-    context['see_also'] = strategy_obj.see_also_html(context)
-    return templates.get_template('strategy_impact.html').render(context)
-
-
-@app.get("/models/sim/{sim_name}/strategies/{strategy_name}/", response_class=HTMLResponse)
-async def get_simulations_strategy_impact(request: Request, sim_name: str, strategy_name: str):
-    html = get_simulations_strategy_impact_html(sim_name, strategy_name)
-    return HTMLResponse(content=html)
+@app.get("/models/prob/{ident}/sectors/{sector_path:path}")
+async def redirect_models_prob_sector_page(ident: str, sector_path: str):
+    return RedirectResponse(url=f"/models/{ident}/sectors/{sector_path}", status_code=307)
 
 
 @app_cache
 def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name: str):
-    import planzero.blog
     from planzero.endpoints import completed_prob_registry as prob_registry
+    from planzero.prob import SiteInference
     try:
         site_inference = prob_registry()[site_inference_name]
+        assert isinstance(site_inference, SiteInference)
     except KeyError:
         raise HTTPException(
                 status_code=404,
                 detail=f"No such model: '{site_inference_name}'")
 
-    ablation_study = site_inference.ablation_study
-    if not ablation_study:
-        raise HTTPException(
-                status_code=404,
-                detail=f"No ablation study for: '{site_inference_name}'")
-
-    impact_chart = ablation_study.impact_chart(strategy_name)
-    subsidies_chart = ablation_study.government_impact_chart(strategy_name)
-    cost_per_tCO2e = ablation_study.cost_per_tCO2e(strategy_name)
-
-    # TODO: this should maybe be a diagnostic / warning?
-    assert len(list(planzero.blog.blogs_by_tag(strategy_name)))
+    impact_chart = site_inference.national_emissions_impact_echart(
+            strategy_name, div_id='emissions_echart', v_unit='Mt_CO2e')
+    subsidies_chart = site_inference.national_cost_impact_echart(
+            strategy_name, div_id='cost_echart', v_unit='Billions CAD')
+    cost_per_tCO2e = site_inference.cost_per_tCO2e(
+            strategy_name)
 
     context = get_context(
             title=f"PlanZero Model {site_inference_name} - Strategy {strategy_name}",
@@ -414,16 +284,18 @@ def get_models_prob_strategy_impact_html(site_inference_name: str, strategy_name
             sim_name=None,
             site_inference=site_inference,
             strategy_name=strategy_name,
-            description_html=ablation_study.strategies[strategy_name].description_html,
+            description_html=(
+                site_inference.strategies[strategy_name].description_html()),
             impact_chart=impact_chart,
             subsidies_chart=subsidies_chart,
             cost_per_tCO2e=cost_per_tCO2e,
             )
-    context['see_also'] = ablation_study.strategies[strategy_name].see_also_html(context)
+    context['see_also'] = (
+            site_inference.strategies[strategy_name].see_also_html(context))
     return templates.get_template('strategy_impact_prob.html').render(context)
 
 
-@app.get("/models/prob/{site_inference_name}/strategies/{strategy_name}/",
+@app.get("/models/{site_inference_name}/strategies/{strategy_name}/",
          response_class=HTMLResponse)
 async def get_models_prob_strategy_impact(
         request: Request,
@@ -431,6 +303,13 @@ async def get_models_prob_strategy_impact(
         strategy_name: str):
     html = get_models_prob_strategy_impact_html(site_inference_name, strategy_name)
     return HTMLResponse(content=html)
+
+
+@app.get("/models/prob/{site_inference_name}/strategies/{strategy_name}/")
+async def redirect_models_prob_strategy_impact(site_inference_name: str, strategy_name: str):
+    return RedirectResponse(
+        url=f"/models/{site_inference_name}/strategies/{strategy_name}/",
+        status_code=307)
 
 
 @app_cache
@@ -441,14 +320,11 @@ def get_strategies_html():
     models_by_strategy = {}
     sectors_by_strategy = {}
     for model_id, site_inf in sorted(registry.items()):
-        if site_inf.ablation_study and site_inf.strategy_id:
-            # don't list ablated variants
-            continue
-        for strategy_id in site_inf.strategy_ids:
+        for strategy_id in site_inf.strategies:
             models_by_strategy.setdefault(strategy_id, []).append(model_id)
             try:
                 sectors_by_strategy.setdefault(strategy_id, set()).update(
-                        site_inf.affected_sectors_by_strategy[strategy_id])
+                        site_inf.sectors_affected_by_strategy(strategy_id))
             except KeyError as err:
                 raise KeyError((model_id, strategy_id)) from err
 
@@ -491,7 +367,7 @@ def get_blog_html(post_name: str):
         raise OSError() # hack to trigger 404 below
 
     if blog.published or HOME_SHOW_UNPUBLISHED_POSTS:
-        return templates.get_template(f"/blog/{post_name}.html").render(
+        return templates.get_template(f"/posts/{post_name}.html").render(
                 get_context(
                     title=f"PlanZero - {blog.title}",
                     active_tab='blog',
@@ -503,9 +379,12 @@ def get_blog_html(post_name: str):
         raise CannotRenderUnPublishedPost()
 
 
-@app.get("/blog/{post_name}", response_class=HTMLResponse)
-@app.get("/post/{post_name}", response_class=HTMLResponse)
-async def get_blog(request: Request, post_name:str):
+@app.get("/posts/{post_name}", response_class=HTMLResponse)
+async def get_blog(request: Request, post_name: str):
+    # Normalize canonical form (no trailing slash)
+    if post_name.endswith("/"):
+        post_name = post_name.rstrip("/")
+        return RedirectResponse(url=f"/posts/{post_name}", status_code=307)
     try:
         html = get_blog_html(post_name)
         return HTMLResponse(content=html)
@@ -515,16 +394,31 @@ async def get_blog(request: Request, post_name:str):
     except CannotRenderUnPublishedPost:
         raise HTTPException(status_code=404, detail="cannot render unpublished post")
 
+
+@app.get("/post/{post_name}")
+@app.get("/post/{post_name}/")
+@app.get("/blog/{post_name}")
+@app.get("/blog/{post_name}/")
+async def redirect_post_to_posts(post_name: str):
+    if post_name.endswith("/"):
+        post_name = post_name.rstrip("/")
+    return RedirectResponse(url=f"/posts/{post_name}", status_code=307)
+
+
+@app.get("/posts/{post_name}/")
+async def redirect_posts_trailing_slash(post_name: str):
+    return RedirectResponse(url=f"/posts/{post_name.rstrip('/')}", status_code=307)
+
 ## MODELS
 
 @app_cache
 def get_models_html():
     from planzero.endpoints import completed_prob_registry as prob_registry
-    prob_registry()  # call it to ensure the registry is populated
     return templates.get_template('models.html').render(
             get_context(
                 title="PlanZero - Models",
                 active_tab='models',
+                model_registry=prob_registry(), # dict
                 ))
 
 @app.get("/models/", response_class=HTMLResponse)
@@ -533,16 +427,89 @@ async def get_models(request: Request):
     return HTMLResponse(content=html)
 
 
+## MODEL EXPLORER
+
+@app_cache
+def get_model_explorer_html(model: str | None = None, group: str | None = None):
+    # tab=foo might be in the url as well, but this handler ignores it
+    from planzero.dependency_explorer import (
+            list_mcmc_groups,
+            render_mcmc_group_html_explorer,
+            )
+    from planzero.endpoints import completed_prob_registry
+    registry = completed_prob_registry()
+    models = [
+            {'name': name,  # aka url_name
+             'pretty_name': site_inf.pretty_name,
+             }
+            for name, site_inf in sorted(registry.items())
+            ]
+
+    if model not in registry:
+        # Prefer the Scaling model as the default when no valid model is given.
+        model = 'Scaling' if 'Scaling' in registry else models[0]['name']
+    site_inf = registry[model]
+    scenario_model = site_inf.scenario_model
+    group_names = list_mcmc_groups(scenario_model)
+
+    group_counts = {name: 0 for name in group_names}
+    for name in scenario_model.mcmc_group_by_elemid.values():
+        if name in group_counts:
+            group_counts[name] += 1
+
+    groups = sorted(
+            [
+                {'name': name, 'n_elements': group_counts[name]}
+                for name in group_names
+            ],
+            key=lambda item: (-item['n_elements'], item['name']))
+
+    if group not in group_counts:
+        # The largest group is the most useful default for exploration.
+        group = groups[0]['name'] if groups else None
+
+    if group is None:
+        raise HTTPException(
+                status_code=404,
+                detail="no inference groups available")
+
+    explorer_html = render_mcmc_group_html_explorer(
+            scenario_model,
+            group,
+            model_name=site_inf.pretty_name)
+
+    return templates.get_template('model-explorer.html').render(
+            get_context(
+                title=f"PlanZero - Model Explorer - {site_inf.pretty_name} - {group}",
+                active_tab='models',
+                models=models,
+                selected_model=model,
+                groups=groups,
+                selected_group=group,
+                explorer_html=explorer_html,
+                ))
+
+
+@app.get("/model-explorer/", response_class=HTMLResponse)
+async def get_model_explorer(
+        request: Request,
+        model:str|None = None,
+        group:str|None = None
+        ):
+    html = get_model_explorer_html(model=model, group=group)
+    return HTMLResponse(content=html)
+
+
 ## PREDICTIONS
 
 @app_cache
 def get_metrics_html():
-    from planzero.endpoints import completed_prob_registry as prob_registry
-    prob_registry()  # call it to ensure the registry is populated
+    from planzero.endpoints import completed_prob_registry
     return templates.get_template('metrics.html').render(
             get_context(
                 title="PlanZero - Metrics",
                 active_tab='metrics',
+                model_registry=completed_prob_registry(),
                 ))
 
 @app.get("/metrics/", response_class=HTMLResponse)
@@ -604,10 +571,12 @@ async def get_index(
 
 
 def get_context(title:str, **kwargs):
+    print("app.py: get_context loading planzero packages")
     import planzero.blog
     import planzero.glossary
     import planzero.html
     import planzero.ipcc_canada
+    print("app.py: get_context finished loading planzero packages")
 
     rval = {'title': title,
             'int': int,
@@ -615,6 +584,7 @@ def get_context(title:str, **kwargs):
             'float': float,
             'min': min,
             'max': max,
+            'len': len,
             'np': np,
             'sorted': sorted,
             'enumerate': enumerate,
@@ -647,3 +617,5 @@ def get_context(title:str, **kwargs):
     }
     rval.update(kwargs)
     return rval
+
+print("app.py: bottom of file")

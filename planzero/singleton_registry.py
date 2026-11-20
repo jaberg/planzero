@@ -15,6 +15,11 @@ class SingletonRegistry:
         assert cls.__name__ not in self.classes
         self.classes[cls.__name__] = cls
 
+    def __len__(self) -> int:
+        keys = set(self.instances)
+        keys.update(self.classes)
+        return len(keys)
+
     def __contains__(self, key):
         return key in self.instances or key in self.classes
 

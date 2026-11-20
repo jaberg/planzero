@@ -73,12 +73,12 @@ class BlogPost(BaseModel):
 
     @property
     def siteref(self):
-        return f'/post/{self.url_filename}'
+        return f'/posts/{self.url_filename}'
 
     def __init__(self, **kwargs):
         if 'about' not in kwargs:
             template = jinja2.Template(source=self.__class__.__doc__)
-            rendered = template.render(template_globals())
+            rendered = template.render(template_globals(tooltips=True, site_links=True))
             kwargs = dict(kwargs, about=rendered)
         super().__init__(**kwargs)
 
@@ -106,31 +106,21 @@ from .nir_ar2_post import AR2
 
 
 class Glossary(BlogPost):
-    """This post announces a new page:
-    a glossary of terms and acronyms with specific meanings in the context of
-    PlanZero posts.
-    This glossary also introduces modelling terminology to support future posts.
-    The modelling terminology is used to reframe the NIR-reconstruction
-    project within languages of both strategic management and of statistical
-    modelling.
-    This post deprecates the non-probabilistic "Scaling" model
-    and in fact all of the non-probabilistic models in the Models tab in favour
-    of probabilistic modelling generally.
+    """What are PlanZero models, how are they built, and how are they evaluated?
+    This post provides some high level design documentation,
+    introduces a Glossary to track terminology for ongoing reference,
+    and introduces a new Model Explorer tool that provides an interactive view of model internals.
+    With this post, PlanZero's simulation-based models have been deprecated and removed; a PlanZero model now means a probabilistic model.
     """
     def __init__(self):
         super().__init__(
-            date=datetime.date(2026, 9, 25),
-            title='New: the PlanZero glossary',
+            date=datetime.date(2026, 10, 25),
+            title='What is a PlanZero Model? Design, glossary and model explorer tool',
             url_filename="2026-04-19-glossary",
             author="James Bergstra",
-            #tags={
-                # BlogTag.About, # Does it? How?
-                # BlogTag.Strategies,
-                # BlogTag.BarrierModelling,
-                # BlogTag.NIR_Modelling,
-            #},
-            status=BlogStatus.Planned,
+            status=BlogStatus.Draft,
             )
+
 
 class NetZero2050Metric(BlogPost):
 
@@ -159,9 +149,9 @@ class NetZero2050Metric(BlogPost):
 class ProbabilisticBovaer(BlogPost):
     """
     This post revisits the Bovaer strategy
-    (<a href="/post/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
+    (<a href="/posts/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
     and extends PlanZero's probabilistic modelling
-    (<a href="/post/2026-06-28-static-normals">Static Normals:
+    (<a href="/posts/2026-06-28-static-normals">Static Normals:
     a Baseline Predictive Model</a>)
     with support for strategy and barrier scenario modelling elements.
     Scaling the administration of Bovaer is estimated to reduce annual
@@ -184,21 +174,6 @@ class ProbabilisticBovaer(BlogPost):
                  },
             status=BlogStatus.Draft,
             )
-
-    def generate_assets(self):
-        from .endpoints import completed_prob_registry
-
-        reg = completed_prob_registry()
-        scaling = reg['ScalingStudy_All_Strategies']
-
-        impact_chart = scaling.ablation_study.impact_chart('Scale_Bovaer')
-        subsidies_chart = scaling.ablation_study.government_impact_chart('Scale_Bovaer')
-
-        base = f'html/blog/{self.url_filename}'
-        impact_chart.save_as(f'{base}-impact.html')
-        print(f'{base}-impact.html')
-        subsidies_chart.save_as(f'{base}-subsidies.html')
-        print(f'{base}-subsidies.html')
 
 
 from .nir_static_normals_post import StaticNormals  # noqa: F401
@@ -265,7 +240,7 @@ class ProbabilisticNIR2025(BlogPost):
         from . import prob
         from .enums import GHG, IPCC_Sector
 
-        base = 'html/blog/2026-05-20-prob-nir'
+        base = 'html/posts/2026-05-20-prob-nir'
         model_name = 'NIR2025'
         site_inference = prob.site_inferences['NIR2025']
         site_inference.uncertain_sparkline_matrix_echart(
@@ -500,17 +475,6 @@ class ModellingBovaer(BlogPost):
                  },
             draft=False,
             )
-
-    @staticmethod
-    def generate_assets():
-        from . import sim
-        scaling = sim.simulation_result('Scaling')
-        scaling.by_ipcc_sector.save_as(
-            'html/blog/2026-04-03-bovaer_by-ipcc-sector.html')
-        scaling.strategy_impact_echart('Scale_Bovaer').save_as(
-            'html/blog/2026-04-03-bovaer_strategy-emissions.html')
-        scaling.strategy_subsidies_echart('Scale_Bovaer').save_as(
-            'html/blog/2026-04-03-bovaer_strategy-subsidies.html')
 
 
 class IPCC_HeavyDutyDieselVehicles(BlogPost):
@@ -805,28 +769,6 @@ class GHG_Emissions(BlogPost):
                 'EmissionsImpulseResponse_NF3',
             ],
             )
-
-    @property
-    def figure_svgs(self):
-        # planet_model populates registry
-        from . import (
-            planet_model,  # noqa: F401
-            sim,
-        )
-
-        return {
-            "co2e_v_heat_remaining": GHG_Emissions_CO2e_v_Heat(
-                sim_result=sim.simulation_result('Planet_Model'),
-                sts_key='Cumulative_Heat_Energy',
-                title="Heat Remaining After 1-year CO2e-equivalent Emissions",
-                legend_loc='upper right').as_html(),
-            "co2e_v_heat_forcing": GHG_Emissions_CO2e_v_Heat(
-                sim_result=sim.simulation_result('Planet_Model'),
-                sts_key='Cumulative_Heat_Energy_forcing',
-                title="Cumulative GHG-Trapped Heat",
-                add_circle=True,
-                legend_loc='upper left').as_html(),
-        }
 
 
 class Contributing(BlogPost):

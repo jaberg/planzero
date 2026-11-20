@@ -217,7 +217,7 @@ e.g. either <a href="https://www.linkedin.com/in/james-bergstra/">LinkedIn</a>
 or <a href="https://github.com/jaberg/planzero">GitHub</a>.
 If you'd like to contribute back to the project, even better.
 If you <i>do</i> get as far as contemplating a contribution,
-have a look at <a href="/blog/2026-04-12-about#drafting-guidance">post-drafting
+have a look at <a href="/posts/2026-04-12-about#drafting-guidance">post-drafting
 guidance for contributors</a>.
 It's far from developer documentation but it's a start.
 Please do get in touch as mentioned above though, I looking forward
@@ -373,7 +373,7 @@ And I hope that I can help make some of it happen.
 <h2 id="posts">Posts developing this page</h2>
 <ul>
 {% for blog in blogs_by_tag("About") %}
-<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+<li><a href="/posts/{{blog.url_filename}}">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 

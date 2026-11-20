@@ -93,7 +93,7 @@ It is challenging to make progress on the critical success factors above for sev
 <h2>Posts developing this page</h2>
 <ul>
 {% for blog in blogs_by_tag("Oil and Gas Extraction") %}
-<li><a href="/blog/{{blog.url_filename}}/">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
+<li><a href="/posts/{{blog.url_filename}}">{{blog.title}} ({{blog.date.strftime("%b %d, %Y")}})</a></li>
 {% endfor %}
 </ul>
 
