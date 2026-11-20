@@ -1,17 +1,17 @@
-import math
-
-from . import strategy
-from . import stakeholders
-from . import battery_tug
-from . import battery_freighter
-
-from .. import SparseTimeSeries
-from .. import ureg as u
-
-from .strategy import Strategy, StrategyPage, StrategyPageSection, HTML_raw, HTML_Markdown
+from ..html import (
+    HTML_Markdown,
+    HTML_raw,
+    )
+from ..sts import SparseTimeSeries
+from ..ureg import ureg as u
+from . import battery_freighter, battery_tug, stakeholders, strategy
 from .ideas import Idea
-
-from .strategy2 import Strategy2, strategies
+from .strategy import (
+    Strategy,
+    StrategyPage,
+    StrategyPageSection,
+)
+from .strategy2 import Strategy2, strategies  # noqa: F401
 
 
 class ComboA(Strategy):
@@ -185,4 +185,4 @@ def _add_strategies_as_ideas():
                 ipcc_catpaths=obj.ipcc_catpaths,
                 full_name=obj.title)
             setattr(stakeholders.ideas, obj.identifier, idea)
-_add_strategies_as_ideas()
+#_add_strategies_as_ideas()

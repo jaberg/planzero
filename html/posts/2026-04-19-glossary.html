@@ -1,0 +1,868 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{{blog.status_title_html}}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<div class="table-of-contents toc-rule">
+<b>Table of Contents</b>
+<ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#appendix-model-structure">Appendix 1: Model Architecture</a>
+        <ul>
+            <li><a href="#model-variables">Model Variables</a></li>
+            <li><a href="#model-elements">Model Elements</a>
+                <ul>
+                    <li><a href="#structural-elements">Structural Elements</a></li>
+                    <li><a href="#strategy-elements">Strategy Elements</a></li>
+                    <li><a href="#inference-groups">Inference Groups</a></li>
+                </ul>
+            </li>
+            <li><a href="#model-explorer">Model Explorer Overview</a></li>
+        </ul>
+    </li>
+    <li><a href="#appendix-semantics-evaluation">Appendix 2: Model Semantics and Evaluation</a>
+        <ul>
+            <li><a href="#phases">Phases of inference: prior, inference, and posterior</a></li>
+            <li><a href="#subphases">Model-construction subphases</a></li>
+            <li><a href="#varkey-types">General, annual, and carry variables</a></li>
+            <li><a href="#model-explorer-trace">Model Explorer Trace</a></li>
+        </ul>
+    </li>
+    <li><a href="#appendix-full-glossary">Appendix 3: Glossary Snapshot</a>
+        <ul>
+            <li><a href="#glossary-terms">Glossary terms</a></li>
+	</ul>
+    </li>
+    <li><a href="#appendix-misc-improvements">Appendix 4: Other Site Improvements</a></li>
+</ul>
+</div>
+
+<h2 id="overview">Overview</h2>
+
+<p>PlanZero models are large {{siteref("Probabilistic Model", "probabilistic models")|safe}}.
+They encompass all of the emissions of the Canada's annual {{siteref("NIR", "National Inventory Reports (NIRs)")|safe}}.
+There are 71 emissions sectors in NIR-2025, and 173 non-neglibible sector-GHG combinations.
+Each of the 173 sector-GHG combinations is the sum of contributions across provinces and territories,
+(I'll sometimes call these "regions",
+there were 12 when NIR reporting started, then 13 in 1998 when Nunavut was created).
+For each sector-GHG-region combination, the NIRs include emissions data for some or all years in a
+reporting period starting in 1990.
+PlanZero's NIR models extend those time series with forecasts well into the future.
+If forecasting until 2050, a PlanZero model therefore contemplates a total of 137,189 emission amounts (173 sector-GHG combinations x 13 regions x 61 years).
+PlanZero models also contemplate variables beyond emissions amounts,
+such as variables relating to Bovaer in the {{siteref("Scaling_Model", "Scaling")|safe}} model:
+the number of cattle in each region over time,
+the amount of money available to fund Bovaer adoption,
+and the emission factors of specific cattle types.
+As PlanZero models are extended to model emissions drivers and interventions relating to
+other sectors, the number of variables in the model will grow further.
+This post is about how PlanZero models can be understood, so that their predictions can be appropriately credible, and ultimately, useful.
+</p>
+
+<p>
+PlanZero models manage semantic complexity by building up from
+{{siteref("Model Element", "elements")|safe}}
+({{siteref("Structural Element", "structural elements")|safe}} and
+{{siteref("Strategy Element", "strategy elements")|safe}})
+and organizing those elements into {{siteref("Inference Group", "inference groups")|safe}}.
+Each element provides logic to define one or more variables in the model.
+An element might define a variable in terms of numbers (e.g. a Statistics Canada table)
+or in terms of a distribution (e.g. the probabilistic interpretation of emissions from NIR-2025).
+Most (sometimes all) of the elements in a PlanZero model are structural elements.
+These elements define necessary relationships between variables in the model.
+Some models, such as the {{siteref("Scaling_Model", "Scaling")|safe}} model, include strategy elements, which offer
+<i>optional</i> variable definitions.
+Some elements are meant to work together; they wouldn't mean the right thing or wouldn't work at all
+without the presence of the others. Such a subset of elements in a PlanZero model is called an inference group.
+An inference group is the smallest piece of a PlanZero model that can be evaluated on its own, independently
+of the rest of the model.
+</p>
+
+<p>
+The screenshot below, from the new <a href="/model-explorer/">Model Explorer - Overview tab</a>,
+shows the {{siteref("Scaling_Model", "Scaling")|safe}} model's
+inference group for Enteric Fermentation and Other Product Manufacturing.
+This inference group includes elements related to hypothesized dynamics of Bovaer adoption.
+On the Model Explorer, mouseover effects provide more information about each model element, and the connections between them.
+The numeric-cells in the table reflect directional connectivity between model elements.
+For example, the blue-shaded "1" in row E, column D, means there is one (1) variable that is defined by model element E (Bovaer Farm Subsidy),
+and accessed by the model element D (Bovaer Adoption Limit).
+Hovering a mouse pointer over that blue-shaded "1" in the Model Explorer reveals
+the variable connecting both elements, which is the number of farms in the subsidy program.
+Refer to <a href="#appendix-model-structure">Appendix 1: Model Structure</a>
+for more detail on the compositional elements of PlanZero models,
+or click through to the Model Explorer if you like, and see what's there before continuing here.
+</p>
+
+<img src="/images/2026-04-19-glossary-model-explorer-table.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+
+<p>
+The Model Explorer also features a "Trace" tab ({{siteref("Model_Explorer_Trace", "Model Explorer - Trace")|safe}}), that
+shows the interactions between selected model elements in more detail,
+including how variables are used to pass information between model elements
+at specific points during model construction (screenshot below).
+</p>
+
+<img src="/images/2026-04-19-glossary-model-explorer-trace.png"
+     alt="Description" style="border: 5px solid #555;"
+     width="100%">
+
+<p>
+In the Trace tab screenshot (above), variables are defined from top to bottom,
+following the direction of the edges in the graph (with the exception of dashed backward edges from "next" to "this" nodes, see
+<a href="#appendix-semantics-evaluation">Appendix 2</a>).
+The three subphases of model construction are:
+<ol>
+	<li>Preparation (blue nodes, upper area) defines variables that don't depend on any recursive annual definition;</li>
+	<li>Annual iteration (teal nodes, middle area) defines variables that must be woven in among recursive annual definitions;</li>
+	<li>Post-processing (purple nodes, lower area) defines variables that are not needed until after recursive annual definitions.</li>
+</ol>
+<a href="#appendix-semantics-evaluation">Appendix 2: Model Semantics and Evaluation</a>
+explains how to read such graphs, as well as how model construction
+relates to probabilistic inference and data-fitting.
+For this overview, suffice it to say that the Trace tab shows the interactions between
+selected model elements as well as the variables accessed and defined by those elements.
+</p>
+
+<p>
+The new modelling terms introduced in this post,
+along with other terms that have come in the course of developing PlanZero,
+are included as <a href="#appendix-full-glossary">Appendix 3: Glossary Snapshot</a>,
+which is a snapshot of a finally-launched <a href="/glossary/">Glossary page</a>.
+The glossary has been in development for some time, it currently features {{len(planzero.glossary.registry)}} terms.
+<a href="#appendix-misc-improvements">Appendix 4</a> lists other technical improvements made in the course of work on this post.
+</p>
+
+<p>
+Before signing off, I'll indulge myself by stating that this post was a
+<a href="https://github.com/jaberg/planzero/pull/92">big job</a>:
+it is the culmination of thinking about what PlanZero models <i>were</i> since I started PlanZero most of a year ago,
+and then, over the last few months,
+re-architecting how models are specified and evaluated, so that there could be
+<ul>
+	<li>a scalable and flexible way to specify and evaluate models</li>
+	<li>a reliable visual pathway on the site from an overall model view down into a detailed view of model evaluation</li>
+	<li>an intuitive way to specify model elements, whole models, and inference groups</li>
+	<li>a sufficient variety of mechanisms for detecting and diagnosing unexpected evaluation results</li>
+	<li>a practical build system that ensures PlanZero results remain reproducible</li>
+</ul>
+These criteria are largely satisfied now.
+My next step will be to revisit an
+obviously-problematic assumption in the {{siteref("Static_Normals_Model", "Static Normals")|safe}} model,
+namely that all year-over-year changes in reported emissions are measurement noise rather than true changes.
+The next post will introduce an alternative based on autoregressive processes.
+Beyond that, I aim to update to NIR-2026 data and incorporate this spring's sector-by-sector research into
+the new style of PlanZero model.
+</p>
+
+<p>
+Until then,
+</p>
+
+<p>
+James Bergstra
+</p>
+
+
+<h2 id="appendix-model-structure">Appendix 1: Model Structure</h2>
+
+<p>{{siteref("PlanZero_Model", "PlanZero models")|safe}} can be understood at the highest level as comprising:
+<ul>
+	<li>Model Variables: specific numbers and distributions over possible numbers</li>
+	<li>Model Elements: mathematical relationships between variables</li>
+</ul>
+Model variables represent numbers.
+A variable can stand for a single number, such as a mean emission amount in the Static Normals) model.
+A variable can stand for annual time series, such as Canada's total national emissions since 1990 according to NIR-2025.
+A variable can also correspond to multi-dimensional tabular data such a matrix or a higher-dimentional table with 3 or more indices.
+Sometimes variables correspond to specific, known numbers
+(<i>known variable</i>),
+and sometimes they correspond to a probability distribution over possible numbers
+(<i>unknown variable</i>).
+Model elements implement the definitions of variables, and thereby establish the mathematical relationships between model variables.
+Model elements, and the model variables to which they refer,
+taken together,
+make up a PlanZero model.
+</p>
+
+<h3 id="model-variables">Model Variables</h3>
+
+<h4 id="model-variable-knowledge-taxonomy">Taxonomy of Model Variables by knowledge and observation</h4>
+
+<pre class="mermaid">
+graph TD
+      A["Model Variable"]
+
+      B["Known"]
+      A --> B
+
+      C["Unknown"]
+      A --> C
+
+      D["Observed"]
+      C --> D
+
+      E["Unobserved"]
+      C --> E
+</pre>
+
+<p>
+{{siteref("Model_Variable", "Model variables")|safe}} in a PlanZero model can be classified according
+to (a) the knowledge about them in the model and (b) the availability of observation data.
+{{siteref("Known_Variable", "Known variables")|safe}} are associated with numbers that are known at the outset of modelling,
+such as data from statistical reports, and physical constants.
+If a variable depends in a known way on known variables, then it too is known.
+If, instead, a variable is modelled as a probability distribution, then it is an {{siteref("Unknown_Variable", "unknown variable")|safe}}.
+Every variable that is modelled as depending on that variable is also considered to be unknown.
+If we have data that we model as being a sample from the distribution of an unknown variable
+(or if we have a distribution from which to draw such data), then that unknown variable
+can be furthermore called an
+{{siteref("Observed_Variable", "observed variable")|safe}}.
+If it isn't observed, an unknown variable is considered to be {{siteref("Unobserved_Variable", "unobserved")|safe}}.
+The {{siteref("Joint_Distribution", "joint distribution")|safe}} over all of the unknown variables in a model
+is the probabilistic model induced by a PlanZero model.
+</p>
+
+
+<h4 id="semantic-variable-taxonomy">Taxonomy of Model Variables by semantics</h4>
+
+<pre class="mermaid">
+graph TD
+      A["All Model Variables"]
+
+      B["Emission Variables"]
+      A --"Always includes full set"--> B
+
+      E["Model Metrics"]
+      A --"Only in Posterior phase"--> E
+
+      C["Cashflow Variables"]
+      A -.-> |May include some| C
+
+      D["Other Variables"]
+      A -.-> |May include some| D
+</pre>
+
+<h5 id="emission-variables">Emission Variables</h5>
+<p>
+PlanZero models always have a full set of {{siteref("Emission_Variables", "emissions variables")|safe}}, covering
+each year (from 1990 to some forecasting horizon such as 2050 or 2100), in units of ktCO2e, of each gas, from each region (province and territory), associated with each of the 71 NIR-2025 reporting sectors.
+The estimates from a given model may be more or less uncertain, but they must all be present
+in order for the pages on the site to render correctly.
+The visualizations of these estimates provide the main graphics for model summaries and per-sector summary pages featured on the site.
+I imagine at some point, a future NIR will change the reporting taxonomy
+from the 71 sectors of the NIR-2025 to some other set.
+At such a time, PlanZero modelling will need to adapt to the new taxonomy in order to continue forecasting NIR data.
+The NIR-2025 and Static-Normals models have only these emissions variables as modelling outputs.
+</p>
+
+<h5 id="model-metrics">Model Metrics (Statistics)</h5>
+<p>
+Some variables are defined to be statistics of the distributions of other variables.
+This is the case for variables that represent {{siteref("Model_Metric", "model metrics")|safe}},
+such as the forecast probability of achieving net-zero by 2050.
+Variables of this kind are used to represent many of the quantities needed to render visualizations and summary information on the site.
+These variables are always part of the model.
+</p>
+
+<h5 id="cashflow-variables">Cashflow Variables</h5>
+<p>
+PlanZero models that contain strategies (more on strategies, below)
+may model the movement of money with {{siteref("Cashflow_Variables", "cashflow variables")|safe}}.
+To use our running example of Bovaer, the Scale-Bovaer strategy works by defining
+a variable that represents the money available to fund the program to have a large available amount.
+Cash, in PlanZero models, is modelled as flowing among
+a fixed set of economic entities called 
+is a concept of {{siteref("Special_Project_Entity", "Special Project Entities (SPEs)")|safe}}.
+SPEs are abstract economic entities with cash balances.
+SPEs represent non-overlapping sets of actual or hypothetical individuals and corporate entities,
+such as e.g. "Farms administering Bovaer", "Farms not administering Bovaer", and a hypothetical federal "Bovaer Subsidy Program".
+Since PlanZero models only the flow of money from one SPE into another one, the annual sum of all cashflow is always zero.
+It is by combining cashflow estimates with emissions estimates that the PlanZero build system calculates
+a strategy's {{siteref("Emission_Reduction_Efficiency", "efficiency of emissions reduction")|safe}}, in terms of e.g. cost per t{{CO2e}} abated.
+</p>
+
+<h5>Other Variables</h5>
+<p>
+Beyond emissions and cashflow variables,
+A planzero model can include various other forecasts of contributing factors, or latent explanatory variables, in
+order to estimate emissions and cashflow.
+Such quantities can be modelled in various ways, and are expected to be documented where they arise by the
+model elements that define them (see below).
+Other variables are necessary in PlanZero models, they are simply not directly used
+in standard visualizations of models or strategies,
+or to compute standard model metrics.
+Future work may add support for visualizing some/all of these so-called other variables to the site, but as of writing
+that functionality is not on the site.
+</p>
+
+
+<h3 id="model-elements">Model Elements</h3>
+
+<pre class="mermaid">
+graph TD
+      A["All Model Elements"]
+
+      B["Structural Elements"]
+      A --> |Mostly| B
+
+      C["Strategy Elements"]
+      A -.-> |May include some| C
+</pre>
+
+<p>
+PlanZero Models expect {{siteref("Model_Element", "model elements")|safe}} to define the model's variables.
+The design and scope of model elements draws from two lines of thinking:
+<ol>
+	<li>Plugin architecture (from the discipline of <a href="https://en.wikipedia.org/wiki/Software_engineering">software engineering</a>)</li>
+	<li>Strategy communication (from the discipline of <a href="https://en.wikipedia.org/wiki/Strategic_management">strategic management</a>)</li>
+</ol>
+</p>
+
+<p>
+<a href="https://cs.uwaterloo.ca/~m2nagapp/courses/CS446/1195/Arch_Design_Activity/PlugIn.pdf">Plug-in architecture designs</a>
+are widely used in software engineering.
+Generally, the architecture "allows application logic to be divided between independent plug-in
+modules and a basic core system, providing extensibility, flexibility, and isolation of application features
+and custom processing logic."
+In the context of PlanZero models, it encourages a standard system for modelling so that
+model evaluation and model visualization here on the site can be done in a standard way across multiple models
+(e.g. supports the existence of the Model Explorer).
+At the same time, it supports flexible modelling logic so long as that logic resides within the model elements, which are
+the plugins (so to speak, in the language of the architectural design pattern.)
+</p>
+
+<p>Along the line of strategic management thinking: relative to at least
+"<a href="https://www.amazon.ca/Executive-Guide-Facilitating-Strategy/dp/0972245812">The Executive's Guide to Facilitating Strategy
+</a>" by Michael Wilkinson (2011),
+we can think of Canada as an organization and PlanZero as aiming to support Canada's
+"Objective" (specific, quantifiable, realistic targets that measure accomplishment of a goal over a specific period)
+of emissions reduction to net zero by 2050.
+Wilkinson (2011) recommends to select strategies for achieving objectives
+on the basis of a characterization of related considerations in terms of
+(a) {{siteref("Critical_Success_Factor", "Critical Success Factors")|safe}} (necessary conditions for success)
+and (b) {{siteref("Barrier", "Barriers")|safe}} (existing or potential challenges that hinder the achievement of one or more objectives).
+PlanZero's strategy elements are like Wilkinson's strategies,
+in that the effect of a strategy element on a model should be to
+make success in an objective (e.g. of net zero by 2050) more likely.
+PlanZero's structural elements encompass Wilkinson's Barriers,
+in the sense that they formalize the relationship between strategies and emissions;
+this relationship can be seen, arguably, as "the challenge" to emission reduction in the model.
+EGFS terms aren't currently formalized as part of PlanZero models, but they are used semi-formally
+on the site's Sectors pages, and they may be formally linked to model elements in the future.
+</p>
+
+<p>
+When they are done well, PlanZero model elements should represent both good software,
+and also good communication of the modelling assumptions they bring to a PlanZero model.
+</p>
+
+<h4 id="structural-elements">Structural Elements</h4>
+<p>
+{{siteref("Structural_Element", "Structural elements")|safe}}
+are fragments of modelling logic that,
+taken together,
+define what variables
+are in the model (other than the emissions variables, which are always present) and how
+those variables are related to one another.
+Structural elements are required in a PlanZero model, and make up most if not all of the elements in any given model.
+The {{siteref("Static_Normals_Model", "Static Normals")|safe}} model, for example, is made up entirely of structural elements.
+The {{siteref("Scaling_Model", "Scaling")|safe}} model, as of writing, is made up of hundreds of structural elements
+and a single strategy element.
+</p>
+
+<p>
+Structural elements do many kinds of work, such as e.g.
+<ul>
+    <li>loading data and marking it as a sample observation of an unknown variable</li>
+    <li>defining the priors on static normals in the Static Normals model</li>
+    <li>computing the weighted-KL divergence metric from NIR-2025 actuals</li>
+    <li>defining dynamics of Bovaer uptake across Canadian farms</li>
+    <li>summing up emissions across regions, sectors, and gases</li>
+</ul>
+Any set of structural elements that defines all of the
+necessary emissions can be a valid PlanZero model.
+The easiest way to browse the structural elements in a model is via
+the <a href="/model-explorer">Model Explorer Overview tab</a>.
+They are no longer listed on the model page, because they are too numerous.
+</p>
+
+
+<h4 id="strategy-elements">Strategy Elements</h4>
+<p>
+Strategies are indended to explore opportunities for
+capital, labour, and technology to reduce emissions.
+In future, PlanZero could be perhaps be extended to evaluate strategies in terms of
+attracting foreign investment,
+creating employment, affecting land use, environmental indicators, cost of living, trade,
+sovereignty, or other matters of policy,
+but those things are not currently modelled.
+PlanZero currently features just a single strategy element,
+whose logic is to conjure money for a hypothetical federal Bovaer subsidy program.
+When the program is funded, pre-existing structural elements draw funds from the program to
+e.g. Bovaer purchase, farm subsidies, and monitoring programs.
+When the program is not funded,
+those pre-existing structural elements have no effect.
+</p>
+
+<p>
+Architecturally,
+Strategy elements are model elements that are meant to be ablated (individually
+removed) in order to compare model outputs with and without the presence of the
+strategy element (support {{siteref("Ablative_Analysis", "ablative analysis")|safe}}).
+In order for the model to work similarly with and without any given strategy element,
+strategy elements operate with a restriction:
+they may only provide definitions
+for variables that have a default value when accessed by structural elements.
+With that restriction, models use the default value when the strategy is absent,
+and the strategy-defined  value when the strategy is present.
+In the case of the Bovaer strategy, the default balance for the subsidy program is 0, and the strategy
+funds it sufficiently to support as many farmers as would opt-in.
+</p>
+
+
+<p>
+PlanZero model pages list the strategies in a model,
+and link to per-strategy pages that document each strategy and its
+impact on the emissions and cashflow variables.
+</p>
+
+<h4 id="inference-groups">Inference Groups</h4>
+
+<p>
+For a few reasons,
+the elements of PlanZero models
+are organized in disjoint sets called
+{{siteref("Inference Group", "inference groups")|safe}}.
+The driving reason is computational necessity:
+PlanZero's computations use
+the NumPyro probabilistic programming library,
+and there is not enough memory to draw posterior samples (see inference, below)
+from the whole model all at once, on any computer used to develop PlanZero.
+</p>
+
+<p>
+A second reason for inference groups,
+is a huge boost in computational efficiency.
+Even if our computers did have enough memory to draw samples for all
+of the variables at once, it would be wasteful to do so.
+The sampling algorithms work more efficiently on smaller numbers of variables,
+the efficiency groups are designed to be the smallest sets of variables
+with co-dependencies among them.
+For example, Oil and Gas Extraction emissions are independent of Venting emissions
+in the Static Normals model.
+Drawing samples within an inference group
+is expected to take a few minutes;
+even with the efficiency boost resulting from drawing samples from
+one inference group at a time,
+drawing samples from the whole model can take hours of computation.
+</p>
+
+<p>
+A third reason for inference groups is their value in communication.
+Inference groups are the only level at which it is meaningful to study the
+interactions between variables that is induced by data.
+They may also prove to be the best level at which to study the interaction between variables via model elements, full stop.
+PlanZero now includes a visualization tool called the
+{{siteref("Model_Explorer", "Model Explorer")|safe}}
+to see these model element interactions.
+</p>
+
+<p>
+Not all variables exist within an inference group.
+In particular, model metrics cannot be part of an inference group, because they exist
+to summarize the results of inference.
+</p>
+
+
+<h3 id="model-explorer">Model Explorer</h3>
+
+<p>
+The PlanZero now includes a
+<a href="/model-explorer/">Model Explorer</a> visualization tool,
+which uses the concept of inference groups to guide a viewer from the big picture (whole model)
+down to the details of invidividual model element interactions via variables,
+and perhaps in future, to the numbers and statistics associated with those variables.
+The Overview tab on the Model Explorer shows a tabular view of the connectivity
+between elements in a model.
+The Model Explorer also include a "Trace" tab,
+that shows the computational relationships between variables and model elements,
+but to explain what's shown in that tab will require terminology from the next section,
+about model computation and variable types.
+Screenshots of these two Model Explorer tabs were featured above in the Overview section of this post.
+</p>
+
+
+
+<h2 id="appendix-semantics-evaluation">Appendix 2: Model Semantics and Evaluation</h2>
+
+<p>
+{{siteref("Model_Evaluation", "Model evaluation")|safe}} is the computational task of estimating statistics of model variables.
+PlanZero models are evaluated in three phases (prior, inference and posterior) as explained in the next section (<a href="#phases">Phases of inference</a>).
+Within each phase,
+some or all of a model is constructed according to subphases (preparation, annual iteration, and post-processing),
+which are described below in the section on <a href="#subphases">model-construction subphases</a>.
+
+These subphases of model construction allow model elements to share variable definitions when appropriate,
+while defining as many years' worth of forecast modelled variables as may be required, and taking advantage of
+vectorized math libraries to perform the necessary computations quickly.
+
+Those subphases induce the three kinds of variable
+that PlanZero models can have,
+as described in the section on <a href="#varkey-types">general, annual, and carry variables</a>.
+This appendix does not provide sufficient documentation to dive in and implement your own PlanZero model,
+but it should explain most of what's shown in the Trace tab of the Model Explorer, which itself is described
+in a further section below, in <a href="#model-explorer-trace">Model Explorer Trace: a graphical view of model construction</a>.
+</p>
+
+<h3 id="phases">Phases of model evaluation: prior, inference, and posterior</h3>
+
+<p>
+PlanZero models are evaluated in three phases, typical of probabilistic models: Prior, Inference, and Posterior.
+The model evaluation statistics featured on this site are typically the result of computations in the Posterior phase,
+which is the last of the three, but they must be completed in order.
+</p>
+
+<pre class="mermaid">
+graph LR
+      A["Prior (few seconds)"] --> B["Inference (hours)"]
+      B --> C["Posterior (many seconds)"]
+</pre>
+
+<p>
+The {{siteref("Prior_Phase", "prior phase")|safe}} defines prior distributions over unknown variables (including dependencies among variables),
+and validates that inference groups are indeed statistically independent, given any data used as observation samples.
+The Prior phase begins by defining known variables (e.g. data from file) and drawing random samples from
+any independent unknown variables. Then it will compute or sample variables that depend on those variables,
+and then variables that depend on those variables and so on until all variables have <i>some</i> value.
+Even though PlanZero models are large, it can be completed in a few seconds, on e.g. a laptop computer.
+Some variables, such as model metrics may remain undefined in the prior phase,
+if they are not part of any inference group and not needed for any other purpose.
+</p>
+
+<p>
+Next is the {{siteref("Inference_Phase", "inference phase")|safe}}.
+The inference phase builds a number of smaller models (one per {{siteref("Inference_Group", "inference group")|safe}}),
+and draws posterior distribution samples for each one separately.
+For each inference group, the inference phase
+involves creating a function that calculates
+(1) the probability of all {{siteref("Unknown_Variable", "unknown variable")|safe}} values under their priors,
+and (2) the probability of any observation samples of {{siteref("Observed Variable", "observed variables")|safe}} given all the variable values.
+Numerical methods called inference algorithms use this function to wander the space of possible variable values,
+in search of values that raise all of these probabilities without being extremely improbable under any of them.
+When the so-called wandering is done according to certain mathematical rules,
+the path over which it roams can be treated as a {{siteref("Bayesian_Inference", "sample of variable assignments from the
+posterior distribution over the model's unknown variables")|safe}}.
+In other words, inference produces a set of variable assignments that are, as much as possible,
+consistent with both the prior belief about what the variables might be,
+and the reality of any data that they were meant to model ("model" here working as a verb).
+</p>
+
+<p>
+PlanZero uses <a href="https://num.pyro.ai">NumPyro</a>, a probabilistic programming system,
+because of its ability to do fast computations, and because of its robust inference algorithm implementations.
+Still, in contrast with the computation of the Prior phase, which takes a few seconds,
+this inference of posterior samples can take a few minutes for e.g. just 500 samples each inference group, which adds up to <i>hours</i>
+of computation for a whole PlanZero model.
+PlanZero implements strategies for caching and piecewise computation to prevent this computation from taking longer,
+or from being repeated unnecessarily.
+There are engineering steps that could further reduce the inference time for PlanZero's current models,
+perhaps making them as much as ten times faster,
+but even so, I expect the computation time required by inference phases to remain a significant engineering consideration for the forseeable future.
+</p>
+
+<p>
+The final phase of PlanZero model evaluation is called the {{siteref("Posterior Phase")|safe}},
+which is a re-computation of the whole model for each of the e.g. 500 inferred values of unobserved variables from the inference phase.
+The posterior phase also recomputes observed variables, with the following semantics:
+<i>What is a plausible value for this observed variable, given all of the observations (with some amount of noise, which may or may not have been estimated) and any inferred values of governing model parameters?</i>
+Or, simply: <i>What does the model think the variable was?</i>
+Whereas prior computations take seconds, and inference computations take hours,
+posterior computations take a few minutes.
+The result of posterior computations include the statistics displayed on the site.
+The upper and lower quantiles of emission amounts, the strategy costs, and all the various model metrics are calculated in this phase.
+</p>
+
+
+<h3 id="subphases">Model-construction subphases</h3>
+
+<p>
+There are three {{siteref("Model_Construction", "model-construction subphases")|safe}}.
+Model elements can participate in any or all of the following model-construction subphases:
+<ul>
+	<li>preparation: variable definitions before any of the annual steps</li>
+	<li>annual iteration: variable definitions for each modelled year</li>
+	<li>post-processing: variable definitions after the last annual step</li>
+</ul>
+Models are constructed by examining all model elements,
+and granting each model element an opportunity to participate in each subphase.
+Each model element can participate in each subphase by accessing (reading) or defining model variables.
+In the first subphase (preparation) model elements can define
+variables that don't depend on variables that require definition in a later subphase.
+In the annual iteration subphase,
+model elements can define variables for each year recursively, in terms of variables defined in the preparation subphase,
+and in terms of variables defined per-year.
+Finally, in the post-processing subphase,
+each model element can define variables in terms of
+variables from preparation, and the results of the annual iterations.
+When all model elements have participated in all model-construction subphases, all of a model's variables are defined.
+This is how models are constructed in the Prior and Posterior phases.
+In the Inference phase, it is just each {{siteref("Inference_Group", "inference group")|safe}} that is constructed in this way, not the whole model.
+</p>
+<p>
+The graph below illustrates model construction in the style of the Trace tab in the model explorer.
+Shaded nodes represent the model-construction subphase work of a single model element.
+Un-shaded nodes represent the variables defined directly and indirectly by the model element.
+Variables in the graph are marked as general, annual, and carry variables
+(the next section explains these types of variable in more detail).
+<b>Thick</b> lines represent explicit definitions provided by model elements.
+Thin lines represent variables that were accessed to provide those definitions.
+Dotted lines represent implicit definitions provided by PlanZero's modelling framework.
+</p>
+
+<pre class="mermaid">
+graph TD
+
+prep("element preparation")
+step("element annual iteration")
+proc("element post-processing")
+
+v_annual_in("Annual var A (this year)"):::variable
+v_annual_in_all("Annual var A (all years)"):::variable
+v_annual_out("Annual var B (this year)"):::variable
+v_annual_out_all("Annual var B (all years)"):::variable
+
+v_carry_init("Carry var C (initial)"):::variable
+v_carry_this("Carry var C (this)"):::variable
+v_carry_next("Carry var C (next)"):::variable
+v_carry_final("Carry var C (final)"):::variable
+v_general("General var D (e.g. model metric)"):::variable
+
+prep ==> v_carry_init
+prep ==> v_annual_in_all
+
+v_annual_in_all -.-> v_annual_in
+v_carry_init -.-> v_carry_this
+
+v_annual_in --> step
+v_carry_this --> step
+step ==> v_carry_next
+step ==> v_annual_out
+v_carry_next -.-> v_carry_this
+
+v_carry_next -.-> v_carry_final
+v_annual_out -.-> v_annual_out_all
+
+v_annual_in_all --> proc
+v_annual_out_all --> proc
+proc ==> v_general
+
+
+classDef variable fill:#f9fafb
+
+</pre>
+
+
+
+<h3 id="varkey-types">General, annual, and carry variables</h3>
+
+<p>The nature of the computational subphases of model construction induce three types of variable:
+<ul>
+	<li>general: a variable whose array shape is independent of the number of years, and whose value <i>does not</i> depend on the year</li>
+	<li>annual: a variable whose array shape's first element is the number of years</li>
+	<li>carry: a variable whose array shape is independent of the number of years, whose value <i>does</i> depend on the year</li>
+</ul>
+These types of variable have to do with the shape of variables as multidimensional arrays (their numbers of rows, columns, etc.),
+and the accessibility and defined-ness of variables
+in the model-construction subphases. Relative to the
+<a href="#model-variable-knowledge-taxonomy">taxonomy of model variables by knowledge and observation</a> presented earlier,
+all of these variable types can be known or unknown, observed or unobserved.
+Relative to the
+<a href="#semantic-variable-taxonomy">taxonomy of model variables by semantics</a>,
+the variables required of a model are also required to be of a particular type;
+e.g. emission variables must be annual (with each year being of a specific shape), and model metrics are typically of the general type
+(with each metric being required to have a particular shape).
+</p>
+
+<p>
+General variables are perhaps the simplest to describe: they have a specific shape and value regardless of how many years are being modelled.
+When a model element loads up data about a certain sector to define a variable, that is naturally a general variable.
+A general variable can be just a single number (a scalar) or a vector, a matrix, or an array of any number of dimensions (n-dimenional array).
+A general variable can be accessed in any subphase,
+but only be defined in preparation or post-processing.
+It would not make sense to define such a variable in the midst of the annual iterations (see instead Carry variables, below).
+</p>
+
+<p>
+Annual variables must be at least one-dimensional, they cannot be scalar-valued.
+The first dimension of an annual variable (its length if a vector, the number of rows if a matrix) must match the number of modelled years.
+Each value-element indexed along that leading dimension must correspond to data from the corresponding year.
+Annual variables are natural for e.g. the emissions predicted for each certain sector-gas-region combination.
+Annual variables can be defined and accessed in all of the computational subphases.
+When defining an annual variable via annual iterations, each iteration defines one year ("this year" in the graphic above)
+of the total annual variable (marked "all years" in the graphic above).
+</p>
+
+<p>
+Carry variables defining variables recursively, in terms of previous-year's values.
+For example, the number of farmers administering Bovaer in a given year is defined in the {{siteref("Scaling_Model", "Scaling")|safe}} model as the
+number from the previous year plus or minus some delta.
+The initial value for a carry variable must be defined in the preparation subphase.
+The current and next ("this" and "next") values of a carry variable can only be accessed during the model-construction subphase of annual iterations.
+The final value of a carry variable (the "next" value from the last annual iteration) is available for access
+only in the post-processing subphase.
+A carry variable requires two definitions (one for the initial value, and one for the next value).
+Typically both are provided by the same model element, but they may come from different model elements.
+</p>
+
+<h3 id="model-explorer-trace">Model Explorer Trace: a graphical view of model construction</h3>
+
+<p>
+The Overview tab of the Model Explorer is interactive,
+and lets you check off a subset of the model elements in an inference group in order to see them in more detail in the "Trace" tab.
+The Trace tab features a graph view that shows renderings like graphic above, such as the screenshot provided in the <a href="#overview">Overview section</a> of this post.
+Each model element in the trace view gets a column of filled nodes,
+one filled node for each construction subphase in which it participates.
+The solid arrows show how data flows mostly downward from inputs to outputs through the computational subphases
+and dependencies between model elements.
+The backward (up) arrows show the recursive definition of the next value of a carry variable
+becomes the current value for the next annual computation step.
+Load up different model elements in the <a href="/model-explorer/">Model Explorer</a> to see how they interact.
+With future work, a third tab of the Model Explorer might some day let you select individual variables and see
+the Posterior-phase sample distributions in an appropriate, contextualized way.
+</p>
+
+
+<h2 id="appendix-full-glossary">Appendix 3: Glossary Snapshot</h2>
+
+<p>
+As of the writing of this post,
+PlanZero's <a href="/glossary/">glossary</a> defines and cross-references
+the following {{ len(planzero.glossary.registry) }} terms.
+<table>
+    <tbody>
+        <tr>
+    {% for ii, (clsname, obj) in enumerate(sorted(planzero.glossary.registry.items())) %}
+    {% if ii and ii % 3 == 0 %}</tr><tr>{% endif %}
+    <td><a href="#{{clsname}}">{% for name in obj.pretty_names() %}{{name}}{%if not loop.last%}, {%endif%}{%endfor%}</a></td>
+    {% endfor %}
+        </tr>
+    </tbody>
+</table>
+</p>
+
+<h3 id="glossary-terms">Glossary Terms</h3>
+
+{% for clsname, obj in sorted(planzero.glossary.registry.items()) %}
+<h3 id="{{clsname}}">
+    {% for name in obj.pretty_names() %} {{name}}{%if not loop.last%}, {%endif%}{%endfor%}<a href="#{{clsname}}" class="anchor-link" title="Link to this section"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Chain_link_icon_slanted.png/250px-Chain_link_icon_slanted.png"
+        width="12.5px"/></a>
+</h3>
+
+{{obj.definition_html|safe}}
+
+{% if obj.code_refs %}
+    <p><strong style="color: #666;">Code References</strong>
+    <ul>
+    {% for ref_text, ref_url in obj.code_links.items() %}
+        <li><a href="{{ref_url}}">{{ref_text}}</a></li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
+{% if obj.see_also or obj.as_discussed_in_posts %}
+    <p><strong style="color: #666;">See Also</strong>
+    <ul>
+    {% for term, ref_text in sorted(obj.see_also.items()) %}
+    <li><a href="#{{planzero.glossary.aka_registry[term].__class__.__name__}}">{{term.replace("_", " ")}}</a> - {{ref_text}}</li>
+    {% endfor %}
+    {% for post_obj, hashref, descr in obj.as_discussed_in_posts %}
+    <li>[Post] <a href="{{post_obj.siteref}}{{hashref}}">{{post_obj.title}}</a> - {{descr}}</li>
+    {% endfor %}
+    </ul>
+    </p>
+{% endif %}
+
+{% endfor %}
+
+<h2 id="appendix-misc-improvements">Appendix 4: Misc Technical Improvements</h2>
+
+<p>
+The algorithm for estimating the likelihood of emissions data has been adjusted to use a different,
+more-accurate estimator. This has resulted in a change to how the Static Normals and Scaling models are fit to
+emissions data. I assume the new fit is better.
+</p>
+
+<p>
+A validation check was inserted into the Inference Phase computations, that required 0 "divergences"
+during the computation of posterior samples. This revealed that the samples for several inference groups
+of the Static Normals model were affected by divergences. These divergences were addressed by adjusting the
+prior over parameter values for some sectors (especially for tiny sectors and sectors with unexpected exact zeros),
+and adjusting the parameters of the MCMC sampling algorithm to
+be more conservative (and slower). Future work could look at how to avoid divergences with MCMC algorithm
+parameters at their default values, and more-standard priors across inference groups for the various sector-gas
+combinations.
+</p>
+
+<p>
+The algorithm for estimating Weighted KL Divergence has been adjusted to use a different, more-accurate estimator.
+This has resulted in a change to the values of some model metrics. I believe that the new value is more accurate,
+and the values are lower because the models are better-fit (see above).
+</p>
+
+<p>
+PlanZero's automated tests now check for broken links when they link to headings within pages
+(such as glossary tooltips, and tables of contents). This testing revealed many errors, which have been fixed,
+and PlanZero should not have such broken-link errors in future.
+</p>
+
+<p>
+The subsystem for specifying and evaluating models was totally rewritten, in order to work more like
+what is described in this post.
+That included developing and documenting the modelling framework both in terms of architecture and syntax,
+and designing it to support saving and loading intermediate results at several points
+in order to complete successfully on computers with 8 GB of memory, and in order to reuse saved inference results
+in the GitHub workflows that validates and deploys PlanZero's evolving code.
+The previously-documented probabilistic models were reimplemented in this new style.
+</p>
+
+<p>
+The code for rendering echarts to summarize model evaluation and strategy impact was rewritten to be standard
+across models. Previously it appeared this was the case, but as of this post it is actually the case.
+</p>
+
+<p>
+PlanZero's access of .xls and .xlsx files was upgraded to use the more-modern "Calamine" access engine.
+</p>
+
+<p>
+The PlanZero GitHub project was configured to deploy an entire PlanZero site for active Pull Requests,
+in order to let people preview changes as they would appear if GitHub were to deploy them as the main site.
+I am not sure how to to incorporate this capability into my development process, but I expect it will be part
+of standard procedure to use these preview sites in the future.
+</p>
+
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/posts/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/posts/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+
+
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+{% include "post-main.html" %}

@@ -1,0 +1,87 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post model-explorer-page">
+    <header class="major">
+        <h1>Model Explorer</h1>
+        <p>Explore the interactions between model elements by inference group.</p>
+    </header>
+
+    <p>
+    PlanZero models are built from model elements, which work by
+    defining variables and accessing one anothers' variables. The Model Explorer
+    visualizes those interactions.
+    The <strong>Overview</strong>
+    tab displays a matrix of producer-to-consumer dependencies.
+    The <strong>Trace</strong> tab shows individual variable
+    definitions and accesses in terms of the subphases of model construction.
+    The explorer is an interactive companion to the <a href="/models/">Models</a>
+    page, which focuses on whole-model visualizations and metrics.
+    </p>
+
+    <form class="model-explorer-group-picker" method="get" action="/model-explorer/">
+        <label>
+            <span>Model</span>
+            <select name="model" onchange="this.form.submit()">
+                {% for model in models %}
+                <option value="{{ model.name }}"{% if model.name == selected_model %} selected{% endif %}>{{ model.pretty_name }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Inference group</span>
+            <select name="group" onchange="this.form.submit()">
+                {% for group in groups %}
+                <option value="{{ group.name }}"{% if group.name == selected_group %} selected{% endif %}>{{ group.name }} ({{ group.n_elements }} element{% if group.n_elements != 1 %}s{% endif %})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <input type="hidden" name="tab" value="overview" data-mcmc-tab-input>
+        <noscript>
+            <span style="align-self:center;color:#6b7280;font-size:0.8rem;">
+                JavaScript is disabled; Model Explorer requires JavaScript.
+            </span>
+        </noscript>
+    </form>
+
+    <div class="model-explorer-tabs-slot mcmc-explorer"
+         data-mcmc-tabs-slot></div>
+
+    <div class="model-explorer-help" data-mcmc-help>
+        <div data-help-tab="overview">
+            <h3>Overview</h3>
+            <p>
+            Rows are producer elements and columns are consumer elements. A cell
+            shows how many distinct variables flow from the row element to the
+            column element. Hover a cell for the variable names, and click it to
+	    open the Trace tab for that (producer, consumer) pair of elements.
+	    Alternatively, check elements to trace via the Trace column.
+            </p>
+        </div>
+        <div data-help-tab="trace" hidden>
+            <h3>Trace</h3>
+            <p>
+            The graph shows the
+	    interaction of model elements via variables
+	    in terms of {{siteref("Model_Construction", "model construction")|safe}}.
+	    See <a href="/posts/2026-04-19-glossary#">Model Explorer Post, Appendix 2: Model Semantics and Evaluation</a> for details.
+            </p>
+        </div>
+
+    </div>
+
+    {{ explorer_html | safe }}
+
+    <p style="margin-top:1.5rem;color:#6b7280;font-size:0.8rem;">
+    The explorer is generated from decorator metadata on the model elements.
+    It does not modify the model or its inference groups. To inspect the same
+    declarations as a static table or a Mermaid diagram, see the
+    <a href="/posts/2026-04-19-glossary#inference-groups">glossary's Inference Groups</a>
+    section.
+    </p>
+
+</section>
+</div>
+
+{% include "post-main.html" %}

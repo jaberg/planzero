@@ -1,0 +1,76 @@
+{% include "pre-main.html" %}
+
+<div id="main">
+
+<section class="post">
+    <header class="major">
+        <h1>Metrics</h1>
+	<p>Evaluation metrics for PlanZero's probabilistic models.</p>
+    </header>
+
+    <p>
+    This page features multiple evaluation metrics:
+    <ul>
+{% for challenge_name, challenge_obj in sorted(planzero.challenge.registry.items())
+   if challenge_obj.show_on_predictions_page %}
+   <li><a href="#{{ challenge_name }}">{{ challenge_obj.pretty_name }}</a>: {{ challenge_obj.short_description }}</li>
+{% endfor %}
+    </ul>
+    </p>
+
+
+{% for challenge_name, challenge_obj in sorted(planzero.challenge.registry.items())
+   if challenge_obj.show_on_predictions_page %}
+
+   <h2 id="{{ challenge_name }}">{{challenge_obj.pretty_name}}</h2>
+
+<p>
+{{ challenge_obj.description | safe}}
+</p>
+
+<table class="gemini-sort-data-table">
+    <thead>
+          <tr>
+              <th>
+                  Name
+              </th>
+              <th>
+                  Short Description
+              </th>
+	      <th class="{{ challenge_obj.overall_loss_initial_sort_class }}">
+		      {{challenge_obj.overall_loss_column_title}}}
+              </th>
+          </tr>
+    </thead>
+    <tbody>
+        {% for url_name, site_inf in model_registry.items()
+           if site_inf.show_on_models_page
+	   and site_inf.challenge_result_url(challenge_name)
+	   %}
+          <tr>
+              <td>
+                  <a href="/models/{{url_name}}/">{{ site_inf.pretty_name }}</a>
+              </td>
+              <td>{{site_inf.one_line_description() }}</td>
+              <td>
+                  {% if challenge_obj.results_available %}
+		  <a href="/models/{{url_name}}/#metrics-{{challenge_name}}">{{ challenge_obj.overall_loss_str(site_inf) }}</a>
+                  {% else %}
+                  {{siteref("Pending Prediction Challenge Results", "Pending")|safe}}
+                  {% endif %}
+                  </td>
+          </tr>
+          {% endfor %}
+    </tbody>
+</table>
+{% endfor %}
+
+<h2 id="posts">Posts developing this page</h2>
+<ul>
+{% for ident in ["NetZero2050Metric", "ProbabilisticBovaer", "StaticNormals"] %}
+<li><a href="/posts/{{blog_registry[ident].url_filename}}">{{blog_registry[ident].title}} ({{blog_registry[ident].date.strftime("%b %d, %Y")}})</a></li>
+{% endfor %}
+</ul>
+
+
+{% include "post-main.html" %}

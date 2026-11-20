@@ -388,9 +388,16 @@ IPCC_Sector_from_catpath_with_whitespace = {
     for ipcc_sector in IPCC_Sector}
 
 
-class SubsidyPrograms(str, enum.Enum):
-    Bovaer_Subsidy = 'Bovaer Subsidy'
+class GovernmentProgram(str, enum.Enum):
+    Net = 'Net'
+    Income_Tax = 'Income Tax'
+    Bovine_Feed_Farm_Subsidy = 'Bovine Feed Farm Subsidy'
+    Bovine_Feed_Cost = 'Bovine Feed Cost'
+    Bovine_Feed_Monitoring = 'Bovine Feed Monitoring'
 
+# TODO: remove this in favour of GovernmentProgram
+class SubsidyPrograms(str, enum.Enum):
+    Bovaer = 'Bovaer Subsidy'
 
 # 1. New 14-color palette minimizing blue-green saturation
 echarts_warm_earth = [
@@ -400,3 +407,43 @@ echarts_warm_earth = [
 ]
 col_by_pt = {pt: col for pt, col in zip(PT, echarts_warm_earth)}
 col_ca = echarts_warm_earth[-1]
+
+
+# SpecialPurposeEntity is for either one or more organizations
+# for which it makes sense to
+# (a) maintain a distinct balance over time and
+# (b) track cashflow between them
+# It is important, and potentially problematic in future,
+# that these entities refer to non-overlapping sets of actual
+# individuals, businesses, corporations, organizations, divisions, etc.
+# If they overlap, the notation of cashflow between them breaks down.
+# Consider incorporating e.g. NAICS into how this works.
+class SpecialPurposeEntity(str, enum.Enum):
+
+    # A hypothetical federal Bovaer subsidy program
+    BovaerSubsidy = 'Bovaer Subsidy'
+
+    # The set of farms claiming a hypothetical Bovaer subsidy
+    # In future this may overlap non-trivially with other sets
+    # of farms, but for now enjoy that it does not.
+    CattleFarmersFeedingBovaer = 'Cattle Farms Feeding Bovaer'
+
+    # Hypothetical companies or divisions within companies
+    # that are dedicated wholely to implementing
+    # verification protocols for cattle farms claiming a Bovaer subsidy.
+    # It is assumed that it is not economically necessary or
+    # common practice to combine this
+    # verification program with other services or products.
+    BovaerMonitoringCompanies = 'Bovaer Monitoring Companies'
+
+    # Hypothetical companies that produce a feed additive
+    # similar to e.g. Bovaer
+    BovaerProducers = 'Bovaer Producers'
+
+
+SPE = SpecialPurposeEntity
+
+
+class Activity(str, enum.Enum):
+    Farming_Cattle = 'Farming Cattle'
+    Other = 'Other'

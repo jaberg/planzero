@@ -32,7 +32,7 @@ def echart_series_Mt(catpath, name=None):
     non_agg_years = list(set(non_agg['Year'].unique()))
     non_agg_years.sort()
     datalen = len(non_agg_years)
-    assert ('kt',) == inv['Unit'].unique()
+    assert {'kt'} == set(inv['Unit'].unique())
     assert non_agg_years == echart_years()[:datalen]
     catpath_data = non_agg[non_agg['CategoryPathWithWhitespace'] == catpaths[catpath]]
     data = [(int(year), float(co2eq) / 1000)
@@ -57,7 +57,7 @@ def echart_series_all_Mt():
     non_agg_years = list(set(non_agg['Year'].unique()))
     non_agg_years.sort()
     datalen = len(non_agg_years)
-    assert ('kt',) == inv['Unit'].unique()
+    assert {'kt'} == set(inv['Unit'].unique())
     assert non_agg_years == echart_years()[:datalen] # assure sorted
     for_sorting = []
     for catpath in catpaths:
