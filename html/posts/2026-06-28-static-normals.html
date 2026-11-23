@@ -14,12 +14,12 @@
 The long-term aim for PlanZero (see <a href="/about/#overview">About</a>) is to quantify
 the impact of strategies that may affect Canada's emissions.
 The impact of a strategy is the difference between what will probably happen
-if the strategy is implemented, versus what will probably happen if it isn't implemented.
+if the strategy is implemented versus what will probably happen if it isn't implemented.
 Both of these are predictions.
 To estimate the impact of strategies,
 PlanZero needs models that make credible predictions for emissions,
 both with and without various strategies,
-with usefully tight {{ siteref("Credible_Interval", "confidence intervals") }},
+with usefully tight {{ siteref("Credible_Interval", "confidence intervals") }}
 on various time horizons.
 </p>
 
@@ -29,7 +29,7 @@ This post introduces PlanZero's first predictive probabilistic model.
 This probabilistic model is a simple baseline that assumes:
 <ol>
 	<li>Provincial and territorial emissions per-sector and per-gas add up to national totals.</li>
-	<li>Provincial and territorial emissions are <i>static</i> and don't actually change over time; they have been constant historically, and will remain constant in the future.</li>
+	<li>Provincial and territorial emissions are <i>static</i> and don't actually change over time; they have been constant historically and will remain constant in the future.</li>
 </ol>
 The model is defined as a hierarchical
 probabilistic model, and
@@ -47,10 +47,10 @@ reproduced below:
 The visualization follows the style used in the previous post, which introduced
 the <a href="/posts/2026-05-20-prob-nir">probabilistic NIR-2025</a>.
 The visualization now includes
-both a predictive model (the static normals model,
+both a predictive model (the Static Normals model,
 	based on NIR-2025 data up to 2022)
 and the emissions that it should predict (the 2023 data,
-shown in terms of upper and lower credible interval and mean, thin solid and dotted black lines respectively).
+shown with the upper and lower bounds of the credible interval as thin solid black lines and the mean as a dotted black line).
 Since the model is timeless, the model's predictions extend into the future.
 The visualization shows predictions out to year 2050.
 </p>
@@ -65,10 +65,10 @@ The earlier post on the
 introduced a model evaluation metric
 for scoring predictions in terms of their
 <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence">KL-divergence</a> from the probabilistic interpretation of the NIR-reported emissions.
-This post marks the use of that metric to score the static normals model.
-The metric is used for both individual sector-gas combinations, as well
-as an overall weighted average across all sectors and gases.
-The static normals model scores an overall average divergence of 3.35,
+This post marks the use of that metric to score the Static Normals model.
+The metric is used for both individual sector-gas combinations and
+an overall weighted average across all sectors and gases.
+The Static Normals model scores an overall average divergence of 3.35,
 leaving, I expect, lots of room for improvement.
 </p>
 
@@ -91,22 +91,22 @@ This rationale has been added to the <a href="/about/#incremental-iteration-on-p
 </p>
 
 <p>
-Despite the simplicity of the static normals model,
+Despite the simplicity of the Static Normals model,
 the predictions are qualitatively accurate
-for several sectors, and establish a numerical benchmark for
+for several sectors and establish a numerical benchmark for
 quantitative scoring (i.e. divergences below about 1.0 seem pretty good).
-The accurate predictions of emissions sectors such as e.g. Enteric Fermentation, Municipal Solid Waste Landfills, Manure Management, and Railways
-suggests that little progress has been made in these areas, at least as of 2023.
-Conversely, the poorness of fit in other sectors suggests that have been
+The accurate predictions of emissions sectors such as Enteric Fermentation, Municipal Solid Waste Landfills, Manure Management, and Railways
+suggest that little progress has been made in these areas, at least as of 2023.
+Conversely, the poorness of fit in other sectors suggests that there have been
 significant changes either for better or worse.
-PlanZero will look at trends in a future post,
-that will introduce an autoregressive model as an alternative to the standard normals
+PlanZero will look at trends in a future post
+that will introduce an autoregressive model as an alternative to the Static Normals
 presented here [edit: <a href="/posts/2026-05-26-ar2">Autoregressive Process Modelling of NIR-2025</a>].
 </p>
 <p>
 Next on PlanZero, I'd like to insert two tidying-up posts.
 First, the Bovaer analysis should be adapted to operate on probabilistic models [edit:
-<a href="/posts/2026-07-22-prob-bovaer">Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer</a>]
+<a href="/posts/2026-07-22-prob-bovaer">Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer</a>],
 and after that the models page should be purged of "simulation-based models",
 which is a term I'd like to deprecate and remove from PlanZero.
 That second post should finally introduce the glossary page
@@ -142,7 +142,7 @@ In order to express the Static Normals model, some notation is required.
 The notation used here aims to be conventional, and builds on the introduction to probability in
 <a href="/posts/2026-05-20-prob-nir#appendix-models">Appendix 1 of the Probabilistic NIR-2025 post</a>.
 Probabilistic modelling is a huge topic;
-for more information and orientation, see e.g. wikipedia
+for more information and orientation, see e.g. Wikipedia
 (<a href="https://en.wikipedia.org/wiki/Statistical_model">Statistical Model</a>,
 <a href="https://en.wikipedia.org/wiki/Graphical_model">Graphical Models</a>),
 many tutorials online that are specific to probabilistic programming
@@ -188,10 +188,10 @@ model and introduce {{siteref("Bayesian_Inference", "Bayesian inference")|safe}}
 	is a <a href="https://en.wikipedia.org/wiki/Log-normal_distribution">log-normal distribution</a>, a distribution over positive-valued
 	real numbers with a given mean and relative uncertainty.
 	Unlike the regular normal, {{latex("\\mu")}} being negative
-	doesn't make the distribution negative, it squeezes the distribution
+	doesn't make the distribution negative; it squeezes the distribution
 	leftward toward 0.
 	The {{latex("\\sigma^2")}} parameter doesn't exactly modulate the width,
-	as it does for the normal distribution, but it reflects relative uncertainty,
+	as it does for the normal distribution, but it reflects relative uncertainty
 	and it does affect both the shape and the mean of the distribution.
 	The figure below shows two possible shapes of log-normal distribution.
     </li>
@@ -238,15 +238,17 @@ which are used to define the Static Normals model in <a href="#appendix-model">A
 <h2 id="appendix-model">Appendix 2: Model Description</h2>
 
 <p>
-PlanZero's "Static Normals" model 
+PlanZero's Static Normals model
 of the 2025 National Inventory Report (NIR-2025, or just NIR in this post)
 is that for each ...
+</p>
 <ul>
     <li>IPCC sector (I'll call these "sectors")</li>
     <li>greenhouse gas (sometimes just "gas")</li>
     <li>province and territory (I'll call these "regions")</li>
     <li>and year (from 1990 to 2023)</li>
 </ul>
+<p>
 ... there is a quantity of emitted gas in units of e.g. kt{{CO2e}} that has been
 estimated in support of
 Canada's reporting obligations under the Paris Agreement.
@@ -256,18 +258,18 @@ which is the sum of emissions from the provinces and territories.
 
 <p>
 Finally, and most radically,
-the model is called "static normals" because it
+the model name includes "Static" because it
 assumes that these quantities of emissions don't change over time.
 Instead, it assumes that the different estimates of emissions from year to year in the NIR
 are the results of completely random fluctuations, totally
-unforseeable and outside of anyone's control, which will continue
-indefinitely into the future following the same Normal
+unforeseeable and outside of anyone's control, which will continue
+indefinitely into the future following the same normal
 distribution of annual emissions as has been observed historically.
-This is a unrealistic assumption because in many sectors,
+This is an unrealistic (verging on silly) assumption because in many sectors,
 the reported emissions are defined in the NIR (following IPCC Guidelines) as being proportional to e.g., the
-number of cars, or trucks, or heads of cattle, which are highly correlated
-from year to year, and which follow long-term trends.
-Yet, there's no rule against using unrealistic assumptions in models.
+number of cars, trucks, or heads of cattle, which are highly correlated
+from year to year and which follow long-term trends.
+Alas, there's no law against using unrealistic assumptions in models.
 The consequences of making unrealistic assumptions in models
 are uncertainty and/or inaccuracy.
 We'll use this model to establish a baseline for uncertainty
@@ -300,11 +302,11 @@ distributions over unknown quantities:
 	    </tr>
 	    <tr>
 		    <td>{{latex("\\sigma_{(s,g,r)} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}}</td>
-		    <td>A-priori, the variance in <i>regional</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+		    <td>A-priori, the variance in <i>regional</i> emissions (looking across years) is not expected to be super-tiny or much larger than 1.</td>
 	    </tr>
 	    <tr>
 		    <td>{{latex("\\sigma_{(s,g)} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}} </td>
-		    <td>A-priori, the variance <i>national</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+		    <td>A-priori, the variance in <i>national</i> emissions (looking across years) is not expected to be super-tiny or much larger than 1.</td>
 	    </tr>
 	    <tr>
 		    <td>{{latex("X_{(s,g,r,t)} ~\\sim~ \\mathcal{N}(\\alpha_{(s, g)} \\mu_{(s,g, r)}, \\alpha_{(s, g)}^2 \\sigma_{(s,g, r)}^2)")}}</td>
@@ -339,13 +341,13 @@ and yet (2) to explain observations.
 The Static Normals model described in <a href="#appendix-model">Appendix 2: Model Description</a>
 includes a-priori probability distributions over {{latex("\\mu")}} and {{latex("\\sigma")}}
 that induce distributions over {{latex("X")}} and {{latex("Y")}}, which are meant to estimate quantities in an NIR.
-Yet we can observe the NIR-2025, in terms of either raw data, or the distributions developed in PlanZero's NIR-2025 model
+Yet we can observe the NIR-2025, in terms of either raw data or the distributions developed in PlanZero's NIR-2025 model
 (see <a href="/posts/2026-05-20-prob-nir">Probabilistic NIR-2025</a> post for details).
 [Bayesian] Inference algorithms can answer the question: <i>What are the conditional distributions over {{latex("\\mu")}} and {{latex("\\sigma")}} given
 	certain observable values for {{latex("X")}} and {{latex("Y")}}?</i>
 This specific kind of {{siteref("Conditional_Distribution", "conditional distribution")}}, being a distribution conditioned on data,
 is called a {{siteref("Posterior_Distribution", "posterior distribution")}}.
-The unobserved variables in the model are called {{siteref("Latent_Variable", "latent variables")}},
+The unobserved variables in the model are called {{siteref("Latent_Variable", "latent variables")}}
 and so a posterior distribution is a conditional distribution over the latent variables.
 </p>
 
@@ -354,8 +356,8 @@ If only <i>some</i> of the observable data is used for conditioning, then the re
 For example, if we only condition on emissions data up to 2022,
 then variables related to year 2023 will be latent ones and inference will assign them posterior distributions.
 These posterior distributions can be interpreted as the model's <i>predictions</i> for 2023.
-<a href="#appendix-prenir">Appendix 4: Pre-NIR-2026-m04, a NIR Prediction Challenge</a> evaluates such predictions from the Static Normals model,
-using the method of inference discussed here in this Appendix.
+<a href="#appendix-prenir">Appendix 5: Pre-NIR-2025-m04, a NIR Prediction Challenge</a> evaluates such predictions from the Static Normals model,
+using the method of inference discussed in this Appendix.
 </p>
 
 
@@ -388,24 +390,24 @@ Bayes' theorem is critical to inference in the Static Normals model because
 I don't know if it's possible to write down a formula for the posterior distribution
 {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(regional~totals)}},~Y = \\mathrm{NIR_{(national~totals)}})")}}.
 For some models, there are closed forms for some posterior distributions, but it's not always possible.
-What's often practical, is the use of Monte Carlo (random) estimators to compute <i>samples</i> of points
+What's often practical is the use of Monte Carlo (random) estimators to compute <i>samples</i> of points
 from the desired distribution, based only on the conditional distributions used to define the model.
 Even with a Ph.D. in machine learning, I still find
 these algorithms amazing (read up on e.g.
 <a href="https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo">MCMC algorithms</a> or
 <a href="https://pyro.ai/examples/svi_part_i.html">stochastic variational inference</a> if you're interested in how these algorithms work).
 This intersection of statistics, machine learning, and computer science is still the subject of active research,
-but the core capability of sampling from posterior distributions is relatively mature
+but the core capability of sampling from posterior distributions is relatively mature,
 and for the purposes of this post we'll take it as given.
 </p>
 
 <p>
 <i>Probabilistic programming systems</i> enable someone such as myself to
 define a probabilistic model by simply implementing a sampling process
-(such as the one in the left column of the table in Appendix-2 that defined the model) in a programming language,
+(such as the one in the left column of the table in Appendix 2 that defined the model) in a programming language,
 and then request inference in that model with simple standardized function calls.
 The implementation of these function calls involves relatively sophisticated software techniques
-(e.g. tracing and runtime program transformations in order to run backward over the computations that defined the model)
+(e.g. tracing and runtime program transformations in order to run backward over the computations that defined the model),
 but the output is simple: samples from
 {{latex("P(\\mu, \\sigma|X=\\mathrm{NIR_{(regional)}},
 Y=\\mathrm{NIR_{(national)}})")}}.
@@ -432,20 +434,20 @@ Details of sampling can be found in
 {% include "posts/2026-06-28-static-normals-Static_Normals_2024_12_31-all_sectors.html" %}
 
 <p>
-Emissions are summarized by year, and in terms of total Mt{{CO2e|safe}}
+Emissions are summarized by year and in terms of total Mt{{CO2e|safe}}
 per non-aggregate {{siteref("NIR")|safe}} sector.
 The black lines reflect reported historical emissions
-(the dotted line is the reported mean, the two thin solid lines
-are upper and lower 95% {{siteref("Credible Interval", "credible interval")|safe}}
+(the dotted line is the reported mean; the two thin solid lines
+are the upper and lower bounds of the 95% {{siteref("Credible Interval", "credible interval")|safe}}
 for the mean).
 The coloured elements reflect modelled emissions
-(the dotted line is the modelled mean,
+(the dotted line is the modelled mean;
 the shaded region is the model-estimated 95% {{siteref("Credible Interval", "credible interval")|safe}} for national emissions per sector).
 The colours in the figure correspond to high-level emissions categories:
 <ul>
     <li>dark blue for energy used in stationary combustion (e.g. for public electricity, oil and gas extraction, etc.)</li>
     <li>light green for energy used in vehicles (e.g. light-duty, heavy-duty, off-road, marine, etc.)</li>
-    <li>purple for fugitive sources(e.g. venting, flaring)</li>
+    <li>purple for fugitive sources (e.g. venting, flaring)</li>
     <li>wheat for agriculture-related emissions (e.g. soil, manure)</li>
     <li>pink for waste-related emissions (e.g. landfills)</li>
     <li>other colours for various industrial activities (mineral products, chemicals, metals)</li>
@@ -458,8 +460,8 @@ and subsequent rows go down from there to the bottom row where the scale is rela
 </p>
 
 <p>
-Mouse-over the slider below to see the active date range and adjust it to focus on specific periods.
-Click on each panel for a deeper-dive into modelled emissions in that sector.
+Mouse over the slider below to see the active date range and adjust it to focus on specific periods.
+Click on each panel for a deeper dive into modelled emissions in that sector.
 </p>
 
 
@@ -477,22 +479,22 @@ and when there have been large variances over time (e.g. stationary combustion f
 </p>
 
 <p>
-Based on a visual, qualitative analysis, I would say the static normals model is typically a poor fit to the data.
+Based on a visual, qualitative analysis, I would say the Static Normals model is typically a poor fit to the data.
 Other models that recognize trends in this data over time could do a lot better.
 This will be investigated in future work using e.g. autoregressive models.
-Still, it's worth noting that the static normals model is not always a poor fit.
-The static normals model offers a qualitatively good fit in many sectors:
+Still, it's worth noting that the model is not always a poor fit.
+The Static Normals model offers a qualitatively good fit in many sectors:
 <ul>
-	<li><b>Enteric Fermentation</b>: emissions appear to be roughly constant for the most recent decade, and the static normals model lines up with that data pretty well.</li>
+	<li><b>Enteric Fermentation</b>: emissions appear to be roughly constant for the most recent decade, and the Static Normals model lines up with that data pretty well.</li>
 	<li><b>Municipal Solid Waste Landfills</b>: emissions appear to be roughly constant for the entire history of NIR-2025 data from 1990 to 2023.</li>
-	<li><b>Manure Management</b>: manure management emissions appear to be highly correlated with enteric emissions, and also approximately a static normal for the last decade.</li>
-	<li><b>Transport emissions from Railways</b>: there's some fluctuation from year to year, but with relatively large uncertainty and no apparent trend, the static normals model is a good fit.</li>
-	<li><b>Indirect emissions from Agricultural Soils</b>: the NIR-2025 estimates a gradual upward trend since 1990, but with the large estimation uncertainty in the NIR, the constant normal model is a reasonably good fit.</li>
-	<li><b>Municipal Wastewater Treatment and Discharge</b>: as was the case with indirect emissions from agricultural soils, the NIR-2025 estimates a gradual upward trend since 1990, but with the large estimation uncertainty in the NIR, the constant normal model is a reasonably good fit.</li>
-	<li><b>Industrial Wood Waste Landfills</b>: there is probably a downward trend, but with the NIR estimation uncertainty, a static normal model isn't a bad fit here.</li>
+	<li><b>Manure Management</b>: manure management emissions appear to be highly correlated with enteric emissions and also approximately a static normal for the last decade.</li>
+	<li><b>Transport Emissions from Railways</b>: there's some fluctuation from year to year, but with relatively large uncertainty and no apparent trend, the Static Normals model is a good fit.</li>
+	<li><b>Indirect Emissions from Agricultural Soils</b>: the NIR-2025 estimates a gradual upward trend since 1990, but with the large estimation uncertainty in the NIR, the Static Normals model is a reasonably good fit.</li>
+	<li><b>Municipal Wastewater Treatment and Discharge</b>: as was the case with indirect emissions from agricultural soils, the NIR-2025 estimates a gradual upward trend since 1990, but with the large estimation uncertainty in the NIR, the static, normal model is a reasonably good fit.</li>
+	<li><b>Industrial Wood Waste Landfills</b>: there is probably a downward trend, but with the NIR estimation uncertainty, a static, normal model isn't a bad fit here.</li>
 </ul>
 This post provides a quantitative analysis in addition to this qualitative one,
-in <a href="#appendix-prenir">Appendix 5: Pre-NIR-2005-m04, a NIR Prediction Challenge</a>.
+in <a href="#appendix-prenir">Appendix 5: Pre-NIR-2025-m04, a NIR Prediction Challenge</a>.
 </p>
 
 
@@ -500,10 +502,10 @@ in <a href="#appendix-prenir">Appendix 5: Pre-NIR-2005-m04, a NIR Prediction Cha
 
 <p>
 Surprisingly, at least to me, regional total emissions in NIR-2025 do not always sum up to the corresponding national total.
-If we define the sum of regions vs. national total discrepancy as the maximum difference over years,
-there are 11/486 with a discrepancy over 1Mt{{CO2e|safe}} (there are 486 sector and GHG combinations).
-At the level of 100kt{{CO2e}} discrepancy, there are about twice as many combinations over the threshold, and 
-at the level of 10kt{{CO2e}} discrepancy, twice as many again.
+If we define the sum of regions versus national total discrepancy as the maximum difference over years,
+there are 11/486 with a discrepancy over 1 Mt{{CO2e|safe}} (there are 486 sector and GHG combinations).
+At the level of 100 kt{{CO2e}} discrepancy, there are about twice as many combinations over the threshold, and
+at the level of 10 kt{{CO2e}} discrepancy, twice as many again.
 I defined "Relative Discrepancy" as the discrepancy divided by the greater of itself and the root mean square of national totals,
 as a way to relate discrepancies to the scale of numbers in their sectors.
 <table>
@@ -525,8 +527,8 @@ as a way to relate discrepancies to the scale of numbers in their sectors.
     </tbody>
 </table>
 For several modest-to-minor sectors, the size of the
-discrepancy is sometimes at the same order of magnitude as the national total,
-and even for large sectors such as harvested wood products and static combustion in commercial/institutional environments,
+discrepancy is sometimes of the same order of magnitude as the national total,
+and even for large sectors such as harvested wood products and stationary combustion in commercial/institutional environments,
 there are numerically significant discrepancies.
 </p>
 
@@ -548,7 +550,7 @@ The shaded region is the model's prediction of what the emissions might be.
 The panel shows that the model estimates true emissions as more negative than the reported national data.
 At the same time, looking at British Columbia, it's the opposite:
 the model estimates true emissions as less negative than the reported provincial data.
-The reason that each panel isn't balanced is the reported national total emissions are not the sum of regional reported emissions.
+The reason that each panel isn't balanced is that the reported national total emissions are not the sum of regional reported emissions.
 The modelled national total is <i>constrained</i> to be the sum of regional totals; the consequence, visible in the figure above,
 is larger uncertainty in the inference of what's going on with HWP {{CO2}} emissions.
 </p>
@@ -563,10 +565,10 @@ One is intuitive appeal &mdash;
 a description of a predictive model will lend it some degree of credibility.
 Another is its track record &mdash;
 bearing in mind the structure of a model, and the nature of what it's predicting,
-its history of accuracy when informed by information available at the time,
+its history of accuracy when informed by information available at the time
 may lend it some degree of credibility as well.
 This appendix is about using the history of NIR emissions publications
-to produce a statistic that characterizes how well the static normals model predicts
+to produce a statistic that characterizes how well the Static Normals model predicts
 an aspect of future emissions.
 </p>
 
@@ -574,19 +576,19 @@ an aspect of future emissions.
 The figure below illustrates the prediction of the latest year's data (year 2023)
 in NIR-2025, 4 months prior to publication.
 National Inventory Reports are typically published in mid-to-late April or early May.
-Dec 31 of the prior year is comfortably 4 months prior to publication,
+December 31 of the prior year is comfortably 4 months prior to publication,
 so the "Pre-NIR-2025-m04" prediction challenge uses 2024-12-31 as its
 {{ siteref("Prediction Date", "prediction date") }} (red dashed line in figure).
 NIR-2024 was available prior to the prediction date.
-It included emissions from years 1990-2022 (dark blue region),
+It included emissions from 1990 to 2022 (dark blue region),
 and was published about 16 months after the emissions period
 (publication delay shown in light-red region),
 which was earlier than (left of) the prediction date.
 The goal of the "Pre-NIR-2025-m04" prediction challenge is to anticipate
-the 2023 emissions (shown light blue) from NIR-2025 prior to its publication
-(publication delay shown in light-red region extends to the right of the prediction date).
+the 2023 emissions (shown in light blue) from NIR-2025 prior to its publication
+(the publication delay shown in the light-red region extends to the right of the prediction date).
 For this post,
-I cheat a little, and use the data from 1990-2022 from NIR-2025 as if it had
+I cheat a little and use the data from 1990 to 2022 from NIR-2025 as if it had
 come from NIR-2024.
 In future, looking at Pre-NIR-2026-m04 and beyond (<a href="https://github.com/jaberg/planzero/issues/61">GitHub Issue #61</a>), this cheat won't be repeated.
 </p>
@@ -598,11 +600,11 @@ Since the Static Normals model developed in this post was only conditioned on da
 inference in the model induces a posterior distribution over unknown variables {{latex("X")}} and {{latex("Y")}} in the model,
 which can be interpreted as predictions of 2023 emissions (as well as every year beyond 2023, because the model is static).
 The table below lists the KL divergences between the NIR-2025 distributions for emissions year 2023
-(as developed in in the <a href="/posts/2026-05-20-prob-nir#appendix-models">Probabilistic NIR-2025 post</a>)
-and the posterior distribution in the static normals model (which is the same for all years).
+(as developed in the <a href="/posts/2026-05-20-prob-nir#appendix-models">Probabilistic NIR-2025 post</a>)
+and the posterior distribution in the Static Normals model (which is the same for all years).
 Weighting these divergences proportionally to the absolute value of the 2023 per-sector-gas emissions
 is the "weighted KL-divergence" model evaluation metric developed in that post.
-The static normals model developed in this post scores a weighted KL-divergence of 3.35.
+The Static Normals model developed in this post scores a weighted KL-divergence of 3.35.
 Perfect prediction of all of the emission distributions would have scored 0.0.
 The table can be sorted by each column to see the best-predicted and worst-predicted sector-gas combinations.
 
@@ -612,11 +614,11 @@ The table can be sorted by each column to see the best-predicted and worst-predi
 
 
 <p>
-Qualitative assessment in Appendix 4 noted seven sectors that seemed well-fit by the static normals model.
+Qualitative assessment in Appendix 4 noted seven sectors that seemed to fit the Static Normals model well.
 Quantitatively, their per-gas KL-divergence scores are listed below. They are all relatively low.
 The best qualitative fit was municipal solid waste landfills, and that one scored the best quantitative match as well.
 These results provide evidence, I think, that the KL-divergence score measures approximately what the eye beholds,
-that these sectors (or sector-gas results) are the ones that are best-fit.
+that these sectors (or sector-gas results) are the ones that fit best.
 <table>
 	<thead>
 	<tr><th>Sector</th><th>KL-Divergence</th></tr>
@@ -626,8 +628,8 @@ that these sectors (or sector-gas results) are the ones that are best-fit.
 	<tr><td>Municipal Solid Waste Landfills</td><td>0.02 ({{CH4}})</td></tr>
 	<tr><td>Manure Management</td><td>0.26 ({{CH4}}), 0.21 ({{N2O}})</td></tr>
 	<tr><td>Railways</td><td>1.31 ({{CO2}}), 0.33 ({{CH4}}), 0.25 ({{N2O}})</td></tr>
-	<tr><td>Indirect from Agricultural Soils</td><td>0.16 ({{N2O}})</td></tr>
-	<tr><td>Municipal Waste Water Treatment and Discharge</td><td>0.89 ({{N2O}})</td></tr>
+	<tr><td>Indirect Emissions from Agricultural Soils</td><td>0.16 ({{N2O}})</td></tr>
+	<tr><td>Municipal Wastewater Treatment and Discharge</td><td>0.89 ({{N2O}})</td></tr>
 	<tr><td>Industrial Wood Waste Landfills</td><td>0.66 ({{CH4}})</td></tr>
 	</tbody>
 </table>
@@ -635,30 +637,30 @@ that these sectors (or sector-gas results) are the ones that are best-fit.
 
 <p>
 The converse is also true: sector-gas combinations with scores less than about 1 appear to be the ones that are well-predicted.
-For example, emissions from settlements have risen and fallen, but the KL-divergence of the 2023 {{CO2}} emission is a very-low 0.11 and
+For example, emissions from settlements have risen and fallen, but the KL-divergence of the 2023 {{CO2}} emission is a very low 0.11 and
 indeed the 2023 emissions line up nearly perfectly with the historical mean and variance of the sector.
-Another example is emissions from "Non-Energy Products from Fuels and Solvent Use";
+Another example is emissions from Non-Energy Products from Fuels and Solvent Use;
 the KL-divergence score is a low 0.55
-and again the static normals model appears to get lucky and make a prediction that lines up very well with the 2023 reported emissions.
-Other sector-gas combinations, which aren't listed above, typically don't look like the prediction of the static normals model for 2023,
+and again the Static Normals model appears to get lucky and make a prediction that lines up very well with the 2023 reported emissions.
+Other sector-gas combinations, which aren't listed above, typically don't look like the prediction of the Static Normals model for 2023,
 and have higher KL-divergence scores.
 </p>
 
-<h2 id="appendix-architecture">Engineering Update Regarding PlanZero's Build System</h2>
+<h2 id="appendix-architecture">Appendix 6: Update to PlanZero's Build System</h2>
 
 <p>
-The software system for producing the PlanZero website was upgraded for this post, to achieve several engineering objectives:
+The software system for producing the PlanZero website was upgraded for this post to achieve several engineering objectives:
 <ul>
 	<li>compute capacity: perform model inference on bigger, faster computers than my laptop</li>
-	<li>build quality: upload a web server image to fly.io with pre-rendered pages so that the site loads faster</li>
+	<li>build quality: upload a web server image to Fly.io with pre-rendered pages so that the site loads faster</li>
 	<li>reproducibility: an external build process ensures PlanZero's site builds are reproducible beyond my laptop</li>
 	<li>author productivity: I can edit PlanZero code with the benefit of static analysis in a valid Dockerized test environment</li>
 	<li>code quality: PlanZero's unit tests run automatically (and must pass) before pushing any changes to the website</li>
-	<li>site quality: Reviewers can provide feedback on site previews before merging pull-requests, so the standard for what's shown on the main site can be higher.</li>
+	<li>site quality: Reviewers can provide feedback on site previews before {{siteref("Git_Merge", "merging")|safe}} {{siteref("GitHub_Pull_Request", "pull requests")|safe}}, so the standard for what's shown on the main site can be higher.</li>
 </ul>
 </p>
 
-<h3>Build, Test, and Deploy WorkFlow on GitHub</h3>
+<h3>Build, Test, and Deploy Workflow on GitHub</h3>
 
 <p>
 Inference in probabilistic models can be computationally expensive.
@@ -700,16 +702,16 @@ app_cache .-> gh_deploy_pr
 
 <p>
 Model inference is computationally expensive, and the results don't change with every {{siteref("Git_Commit", "commit")}} to the project.
-PlanZero uses an explicit and ad-hoc versioning system for models, in order to leverage GitHub's <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching">Dependency Cache</a> capability
+PlanZero uses an explicit and ad-hoc versioning system for models in order to leverage GitHub's <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/dependency-caching">Dependency Cache</a> capability
 in a controlled way.
 The cache design for the Static Normals model is that the entire model is cached on the basis of (a) a version number in the source code, (b) the name of the class,
-and (c) the cutoff date for data available for inference. Whenever the model code, or any dependency, or data assumption changes, the version number must be
-explicitly changed (raised), in order to change the cache key, which will then cause GitHub's workflow engine to recompute the inference of the model and save the results.
+and (c) the cutoff date for data available for inference. Whenever the model code, any dependency, or data assumption changes, the version number must be
+explicitly changed (raised) in order to change the cache key, which will then cause GitHub's workflow engine to recompute the inference of the model and save the results.
 Free-tier jobs are limited to 6 hours for open-source projects,
 so there's some incentive to ensure that the PlanZero site can be built from scratch, including all model inferences and tests, in that amount of time.
 </p>
 <p>
-The Build and Test job (see diagram above) sometimes includes inference, but always runs unit tests, including a sweep through all of the pages hosted on the planzero website.
+The Build and Test job (see diagram above) sometimes includes inference, but always runs unit tests, including a sweep through all of the pages hosted on the PlanZero website.
 In the process of rendering them as part of the unit test suite, these pages are cached to disk,
 and that whole cache of pages is stored as a <a href="https://docs.github.com/en/actions/concepts/workflows-and-actions/workflow-artifacts">Workflow Artifact</a>.
 The set of pages isn't a large amount of data, and it's important to test frequently, so the tests run on every commit and the app cache is built every time the main branch
@@ -717,15 +719,15 @@ or a pull-request branch changes.
 </p>
 
 <p>
-The last jobs in the workflow download the pre-rendered pages and deploy the webserver and pre-built pages.
+The last jobs in the workflow download the pre-rendered pages and deploy the web server and pre-built pages.
 PlanZero sites are hosted by Fly.io, which hosts the main <a href="https://planzero.ca">planzero.ca</a> site,
 as well as per-pull-request preview sites for work in progress.
-The set of active pull-requests is available on the project page <a href="https://github.com/jaberg/planzero/pulls">on GitHub</a>.
+The set of active pull requests is available <a href="https://github.com/jaberg/planzero/pulls">on GitHub</a>.
 PlanZero is not currently a purely static site, but I can imagine committing to making it purely static in future in order to e.g. improve initial page-load performance
 and lower hosting costs.
 </p>
 
-<h3>Neovim, TMux and Dockerized Editing</h3>
+<h3>Neovim, tmux and Dockerized Editing</h3>
 
 <p>
 The <a href="https://github.com/jaberg/planzero/blob/7f051167d082855fd5414e8c7075fa6168406c49/Dockerfile#L18">Dockerfile</a> and
@@ -737,15 +739,15 @@ that can run various development activities in a similar environment to the one 
 the <code><a href="https://github.com/jaberg/planzero/blob/7f051167d082855fd5414e8c7075fa6168406c49/.github/workflows/test.yaml#L26">build_and_test</a></code> workflow.
 <a href="https://neovim.io/">Neovim</a> is installed in this image as an editor, as well as
 <a href="https://jupyter.org/">Jupyter</a>.
-Commands such as <code>make jupyter</code> and <code>make local</code> are meant to be run within this tmux environment, to run a jupyter server and local site respectively
+Commands such as <code>make jupyter</code> and <code>make local</code> are meant to be run within this tmux environment, to run a Jupyter server and a local site, respectively,
 on the ports described in the Makefile.
 I hope, later, to introduce code acceptance tests in the build and test job that enforce style guidelines,
-and to encourage those same style guidelines via neovim plugin configuration.
-So far, neovim has simply been configured to edit Python files with default settings of
+and to encourage those same style guidelines via Neovim plugin configuration.
+So far, Neovim has simply been configured to edit Python files with default settings of
 <a href="https://github.com/microsoft/pyright">Pyright</a> and
 <a href="https://github.com/astral-sh/ruff">Ruff</a>.
-These tools find a lot of code quality issues! I intend to fix issues manually for a while, and build up a set of style-guide exceptions before e.g. running automatic
-fixes, or requiring code quality checks to pass on the main branch (<a href="https://github.com/jaberg/planzero/issues/90">GH#90</a>).
+These tools find a lot of code quality issues! I intend to fix issues manually for a while and build up a set of style-guide exceptions before e.g. running automatic
+fixes or requiring code quality checks to pass on the main branch (<a href="https://github.com/jaberg/planzero/issues/90">GH#90</a>).
 </p>
 
 <ul class="actions special">
