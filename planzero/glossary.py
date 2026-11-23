@@ -364,14 +364,10 @@ class Code(GlossaryTerm):
 
 class Concentrated_Distribution(GlossaryTerm):
     """
-    A concentrated distribution is a probability distribution
-    with most of its probability mass on a small number of possible values
-    compared to the full set of possible values. It's an informal description
-    of a distribution. The opposite of a concentrated distribution over
-    a finite set of possibilities would be a uniform distribution,
-    which is a well-defined distribution. There's not really such a thing
-    as the opposite of a concentrated distribution over e.g. all real numbers,
-    but one distribution may be described as being more concentrated than another.
+    A concentrated, or narrow distribution is a probability distribution
+    with most of its probability mass on a small subset of possible values
+    compared to the full set of possible values. It's an informal description.
+    The opposite of a concentrated distribution is a broad distribution.
     """
 
     @property
@@ -1262,6 +1258,12 @@ class Model_Metric(GlossaryTerm):
             'Weighted_KL_Divergence': "A prediction-quality metric for PlanZero Models",
         }
 
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.ProbabilisticNIR2025(), '#appendix-evaluating', "Appendix 4: A Method for Evaluating Predictive Models"),
+        ]
+
 
 class Model_Variable(GlossaryTerm):
     """A model variable is a known or unknown variable in a PlanZero Model.
@@ -1716,6 +1718,9 @@ class Probabilistic_Model(GlossaryTerm):
     """A probabilistic model, in general, is a specification of probability distribution over one or more unknown variables.
     In PlanZero, it typically means the distribution of probability
     over the unknown variables in a PlanZero model.
+    (See also wikipedia
+    <a href="https://en.wikipedia.org/wiki/Statistical_model">Statistical Model</a>,
+    <a href="https://en.wikipedia.org/wiki/Graphical_model">Graphical Model</a>)
     """
 
     @property
@@ -1724,6 +1729,13 @@ class Probabilistic_Model(GlossaryTerm):
                 'Probability_Distribution': 'A model defines a joint probability distribution over all its variables',
                 'PlanZero_Model': 'PlanZero models are probabilistic models, encompassing NIR emissions data',
                 }
+
+    @property
+    def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
+        return [
+                (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
+                (blog.ProbabilisticNIR2025(), '#prob-model', "Appendix 1: Probabilistic Models, Distributions, and Density Functions"),
+        ]
 
 
 class Probability_Density_Function(GlossaryTerm):

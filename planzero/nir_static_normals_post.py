@@ -7,10 +7,10 @@ from .html import HTML_Matplotlib_Figure
 
 class StaticNormals(BlogPost):
     """
-    This post introduces a "Static Normals" probabilistic model to PlanZero
+    This post introduces a "Static Normals" probabilistic model to PlanZero,
     which is the first to impose modelling assumptions on the NIR,
     and the first to make predictions about future NIR emissions.
-    The predictions are trivial: all years are the same (static, rather than dynamic).
+    The predictions are trivial: that all years are the same (the predictions are <i>static</i>, rather than dynamic).
     This model is intended as a baseline against which more complex
     future models can be judged.
     Several appendices to this post introduce probabilistic modelling notation,

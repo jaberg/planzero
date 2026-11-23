@@ -23,8 +23,8 @@ this post includes a primer on probability density functions, distributions, and
 </p>
 
 <p>
-The density functions used to model per-sector-region-gas-year emissions in the NIR-2025 model are custom PlanZero-defined parametric density functions,
-which this post dubs "Symmetric Blended Log-Normal" (SBLN) distributions.
+The PlanZero NIR-2025 model uses a custom probability density function to model per-sector-region-gas-year emissions.
+This post dubs these density functions "Symmetric Blended Log-Normal" (SBLN) distributions.
 These distributions are used to blend Normal and Log-Normal distributions so that
 all sectors can be modelled with the same type of distribution, regardless of whether the sector
 emissions are naturally non-negative or not.
@@ -32,13 +32,13 @@ Details about the design of this distribution can be found in <a href="#appendix
 </p>
 
 <p>
-Some judgement and creativity was required to estimate the parameters of the SBLN distributions
+Some judgement and creativity was required to estimate SBLN parameters
 for each combination of sector, region, gas, and year.
 The NIR-2025 does not estimate means for every combination, and uncertainty values are listed using a different
-taxonomy of sectors, and only for national totals, and only for years 1990 and 2023.
-For the large positive emissions that dominate the totals, the SBLN distributions were approximately log-normal with the desired mean and variance,
+taxonomy of sectors, and only for national totals, and only for 1990 (first year) and 2023 (latest year).
+For the large positive emissions that dominate the totals, the SBLN distributions were approximately <a href="https://en.wikipedia.org/wiki/Log-normal_distribution">log-normal</a> with the desired mean and variance,
 but in cases of zeros, missing data, or not-necessarily-positive emissions,
-various other distributions were used.
+the SBLN distribution was less like a log-normal.
 The details of how the parameters of the SBLN distribution were set in all cases can be found in <a href="#appendix-uncertainty">Appendix 3</a>.
 </p>
 
@@ -70,7 +70,7 @@ shown at the bottom of the graphic among other sectors for land-use, land-use ch
 {% include "posts/2026-05-20-prob-nir-NIR2025-all_sectors.html" %}
 
 <p>
-Finally, this post also brings a procedural change, introducing
+Finally, this post brings a procedural change, introducing
 "<a href="/about/#planned-status">Planned</a>" as an earlier-stage status for posts.
 The purpose of planned posts is to communicate a roadmap.
 When a planned post is no longer missing content, then it will be marked as a Draft.
@@ -170,14 +170,12 @@ Since the total amount of probability has to add up to 1,
 a probability density function describes how probability
 is <i>distributed</i> across the possible values
 that a variable might truly have.
-This is often called the "{{siteref("Probability Distribution", "probability distribution")|safe}}",
+This is conventionally called the "{{siteref("Probability Distribution", "probability distribution")|safe}}",
 or sometimes simply "distribution", <i>of</i> the variable,
-but to be honest, I don't think this figurative image is quite right, because variables
-do not have distributions intrinsically.
-A variable has a <i>value</i>, and we just sometimes don't know what that value is.
-It's more helpful to think
-of the probability density function as distributing (<i>doing</i> the distribution
-of probability) and to think of the distribution as <i>meaning</i> something <i>about</i> the variable.
+but the convention is arguably misleading in the sense that unknown variables do not have distributions intrinsically;
+it is a <i>value</i> that variable has, intrinsically, and any distribution over possible values comes from a model (see below).
+I think of the probability density function as distributing (<i>doing</i> the distribution
+of probability) and I think of the resulting distribution as an <i>expression of belief about the unknown variable</i>.
 </p>
 
 <h3>Probability Model</h3>
@@ -220,11 +218,11 @@ to model each emission probability distribution in the NIR.
 I call this distribution a Symmetric Blended Log-Normal (SBLN).
 The SBLN distribution is a mixture (weighted sum)
 of three instances of two well-known distributions: two log-normals and a normal.
-The mixture components are organized by four parameters:
+The mixture components are organized by three parameters:
 a mean ({{latex("\\mu")|safe}}),
-a roll-off ({{latex("\\rho")|safe}}), and
-a relative uncertainty ({{latex("\\sigma")|safe}}) such that 1.0 means 100%,
-and a lower bound ({{latex("\\beta")|safe}}) that truncates the density distribution.
+a roll-off ({{latex("\\rho")|safe}}),
+a relative uncertainty ({{latex("\\sigma")|safe}}) such that 1.0 means 100%.
+(In future, a lower bound ({{latex("\\beta")|safe}}) may truncate the density distribution.)
 Qualitatively, the roll-off parameter here controls what counts as a "small"
 magnitude for the emission; relative uncertainty applies to values that are larger
 than the roll-off, and below the roll-off a fixed amount of uncertainty is modelled,
@@ -259,10 +257,11 @@ hosted on PlanZero's GitHub page.
 
 <p>
 The result is a parameterized probability density function that
-can make what I think are all the shapes required to reasonably represent the elements
+can make what I think are all the shapes required to approximate the elements
 of the NIR.
+<!--
 The lower bound ({{latex("\\beta")|safe}}) is used to truncate densities to
-be non-negative for emissions that can't be negative such as e.g. {{CO2}} from road transportation.
+be non-negative for emissions that can't be negative such as e.g. {{CO2}} from road transportation. -->
 For some examples of what SBLN distributions can look like, here are some distributions that show the effects of the mean, roll-off, and relative uncertainty parameters:
 </p>
 
@@ -286,16 +285,16 @@ Typically, the uncertainties associated with trends and
 </p>
 
 <p>
-Estimating high uncertainty is relatively easy;
-estimating low uncertainty with confidence takes work.
+Estimating things with high uncertainty is relatively easy;
+estimating them with low uncertainty takes more work.
 My interpretation of this characterization of the NIR's approach to uncertainty, is that it
 was primarily meant to assess where and when
-emissions could reasonably be compared in terms of their means.
+emissions could reasonably be compared in terms of their <i>means</i>.
 Simple techniques for approximate uncertainty estimation were often sufficient
 to separate signal from noise,
-and confirmed e.g. that yes, apparently large-emission sectors really were indeed as bad as they looked.
+and confirm that e.g. yes, the apparently large-emission sectors really were large-emission sectors.
 PlanZero has a different use for the uncertainty &mdash; model matching, below in "<a href="#model-evaluation">A Metric for Evaluating NIR Predictions</a>" &mdash; but
-the uncertainty estimates used to compare sectors seem good for this purpose as well.
+the uncertainty estimates used to compare sectors seem well-suited to this purpose as well.
 The remainder of this section is about the uncertainty estimates in NIR-2025,
 and how the probabilistic NIR model interprets them as probability density functions.
 </p>
@@ -344,7 +343,8 @@ represent only about 0.1% of the national total.
 Despite
 little nooks and crannies of uncertainty, the overall picture
 based on means (which PlanZero has been using to date) can be taken as relatively accurate.
-Still, for some purposes, the differences between e.g. 1%, 2%, 10%, and 20% uncertainty are important even if they all bestow confidence in the mean.
+Still, for some purposes, the differences between e.g. 1%, 2%, 10%, and 20% uncertainty may be important, and PlanZero's NIR-2025 model
+preserves these differences.
 The next section translates these uncertainties into
 probability density functions for all sector-gas-region-year combinations in the NIR.
 See <a href="#appendix-evaluating">Appendix 4</a>
@@ -412,11 +412,11 @@ to intervening years, and provinces and territories as follows:
             <td>
                 Linear interpolation with coefficient
                 {{latex("\\alpha = \\frac{t - 1990}{2023 - 1990}")|safe}}:
-                {{latex("u_{(s,g,\\mathrm{Canada},t)} = (1 - \\alpha)u_{(s,g,\\mathrm{Canada},1990)} + (\\alpha)u_{(s,g,\\mathrm{Canada},2023)}")|safe}}</td>
+                {{latex("u_{(s,g,r=\\mathrm{Canada},t)} = (1 - \\alpha)u_{(s,g,r=\\mathrm{Canada},t=1990)} + (\\alpha)u_{(s,g,r=\\mathrm{Canada},t=2023)}")|safe}}</td>
         </tr>
         <tr>
             <td>Province/territory region ({{latex("r")|safe}}) uncertainty</td>
-            <td>{{latex("u_{(s,g,r,t)} = u_{(s,g,\\mathrm{Canada},t)}")|safe}}</td>
+            <td>{{latex("u_{(s,g,r,t)} = u_{(s,g,r=\\mathrm{Canada},t)}")|safe}}</td>
         </tr>
     </tbody>
 </table>
@@ -615,7 +615,8 @@ My main motivation for introducing a probabilistic NIR model here on PlanZero
 was to use it as a reference for evaluating predictive emission models.
 A predictive emission model is a model that includes probability density functions
 for times into the future.
-It is easy to make a model that makes predictions of future emissions.
+It is easy to make a model that makes predictions of future emissions,
+the question we must immediately ask is whether those predictions have any value.
 It is important to establish first
 how such models can be evaluated,
 when the results they predict are still necessarily in the future.
@@ -660,7 +661,7 @@ when compared with another (namely the probabilistic NIR introduced in this post
 In assessing how predictions can be wrong, there are both qualitative and quantitative aspects.
 This Appendix is about quantitative aspects.
 It shows there's at least one
-plausibly-good numerical metric to assess goodness of fit between a probabilistic NIR model
+possibly-useful numerical metric to assess goodness of fit between a probabilistic NIR model
 and predictions thereof.
 I believe that a prediction that scores lower on this metric (closer to zero)
 is probably going to make better predictions than one that scores higher,
@@ -718,7 +719,8 @@ and Q is the corresponding predicted-distribution over the same emission, but fr
 \\int_x log \\left( \\frac{P(x)}{Q(x)}\\right)  P(x) dx"""
 , display="block")|safe}}
 <p>
-The KL divergence between two probability distributions is zero if they're identical,
+The KL divergence between two probability distributions is the expected logarithm of their ratio.
+The divergence is zero if they're identical,
 and greater-than-zero if they're not identical.
 Typically if Q is a bit different, the KL divergence is small, and
 as Q becomes more-different, the KL divergence increases faster and faster.
@@ -732,23 +734,7 @@ are overly-confident, {{siteref("Concentrated_Distribution", "highly-concentrate
 </p>
 
 <p>
-I said that the KL divergence was a debatable choice because
-there are lots of measures of distributional similarity.
-This <a href="https://www.cs.cornell.edu/courses/cs6742/2017fa/handouts/lee-ch2.3.pdf">course note PDF</a> from CS6742 at Cornell lists a few,
-and the Wikipedia <a href="https://en.wikipedia.org/wiki/Scoring_rule">page on scoring rules</a> provides an overview of alternatives and considerations.
-If users of NIR predictions have particular needs or considerations, then
-those needs or considerations should inform how they rank predictive models.
-A metric based on KL-divergence is a starting point,
-and illustrates the general pattern of using a reference model in a metric.
-I've created a GitHub issue as a reminder to <a href="https://github.com/jaberg/planzero/issues/86">
-    review alternative metrics for model selection</a>.
-</p>
-
-<p>
-By incorporating a couple of expectations
-and a sum over sector-gas-region-time combinations of relevance,
-the following
-formula expresses what I think is a baseline, first model comparison metric:
+The following formula expresses what I think is a reasonable first model comparison metric:
 </p>
 {{latex(
 """
@@ -830,6 +816,19 @@ probabilistic models for past and future NIRs
 and
 {{latex("M^{(ref)}_{2026}")|safe}})
 and the predictive models (e.g.  {{latex("M^{(pred)}_{2025,2026}")|safe}}).
+</p>
+
+<p>
+The KL divergence is a debatable choice because
+there are lots of measures of distributional similarity.
+This <a href="https://www.cs.cornell.edu/courses/cs6742/2017fa/handouts/lee-ch2.3.pdf">course note PDF</a> from CS6742 at Cornell lists a few,
+and the Wikipedia <a href="https://en.wikipedia.org/wiki/Scoring_rule">page on scoring rules</a> provides an overview of alternatives and considerations.
+If users of NIR predictions have particular needs or considerations, then
+those needs or considerations should inform how they rank predictive models.
+A metric based on KL-divergence is a starting point,
+and illustrates the general pattern of using a reference model in a metric.
+I've created a GitHub issue as a reminder to <a href="https://github.com/jaberg/planzero/issues/86">
+    review alternative metrics for model selection</a>.
 </p>
 
 <h2 id="appendix-visualizing">Appendix 5: Visualizing Probabilistic NIR Models</h2>
@@ -921,7 +920,6 @@ is in the emission of {{CO2}} itself.
 </p>
 
 <p>
-That concludes the last Appendix on visualization, and in fact, the entire post.
 As of writing, all of these graphics are available on the
 <a href="/models/NIR2025/">NIR-2025 model page</a>.</p>
 

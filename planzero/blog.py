@@ -196,7 +196,7 @@ class ProbabilisticNIR2025(BlogPost):
             title='A Probabilistic NIR-2025',
             url_filename="2026-05-20-prob-nir",
             author="James Bergstra",
-            status=BlogStatus.Draft,
+            status=BlogStatus.Done,
             tags={
                 BlogTag.NIR_Modelling,
                 BlogTag.About,
