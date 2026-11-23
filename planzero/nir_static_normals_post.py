@@ -7,10 +7,10 @@ from .html import HTML_Matplotlib_Figure
 
 class StaticNormals(BlogPost):
     """
-    This post introduces a "Static Normals" probabilistic model to PlanZero
+    This post introduces a "Static Normals" probabilistic model to PlanZero,
     which is the first to impose modelling assumptions on the NIR,
     and the first to make predictions about future NIR emissions.
-    The predictions are trivial: all years are the same (static, rather than dynamic).
+    The predictions are trivial: that all years are the same (the predictions are <i>static</i>, rather than dynamic).
     This model is intended as a baseline against which more complex
     future models can be judged.
     Several appendices to this post introduce probabilistic modelling notation,
@@ -22,14 +22,14 @@ class StaticNormals(BlogPost):
         super().__init__(
             date=datetime.date(2026, 6, 28),
             title='Static Normals: A baseline predictive model',
-            # html/blog/2026-06-28-static-normals.html
+            # html/posts/2026-06-28-static-normals.html
             url_filename="2026-06-28-static-normals",
             author="James Bergstra",
             tags={#BlogTag.NIR_Modelling,
                   #'Static_Normals',
                   BlogTag.About,
                  },
-            status=BlogStatus.Draft,
+            status=BlogStatus.Done,
             )
 
     def figure_normal(self,):
@@ -47,7 +47,8 @@ class StaticNormals(BlogPost):
                 ax0.legend(loc='upper right')
 
                 ax1.set_title("Lognormal")
-                x = np.linspace(0, 1, 100)
+                eps = 1e-6
+                x = np.linspace(0, 1, 100) + eps
                 ax1.plot(x, np.exp(dist.LogNormal(0, 1).log_prob(x)), label=r"$\mu=0, \sigma^2=1$")
                 ax1.plot(x, np.exp(dist.LogNormal(-1, 0.7).log_prob(x)), label=r"$\mu=-1, \sigma^2=0.7$")
                 ax1.legend(loc='upper right')
@@ -58,7 +59,7 @@ class StaticNormals(BlogPost):
         from . import prob
         model_name = 'Static_Normals_2024_12_31'
         site_inference = prob.registry[model_name]
-        base = f'html/blog/{self.url_filename}'
+        base = f'html/posts/{self.url_filename}'
 
         site_inference.uncertain_sparkline_matrix_echart(
             div_id=f"{model_name}_all_sectors",

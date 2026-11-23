@@ -1,0 +1,81 @@
+
+Style guide for text on the site, especially within the html/ directory
+=======================================================================
+
+Target Audience, Expected Background Knowledge
+----------------------------------------------
+
+Canadian spelling conventions should be preferred,
+there should not be spelling errors or grammatical errors.
+The writing should be clear and consise,
+with formality somewhere between prose for a general audience (e.g. newspaper)
+and scientific writing (e.g. conference or journal article).
+The target reader is university educated,
+in one of either social science, physical science, statistics, or engineering.
+All material that might be associated with high-school education in North America,
+can be considered as expected background knowledge.
+
+
+General Guidelines on Capitalization
+------------------------------------
+
+Names of so-called IPCC Sectors relating to NIR documents should be capitalized,
+so e.g. Enteric Fermentation should be capitalized when it refers to the greenhouse gas accounting sector,
+and not capitalized when it refers to the physiologicaly phenomenon within ruminants generally.
+Incidentally, the names of IPCC Sectors should not generally be quoted, the capitalization
+should be demarkation enough.
+
+Textual references to pages on the PlanZero site should typically be capitalized.
+E.g. <a href="/model-explorer">Model Explorer</a>, Model Explorer, the Glossary, or the About page.
+A lower-case model explorer should be capitalized.
+
+Textual references to PlanZero models should be capitalized, so it should be
+e.g. the NIR-2025 model, the Static Normals model, the Scaling model and so on.
+Textual mentions should use the `siteref` mechanism to provide hoverable,
+clickable context if the reader isn't familiar with these models.
+
+Textual references to probability distributions, such as to the normal distribution and
+log-normal distribution should not be capitalized as a general rule, but they should be
+capitalized if they are named after an individual: e.g. Guassian, or Poisson.
+
+
+
+Blog/Post header structure
+--------------------------
+
+Top-level section headers in posts should be "h2" header elements, their subsections should be "h3" and so on.
+
+Tables of contents on posts should be unordered lists within a "div" html element with class "table-of-contents toc-rule".
+Each post's table of contents should match the structure established by header elements in the document,
+at least with regards to h2 and h3 headers.
+Sometimes h4, or any h5 or h6 headers are rightly omitted from from the table of contents for clarity.
+
+Top-level headings (h2) should typically be mostly capitalized
+For lower-level headings (h3+) the first word in the heading should be
+capitalized for being in the heading, other words should not be capitalized
+unless they should be capitalized for reason other than being in the heading.
+
+
+Update Posts
+------------
+
+Update posts are meant to encompass larger updates that may include insights in addition to larger changes to the site
+or underlying software underpinning the site.
+
+Update posts have an overview/appendix structure.
+1) start with an h2-level header called "Overview"
+2) have, as the remainder of h2-level headers, header titles prefixed with "Appendix {N}:" where {N} counts up e.g. 1, 2, 3, ...
+
+
+
+Insight Posts
+-------------
+Insight posts are meant to communicate a discovery that is revealed by e.g. new data, new modelling.
+
+The structure of an insight post should
+1) start with an h2-level header called "Introduction"
+2) end with an h2-level header called "Conclusion"
+
+Insight posts should draw meaningful conclusions from the content they present, and state
+those conclusions in the conclusions section. The introduction should set up whatever context is necessary to foreshadow
+those conclusions.

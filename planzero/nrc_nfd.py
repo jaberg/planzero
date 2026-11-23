@@ -5,12 +5,14 @@ Natural Resources Canada (NRC) - National Forerst Database (NFD)
 http://nfdp.ccfm.org/en/download.php
 
 """
-from .my_functools import cache
-import math, enum
+import enum
+import math
+
 import pandas as pd
 
-from . import ureg as u, enums
-from . import objtensor, sts
+from . import enums, objtensor, sts
+from .my_functools import cache
+from .ureg import ureg as u
 
 
 class RoundwoodSpeciesGroup(str, enum.Enum):

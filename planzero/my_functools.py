@@ -1,11 +1,7 @@
 import functools
 import os
-import shutil
 
-try:
-    import diskcache
-except ImportError:
-    diskcache = None
+import diskcache
 
 CACHE_DIR = os.environ['PLANZERO_CACHE_DIR']
 USE_DISK_CACHE = (os.environ['PLANZERO_USE_DISK_CACHE'] == '1')

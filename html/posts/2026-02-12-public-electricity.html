@@ -1,0 +1,299 @@
+{% include "pre-main.html" %}
+<div id="main">
+<section class="post">
+    <header class="major">
+        <span class="date">{{blog.date.strftime("%b %d, %Y")}}</span>
+        <h1>{% if blog.published %}{{blog.title}} {% else %} Draft: {{blog.title}}{% endif %}</h1>
+        <p>{{blog.about}}</p>
+    </header>
+
+<div class="box">
+    <p><strong>Note on NIR:</strong> In the context of this post, the acronym "NIR" refers to the 2025 version of Canada's National Inventory Report. While new reports are released annually and PlanZero modelling will incorporate these future releases over time, the content of this post is left as is in reference to the 2025 version of the report.</p>
+</div>
+
+<p>
+Table of Contents:
+<ul>
+    <li><a href="#h2_intro">Introduction</a></li>
+    <li><a href="#ipcc_sectors">IPCC Sector Guidelines</a></li>
+    <li><a href="#canada_sectors">Canada's IPCC Sectors</a></li>
+    <li><a href="#public_electricity">Public Electricity and Heat</a></li>
+    <li><a href="#summary">Summary</a></li>
+</ul>
+</p>
+
+<h2 id="h2_intro">Introduction</h2>
+
+<p>
+A high-level reminder: I would like for PlanZero to be able to evaluate business and product ideas in terms of their ability to support Canada's net-zero targets.
+My approach is:
+<ol>
+    <li>estimating the official national inventory calculation based on public data from Statistics Canada (StatsCan) and Natural Resources Canada (NRCan), and then</li>
+    <li>evaluating the effect of hypothetical business and product ideas in terms of those foundational StatsCan and NRCan statistics.</li>
+</ol>
+Over the coming weeks, I intend to make progress on step 1 above ("estimating...")
+by working through the International Panel on Climate Change's (IPCC's) guideline sectors in order of decreasing magnitude in the 2005 emissions baseline,
+making time-boxed efforts to replicate each one as well as possible.
+I might sneak in some effort toward step 2 above ("evaluating...") to reassure myself that my efforts on step 1 are helping, but I'm trying to stay focused on step 1: replicating the national inventory calculation.
+</p>
+
+<p>
+This post is the first in a series devoted to estimating Canada's national greenhouse gas inventory in this
+open-source PlanZero software repository (implemented in the Python programming language).
+It introduces the set of sectors uses by Environment and Climate Change Canada (ECCC), and replicates the calculation of emissions associated with "Public Electricity and Heat"
+for years 2005 to present.
+Some of the content of this post has been used to refresh the
+<a href="/ipcc-sectors/Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production/">IPCC Sectors / Public Electricity and Heat Production</a> page.
+</p>
+
+<h2 id="ipcc_sectors">IPCC Sectors Guidelines</h2>
+
+<p>
+Canada's National Greenhouse Gas Inventory is reported in keeping with the IPCC Guidelines for National Greenhouse Gas Inventories.
+(Technically, the <a href="https://www.ipcc-nggip.iges.or.jp/public/2019rf/index.html">2019 Refinement</a> to the
+<a href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/index.html">2006 IPCC Guidelines for National Greenhouse Gas Inventories</a>).
+The IPCC reporting guideline introduces a hierarchical taxonomy of emissions sources, the highest two levels of which are as follows:
+<ul>
+    <li><b>Energy</b>
+        <ul>
+            <li>Stationary combustion</li>
+            <li>Mobile combustion</li>
+            <li>Fugitive emissions</li>
+            <li>{{CO2|safe}} transport, injection, and storage</li>
+        </ul>
+    </li>
+    <li><b>Industrial Processes and Product Use</b>
+        <ul>
+            <li>Mineral industry emissions</li>
+            <li>Chemical industry emissions</li>
+            <li>Metal industry emissions</li>
+            <li>Non-energy products from fuels and solvent use</li>
+            <li>Electronics industry emissions</li>
+            <li>Emissions of fluorinated substitutes for ozone-depleting substances</li>
+            <li>Other product manufacture and use</li>
+        </ul>
+    </li>
+    <li><b>Agriculture, Forestry, and Other Land Use</b>
+        <ul>
+            <li>Forest land</li>
+            <li>Cropland</li>
+            <li>Grassland</li>
+            <li>Wetlands</li>
+            <li>Settlements</li>
+            <li>Other land</li>
+            <li>Emissions from livestock and manure management</li>
+            <li>{{N2O|safe}} emissions from managed soils and {{CO2|safe}} emissions from lime and urea application</li>
+            <li>Harvested wood products</li>
+        </ul>
+    </li>
+    <li><b>Waste</b>
+        <ul>
+            <li>Waste generation, composition, and management data</li>
+            <li>Solid waste disposal</li>
+            <li>Biological treatment of solid waste</li>
+            <li>Incineration of solid waste</li>
+            <li>Wastewater treatment and discharge</li>
+        </ul>
+    </li>
+</ul>
+</p>
+
+<p>
+The IPCC guidelines describe how countries should measure greenhouse gases in all of these areas, and the taxonomy within areas goes deeper.
+For example, within "Energy / Stationary Combustion Sources", the 2006 guideline 
+(<a href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_2_Ch2_Stationary_Combustion.pdf">pdf</a>)
+enumerates 20-or-so coded sub-categories, which countries can use individually or in combination in order to characterize their emissions:
+electricity generation, petroleum refining, manufacturing industries and construction, combustion within commercial and residential buildings, and so on.
+For another example, within "Energy / Mobile Combustion", the guidelines enumerate vehicle types from consumer cars and trucks, to heavy duty diesel-burning trucks, to off-road vehicles used in mining,
+to emissions from rail, aviation, and marine vessels.
+(The guidelines from 2006 were evidently largely clear and complete, because they weren't updated until 2019, and even then the updates appear to be minor. Good job, IPCC.)
+</p>
+
+
+<h2 id="canada_sectors">Canada's IPCC Sectors</h2>
+
+<p>
+Canada reports emissions in terms of 71 IPCC sectors, the complete set of which is listed below.
+We saw the IPCC Sectors making up Canada's emissions in the previous post, <a href="/posts/2026-02-02-cnzeaa">Paris Agreement and the CNZEAA</a>;
+the stacked area figure had a coloured region for each sector, emphasizing the sectors with the largest emissions in terms of {{CO2e|safe}}.
+There is temporal variance: the magnitude of emissions from sector to sector and year to year can sometimes vary by over 10% of Canada's entire emissions (especially the land use sectors).
+There is also consistency: historically, Canada has a lot of emissions
+from the stationary and mobile combustion of fossil fuels for energy.
+Also, not all sectors have similar sizes: emissions associated with several sectors have been consistently nearly-negligible,
+such as e.g. industrial wastewater treatment and discharge, the incineration and open burning of waste, and, of all things the transportation and storage of {{CO2|safe}}.
+</p>
+
+<p>Admittedly it makes for dry reading, but for completeness, here are the 71 IPCC sectors with which Canada represents its greenhouse gas inventory:
+<ol>
+    <li>Energy / Stationary Combustion / Public Electricity and Heat</li>
+    <li>Energy / Stationary Combustion / Petroleum Refining Industries</li>
+    <li>Energy / Stationary Combustion / Oil and Gas Extraction</li>
+    <li>Energy / Stationary Combustion / Mining</li>
+    <li>Energy / Stationary Combustion / Manufacturing / Iron and Steel</li>
+    <li>Energy / Stationary Combustion / Manufacturing / Non-ferrous Metals</li>
+    <li>Energy / Stationary Combustion / Manufacturing / Chemical</li>
+    <li>Energy / Stationary Combustion / Manufacturing / Pulp and Paper</li>
+    <li>Energy / Stationary Combustion / Manufacturing / Cement</li>
+    <li>Energy / Stationary Combustion / Manufacturing / Other Manufacturing</li>
+    <li>Energy / Stationary Combustion / Construction</li>
+    <li>Energy / Stationary Combustion / Commercial and Institutional</li>
+    <li>Energy / Stationary Combustion / Residential</li>
+    <li>Energy / Stationary Combustion / Agriculture and Forestry</li>
+    <li>Energy / Mobile Combustion / Air / Domestic Aviation (Civil)</li>
+    <li>Energy / Mobile Combustion / Air / Military</li>
+    <li>Energy / Mobile Combustion / Road / Light-Duty Gasoline Vehicles</li>
+    <li>Energy / Mobile Combustion / Road / Light-Duty Gasoline Trucks</li>
+    <li>Energy / Mobile Combustion / Road / Heavy-Duty Gasoline Vehicles</li>
+    <li>Energy / Mobile Combustion / Road / Light-Duty Diesel Vehicles</li>
+    <li>Energy / Mobile Combustion / Road / Light-Duty Diesel Trucks</li>
+    <li>Energy / Mobile Combustion / Road / Heavy-Duty Diesel Vehicles</li>
+    <li>Energy / Mobile Combustion / Road / Motorcycles</li>
+    <li>Energy / Mobile Combustion / Road / Propane and Natural Gas Vehicles</li>
+    <li>Energy / Mobile Combustion / Rail</li>
+    <li>Energy / Mobile Combustion / Marine / Domestic Navigation</li>
+    <li>Energy / Mobile Combustion / Marine / Fishing</li>
+    <li>Energy / Mobile Combustion / Marine / Military</li>
+    <li>Energy / Mobile Combustion / Other / Agriculture and Forestry</li>
+    <li>Energy / Mobile Combustion / Other / Commercial and Institutional</li>
+    <li>Energy / Mobile Combustion / Other / Off-Road Manufacturing, Mining and Construction</li>
+    <li>Energy / Mobile Combustion / Other / Off-Road Residential</li>
+    <li>Energy / Mobile Combustion / Other / Off-Road Other Transportation</li>
+    <li>Energy / Mobile Combustion / Other / Pipeline Transport</li>
+    <li>Energy / Fugitive Emissions / Coal Mining</li>
+    <li>Energy / Fugitive Emissions / Oil</li>
+    <li>Energy / Fugitive Emissions / Natural Gas</li>
+    <li>Energy / Fugitive Emissions / Venting</li>
+    <li>Energy / Fugitive Emissions / Flaring</li>
+    <li>Energy / {{CO2|safe}} Transport and Storage</li>
+    <li>Industrial Processes and Product Use / Mineral Industry Emissions / Cement Production</li>
+    <li>Industrial Processes and Product Use / Mineral Industry Emissions / Lime Production</li>
+    <li>Industrial Processes and Product Use / Mineral Industry Emissions / Mineral Product Use</li>
+    <li>Industrial Processes and Product Use / Chemical Industry Emissions / Ammonia Production</li>
+    <li>Industrial Processes and Product Use / Chemical Industry Emissions / Acid Production</li>
+    <li>Industrial Processes and Product Use / Chemical Industry Emissions / Adipic Acid Production</li>
+    <li>Industrial Processes and Product Use / Chemical Industry Emissions / Petrochemical and Carbon Black Production</li>
+    <li>Industrial Processes and Product Use / Metal Industry Emissions / Iron and Steel Production</li>
+    <li>Industrial Processes and Product Use / Metal Industry Emissions / Aluminium Production</li>
+    <li>Industrial Processes and Product Use / Metal Industry Emissions / Magnesium Production and Casting</li>
+    <li>Industrial Processes and Product Use / Production and Consumption of Halocarbons, SF6 and NF3</li>
+    <li>Industrial Processes and Product Use / Non-Energy Products from Fuels and Solvent Use</li>
+    <li>Industrial Processes and Product Use / Other Product Manufacture and Use</li>
+    <li>Agriculture / Enteric Fermentation</li>
+    <li>Agriculture / Manure Management</li>
+    <li>Agriculture / Agricultural Soils (Direct)</li>
+    <li>Agriculture / Agricultural Soils (Indirect)</li>
+    <li>Agriculture / Field Burning of Agricultural Residues</li>
+    <li>Agriculture / Liming, Urea Application and Other Carbon-Containing Residues</li>
+    <li>Waste / Municipal Solid Waste Landfills</li>
+    <li>Waste / Industrial Wood Waste Landfills</li>
+    <li>Waste / Biological Treatment of Solid Waste</li>
+    <li>Waste / Incineration and Open Burning of Waste</li>
+    <li>Waste / Municipal Wastewater Treatment and Discharge</li>
+    <li>Waste / Industrial Wastewater Treatment and Discharge</li>
+    <li>Land Use, Land Use Change, and Forestry (LULUCF) / Forest Land</li>
+    <li>Land Use, Land Use Change, and Forestry (LULUCF) / Cropland</li>
+    <li>Land Use, Land Use Change, and Forestry (LULUCF) / Grassland</li>
+    <li>Land Use, Land Use Change, and Forestry (LULUCF) / Wetland</li>
+    <li>Land Use, Land Use Change, and Forestry (LULUCF) / Settlements</li>
+    <li>Land Use, Land Use Change, and Forestry (LULUCF) / Harvested Wood Products</li>
+</ol>
+</p>
+<p>
+The emissions in these sectors make up Canada's national greenhouse gas inventory.
+The total reported annually to the Secretariat of the UN Framework Convention on Climate Change (UNFCCC) excludes the "Land Use,  Land Use Change, and Forestry" (LULUCF) contributions, but the federal targets set by Environment and Climate Change Canada (ECCC) are inclusive of all 71 sectors.
+</p>
+
+<h2 id="public_electricity">Public Electricity and Heat</h2>
+
+<p>
+With the overview of sectors complete, let me come back to my main purpose with the post, which is to start replicating
+the computation of Canada's emissions in these sectors, in order of their contribution to the 2005 total.
+(I chose year 2005 because it is the baseline year for Canada's emission-reductions targets.)
+The largest single-sector contributor of {{CO2e|safe}} in 2005 in Canada was the stationary combustion of fossil fuels for the purpose of producing public electricity and public heat.
+The sector was responsible for 124 megatonnes of {{CO2e|safe}} (Mt {{CO2e|safe}}) that year. As is typical of fossil combustion, about 99.5% of the {{CO2e|safe}} is {{CO2|safe}} itself, with the remainder coming from tiny amounts of methane and nitrous oxide.
+Public electricity dominated the emissions, rather than public heat, although there are district heat systems in Toronto, Montreal, and Vancouver, and this sector includes their emissions.
+The emissions from public electricity generation historically have mostly been from the combustion of coal (heating water, creating steam to drive a turbine) although recently natural gas has become the leading cause of emissions (the gas can be combusted purely for heat and steam, but usually it is injected into a combustion turbine like a jet engine,
+and sometimes the heat from the combustion turbine is used to also drive a steam turbine).
+</p>
+
+<p>
+A static figure and link to what's now an interactive infographic at
+<a href="/ipcc-sectors/Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production">
+    IPCC Sectors / Stationary Combustion Sources / Public Heat and Electricity</a>:
+</p>
+<a href="/ipcc-sectors/Stationary_Combustion_Sources/Public_Electricity_and_Heat_Production">
+<img src="/images/2026-02-12-public-electricity.png" alt="" class="image main"/>
+</a>
+
+<p>
+The stacked bar chart in the figure above is my attempt to replicate the ECCC's sector total (shown in solid black near the top).
+Emissions for the sector were generally calculated by multiplying greenhouse gas emission factors by amounts of fuel combusted.
+The data for this estimate comes from a handful of sources:
+<ul>
+    <li>Annex 6 of the <a href="https://open.canada.ca/data/en/dataset/779c7bcf-4982-47eb-af1b-a33618a05e5b">2025 national inventory report</a> lists the emissions factors for different fuels,
+        sometimes varying by year, by province, by application, or by combustion technology (e.g. residential vs. industrial wood combustion).
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510001701">"Electric Power Generation, Annual, Fuel Consumed by Electric Utilities" (StatsCan 25-10-0017-01)</a>
+        provided data for years 2005-2022 for all fuel types, except natural gas.
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510002001">"Electric Power, Annual, Generation by Class of Producer" (StatsCan 25-10-0020-01)</a>
+        supported an accurate estimation for years 2005-2014 relating to natural gas, but only by including both utility and industry consumption.
+        To use this data source, I had to approximate natural gas consumption using thermal efficiency assumptions:
+        by default I assumed 30% for plants in Alberta (conjecturing that steam would be used to move heat into oil sands rather than create additional electricity), and 50% for Ontario (where more combined-cycle turbines were in operation).
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510003001">"Supply and Demand of Primary and Secondary Energy" (StatsCan 25-10-0030-01)</a>
+        provided natural gas consumption by electric utilities for years 2015-2024, and allowed my estimate to match the National Inventory Report (NIR) total when only including utility consumption.
+        In contrast StatsCan 25-10-0020-01, the estimates using this data were poor when including both utility and industry consumption.
+    </li>
+    <li><a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=2510008401">"Electric power generation, fuel consumed and cost of fuel by electricity generating thermal plants" (StatsCan 25-10-0084-01)</a>
+        provided consumption data for other fuels for years 2020-2024. Consumption data for prior years was drawn from StatsCan 25-10-0017-01. Both tables offer data on years 2020-2022, and
+        I chose to use this newer table for those years.
+    </li>
+</ul>
+<p>
+The emissions of each gas were combined into {{CO2e|safe}} using the coefficients introduced in the <a href="/posts/2026-01-21-unfccc">earlier PlanZero post on GHGs</a>.
+I did not include the contribution to this sector from district heating systems  (e.g. in Toronto, Montreal, Vancouver) for two reasons:
+(1) as the impact of these systems on the national calculation appears to be smaller than the current fitting error, and
+(2) data on the fuel consumption of these systems is not yet incorporated into PlanZero.
+</p>
+
+<p>
+There is a divergence between my estimate and the NIR sectoral total in the latest couple of years, driven by a sharp uptick in natural gas usage.
+Both of datasets 25-10-0030-01 (which I used for natural gas consumption) and 25-10-0084-01 do show a remarkable recent increase in the use of natural gas.
+The usage of natural gas for electricity generation by utilities appears to have almost doubled nation-wide from 2020 to 2024.
+The increase is largest in Alberta, but the increase in Ontario is also large. I don't know why this uptick does not show up in the national inventory reference data, I might be overestimating emissions from to coal combustion.
+</p>
+<p>
+It is encouraging to see the downward trend over the last two decades in emissions from this sector, but the figure shows only 17 more Mt {{CO2e|safe}} of annual emissions from coal combustion can be eliminated.
+The strategy of replacing coal plants with natural gas turbines is reducing emissions for now, but the strategy will not get us to net zero.
+Troublingly, the emissions from natural-gas-powered plants have been rising sharply in recent years.
+I have yet to incorporate the emissions projections from the provincial and territorial utilities,
+but based simply on this recent investment in gas turbine capacity, I would expect emissions in this sector to remain in the 40-60 Mt {{CO2e|safe}} range for many years.
+Unless there's a huge breakthrough in carbon sequestration,
+we will have to find sources of lower-emission electricity both to handle ever-increasing demand, as well as to replace those gas turbine plants as they reach end-of-life in the decades ahead.
+</p>
+
+<h2 id="summary">Summary</h2>
+<p>
+This post introduced the sectors recommended by the IPCC reporting guidelines, and enumerated all 71 sectors used by the ECCC to represent Canada's national greenhouse gas inventory.
+It presented the first attempt in PlanZero to replicate a sectoral emissions calculation from that national inventory: public electricity and heat.
+The basic mathematics of the emission calculation is straightforward: a weighted sum of amounts of fuel consumed multiplied by emissions factors of each greenhouse gas for each fuel.
+The implementation is complicated by the emissions factors being presented in various sizes and natures of tables, and by the fuel consumption being stored in multiple
+StatsCan products covering different time periods, and with overlapping but somewhat different semantics.
+Still, the required data seems by and large to be public, and the prescribed arithmetic gave rise to roughly the desired result.
+I look forward to complementing and extending the time series involved in this calculation with the emissions projections from provincial and territorial electric utilities, and modelling
+how Canada might be powered in the decades to come, but I will wait until I have made more progress in understanding the remaining sectors.
+Coming up in the next post will be a similar modelling summary of Canada's next-largest emissions-contributing sector from 2005: forest land.
+</p>
+
+<ul class="actions special">
+    {% if prev_url_filename %}
+    <li><a href="/posts/{{prev_url_filename}}" class="button">Previous</a></li>
+    {% endif %}
+    {% if next_url_filename %}
+    <li><a href="/posts/{{next_url_filename}}" class="button">Next</a></li>
+    {% endif %}
+</ul>
+</section>
+</div>
+{% include "post-main.html" %}

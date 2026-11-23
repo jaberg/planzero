@@ -3,9 +3,9 @@ from pydantic import computed_field
 from .enums import PT, LULUCF_Sectors
 from .nir_ar2 import *
 from .prob import SiteInference
+from .sector_total_emissions_element import PseudoSector
 from .sparkline_echart_helper import (
     PseudoRegion,
-    PseudoSectors,
     RegionalSparklineEChartHelperBase,
     SparklineEChartHelperBase,
 )
@@ -201,7 +201,7 @@ class AR2(SiteInference):
                                        model_name='AR2',
                                        v_unit='Mt_CO2e')
         helper.load_data()
-        sector = PseudoSectors.Total_with_LULUCF
+        sector = PseudoSector.Total_with_LULUCF
         rval = (helper.data_by_sector[sector]['lbounds'][-1],
                 helper.data_by_sector[sector]['ubounds'][-1])
         return rval
