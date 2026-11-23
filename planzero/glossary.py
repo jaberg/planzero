@@ -1649,6 +1649,21 @@ class Posterior_Phase(GlossaryTerm):
         ]
 
 
+class Prediction(GlossaryTerm):
+    """
+    A PlanZero prediction is a probability distribution over the possible values of an unknown variable.
+    Of course, a reader is typically interested in predictions relating to the future,
+    relative to their present time.
+    """
+
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'NIR_Prediction': 'NIR prediction is the only type of prediction challenge in PlanZero so far',
+            'Prediction_Date': 'The deadline after which new information cannot be used for prediction',
+        }
+
+
 class Prediction_Challenge(GlossaryTerm):
     """
     A Prediction Challenge in PlanZero is a machine learning problem statement
@@ -1789,6 +1804,12 @@ class Scaling_Model(GlossaryTerm):
     technology and products.
     """
 
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': "a model of Canada's future emissions",
+        }
+
 
 class Scenario(GlossaryTerm):
     """A scenario is a set of time series covering a common time period.
@@ -1820,11 +1841,16 @@ class Special_Project_Entity(GlossaryTerm):
 
 class Static_Normals_Model(GlossaryTerm):
     """
-    The Static Normals model is a PlanZero model, whose defining feature
+    The <a href="/models/Static_Normals_2024_12_31">Static Normals model</a> is a PlanZero model, whose defining feature
     is that it assumes no change over time of any emissions, and attributes
     all year-to-year differences in the data to observation noise.
     """
 
+    @property
+    def see_also(self) -> dict[str, str]:
+        return {
+            'PlanZero_Model': "a model of Canada's future emissions",
+        }
 
 
 class Statistics_Canada(GlossaryTerm):

@@ -153,7 +153,7 @@ class ProbabilisticBovaer(BlogPost):
     and extends PlanZero's probabilistic modelling
     (<a href="/posts/2026-06-28-static-normals">Static Normals:
     a Baseline Predictive Model</a>)
-    with support for strategy and barrier scenario modelling elements.
+    with support for strategy modelling elements.
     Scaling the administration of Bovaer is estimated to reduce annual
     emissions by 8.5-11 Mt{{CO2e}} annually by 2050, at a cost of $189-200
     per abated tonne, with 95% confidence.

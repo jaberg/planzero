@@ -5,7 +5,7 @@
 <section class="post model-explorer-page">
     <header class="major">
         <h1>Model Explorer</h1>
-        <p>Explore the interactions between model elements by inference group.</p>
+	<p>Explore the interactions between model elements by {{siteref("Inference_Group", "inference group")|safe}}.</p>
     </header>
 
     <p>
@@ -74,11 +74,8 @@
     {{ explorer_html | safe }}
 
     <p style="margin-top:1.5rem;color:#6b7280;font-size:0.8rem;">
-    The explorer is generated from decorator metadata on the model elements.
-    It does not modify the model or its inference groups. To inspect the same
-    declarations as a static table or a Mermaid diagram, see the
-    <a href="/posts/2026-04-19-glossary#inference-groups">glossary's Inference Groups</a>
-    section.
+    The explorer is generated from decorator metadata on model elements.
+    It does not modify the model or its {{siteref("Inference_Group", "inference groups")|safe}}.
     </p>
 
 </section>
