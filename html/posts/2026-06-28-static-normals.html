@@ -11,10 +11,10 @@
 <h2 id="overview">Overview</h2>
 
 <p>
-The <a href="/about/#overview">long-term aim for PlanZero</a> is to quantify
+The long-term aim for PlanZero (see <a href="/about/#overview">About</a>) is to quantify
 the impact of strategies that may affect Canada's emissions.
 The impact of a strategy is the difference between what will probably happen
-if the strategy is implemented, versus what will probably happen if it isn't.
+if the strategy is implemented, versus what will probably happen if it isn't implemented.
 Both of these are predictions.
 To estimate the impact of strategies,
 PlanZero needs models that make credible predictions for emissions,
@@ -25,10 +25,11 @@ on various time horizons.
 
 <p>
 This post introduces PlanZero's first predictive probabilistic model.
-It is a simple baseline that assumes:
+(For a first look at strategy evaluation in a probabilistic PlanZero model, see e.g. <a href="/posts/2026-07-22-prob-bovaer">Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer</a>.)
+This probabilistic model is a simple baseline that assumes:
 <ol>
-	<li>that provincial and territorial emissions per-sector and per-gas add up to national totals</li>
-	<li>that provincial and territorial emissions are <i>static</i> and don't actually change over time; they have been constant historically, and will remain constant in the future</li>
+	<li>Provincial and territorial emissions per-sector and per-gas add up to national totals.</li>
+	<li>Provincial and territorial emissions are <i>static</i> and don't actually change over time; they have been constant historically, and will remain constant in the future.</li>
 </ol>
 The model is defined as a hierarchical
 probabilistic model, and
@@ -64,11 +65,11 @@ The earlier post on the
 introduced a model evaluation metric
 for scoring predictions in terms of their
 <a href="https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence">KL-divergence</a> from the probabilistic interpretation of the NIR-reported emissions.
-This post uses that metric to score the static normals model.
+This post marks the use of that metric to score the static normals model.
 The metric is used for both individual sector-gas combinations, as well
 as an overall weighted average across all sectors and gases.
-The static normals model scores an overall average divergence of 3.35.
-Future models might rank better by scoring closer to zero.
+The static normals model scores an overall average divergence of 3.35,
+leaving, I expect, lots of room for improvement.
 </p>
 
 <p>
@@ -93,23 +94,24 @@ This rationale has been added to the <a href="/about/#incremental-iteration-on-p
 Despite the simplicity of the static normals model,
 the predictions are qualitatively accurate
 for several sectors, and establish a numerical benchmark for
-quantitative scoring (i.e. divergences below about 1 are pretty good).
-The good fit for emissions sectors such as e.g. Enteric Fermentation, Municipal Solid Waste Landfills, Manure Management, and Railways
-suggests that little progress has been made in these areas, at least by 2023.
+quantitative scoring (i.e. divergences below about 1.0 seem pretty good).
+The accurate predictions of emissions sectors such as e.g. Enteric Fermentation, Municipal Solid Waste Landfills, Manure Management, and Railways
+suggests that little progress has been made in these areas, at least as of 2023.
 Conversely, the poorness of fit in other sectors suggests that have been
 significant changes either for better or worse.
-We'll look at trends in a future post,
+PlanZero will look at trends in a future post,
 that will introduce an autoregressive model as an alternative to the standard normals
-presented here.
+presented here [edit: <a href="/posts/2026-05-26-ar2">Autoregressive Process Modelling of NIR-2025</a>].
 </p>
 <p>
-Before that post though, I'd like to insert two tidying-up posts.
-The Bovaer analysis should be adapted to operate on probabilistic models
-and the models page should be purged of "simulation-based models",
+Next on PlanZero, I'd like to insert two tidying-up posts.
+First, the Bovaer analysis should be adapted to operate on probabilistic models [edit:
+<a href="/posts/2026-07-22-prob-bovaer">Emission Reduction Strategies in Probabilistic Models: Another Look at Bovaer</a>]
+and after that the models page should be purged of "simulation-based models",
 which is a term I'd like to deprecate and remove from PlanZero.
-In a second tidy-up post,
-I'd like to to finally introduce the glossary page
+That second post should finally introduce the glossary page
 with confidence in my definition of what a "model" actually is in PlanZero.
+[edit: <a href="/posts/2026-04-19-glossary">What is a PlanZero Model? Design, Glossary, and Model Explorer Tool</a>]
 </p>
 
 <p>
@@ -136,14 +138,11 @@ Until next time,
 <h2 id="appendix-notation">Appendix 1: Probabilistic Modelling Notation</h2>
 
 <p>
-Some probability notation is conventional, in order to express probabilistic models.
-It builds on the introduction to probability in
+In order to express the Static Normals model, some notation is required.
+The notation used here aims to be conventional, and builds on the introduction to probability in
 <a href="/posts/2026-05-20-prob-nir#appendix-models">Appendix 1 of the Probabilistic NIR-2025 post</a>.
-Probabilistic modelling is a huge topic.
-Basic concepts of probability are introduced across many years of
-primary and secondary schooling,
-and covered in greater detail at university levels.
-For more information and orientation, see e.g. wikipedia
+Probabilistic modelling is a huge topic;
+for more information and orientation, see e.g. wikipedia
 (<a href="https://en.wikipedia.org/wiki/Statistical_model">Statistical Model</a>,
 <a href="https://en.wikipedia.org/wiki/Graphical_model">Graphical Models</a>),
 many tutorials online that are specific to probabilistic programming
@@ -156,15 +155,15 @@ for greater depth.
 
 
 <p>
-The following modelling notation used in this post to describe the Static Normals
-model and introduce Bayesian inference in <a href="#appendix-inference">Appendix 4: Inference in the Static Normals Model</a>.
+The following notation is used in this post to describe the Static Normals
+model and introduce {{siteref("Bayesian_Inference", "Bayesian inference")|safe}} in <a href="#appendix-inference">Appendix 4: Inference in the Static Normals Model</a>.
 <ul>
-    <li> {{latex("P(X=0)")}} means there's a number we don't know, we're calling it an {{latex("X")}}, and this is the probability it is actually 0.
+    <li> {{latex("P(X=0)")}} means there's a number we don't know, we're calling it {{latex("X")}}, and this is the probability it is actually 0.
 	    {{latex("X")}} is called an {{ siteref("Unknown_Variable", "unknown variable")|safe}} in PlanZero, although many references refer to such a variable as a <i>random variable</i>.</li>
-    <li>{{latex("P(X)")}} is, intuitively, the table
+    <li>{{latex("P(X)")}} is, intuitively, a hypothetical table
 	mapping all the values {{latex("X")}} might take to their probabilities.
 	The probabilities add up to 1 to represent the fact that {{latex("X")}}
-	must take one of them.
+	must take one of those values.
 	The table might be infinitely large (e.g. a probability for each integer).
 	Although it can be an abuse of notation,
 	I'll also sometimes write {{latex("P(X)")}} to refer
@@ -172,30 +171,29 @@ model and introduce Bayesian inference in <a href="#appendix-inference">Appendix
 	when the possibilities for
 	{{latex("X")}} are a continuous domain of values, such as the real numbers.
     </li>
-    <li>{{latex("P(0)")}} is shorthand for {{latex("P(X=0)")}} when it's clear from surrounding context we're talking about {{latex("X")}}</li>
-    <li> {{latex("\\mathcal{N}(\\mu, \\sigma^2)")}} is a Normal distribution, which is non-negative function that sums (integrates) to 1. It is parameterized by two numbers:
-        {{latex("\\mu")}} the mean, and {{latex("\\sigma^2")}} the variance.
+    <li>{{latex("P(0)")}} is shorthand for e.g. {{latex("P(X=0)")}} when the name of the unknown
+	    variable (e.g. {{latex("X")}}) is clear from context.</li>
+    <li> {{latex("\\mathcal{N}(\\mu, \\sigma^2)")}} is a
+	    <a href="https://en.wikipedia.org/wiki/Normal_distribution">normal distribution</a>,
+	    a probability distribution parameterized by two numbers:
+		{{latex("\\mu")}} the mean, and {{latex("\\sigma^2")}} the variance.
+	    Like all distributions, it is a function that is non-negative and sums (integrates) to 1.
 	It's conventional to write {{latex("\\sigma^2")}} as the argument to
 	the normal distribution because {{latex("\\sigma")}} itself is qualitatively
 	the "width" of the distribution and only positive-valued variances are valid.
-	Normal distributions are widely used in probabilistic modelling.
-	You can read more about them on <a href="https://en.wikipedia.org/wiki/Normal_distribution">wikipedia</a>, and see its shape
-	in the figure below.
-	(Sometimes these are called <i>Gaussians</i> but I'm going to call them Normals to be consistent with the probabilistic programming library I'm using.)</li>
+	Two normal distributions with different parameters are shown in the figure below.
+	</li>
     <li>
 	{{latex("\\mathrm{Lognormal}(\\mu, \\sigma^2)")}}
 	is a <a href="https://en.wikipedia.org/wiki/Log-normal_distribution">log-normal distribution</a>, a distribution over positive-valued
 	real numbers with a given mean and relative uncertainty.
-	There's an example below illustrating one possible shape of 
-	log-normal distribution, with 
-	{{latex("\\mu=-1")}} and
-	{{latex("\\sigma^2=.7")}}.
-	Note that unlike the regular normal, {{latex("\\mu")}} being negative
+	Unlike the regular normal, {{latex("\\mu")}} being negative
 	doesn't make the distribution negative, it squeezes the distribution
 	leftward toward 0.
 	The {{latex("\\sigma^2")}} parameter doesn't exactly modulate the width,
 	as it does for the normal distribution, but it reflects relative uncertainty,
 	and it does affect both the shape and the mean of the distribution.
+	The figure below shows two possible shapes of log-normal distribution.
     </li>
     <li> {{latex("X ~\\sim~ \\mathcal{N}(0, 1)")}} means (1) that {{latex("X")}} is
         an unknown variable in some probabilistic model, and (2) that its probability distribution (or density)

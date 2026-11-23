@@ -286,11 +286,10 @@ class Bayesian_Inference(GlossaryTerm):
     <a href="https://en.wikipedia.org/wiki/Bayes%27_theorem">Bayes' Theorem</a>
     to define a posterior distribution over latent variables in a probabilistic
     model, by conditioning on the observation of data.
-    Bayesian inference is one of the most compelling
-    features of probabilistic models.
-    Generally the result of inference is a sample of latent-variable values
-    drawn from the posterior distribution by an algorithm, although in
-    certain models Bayesian inference can be done analytically.
+    The possibility of performing Bayesian inference to fit data
+    is one of the most compelling reasons to use probabilistic models.
+    In PlanZero, the result of inference is a sample of latent-variable values
+    drawn from the posterior distribution by an algorithm.
     """
 
     @property

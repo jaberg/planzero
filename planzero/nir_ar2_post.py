@@ -10,25 +10,19 @@ class AR2(BlogPost):
     This post introduces
     a new baseline probabilistic model based on two-step autoregressive
     processes (AR-2).
-    Unlike the Static Normals model it does not assume year-to-year variations
-    are all measurement error, it assumes that they are nearly accurate
-    and that emissions change according to trends.
-    This model estimates national, provincial and territorial emissions
-    for every sector and greenhouse gas.
-    Its near-term predictions are relatively precise, and longer-term
+    It assumes year-to-year emissions variations may be trends.
+    AR2's near-term predictions are relatively precise, and longer-term
     predictions are less certain.
+    The Scaling model has been updated to use the AR2 as its baseline.
     """
 
     def __init__(self):
         super().__init__(
-            date=datetime.date(2026, 10, 28),
+            date=datetime.date(2026, 11, 23),
             title='Autoregressive Process Modelling of NIR-2025',
-            url_filename="2026-05-26-probabilistic-modelling",
+            url_filename="2026-05-26-ar2",
             author="James Bergstra",
-            #tags={BlogTag.NIR_Modelling,
-                 #},
             status=BlogStatus.Planned,
-            published=False,
             )
 
     def generate_assets(self):
