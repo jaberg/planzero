@@ -1748,7 +1748,7 @@ class Probabilistic_Model(GlossaryTerm):
     def as_discussed_in_posts(self) -> list[tuple[object, str, str]]:
         return [
                 (blog.Glossary(), '#phases', "Appendix 2: Phases of inference"),
-                (blog.ProbabilisticNIR2025(), '#prob-model', "Appendix 1: Probabilistic Models, Distributions, and Density Functions"),
+                (blog.ProbabilisticNIR2025(), '#appendix-models', "Appendix 1: Probabilistic Models, Distributions, and Density Functions"),
         ]
 
 
