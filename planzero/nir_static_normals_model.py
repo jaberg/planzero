@@ -179,8 +179,8 @@ class StaticNormals_ModelElement(NIR_ModelElement):
 
     @define('mu', prior_shape=[n_regions])
     @define('sigma_pt', prior_shape=[n_regions])
-    @define_annual(ktCO2e_ca_key, annual_shape=[], posterior_only=True)
-    @define_annual(ktCO2e_pt_keys, annual_shape=[], posterior_only=True)
+    @define_annual(ktCO2e_ca_key, annual_shape=[])
+    @define_annual(ktCO2e_pt_keys, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         assert n_regions == len(self.ktCO2e_pt_keys)
 

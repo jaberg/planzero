@@ -12,9 +12,9 @@
 <ul>
     <li><a href="#introduction">Introduction</a></li>
     <li><a href="#scaling">A Scaling Model</a></li>
-    <li><a href="#impact">Probable Impact of Scaling Bovaer Adoption</a></li>
+    <li><a href="#impact">Probabilistic Impact of Scaling Bovaer Adoption</a></li>
     <li><a href="#conclusion">Conclusion</a></li>
-    <li><a href="#appendix-1-new-elements">Appendix 1: New and Modified Model Elements to Model Bovaer Adoption Probabilistically</a></li>
+    <li><a href="#appendix-1-new-elements">Appendix 1: Model Elements to Model Bovaer Adoption</a></li>
     <li><a href="#appendix-2-prob-modelling">Appendix 2: Probabilistic Modelling of Cattle Populations and Enteric Fermentation Emission Factors</a></li>
 </ul>
 </div>
@@ -75,76 +75,90 @@ and presented mathematically in  <a href="#appendix-2-prob-modelling">Appendix 2
 As before, the
 "<a href="/models/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" strategy implements the idea that
 some fraction of cattle farmers would be open to 
-starting to administer Bovaer if they were sufficiently incentivized
+administering Bovaer if they were sufficiently incentivized
 by government subsidy.
 The model assumes, as before, that a sufficient incentive would be $5000 per year.
-(All $-denominated values in this site are in CAD unless otherwise indicated.)
 Differences relative to the previous deterministic model:
 <ul>
 	<li>Whereas the deterministic model fixed the fraction of farmers-open-to-switching-per-year at 5%, the probabilistic model varies it from 2.5-10% uniformly.</li>
-	<li>Whereas the deterministic model fixed production emissions at 45 kg {{CO2e}} / head / year, the probabilistic model varies it uniformly from 20x to 50x less than the reduced methane {{CO2e}}.</li>
-	<li>Whereas the deterministic model ignored income tax, the probabilistic model includes recouping it at a rate of 25% from amounts
-		paid as salaries or subsidies.</li>
+	<li>Whereas the deterministic model fixed Bovaer production emissions at 45 kg {{CO2}} / head / year, the probabilistic model varies it
+		uniformly, from 20x to 50x less than the abated methane emissions (in terms of {{CO2e}}).</li>
+	<li>Whereas the deterministic model ignored income tax,
+		the probabilistic model includes the government recouping it at a rate of 25%
+		from amounts paid as salaries or subsidies.</li>
 </ul>
 </p>
 
 <h2 id="impact">Probable Impact of Scaling Bovaer Adoption</h2>
 <p>
 The probabilistic model estimates the
-cost per tonne {{CO2}}e abated over modelled period
-to lie in the range 188.99 - 200.08 (CAD / t{{CO2}}e) with 95% confidence.
+cost per abated tonne {{CO2}}e over modelled period
+to lie in the range 188.99 - 200.08 CAD / t{{CO2}}e with 95% confidence.
 This is lower than 
 the deterministic estimate of $222/t {{CO2}}e in the previous post
 because of the recognition of income tax revenue.
 </p>
 
 <p>
-The cost per tonne estimate is the ratio of values in the following two figures.
+The cost per abated tonne estimate is the ratio of values presented in the following two figures.
 The first figure is the expected <i>change</i> in emissions for each sector affected
 by the strategy
-(<a href="/models/Scaling/strategies/Scale_Bovaer_2030/#emissions">figure on strategy page</a>).
+(<a href="/models/Scaling/strategies/Scale_Bovaer_2030/#emissions">figure on Strategy page</a>).
 The vertical is in units of <b>Mt{{CO2e}}</b>,
 and the horizontal is in units of <b>years</b> (adjust the slider below to zoom).
 The dotted line indicates the mean and the shaded regions indicate a 95% credible internval.
-a values above zero mean the strategy raised a sector's emissions, a values below zero mean the strategy lowered emissions.
+Values above zero mean the strategy raised a sector's emissions, values below zero mean the strategy lowered emissions.
 Mouse-over the slider below the panels to see and change the years shown.
+</p>
+<p>
+<b>Predicted emission changes due to Bovaer (Mt{{CO2e}} vs. years)</b>
+</p>
 {% include "posts/2026-07-22-prob-bovaer-impact.html" %}
 
+<p>
 The second figure is the expected change in government cashflow, due to spending
 on farm subsidies and monitoring programs, and income tax revenue from the
 work associated with monitoring.
-(<a href="/models/Scaling/strategies/Scale_Bovaer_2030/#subsidies">figure on strategy page</a>).
 The vertical here in units of <b>billions of CAD</b>.
 Values above zero represent government revenue. Values below zero represent government spending.
+</p>
+
+<p>
+<b>Predicted cashflow changes due to Bovaer (CAD, Billions vs. years)</b>
+</p>
 {% include "posts/2026-07-22-prob-bovaer-subsidies.html" %}
 
+<p>
 Dividing total cost until 2050 by total emissions abated
-gave values in the range of 188.99 - 200.08 (CAD / t{{CO2}}e) for 95% of the sampled scenarios.
+gave values in the range of 188.99 - 200.08 (CAD / t{{CO2}}e) for 95% of the 500 sampled scenarios.
 </p>
 
 <h2 id="conclusion">Conclusion</h2>
 
 <p>
 This post has introduced a probabilistic
-"<a href="/models/Scaling/">Scaling</a>" model,
-which is a proof of concept that it is possible to
+<a href="/models/Scaling/">Scaling</a> model,
+which is a proof of concept that (1) it is possible to
 extend a probabilistic model (the Static Normals model)
 with a strategy,
-and estimate the impact of the strategy by ablative analysis.
-The strategy page for "<a href="/models/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above,
-and the Bovaer Adoption Limit page [edit: this information is now available via the
-{{siteref("Model_Explorer", "Model Explorer")|safe}}] describes and shows the
-assumption that just-over 2.5% to just-under 10% of farmers will start feeding Bovaer per year.
+and (2) estimate the impact of the strategy by ablative analysis.
+The result is a proper probabilistic prediction of the impact of a strategy, that
+estimates the probabilities of all possible values of unknown variables,
+especially e.g. the amounts of methane abated, and the emissions reduction efficiency.
+The strategy page for "<a href="/models/Scaling/strategies/Scale_Bovaer_2030/">Scale Bovaer</a>" currently features the figures above.
 </p>
 
 <p>
-My ambition for PlanZero in the not-too-distant future is to improve the Scaling model iteratively,
-first by the overall use of an autoregressive baseline model instead of the static normals [edit: <a href="/posts/2026-05-26-ar2">this post</a>],
-and beyond that by sector-by-sector replacements of the generic statistical baselines with
-bespoke sector models that incorporate additional data sources and strategies.
+In future work, I intend to improve the Scaling model iteratively.
+First, I would like to upgrade it to use an autoregressive baseline for each sector
+instead of static normals [edit: <a href="/posts/2026-05-26-ar2">this post</a>].
+Beyond that, I would like to incorporate more
+bespoke sector models that include additional data sources and strategies,
+similarly to how this post incorporated details related to Enteric Fermentation.
 However, before making these iterative improvements I would like to finalize
-the glossary and perform significant clean-up and refactoring of PlanZero's source code so that those iterative changes
-will be easier and more systematic [edit: <a href="/posts/2026-04-19-glossary">this post</a>].
+the glossary and perform significant clean-up and refactoring of PlanZero's
+source code so that those iterative changes
+can be easier and more systematic [edit: <a href="/posts/2026-04-19-glossary">this post</a>].
 </p>
 
 <p>
@@ -154,7 +168,7 @@ Until then,
 - James Bergstra
 </p>
 
-<h2 id="appendix-1-new-elements">Appendix 1: New and Modified Model Elements to Model Bovaer Adoption Probabilistically</h2>
+<h2 id="appendix-1-new-elements">Appendix 1: Model Elements to Model Bovaer Adoption</h2>
 
 <p>
 The Scaling Model is identical to the
@@ -162,10 +176,9 @@ The Scaling Model is identical to the
 Enteric Fermentation
 and Other Product Manufacture and Use.
 This appendix enumerates new 
-{{siteref("Structural_Element", "structural elements")|safe}} in the Scaling model, relative to the Static Normals model.
-These combine to estimate the changes in those two sectors.
-The Scaling model totally replaces the estimation of Enteric Fermentation
-and adds a new term that raises emissions in Other Product Manufacture and Use.
+{{siteref("Structural_Element", "structural elements")|safe}} in the Scaling model,
+relative to the Static Normals model,
+which provide the Scaling model with emissions estimates in those two sectors.
 </p>
 <p>
 The new structural elements are:
@@ -183,7 +196,7 @@ The new structural elements are:
 <h3 id="a2-cattle">Cattle Population Static Normal</h3>
 
 <p>This structural element makes static normal estimates of cattle populations
-    and Enteric Fermentation emission factors to define several
+and Enteric Fermentation {{siteref("Emission_Factor", "emission factors")|safe}} to define several
     unknown variables, including:
     <ol>
     <li>head counts</li>
@@ -195,39 +208,46 @@ The new structural elements are:
     and each province and territory.
 </p>
 <p>
-The Static Normals model only estimated the overall Enteric Fermentation emission.
-In this model, this element estimates it instead as
-a sum-product of the number of cattle of each type,
-and the emission factors of each type.
+The Static Normals model of Enteric Fermentation estimated methane emission directly.
+In the Scaling model, this element estimates Enteric Fermentation emissions as
+the sum-product of the number of cattle of each type,
+and the emission factor of each type.
 Details of the probabilistic model are provided below in
 <a href="#appendix-2-prob-modelling">Appendix 2: Probabilistic Modelling of Cattle Populations and Enteric Fermentation Emission Factors</a>.
+In the future, when PlanZero modelling progresses beyond static normals,
+the inclusion of this granular data will allow PlanZero to
+use more data and make more accurate short-term predictions.
 </p>
 
 <h3 id="a2-bovaer-adoption">Bovaer Adoption Limit</h3>
 
 <p>
 Previously when modelling Bovaer deterministically,
-this element assumed that no more than 5.0 percent / year of farmers would switch to administering Bovaer in any given year,
+this element provided an assumption that no more than 5.0 percent / year of farmers would switch to administering Bovaer in any given year,
 but that adoption could ultimately rise to 99.0%,
 (the 1% remainder being organic farmers who can't adopt it).
 <p>
 </p>
 Here, when used in a probabilistic model,
-this element assumes instead that 2.5-10.0% of farmers will switch to Bovaer in any given year, and it will vary from year to year
+this element provides instead an assumption that 2.5-10.0% of farmers will switch to Bovaer in any given year, and it will vary from year to year
 within that range.
+Currently no statistically significant number of farms administer Bovaer, so the
+projected adoption starts at 0%.
+The same maximum of 99% remains, to account for organic farms.
 </p>
 
 <h3 id="a2-bovaer-production">Bovaer Production Emissions</h3>
 
 <p>
-When used in deterministic models,
-this element assumes an extra 45.0 kg {{CO2}} / head / year
-in the Other Product Manufacture and Use sector,
-in order to account for producing and distributing the Bovaer feed additive.
+In deterministic models,
+this element represented an assumption that
+the production and distribution of Bovaer incurred an extra 45.0 kg {{CO2}} / head / year
+in the Other Product Manufacture and Use sector.
 </p>
 <p>
-Here, in the probabilistic model,
-the amount is based instead on a "20-50x" reduction in CO2e compared with methane emitted from cattle.
+In the probabilistic model,
+the amount is based instead on a "20-50x" reduction in CO2e compared with methane emitted
+from cattle without Bovaer.
 This was the literal suggestion from an LLM-AI chat earlier this year,
 which was the original source for the 45.0 kg {{CO2}} / head / year value.
 For each sampled scenario, a reduction factor is sampled uniformly from 20 to 50.
@@ -242,7 +262,7 @@ are added to the emissions of the Other Product Manufacture and Use sector, whic
 <h3 id="a2-bovaer-farm-subsidy">Bovaer Farm Subsidy</h3>
 
 <p>
-This element defines the dynamics of farms switching to Bovaer administration,
+The Bovaer Farm Subsidy element defines the dynamics of farms switching to Bovaer administration,
 based on (a) the availability of funds in a subsidy program, (b) an assumption of 160 cattle per farm, and (c) a taxable subsidy of $5000  per-farm, per-year.
 It makes no difference to the model, but in reality I'd imagine the subsidy might well be tied to head counts rather than being a flat rate per farm.
 </p>
@@ -250,7 +270,9 @@ It makes no difference to the model, but in reality I'd imagine the subsidy migh
 <h3 id="a2-bovaer-purchase-cost">Bovaer Purchase Cost</h3>
 
 <p>
-The Bovaer purchase cost is modelled as being borne directly by the hypothetical government program,
+The Bovaer Purchase Cost element
+represents an assumption that Bovaer purchase costs are borne
+directly by a hypothetical government program,
 at rates of $.20/head/day for calves up to $.50/head/day for bulls and mature cows.
 The rates were estimated based on <a href="https://www.producer.com/livestock/new-methane-feed-additive-pleases-producers">this site</a>,
 and should be modelled with some uncertainty but currently are not.
@@ -258,11 +280,11 @@ and should be modelled with some uncertainty but currently are not.
 
 <h3 id="a2-bovaer-monitoring">Bovaer Monitoring</h3>
 <p>
-As before,
-this modelling element
-assumes administering and monitoring costs
-1000.0 CAD / farm / year for paperwork
-and 3000.0 CAD / farm / year for on-site inspection.
+As in the deterministic case,
+the Bovaer Monitoring element
+represents an assumption that administration and monitoring costs amount to
+1,000.0 CAD / farm / year for paperwork
+and 3,000.0 CAD / farm / year for on-site inspection.
 When used in probabilistic modelling, this element furthermore estimates that these amounts are paid in labour costs, from which income tax is collected back at a rate of 25%.
 </p>
 
@@ -289,6 +311,8 @@ That data was described and first used in PlanZero in
 Enteric Fermentation emissions.
 The NIR-2025 document also publishes the emission factors it has used for cattle
 and other livestock for each year covered, from 1990-2023.
+Cattle population counts were adapted for inference by averaging
+January and July headcounts to get annual headcounts.
 </p>
 
 <p>
@@ -307,7 +331,8 @@ and emissions factors
 in the
 Scaling model are estimated as the posterior distributions
 in this model after observing data up until Dec 31, 2024 from the
-three data sources above.
+NIR and StatsCan data sources.
+</p>
 <table>
 	<thead>
 		<tr>
@@ -352,17 +377,17 @@ three data sources above.
 	    </tr>
 	    <tr>
 		    <td>{{latex("\\sigma_{(r)} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}}</td>
-		    <td>A-priori, the variance in scaled <i>regional</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+		    <td>A-priori, the variance in scaled <i>regional</i> emissions over years is not expected to be super-tiny, nor much larger than 1.</td>
 	    </tr>
 	    <tr>
 		    <td>{{latex("\\sigma_{()} ~\\sim~ \\mathrm{Lognormal}(-1, 0.7)")}} </td>
-		    <td>A-priori, the variance in scaled <i>national</i> emissions (looking across years) is not expected to be super-tiny, nor much larger than 1.</td>
+		    <td>A-priori, the variance in scaled <i>national</i> emissions over years is not expected to be super-tiny, nor much larger than 1.</td>
 	    </tr>
 	    <tr>
 		    <td>{{latex("X_{(r,t)} ~\\sim~ \\mathcal{N}(
 			    \\sum_c h_{(c,r)} f_{(c)},
 			    \\sigma_{(r)}^2)")}}</td>
-		    <td>Observable model-estimated scaled NIR emissions for the region ({{latex("r")}}),
+		    <td>Observable scaled NIR emissions for the region ({{latex("r")}}),
 			and annual time period ({{latex("t")}}).
 			Note that the distribution is "static", in that it is
 			the same for all annual time periods.
@@ -373,7 +398,7 @@ three data sources above.
 			    \\sum_{r \\in \\mathrm{regions}}
 				    \\sum_c h_{(c,r)} f_{(c)},
 			    \\sigma_{(s,g)}^2)")}}</td>
-		    <td>Observable model-estimated scaled national-total emissions
+		    <td>Observable scaled national-total emissions
 			    for Enteric Fermentation emissions (methane).
 			    Note that the distribution is static,
 			    in that it is the same for all annual time periods.
@@ -382,14 +407,11 @@ three data sources above.
 	</tbody>
 </table>
 
-
 <p>Posterior estimates of
 the cattle population
 and emission factors were obtained
 using NumPyro's NUTS sampler and drawing 500 samples
 after warming up for 250.
-Cattle population counts were adapted for inference by averaging
-January and July headcounts to get annual headcounts.
 </p>
 
 <ul class="actions special">

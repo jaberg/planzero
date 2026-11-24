@@ -148,11 +148,10 @@ class NetZero2050Metric(BlogPost):
 
 class ProbabilisticBovaer(BlogPost):
     """
-    This post revisits the Bovaer strategy
-    (<a href="/posts/2026-04-03-bovaer">Modelling a Bovaer Strategy</a>)
-    and extends PlanZero's probabilistic modelling
-    (<a href="/posts/2026-06-28-static-normals">Static Normals:
-    a Baseline Predictive Model</a>)
+    This post revisits the
+    <a href="/posts/2026-04-03-bovaer">Bovaer strategy</a>
+    and extends PlanZero's
+    <a href="/posts/2026-06-28-static-normals">probabilistic modelling</a>
     with support for strategy modelling elements.
     Scaling the administration of Bovaer is estimated to reduce annual
     emissions by 8.5-11 Mt{{CO2e}} annually by 2050, at a cost of $189-200
