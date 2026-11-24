@@ -236,15 +236,14 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
         super().__init__(
                 last_forecast_year=last_forecast_year,
                 data_cutoff=data_cutoff,
-                #num_warmup=1500,
-                num_warmup=100,
+                num_warmup=1500,
                 num_samples=500,
                 expect_all_sectors=(sectors==IPCC_Sector),
                 )
         # the library default for this parameter is 0.8
         # AI says needing anything higher than .9 or .95
         # is a symptom of a serious energy landscape issue
-        # self.NUTS_kwargs['target_accept_prob'] = 0.995 # XXX this should not be so high
+        self.NUTS_kwargs['target_accept_prob'] = 0.995 # XXX this should not be so high
 
         # num samples can be larger if scenario_model/computation.py
         # can free some memory as it goes... as of writing, it does not.
