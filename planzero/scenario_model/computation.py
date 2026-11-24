@@ -384,8 +384,8 @@ def storage_nd_check_NextCarry(comp:Computation, var_key:NextCarry, val:jnp.ndar
 
 
 def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
-    """Is it okay for an obs, obs_valid, or obs_weight, obs_dist to have obs_shape?
-    as it relates to prior_var_key?
+    """Return True to indicate pad_right.
+    This function raises an exception on invalid shape (shape check by side-effect).
     """
     if isinstance(prior_var_key, ElementGeneralKey):
         # the observation can have fewer, equal, or more dimensions than the
@@ -437,17 +437,17 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
 
         elif comp.phase == Phase.Posterior:
             posterior_shape = build_annual_posterior_shape(comp, prior_var_key, ())
+            assert len(posterior_shape)
             if len(obs_shape) != len(posterior_shape):
                 raise NotImplementedError(
+                        'why?',
                         prior_var_key, posterior_shape, obs_shape)
-            assert len(posterior_shape)
-            assert tuple(posterior_shape[:-1]) == obs_shape[:-1], (
+            if obs_shape[0] != posterior_shape[0]:
+                raise NotImplementedError(
+                        'is this really necessary?',
                         prior_var_key, posterior_shape, obs_shape)
-            assert (
-                    posterior_shape[-1] == obs_shape[-1]
-                    or obs_shape[-1] == 1
-                    ), (
-                        prior_var_key, posterior_shape, obs_shape)
+            for osi, psi in zip(obs_shape, posterior_shape):
+                assert osi in (1, psi), (prior_var_key, obs_shape, posterior_shape)
 
             return False # don't pad
         else:
@@ -1287,35 +1287,36 @@ class Computation:
         # 1. all at once in either of model_element_prepare or model_element_postprocess
         # 2. stepwise in a model_element_annual_step
         #
-        if nvm.defining_subphase in (Subphase.Prep, Subphase.Proc):
+        # Either way, the loaded samples represent the observation of the initial
+        # years of the annual variable.
+        # If it's (2) then the annual_step ws.dist.this_annual assignment in Posterior
+        # phase needs to ignore input covered by these data and
+        # the annual_step  ws.val.this_annual read needs to either pull from this data
+        # or the ws.dist.this_annual distribution, depending on the year.
 
-            # If this annual value has been defined all at once, then `transposed`
-            # should be used as if the following appeared prior to its definition
-            # ws.obs_valid.annual[var_key] = year_idxs < n_prior_years
-            # ws.obs_val.annual[var_key] = jnp.where( year_idxs < n_prior_years, transposed, 0)
+        assert nvm.defining_subphase in (Subphase.Prep, Subphase.Proc, Subphase.Step)
 
-            # don't lookup scan_step_ii_key because it isn't defined yet
-            scan_step_ii = jnp.arange(self.model.n_posterior_years)
-            expanded_mask = jnp.reshape(
-                    scan_step_ii < self.model.n_prior_years,
-                    (self.model.n_posterior_years,) + (1,) * (transposed.ndim - 1))
-            self.set_ndarray(
-                    ObservationValid(
-                        obs_var_key=Observation(
-                            prior_var_key=var_key)),
-                    expanded_mask)
-            padding_years = self.model.n_posterior_years - self.model.n_prior_years
-            assert padding_years >= 0
-            padding = jnp.zeros((padding_years,) + transposed.shape[1:])
-            self.set_ndarray(
-                    Observation(prior_var_key=var_key),
-                    jnp.concatenate([transposed, padding]))
-        elif nvm.defining_subphase == Subphase.Step:
-            # If this annual value has been defined stepwise, then the
-            # technique used in _load_nextcarry_grouped_sample can be adapted.
-            raise NotImplementedError()
-        else:
-            raise NotImplementedError(nvm.defining_subphase)
+        # If this annual value has been defined all at once, then `transposed`
+        # should be used as if the following appeared prior to its definition
+        # ws.obs_valid.annual[var_key] = year_idxs < n_prior_years
+        # ws.obs_val.annual[var_key] = jnp.where( year_idxs < n_prior_years, transposed, 0)
+
+        # don't lookup scan_step_ii_key because it isn't defined yet
+        scan_step_ii = jnp.arange(self.model.n_posterior_years)
+        expanded_mask = jnp.reshape(
+                scan_step_ii < self.model.n_prior_years,
+                (self.model.n_posterior_years,) + (1,) * (transposed.ndim - 1))
+        self.set_ndarray(
+                ObservationValid(
+                    obs_var_key=Observation(
+                        prior_var_key=var_key)),
+                expanded_mask)
+        padding_years = self.model.n_posterior_years - self.model.n_prior_years
+        assert padding_years >= 0
+        padding = jnp.zeros((padding_years,) + transposed.shape[1:])
+        self.set_ndarray(
+                Observation(prior_var_key=var_key),
+                jnp.concatenate([transposed, padding]))
 
     def set_phase_posterior(
             self,
@@ -1605,10 +1606,7 @@ def run_mcmc(
     else:
         rng_key = seed
     mcmc = MCMC(
-            NUTS(trace_fn,
-                 target_accept_prob=0.995,
-                 #init_strategy=init_to_sample,
-                 ),
+            NUTS(trace_fn, **model.NUTS_kwargs),
             num_warmup=model.num_warmup,
             thinning=model.thinning,
             num_samples=model.num_samples,

@@ -518,6 +518,7 @@ class ScenarioModel:
     thinning:int
     num_samples:int
     n_divergences_acceptable:int = 0
+    NUTS_kwargs:dict
 
     @property
     def first_year(self) -> int:
@@ -543,6 +544,7 @@ class ScenarioModel:
         self._default_by_var_key = {}
         self.num_warmup = num_warmup
         self.thinning = thinning
+        self.NUTS_kwargs = {}
         self.num_samples = num_samples
         self.mv = ModelVariables(
                 year_0=first_year,
@@ -979,6 +981,10 @@ class ScenarioModel:
         return list(ordered)
 
     def mcmc_submodels(self) -> dict[str, ScenarioModel]:
+        # it is okay for derived classes to over-ride this reference implementation
+        # in order to e.g. propagate different NUTS_kwargs, num_warmups etc. per mcmc group.
+        # HOWEVER make sure it leads to appropriate submodel.version_hash() results
+        # in order for registry_compute_model to work.
         rval = {}
         for elem_id, elem in self.model_elements.items():
             if isinstance(elem, ModelBuiltIns):
@@ -993,6 +999,7 @@ class ScenarioModel:
                         n_posterior_years=self.n_posterior_years,
                         num_warmup=self.num_warmup,
                         num_samples=self.num_samples)
+                rval[mcmc_group].NUTS_kwargs = dict(self.NUTS_kwargs)
             rval[mcmc_group].add_element(elem)
         return rval
 
@@ -1006,6 +1013,7 @@ class ScenarioModel:
                 self.n_prior_years,
                 self.num_warmup,
                 self.thinning,
+                tuple([(key, val) for key, val in sorted(self.NUTS_kwargs.items())]),
                 tuple(
                     [(elem_id, elem.version_id)
                      for elem_id, elem in sorted(self.model_elements.items())]),
