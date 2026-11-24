@@ -36,6 +36,7 @@ import hashlib
 import os
 import pickle
 import threading
+import time
 import warnings
 from dataclasses import dataclass
 
@@ -425,6 +426,7 @@ def _compute_mcmc_submodel(
     # 2. the return value of this function is determined
     # 3. the string keys in this function's return value
     #    can be used to load the samples.
+    t0 = time.time()
     
     version_hash = submodel.version_hash()
     seed_hash = _rng_key_hash(rng_key)
@@ -477,6 +479,8 @@ def _compute_mcmc_submodel(
             model_root, model_name, model_version_hash, model_seed_hash,
             infer_key, local_sentinel, saved_sample_sites)
 
+    t1 = time.time()
+    print(msg_prefix, '_compute_mcmc_submodel took', t1 - t0, 'seconds')
     return (model_root, saved_sample_sites)
 
 
