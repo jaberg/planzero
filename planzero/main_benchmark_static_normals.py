@@ -11,7 +11,7 @@ from .nir_model import NIR_ScenarioModel
 from .nir_static_normals_model import (
     StaticNormals_ModelElement,
 )
-from .scenario_model import compute_model
+from .scenario_model import MCMC_Arguments, compute_model
 
 
 def get_cpu_info():
@@ -50,20 +50,29 @@ def main(args):
     model.add_emissions_sums()
     model.add_element_prenir_2025_m04()
 
-    model.n_divergences_acceptable = int(1e10)
+    model.MCMC_args = MCMC_Arguments(
+            num_warmup=model.MCMC_args.num_warmup,
+            num_samples=model.MCMC_args.num_samples,
+            thinning=model.MCMC_args.thinning,
+            n_divergences_acceptable=int(1e10),
+            NUTS_args=model.MCMC_args.NUTS_args)
 
     # this test used to compute the model, but it has been cut
     # to attempt to save memory
     t0 = time.time()
     compute_model(model, seed_or_key=1)
     t1 = time.time()
-    print(f'compute_model_{model.num_warmup}_{model.num_samples} seconds: {(t1 - t0):.3f}')
+    print(f'compute_model_{model.MCMC_args.num_warmup}_{model.MCMC_args.num_samples} seconds: {(t1 - t0):.3f}')
 
-    model.num_warmup = 2
-    model.num_samples = 200
+    model.MCMC_args = MCMC_Arguments(
+            num_warmup=model.MCMC_args.num_warmup,
+            num_samples=200,
+            thinning=model.MCMC_args.thinning,
+            n_divergences_acceptable=int(1e10),
+            NUTS_args=model.MCMC_args.NUTS_args)
     compute_model(model, seed_or_key=1)
     t2 = time.time()
-    print(f'compute_model_{model.num_warmup}_{model.num_samples} seconds: {(t2 - t1):.3f}')
+    print(f'compute_model_{model.MCMC_args.num_warmup}_{model.MCMC_args.num_samples} seconds: {(t2 - t1):.3f}')
 
     print("\n")
     print("both times should be under about 15 seconds")
