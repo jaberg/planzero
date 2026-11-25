@@ -191,7 +191,7 @@ class AR2_ModelElement(NIR_ModelElement):
         # this parameter may be problematic: a large pt_sigma
         # can cause AR_sigma's effect to collapse 
         ws.dist.general['AR_sigma_raw'] = dist.LogNormal(-1, 0.7).expand_by((n_regions,))
-        ws.val.general['AR_sigma'] = ws.val.general['AR_sigma_raw']
+        ws.val.general['AR_sigma'] = ws.val.general['AR_sigma_raw'] / 10
 
         phi_1, phi_2 = self._phi(ws)
         # initialize x_prev and x_prev_prev from their exact bivariate stationary
@@ -278,42 +278,3 @@ class AR2_ModelElement(NIR_ModelElement):
         rval = {}
         rval[self.sector, self.ghg] = self.ktCO2e_pt_keys
         return rval
-
-
-class StaticNormals_ScenarioModel(NIR_ScenarioModel):
-
-    def __init__(self,
-                 data_cutoff:datetime.date,
-                 last_forecast_year=2050,
-                 sectors:type[IPCC_Sector]|list[IPCC_Sector]=IPCC_Sector,
-                 ):
-        """
-        sectors: default to all sectors (site models require all sectors), but subsets can be used in testing
-        """
-        super().__init__(
-                last_forecast_year=last_forecast_year,
-                data_cutoff=data_cutoff,
-                num_warmup=1500,
-                num_samples=500,
-                expect_all_sectors=(sectors==IPCC_Sector),
-                )
-        # num samples can be larger if scenario_model/computation.py
-        # can free some memory as it goes... as of writing, it does not.
-        for sector in IPCC_Sector:
-            for ghg in GHG:
-                if (sector, ghg) not in near_zero_sector_ghgs():
-                    if isinstance(sectors, list) and sector not in sectors:
-                        pass
-                    else:
-                        mcmc_group = f'{sector.value}_{ghg.value}'
-                        snorm_elem = StaticNormals_ModelElement(
-                                    sector=sector,
-                                    ghg=ghg)
-                        self.add_element(snorm_elem, mcmc_group=mcmc_group)
-                        self.mv.forgettable_dist_keys.update(
-                                snorm_elem.ktCO2e_pt_keys.values())
-                        self.mv.forgettable_dist_keys.add(
-                                snorm_elem.ktCO2e_ca_key)
-
-        self.add_emissions_sums()
-        self.add_element_prenir_2025_m04()
