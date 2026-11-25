@@ -1586,7 +1586,10 @@ class Computation:
         self._run_step()
         self._run_proc()
         if not as_mcmc_trace:
-            jax.tree_util.tree_map(lambda x: x.block_until_ready(),
+            def maybe_block_until_ready(x):
+                if hasattr(x, 'block_until_ready'):
+                    x.block_until_ready()
+            jax.tree_util.tree_map(maybe_block_until_ready,
                                    self._ndarray_d)
             if self.phase == Phase.Posterior:
                 self._forget_non_outputs()
