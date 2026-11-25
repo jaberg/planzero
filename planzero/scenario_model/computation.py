@@ -1579,14 +1579,17 @@ class Computation:
                 self._ndarray_d_forgotten[key] = True
 
 
-    def run(self):
+    def run(self, as_mcmc_trace=False):
         assert not self.has_run
         self._run_prep()
         self._run_step()
         self._run_proc()
-        if self.phase == Phase.Posterior:
-            self._forget_non_outputs()
-        _attempt_release_jax_memory()
+        if not as_mcmc_trace:
+            jax.tree_util.tree_map(lambda x: x.block_until_ready(),
+                                   self._ndarray_d)
+            if self.phase == Phase.Posterior:
+                self._forget_non_outputs()
+            _attempt_release_jax_memory()
         self.has_run = True
 
 
@@ -1600,7 +1603,7 @@ def run_mcmc(
         # the seed value is ignored
         # when running via MCMC
         obj = Computation(model=model, rng_key=jrandom.key(1))
-        obj.run()
+        obj.run(as_mcmc_trace=True)
     if isinstance(seed, int):
         rng_key = jrandom.key(seed=seed)
     else:

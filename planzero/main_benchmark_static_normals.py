@@ -57,11 +57,14 @@ def main(args):
     t0 = time.time()
     compute_model(model, seed_or_key=1)
     t1 = time.time()
+    print(f'compute_model_{model.num_warmup}_{model.num_samples} seconds: {(t1 - t0):.3f}')
 
     model.num_warmup = 2
-    model.num_samples = 6
+    model.num_samples = 200
     compute_model(model, seed_or_key=1)
     t2 = time.time()
+    print(f'compute_model_{model.num_warmup}_{model.num_samples} seconds: {(t2 - t1):.3f}')
 
-    print(f'compute_model_2_2 seconds: {(t1 - t0):.3f}')
-    print(f'compute_model_5_10 seconds: {(t2 - t1):.3f}')
+    print("\n")
+    print("both times should be under about 15 seconds")
+    print("the second time should not be much bigger than the first, because compilation should still dominate the total")
