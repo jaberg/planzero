@@ -33,7 +33,7 @@ from .base import (
     years_key,
 )
 
-VersionID: TypeAlias = int | float | str | tuple["VersionID", ...]
+VersionID: TypeAlias = None | int | float | str | tuple["VersionID", ...]
 
 
 def hash_version_id(version_id: VersionID, n_chars=32) -> str:
@@ -495,6 +495,46 @@ class ModelBuiltIns(ModelElement):
 ModelElementParamType = TypeVar("ModelElementParamType", bound=ModelElement)
 
 
+class NUTS_Arguments(BaseModel, frozen=True):
+    target_accept_prob:float | None = None
+
+    def as_kwargs(self) -> dict:
+        if self.target_accept_prob is None:
+            return {}
+        else:
+            return {'target_accept_prob': self.target_accept_prob}
+
+    @property
+    def version_id(self) -> VersionID:
+        return (self.target_accept_prob,)
+
+
+class MCMC_Arguments(BaseModel, frozen=True):
+
+    num_warmup:int
+    num_samples:int
+    thinning:int = 1
+
+    n_divergences_acceptable:int = 0
+
+    NUTS_args: NUTS_Arguments = NUTS_Arguments()
+
+    def as_kwargs(self) -> dict:
+        rval = {
+                'num_warmup': self.num_warmup,
+                'num_samples': self.num_samples,
+                'thinning': self.thinning,
+                }
+        return rval
+
+    @property
+    def version_id(self) -> VersionID:
+        return (self.num_warmup,
+                self.num_samples,
+                self.thinning,
+                self.NUTS_args.version_id,)
+
+
 class ScenarioModel:
     """
     Try to make the elements work mostly as a set.
@@ -512,13 +552,9 @@ class ScenarioModel:
     mv: ModelVariables
     _default_by_var_key:dict[VarKey, np.ndarray]
 
-    # MCMC parameters, for how much sampling is recommended for this model
-    # These should be associated with mcmc groups, not whole models
-    num_warmup:int
-    thinning:int
-    num_samples:int
-    n_divergences_acceptable:int = 0
-    NUTS_kwargs:dict
+    MCMC_args:MCMC_Arguments
+
+    _MCMC_args_by_group: dict[str, MCMC_Arguments]
 
     @property
     def first_year(self) -> int:
@@ -532,6 +568,10 @@ class ScenarioModel:
     def n_posterior_years(self) -> int:
         return self.mv.n_posterior_years
 
+    @property
+    def num_samples(self) -> int:
+        return self.MCMC_args.num_samples
+
     def __init__(self, first_year:int, n_prior_years:int, n_posterior_years:int,
                  num_warmup:int,
                  num_samples:int,
@@ -542,10 +582,11 @@ class ScenarioModel:
         self.mcmc_group_by_elemid = {}
         self._element_order_cache = {}
         self._default_by_var_key = {}
-        self.num_warmup = num_warmup
-        self.thinning = thinning
-        self.NUTS_kwargs = {}
-        self.num_samples = num_samples
+        self.MCMC_args = MCMC_Arguments(
+                num_warmup=num_warmup,
+                thinning=thinning,
+                num_samples=num_samples)
+        self._MCMC_args_by_group = {}
         self.mv = ModelVariables(
                 year_0=first_year,
                 n_prior_years=n_prior_years,
@@ -997,9 +1038,11 @@ class ScenarioModel:
                         first_year=self.first_year,
                         n_prior_years=self.n_prior_years,
                         n_posterior_years=self.n_posterior_years,
-                        num_warmup=self.num_warmup,
-                        num_samples=self.num_samples)
-                rval[mcmc_group].NUTS_kwargs = dict(self.NUTS_kwargs)
+                        num_warmup=1,
+                        num_samples=1,)
+                rval[mcmc_group].MCMC_args = self._MCMC_args_by_group.get(
+                        mcmc_group, self.MCMC_args)
+                assert rval[mcmc_group].MCMC_args.num_samples == self.MCMC_args.num_samples
             rval[mcmc_group].add_element(elem)
         return rval
 
@@ -1011,9 +1054,9 @@ class ScenarioModel:
                 this_subsystem_version,
                 self.first_year,
                 self.n_prior_years,
-                self.num_warmup,
-                self.thinning,
-                tuple([(key, val) for key, val in sorted(self.NUTS_kwargs.items())]),
+                self.MCMC_args.version_id,
+                tuple([(key, val.version_id)
+                       for key, val in sorted(self._MCMC_args_by_group.items())]),
                 tuple(
                     [(elem_id, elem.version_id)
                      for elem_id, elem in sorted(self.model_elements.items())]),

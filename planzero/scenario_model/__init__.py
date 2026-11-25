@@ -20,7 +20,9 @@ from .computation import (
 )
 from .registry import registry_basename, registry_compute_model
 from .scenario_model import (
+    MCMC_Arguments,
     ModelElement,
+    NUTS_Arguments,
     ScenarioModel,
     VersionID,
     access_annual,
@@ -44,12 +46,13 @@ __all__ = [
     "FinalCarry",
     "GeneralKey",
     "InitialCarry",
+    "MCMC_Arguments",
     "ModelElement",
+    "NUTS_Arguments",
     "Phase",
     "ScenarioModel",
     "VarKey",
     "VersionID",
-    "varkey_property",
     "Workspace",
     "access_annual",
     "access_next_carry",
@@ -63,6 +66,7 @@ __all__ = [
     "ndarray_dim",
     "registry_basename",
     "registry_compute_model",
+    "varkey_property",
     "years_dim",
     "years_key",
 ]

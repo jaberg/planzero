@@ -10,6 +10,7 @@ from .nir_model import (
     NIR_ScenarioModel,
 )
 from .nir_static_normals_model import StaticNormals_ModelElement
+from .scenario_model import MCMC_Arguments, NUTS_Arguments
 
 
 def _add_enteric_fermentation_and_other_product_mfg(self, mcmc_group:str):
@@ -129,6 +130,15 @@ class Scaling_ScenarioModel(NIR_ScenarioModel):
                                 snorm_elem.ktCO2e_pt_keys.values())
                         self.mv.forgettable_dist_keys.add(
                                 snorm_elem.ktCO2e_ca_key)
+
+                        # Mirrors logic in ./nir_static_normals_model.py
+                        if (sector == IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Trucks
+                            and ghg == GHG.CO2):
+                            self._MCMC_args_by_group[mcmc_group] = MCMC_Arguments(
+                                    num_warmup=self.MCMC_args.num_warmup,
+                                    num_samples=self.MCMC_args.num_samples,
+                                    NUTS_args=NUTS_Arguments(
+                                        target_accept_prob=0.995))
 
         # TODO: how to add these automatically when required,
         # instead of having to remember them as suffix of constructor

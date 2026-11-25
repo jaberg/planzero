@@ -37,6 +37,7 @@ from .base import (
     years_dim,
 )
 from .scenario_model import (
+    MCMC_Arguments,
     ModelElement,
     ResolvedAccessMetadata,
     ScenarioModel,
@@ -1596,7 +1597,7 @@ class Computation:
 def run_mcmc(
         model:ScenarioModel,
         seed:int|ArrayLike,
-        progress_bar=True,
+        progress_bar:bool=True,
         ):
     def trace_fn():
         # TODO verify
@@ -1609,17 +1610,14 @@ def run_mcmc(
     else:
         rng_key = seed
     mcmc = MCMC(
-            NUTS(trace_fn, **model.NUTS_kwargs),
-            num_warmup=model.num_warmup,
-            thinning=model.thinning,
-            num_samples=model.num_samples,
-            progress_bar=progress_bar)
+            NUTS(trace_fn, **model.MCMC_args.NUTS_args.as_kwargs()),
+            **model.MCMC_args.as_kwargs())
     mcmc.run(rng_key=rng_key)
     extra_fields = mcmc.get_extra_fields()
     if "diverging" in extra_fields:
         n_divergences = jnp.sum(extra_fields["diverging"])
-        assert n_divergences <= model.n_divergences_acceptable, (
-                n_divergences, model.n_divergences_acceptable)
+        assert n_divergences <= model.MCMC_args.n_divergences_acceptable, (
+                n_divergences, model.MCMC_args.n_divergences_acceptable)
     return mcmc
 
 
