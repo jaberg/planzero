@@ -145,7 +145,14 @@ def test_add_inference_run_smoke(model):
 
 
 def test_add_inference_mcmc_smoke(model):
-    run_mcmc(model=model, seed=123)
+    mcmc = run_mcmc(model=model, seed=123)
+    diagnostics = mcmc.planzero_mcmc_diagnostics
+    grouped_samples = mcmc.get_samples(group_by_chain=True)
+    assert set(diagnostics.r_hat) == set(grouped_samples)
+    assert set(diagnostics.ess) == set(grouped_samples)
+    for site, draws in grouped_samples.items():
+        assert diagnostics.r_hat[site].shape == draws.shape[2:]
+        assert diagnostics.ess[site].shape == draws.shape[2:]
 
 
 def test_posterior_smoke(model):

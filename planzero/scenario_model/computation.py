@@ -8,6 +8,8 @@ import jax.numpy as jnp
 import jax.random as jrandom
 import numpy as np
 import numpyro
+from numpyro import diagnostics as numpyro_diagnostics
+from pydantic import BaseModel, ConfigDict
 from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
 from numpyro.contrib.control_flow import scan as numpyro_scan
@@ -1597,6 +1599,94 @@ class Computation:
         self.has_run = True
 
 
+class MCMCDiagnostics(BaseModel):
+    """Convergence diagnostics computed from NumPyro's chain-grouped draws.
+
+    Keys are sample-site names; `Computation.sample_sites` maps these to VarKeys.
+    Each value has the same shape as a single draw from that sample site.
+    """
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    r_hat: dict[str, np.ndarray]
+    ess: dict[str, np.ndarray]
+    n_chains: int
+    n_draws: int
+    n_divergences: int | None = None
+    skipped_sites: tuple[str, ...] = ()
+
+
+def compute_mcmc_diagnostics(
+        mcmc:MCMC,
+        n_divergences:int|None=None,
+        ) -> MCMCDiagnostics:
+    """Compute split Rhat and ESS without adding a dependency on ArviZ.
+
+    Uses the chain-grouped samples, before `Computation.set_phase_posterior`
+    flattens the chain and draw dimensions into a single mcmc dimension.
+    Split Rhat works with one chain by comparing its two halves.
+    """
+    grouped_samples = {
+            site: np.asarray(draws)
+            for site, draws in mcmc.get_samples(group_by_chain=True).items()
+            }
+    if grouped_samples:
+        first = next(iter(grouped_samples.values()))
+        n_chains, n_draws = first.shape[:2]
+    else:
+        n_chains = getattr(mcmc, 'num_chains', 1)
+        n_draws = getattr(mcmc, 'num_samples', 0)
+
+    r_hat = {}
+    ess = {}
+    skipped_sites = []
+    for site, draws in grouped_samples.items():
+        # split_gelman_rubin needs at least 4 draws per chain;
+        # effective_sample_size needs at least 2.
+        if draws.shape[1] < 4:
+            skipped_sites.append(site)
+            continue
+        r_hat[site] = np.asarray(
+                numpyro_diagnostics.split_gelman_rubin(draws))
+        ess[site] = np.asarray(
+                numpyro_diagnostics.effective_sample_size(draws))
+
+    return MCMCDiagnostics(
+            r_hat=r_hat,
+            ess=ess,
+            n_chains=n_chains,
+            n_draws=n_draws,
+            n_divergences=n_divergences,
+            skipped_sites=tuple(skipped_sites),
+            )
+
+
+def _format_diagnostic_value(value:np.ndarray) -> str:
+    value = np.asarray(value)
+    if value.ndim == 0:
+        return f'{float(value):.3f}'
+    return f'[{np.nanmin(value):.3f}, {np.nanmax(value):.3f}]'
+
+
+def log_mcmc_diagnostics(diagnostics:MCMCDiagnostics) -> None:
+    """Log a compact summary; full per-element values remain on the object."""
+    print('planzero MCMC diagnostics:')
+    print(f'  chains={diagnostics.n_chains} draws={diagnostics.n_draws}'
+          + (f' divergences={diagnostics.n_divergences}'
+             if diagnostics.n_divergences is not None else ''))
+    if diagnostics.skipped_sites:
+        print('  skipped sites (too few draws):'
+              + ' ' + ', '.join(diagnostics.skipped_sites))
+    for site in sorted(set(diagnostics.r_hat) | set(diagnostics.ess)):
+        parts = []
+        if site in diagnostics.r_hat:
+            parts.append('r_hat=' + _format_diagnostic_value(
+                    diagnostics.r_hat[site]))
+        if site in diagnostics.ess:
+            parts.append('ess=' + _format_diagnostic_value(
+                    diagnostics.ess[site]))
+        print(f'  {site}: ' + ' '.join(parts))
+
+
 def run_mcmc(
         model:ScenarioModel,
         seed:int|ArrayLike,
@@ -1617,10 +1707,14 @@ def run_mcmc(
             **model.MCMC_args.as_kwargs())
     mcmc.run(rng_key=rng_key)
     extra_fields = mcmc.get_extra_fields()
+    n_divergences = None
     if "diverging" in extra_fields:
-        n_divergences = jnp.sum(extra_fields["diverging"])
+        n_divergences = int(jnp.sum(extra_fields["diverging"]))
         assert n_divergences <= model.MCMC_args.n_divergences_acceptable, (
                 n_divergences, model.MCMC_args.n_divergences_acceptable)
+    diagnostics = compute_mcmc_diagnostics(mcmc, n_divergences=n_divergences)
+    log_mcmc_diagnostics(diagnostics)
+    mcmc.planzero_mcmc_diagnostics = diagnostics
     return mcmc
 
 
