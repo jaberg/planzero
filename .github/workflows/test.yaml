@@ -58,6 +58,9 @@ jobs:
       - name: Python package versions
         run: pip freeze
 
+      - name: Benchmark Static Normals
+        run: python -m planzero benchmark_static_normals
+
       # Static Normals 2024-12-31
 
       - name: Cache key for Static_Normals_2024_12_31
