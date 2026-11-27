@@ -547,6 +547,25 @@ class ValThisAnnual:
         self.ws = ws
         self.attr = attr
 
+    def __contains__(self, item:str|ElementAnnualKey) -> bool:
+        if isinstance(item, str):
+            var_key = self.ws._annual_key(item)
+        else:
+            var_key = item
+        del item
+        assert self.ws.scan_storage is not None
+
+        if self.attr == 'val':
+            return self.ws.scan_storage.this_annual_contains_ndarray(
+                    var_key,
+                    sample_if_necessary=True)
+        elif self.attr == 'obs_val':
+            return self.ws.scan_storage.this_annual_contains_ndarray(
+                    Observation(prior_var_key=var_key),
+                    sample_if_necessary=True)
+        else:
+            raise NotImplementedError(self.attr)
+
     def __getitem__(self, item:str|ElementAnnualKey) -> jnp.ndarray:
         if isinstance(item, str):
             var_key = self.ws._annual_key(item)
@@ -587,6 +606,20 @@ class DistThisAnnual:
         self.ws = ws
         self.attr = attr
 
+    def __contains__(self, item:str|ElementAnnualKey) -> bool:
+        if isinstance(item, str):
+            var_key = self.ws._annual_key(item)
+        else:
+            var_key = item
+        del item
+        assert self.ws.scan_storage is not None
+
+        if self.attr == 'dist':
+            self._check_step_defined(var_key)
+            return var_key in self.ws.scan_storage.this_annual_dist_d
+        else:
+            raise NotImplementedError(self.attr)
+
     def __getitem__(self, item:str|ElementAnnualKey) -> Distribution:
         if isinstance(item, str):
             var_key = self.ws._annual_key(item)
@@ -617,7 +650,13 @@ class DistThisAnnual:
             raise NotImplementedError(self.attr)
 
     def _check_step_defined(self, var_key:ElementAnnualKey) -> None:
+        assert self.ws.scan_storage is not None
         if var_key in self.ws.scan_storage.this_annual_input_d:
+            # Hmm... this error message seems confusing.
+            # It is perfectly valid to read the elements of an annual
+            # variable defined in the prepare subphase.
+            # TODO: verify that access pattern is allowed, and adjust
+            # the wording of this error.
             raise NotImplementedError(
                     f'{var_key} is an annual variable defined prior to the scan'
                     ' (define_annual on model_element_prepare), so it has no'

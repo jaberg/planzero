@@ -43,6 +43,8 @@ class VarKey(BaseModel, frozen=True, strict=True):
             'Observation',
             'ObservationValid',
             'ObservationWeight',
+            'Sample',
+            'SampleValid',
             'ElementGeneralKey',
             'ElementCarryKey',
             'ElementAnnualKey',
@@ -130,6 +132,19 @@ class ElementAnnualKey(VarKey, frozen=True):
     var_key_type: Literal['ElementAnnualKey'] = "ElementAnnualKey"
     elem_id: str
     name: str
+
+
+class Sample(VarKey, frozen=True):
+    var_key_type: Literal['Sample'] = "Sample"
+    prior_var_key: VarKey
+
+
+class SampleValid(VarKey, frozen=True):
+    var_key_type: Literal['SampleValid'] = "SampleValid"
+    sample_var_key: Sample
+
+# SampleWeight makes sense, but hasn't been needed yet
+
 
 
 CarryKey = ElementCarryKey

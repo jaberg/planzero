@@ -1,0 +1,43 @@
+The code in planzero/scenario_model/computation.py implements slightly different computations in the Prior phase versus the Posterior phase.
+
+This document is about how the Posterior phase computation is supposed to work.
+
+The Posterior phase begins by loading data from MCMC (aka inference)
+and saving it by GroupedPosterior key.
+
+For a given key K for which inference data was saved,
+the inference data is associated with the key (call it GK) `GroupedPosterior(prior_var_key=K)`.
+The data associated with GK is the raw data saved from MCMC.
+It may be in a numpy ndarray memmap instead of a jax ndarray, and it may be in float32
+precision even if inference was carried out in float64 precision.
+
+
+By construction, a key K for which MCMC data is saved is an unknown variable,
+that entered into the planzero model via a `ws.dist` assignment (e.g. `ws.dist.general[K]`,
+or `ws.dist.annual[K]`) in the Prior phase.
+In the computation of the Posterior phase, this term `ws.dist.annual[K]` should correspond
+to the posterior distribution, but we don't generally have the posterior in closed form, so we do something different.
+
+What we do is combine samples with Prior-style computations.
+The idea is a bit different for the different variable types.
+For General keys K, `ws.val.general[K]` in the Posterior phase
+is taken to be the full sample of values from inference.
+The shape of this sample will be the same as from the Prior phase,
+but with a trailing dimension that is a sample index.
+
+For Annual keys K, `ws.val.annual[K]` in the Posterior phase
+is defined in different ways for the years that were involved in the Prior and Inference
+computations, and for the subsequent years that are only included in the Posterior phase.
+For the prior years, the value is taken to be the value of the samples from inference.
+(It is a convenient coincidence that the Prior phase covers the earliest years under
+discussion, which can therefore be referred to as the "prior years" or Prior years
+without ambiguity, these would mean the same years.)
+For the posterior-only years, these values must be computed for the first time
+in the Posterior phase, using recursions from the prior years.
+The result is an ndarray with a trailing dimension for a sample index (like the case of General variables), and a leading dimension of T years, such that the prior years are
+loaded from MCMC samples, and the posterior-only years are freshly computed extrapolations
+into the future.
+
+It is only possible to load MCMC samples for annual keys if those keys had recursive
+definitions. Other ways of defining annual variables should not make it possible
+to get MCMC samples from inference.

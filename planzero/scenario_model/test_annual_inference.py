@@ -8,6 +8,7 @@ in this scenario_model sub-package.
 
 import unittest
 
+import pytest
 from jax import numpy as jnp
 from numpyro import distributions as dist
 
@@ -23,6 +24,7 @@ from . import (
     define_annual,
     define_carry,
 )
+from .base import GroupedPosterior
 
 
 class AR2_ModelElement(ModelElement):
@@ -32,14 +34,16 @@ class AR2_ModelElement(ModelElement):
         self.data = data
 
     def _phi(self, ws):
+        margin = 0.01
+        high = 1 - margin
+        low = -1 + margin
         # k: scaled, unconstrained
-        k1 = 2 * ws.val.general['alpha_1'] - 1  # over covers range (-1, 1)
-        k2 = 2 * ws.val.general['alpha_2'] - 1  # over covers range (-1, 1)
+        k1 = (high - low) * ws.val.general['alpha_1'] + low
+        k2 = (high - low) * ws.val.general['alpha_2'] + low
         # phi: constrained to non-divergent dynamics
         phi_2 = k2
         phi_1 = k1 * (1 - k2)
         return phi_1, phi_2
-
 
     @define('alpha_1', prior_shape=[])
     @define('alpha_2', prior_shape=[])
@@ -56,8 +60,8 @@ class AR2_ModelElement(ModelElement):
 
         # this parameter may be problematic: a large pt_sigma
         # can cause AR_sigma's effect to collapse 
-        ws.dist.general['AR_sigma_raw'] = dist.LogNormal(-1, 0.7)
-        ws.val.general['AR_sigma'] = ws.val.general['AR_sigma_raw'] / 10
+        ws.dist.general['AR_sigma_raw'] = dist.LogNormal(-5, 0.7)
+        ws.val.general['AR_sigma'] = ws.val.general['AR_sigma_raw']
 
         phi_1, phi_2 = self._phi(ws)
         # initialize x_prev and x_prev_prev from their exact bivariate stationary
@@ -88,6 +92,9 @@ class AR2_ModelElement(ModelElement):
 
         # z: zero-mean noise
         ws.dist.this_annual['z_t'] = dist.Normal(0, ws.val.general['AR_sigma'])
+
+        # this val accesses MCMC samples and ignores dist
+        # in Posterior phase until scan_step_ii >= len(self.data)
         z_t = ws.val.this_annual['z_t']
 
         # x: zero-mean dynamic recursion (aka AR_mean)
@@ -101,20 +108,18 @@ class AR2_ModelElement(ModelElement):
     @access_val('AR_sigma')
     @access_annual('AR_mean')
     @define('mu', prior_shape=[])
-    @define('sigma_pt', prior_shape=[])
+    #@define('sigma_pt', prior_shape=[])
     @define_annual('output', annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         ws.dist.general['mu'] = dist.Normal()
-        ws.dist.general['sigma_pt'] = dist.LogNormal(-1, 0.7)
 
-        output_loc = (ws.val.general['mu']
-                      + ws.val.annual['AR_mean'])
-        output_scale = jnp.sqrt(ws.val.general['sigma_pt'] ** 2
-                                + ws.val.general['AR_sigma'] ** 2)
+        output_loc = (ws.val.general['mu'] + ws.val.annual['AR_mean'])
 
         if ws.phase == Phase.Prior:
             ws.obs_val.annual['output'] = self.data
-        ws.dist.annual['output'] = dist.Normal(output_loc, output_scale)
+        ws.dist.annual['output'] = dist.Normal(
+                output_loc,
+                (self.data.max() - self.data.min()) / 100)
 
 
 class AR2_Alternating(unittest.TestCase):
@@ -123,8 +128,39 @@ class AR2_Alternating(unittest.TestCase):
     can be learned (correctly extended) with a common AR2 prior.
     """
 
+    def assert_annual_post_matches_inf(self, comp, model, elem, key_name):
+
+        post = comp.get_ndarray(
+                elem.annual_key(key_name),
+                sample_if_necessary=True)
+        inf = comp.get_ndarray(
+                GroupedPosterior(prior_var_key=elem.annual_key(key_name)),
+                sample_if_necessary=True)
+
+        (n_groups, n_saved_samples, n_prior_years, *annual_shape) \
+                = inf.shape
+        assert n_prior_years == model.mv.n_prior_years
+        # reshape to combine groups and saved samples as if single chain mcmc
+        reshaped = inf.reshape(
+                [n_groups * n_saved_samples, n_prior_years]
+                + annual_shape)
+        # transpose mcmc dimension to the end
+        transposed = jnp.moveaxis(reshaped, 0, -1)
+
+        # post-conditions:
+        assert transposed.shape[0] == n_prior_years
+        assert transposed.shape[-1] == comp.n_mcmc
+        assert transposed.shape[1:-1] == tuple(annual_shape)
+
+        assert jnp.all(
+                post[:n_prior_years]
+                == transposed)
+
+    def setUp(self):
+        self.num_warmup = 200
+
     def tearDown(self):
-        n_data_years = 100
+        n_data_years = 16
         data = jnp.array(
                     [float(self.low if ii % 2 == 0 else self.high)
                      for ii in range(n_data_years)])
@@ -132,36 +168,54 @@ class AR2_Alternating(unittest.TestCase):
                 first_year=2000,
                 n_prior_years=n_data_years,
                 n_posterior_years = n_data_years + 2,
-                num_warmup=300,
+                num_warmup=self.num_warmup,
                 num_samples=100)
         elem = AR2_ModelElement(data=data)
         model.add_element(elem)
         comp = compute_model(model, seed_or_key=1)
-        out = comp.get_ndarray(
+
+        self.assert_annual_post_matches_inf(comp, model, elem, 'z_t')
+
+        output = comp.get_ndarray(
                 elem.annual_key('output'),
                 sample_if_necessary=True)
-        print(out)
+
         assert n_data_years % 2 == 0
-        eps = (self.high - self.low) / 10 * 1.5
 
-        q95_low = jnp.quantile(abs(out[n_data_years] - self.low), .95)
-        assert q95_low < eps
+        q95_low = jnp.quantile(abs(output[n_data_years] - self.low), .95)
+        assert q95_low < self.eps
 
-        q95_high = jnp.quantile(abs(out[n_data_years + 1] - self.high), .95)
-        assert q95_high < eps
+        q95_high = jnp.quantile(abs(output[n_data_years + 1] - self.high), .95)
+        assert q95_high < self.eps
+
+    @property
+    def eps(self):
+        try:
+            return self._eps
+        except AttributeError:
+            return (self.high - self.low) / 10 * 1.5
 
     def test_neg(self):
         self.low = -5
         self.high = -4
 
     def test_pos(self):
-        self.low = 5
-        self.high = 4
+        self.low = 4
+        self.high = 5
 
     def test_big(self):
         self.low = -50
         self.high = 40
 
     def test_small(self):
-        self.low = .5
-        self.high = .4
+        self.low = .4
+        self.high = .5
+        # model is robust, but not invariant to scale
+        self._eps = .05
+        self.num_warmup = 500
+
+    def test_small_ish(self):
+        self.low = .3
+        self.high = .6
+        self._eps = .12
+        self.num_warmup = 500

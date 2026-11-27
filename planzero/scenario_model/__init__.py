@@ -11,6 +11,7 @@ from .base import (
     VarKey,
     mcmc_dim,
     ndarray_dim,
+    scan_step_ii_key,
     years_dim,
     years_key,
 )
@@ -66,6 +67,7 @@ __all__ = [
     "ndarray_dim",
     "registry_basename",
     "registry_compute_model",
+    "scan_step_ii_key",
     "varkey_property",
     "years_dim",
     "years_key",

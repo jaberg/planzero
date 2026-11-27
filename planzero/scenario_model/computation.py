@@ -8,13 +8,13 @@ import jax.numpy as jnp
 import jax.random as jrandom
 import numpy as np
 import numpyro
-from numpyro import diagnostics as numpyro_diagnostics
-from pydantic import BaseModel, ConfigDict
 from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
+from numpyro import diagnostics as numpyro_diagnostics
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions import Distribution, kl
 from numpyro.infer import MCMC, NUTS
+from pydantic import BaseModel, ConfigDict
 
 from .base import (
     ElementAnnualKey,
@@ -30,6 +30,8 @@ from .base import (
     ObservationValid,
     ObservationWeight,
     Phase,
+    Sample,
+    SampleValid,
     Subphase,
     ThisCarry,
     UnassignedDefinitionError,
@@ -39,7 +41,6 @@ from .base import (
     years_dim,
 )
 from .scenario_model import (
-    MCMC_Arguments,
     ModelElement,
     ResolvedAccessMetadata,
     ScenarioModel,
@@ -69,6 +70,9 @@ class ScanStorage_ThisAnnual_NdarrayD:
 
     def __init__(self, scanstor:ScanStorage):
         self.scanstor = scanstor
+
+    def __contains__(self, item:VarKey) -> bool:
+        return self.scanstor.this_annual_contains_ndarray(item, sample_if_necessary=True)
 
     def __getitem__(self, item:VarKey) -> jnp.ndarray:
         return self.scanstor.this_annual_get_ndarray(item, sample_if_necessary=True)
@@ -138,34 +142,57 @@ class ScanStorage:
                 self.next_carry_d[rng_var_key])
         return rval
 
+    def this_annual_contains_ndarray(
+            self,
+            var_key:VarKey,
+            sample_if_necessary:bool,
+            ) -> bool:
+        if var_key in self.this_annual_input_d:
+            # annual variable defined prior to the scan: its value at this
+            # step is the input slice.
+            return True
+
+        if var_key in self.this_annual_output_d:
+            # annual variable defined by the scan step itself.
+            return True
+
+        rval = sample_if_necessary and var_key in self.this_annual_dist_d
+        return rval
+
     def this_annual_get_ndarray(
             self,
             var_key:VarKey,
             sample_if_necessary:bool,
             default:jnp.ndarray|None=None,
             ) -> jnp.ndarray:
-        if var_key in self.this_annual_input_d:
+        try:
             # annual variable defined prior to the scan: its value at this
             # step is the input slice.
             return self.this_annual_input_d[var_key]
+        except KeyError:
+            pass
 
         # annual variable defined by the scan step itself.
         try:
             return self.this_annual_output_d[var_key]
-        except KeyError as err:
-            if (var_key not in self.this_annual_dist_d or not sample_if_necessary):
-                if default is not None:
-                    if self.phase == Phase.Prior:
-                        return default
-                    elif self.phase == Phase.Posterior:
-                        return jnp.expand_dims(default, -1)
-                    else:
-                        raise NotImplementedError(self.phase)
-                err.add_note(f'var_key in dist_d = {var_key in self.this_annual_dist_d}')
-                err.add_note(f'sample_if_necessary = {sample_if_necessary}')
-                raise
-        self.this_annual_set_ndarray_from_dist(var_key)
-        return self.this_annual_output_d[var_key]
+        except KeyError:
+            pass
+
+        if sample_if_necessary and var_key in self.this_annual_dist_d:
+            self.this_annual_set_ndarray_from_dist(var_key)
+            return self.this_annual_output_d[var_key]
+
+        if default is not None:
+            if self.phase == Phase.Prior:
+                return default
+            elif self.phase == Phase.Posterior:
+                return jnp.expand_dims(default, -1)
+            else:
+                raise NotImplementedError(self.phase)
+        err = KeyError(var_key)
+        err.add_note(f'var_key in dist_d = {var_key in self.this_annual_dist_d}')
+        err.add_note(f'sample_if_necessary = {sample_if_necessary}')
+        raise err
 
     def this_annual_set_ndarray(self, var_key:VarKey, value:jnp.ndarray) -> None:
         if var_key in self.this_annual_input_d:
@@ -180,7 +207,10 @@ class ScanStorage:
         assert var_key in self.this_annual_dist_d
         if var_key in self.this_annual_output_d:
             # if it's already set, this method can't promise it's
-            # set to the right distribution
+            # set to the right distribution without clobbering the old distribution
+            # ... but if it clobbers it, there might be a problematic mismatch
+            # between a previously sampled value and the newly assigned distribution
+            # maybe that's okay... but think about why this is happening.
             raise NotImplementedError()
 
         # accessing an undefined value of a general key after the dist
@@ -200,10 +230,20 @@ class ScanStorage:
                 fn=dist,
                 rng_key=self._split_rng_key(),
                 )
-        if isinstance(dist_sample, jnp.ndarray):
-            self.this_annual_set_ndarray(var_key, dist_sample)
+        assert isinstance(dist_sample, jnp.ndarray)
+
+        # sample is from MCMC
+        mcmc_sample_val = self.this_annual_input_d.get(Sample(prior_var_key=var_key))
+        mcmc_sample_valid = self.this_annual_input_d.get(
+                SampleValid(sample_var_key=Sample(prior_var_key=var_key)))
+
+        if mcmc_sample_val is not None:
+            assert self.phase == Phase.Posterior
+            assert mcmc_sample_valid is not None
+            sample_ii = jnp.where(mcmc_sample_valid, mcmc_sample_val, dist_sample)
+            self.this_annual_set_ndarray(var_key, sample_ii)
         else:
-            raise NotImplementedError(dist_sample)
+            self.this_annual_set_ndarray(var_key, dist_sample)
 
 
 def build_general_prior_shape(comp:Computation, var_key:VarKey, val_shape:tuple) -> list[int]:
@@ -483,7 +523,7 @@ def storage_nd_check_ObservationValid(comp:Computation, var_key:ObservationValid
     return pad_right
 
 
-def storage_nd_check_ObservationWeight(comp:Computation, var_key:ObservationValid, val:jnp.ndarray) -> bool:
+def storage_nd_check_ObservationWeight(comp:Computation, var_key:ObservationWeight, val:jnp.ndarray) -> bool:
     # the order of things is for the model element to define the
     # valid mask first, before setting obs_val or obs_dist,
     # in order, at least possibly, to validate the observed data
@@ -1143,7 +1183,7 @@ class Computation:
         elif isinstance(item, ObservationWeight):
             pad_right = storage_nd_check_ObservationWeight(self, item, value)
 
-        elif isinstance(item, GroupedPosterior):
+        elif isinstance(item, (GroupedPosterior, Sample, SampleValid)):
             pad_right = False
 
         else:
@@ -1256,6 +1296,11 @@ class Computation:
 
         self.set_ndarray(var_key, transposed)
 
+        # TODO: it would be at least clearer,
+        # if not more correct,
+        # to adopt the approach from _load_annual_grouped_sample, e.g.
+        # self.set_ndarray(Sample(prior_var_key=var_key), transposed)
+
         # and a separate pull_from_sample_mask array of shape [n_years]
         # and these both need to be set up as annual inputs for the scan
         # and then the ws.dist.next_carry __setitem__ needs to
@@ -1284,6 +1329,7 @@ class Computation:
         assert transposed.shape[-1] == self.n_mcmc
         assert transposed.shape[1:-1] == tuple(annual_shape)
 
+        # Ndarray Variable Metadata
         nvm = self.model.mv.annual_nd[var_key]
 
         # an annual value can be defined in essentially two ways:
@@ -1310,16 +1356,22 @@ class Computation:
                 scan_step_ii < self.model.n_prior_years,
                 (self.model.n_posterior_years,) + (1,) * (transposed.ndim - 1))
         self.set_ndarray(
-                ObservationValid(
-                    obs_var_key=Observation(
+                SampleValid(
+                    sample_var_key=Sample(
                         prior_var_key=var_key)),
                 expanded_mask)
         padding_years = self.model.n_posterior_years - self.model.n_prior_years
         assert padding_years >= 0
         padding = jnp.zeros((padding_years,) + transposed.shape[1:])
         self.set_ndarray(
-                Observation(prior_var_key=var_key),
+                Sample(prior_var_key=var_key),
                 jnp.concatenate([transposed, padding]))
+        print('load_annual_grouped_sample', jnp.concatenate([transposed, padding]))
+
+        # what needs to happen during computation is that the samples need to be
+        # pulled in if/when the val of of this variable is accessed.
+        # The mechanism for doing that is different for annual variables defined all at once,
+        # vs. stepwise.
 
     def set_phase_posterior(
             self,
@@ -1436,6 +1488,15 @@ class Computation:
                 for var_key, nvm in self.model.mv.annual_nd.items()
                 if nvm.defining_subphase == Subphase.Prep
                 }
+        if self.phase == Phase.Posterior:
+            # also include data loaded from MCMC samples
+            for var_key, nvm in self.model.mv.annual_nd.items():
+                if nvm.defining_subphase == Subphase.Step:
+                    sample_key = Sample(prior_var_key=var_key)
+                    sample_valid_key = SampleValid(sample_var_key=sample_key)
+                    if sample_key in self._ndarray_d:
+                        rval[sample_key] = self._ndarray_d[sample_key]
+                        rval[sample_valid_key] = self._ndarray_d[sample_valid_key]
         return rval
 
     def _elem_items(self, subphase:Subphase):
