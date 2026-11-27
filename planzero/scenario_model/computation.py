@@ -1366,7 +1366,6 @@ class Computation:
         self.set_ndarray(
                 Sample(prior_var_key=var_key),
                 jnp.concatenate([transposed, padding]))
-        print('load_annual_grouped_sample', jnp.concatenate([transposed, padding]))
 
         # what needs to happen during computation is that the samples need to be
         # pulled in if/when the val of of this variable is accessed.
@@ -1764,7 +1763,10 @@ def run_mcmc(
     else:
         rng_key = seed
     mcmc = MCMC(
-            NUTS(trace_fn, **model.MCMC_args.NUTS_args.as_kwargs()),
+            NUTS(trace_fn,
+                 #dense_mass=True,
+                 **model.MCMC_args.NUTS_args.as_kwargs()),
+            progress_bar=progress_bar,
             **model.MCMC_args.as_kwargs())
     mcmc.run(rng_key=rng_key)
     extra_fields = mcmc.get_extra_fields()

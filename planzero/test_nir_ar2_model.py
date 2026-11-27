@@ -11,8 +11,8 @@ from .scenario_model import compute_model
 def test_smoke_sector_ghg(
     sector=IPCC_Sector.SCS__Public_Electricity_and_Heat,
     ghg=GHG.CO2,
-    num_warmup=40,
-    num_samples=10,
+    num_warmup=500,
+    num_samples=250,
     ):
 
     model = NIR_ScenarioModel(

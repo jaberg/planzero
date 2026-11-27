@@ -166,98 +166,85 @@ class AR2_ModelElement(NIR_ModelElement):
         else:
             return self._default_empirical_prior(ws)
 
-    def _phi(self, ws):
-        # k: scaled, unconstrained
-        k1 = 2 * ws.val.general['alpha_1'] - 1  # over covers range (-1, 1)
-        k2 = 2 * ws.val.general['alpha_2'] - 1  # over covers range (-1, 1)
-        # phi: constrained to non-divergent dynamics
-        phi_2 = k2
-        phi_1 = k1 * (1 - k2)
-        return phi_1, phi_2
-
-    @define('alpha_1', prior_shape=[n_regions])
-    @define('alpha_2', prior_shape=[n_regions])
-    @define('z_1', prior_shape=[n_regions])
-    @define('z_2', prior_shape=[n_regions])
-    @define('AR_sigma_raw', prior_shape=[n_regions])
-    @define('AR_sigma', prior_shape=[n_regions])
-    @define_carry('x_prev', shape=[n_regions])
-    @define_carry('x_prev_prev', shape=[n_regions])
+    @define('phi_g_raw', prior_shape=[n_regions])
+    @define('phi_g', prior_shape=[n_regions])
+    @define('sigma_g_raw', prior_shape=[n_regions])
+    @define('sigma_g', prior_shape=[n_regions])
+    #@define('sigma_z_raw', prior_shape=[n_regions])
+    #@define('sigma_z', prior_shape=[n_regions])
+    @define('sigma_proc_init_raw', prior_shape=[n_regions])
+    @define('sigma_proc_init', prior_shape=[n_regions])
+    @define_carry('g_t', shape=[n_regions])
+    @define_carry('z_t', shape=[n_regions])
     def model_element_prepare(self, ws:Workspace):
+        # phi_g: damping the growth process
         # these are broad, almost-uniform distributions that drop near the edges
-        ws.dist.general['alpha_1'] = dist.Kumaraswamy(1.25, 1.25).expand_by((n_regions,))
-        ws.dist.general['alpha_2'] = dist.Kumaraswamy(1.25, 1.25).expand_by((n_regions,))
+        ws.dist.general['phi_g_raw'] = dist.Kumaraswamy(1.25, 1.25).expand_by((n_regions,))
+        ws.val.general['phi_g'] = ws.val.general['phi_g_raw'] * .1 + .9
 
-        # this parameter may be problematic: a large pt_sigma
-        # can cause AR_sigma's effect to collapse 
-        ws.dist.general['AR_sigma_raw'] = dist.LogNormal(-1, 0.7).expand_by((n_regions,))
-        ws.val.general['AR_sigma'] = ws.val.general['AR_sigma_raw'] / 10
+        # how much innovation do we expect in growth from year to year? quite little.
+        # growth itself should usually be a number well within (-.3, .3)
+        # and it should take 10 years to cross that range
+        ws.dist.general['sigma_g_raw'] = dist.HalfNormal().expand_by((n_regions,))
+        ws.val.general['sigma_g'] = ws.val.general['sigma_g_raw'] / 10
 
-        phi_1, phi_2 = self._phi(ws)
-        # initialize x_prev and x_prev_prev from their exact bivariate stationary
-        # distribution induced by dynamics phi. The following formulas are
-        # supposed to be doing ancestral sampling using the Cholesky decomposition
-        # of the dynamics.
-        rho1 = phi_1 / (1 - phi_2)
-        gamma0_top = (1 - phi_2) * ws.val.general['AR_sigma'] ** 2
-        gamma0_bot = (1 + phi_2) * ((1 - phi_2) ** 2 - phi_1 ** 2)
-        gamma0 = gamma0_top / gamma0_bot
+        if 0:
+            ws.dist.general['sigma_z_raw'] = dist.LogNormal(-3, 1).expand_by((n_regions,))
+            ws.val.general['sigma_z'] = ws.val.general['sigma_z_raw'] / 30
 
-        ws.dist.general['z_1'] = dist.Normal(0, ws.val.general['AR_sigma'])
-        z_1 = ws.val.general['z_1']
-        ws.val.initial_carry['x_prev_prev'] = z_1 * jnp.sqrt(gamma0)
+        ws.dist.initial_carry['g_t'] = dist.Normal(0, 0.05).expand_by((n_regions,))
+        ws.dist.initial_carry['z_t'] = dist.Normal(0, 1).expand_by((n_regions,))
 
-        ws.dist.general['z_2'] = dist.Normal(0, ws.val.general['AR_sigma'])
-        z_2 = ws.val.general['z_2']
-        ws.val.initial_carry['x_prev'] = jnp.sqrt(gamma0) * (
-                rho1 * z_1 + jnp.sqrt(1 - rho1 ** 2) * z_2)
+        ws.dist.general['sigma_proc_init_raw'] = dist.HalfNormal().expand_by((n_regions,))
+        ws.val.general['sigma_proc_init'] = ws.val.general['sigma_proc_init_raw']
 
-    @access_val('alpha_1')
-    @access_val('alpha_2')
-    @access_val('AR_sigma')
-    @define_annual('z_t', annual_shape=[n_regions])
-    @define_annual('AR_mean', annual_shape=[n_regions])
+    @access_val('phi_g') # damping on growth
+    @access_val('sigma_g') # growth innovation scale
+    #@access_val('sigma_z') # emission innovation scale
+    @access_val('sigma_proc_init') # emission innovation scale
+    @define_annual('omega_g_t', annual_shape=[n_regions]) # innovation scale on growth
+    #@define_annual('omega_z_t', annual_shape=[n_regions]) # innovation scale on emission means
+    @define_annual('process_loc', annual_shape=[n_regions])
+    @define_annual('process_scale', annual_shape=[n_regions])
     def model_element_annual_step(self, ws:Workspace):
-        phi_1, phi_2 = self._phi(ws)
 
-        # z: zero-mean noise
-        ws.dist.this_annual['z_t'] = dist.Normal(0, ws.val.general['AR_sigma'])
-        z_t = ws.val.this_annual['z_t']
+        ws.dist.this_annual['omega_g_t'] = dist.Normal(0, ws.val.general['sigma_g'])
+        #ws.dist.this_annual['omega_z_t'] = dist.Normal(0, ws.val.general['sigma_z'])
 
-        # x: zero-mean dynamic recursion (aka AR_mean)
-        ws.val.this_annual['AR_mean'] = (
-                phi_1 * ws.val.this_carry['x_prev']
-                + phi_2 * ws.val.this_carry['x_prev_prev']
-                + z_t)
-        ws.val.next_carry['x_prev'] = ws.val.this_annual['AR_mean']
-        ws.val.next_carry['x_prev_prev'] = ws.val.this_carry['x_prev']
+        ws.val.next_carry['g_t'] = (
+                ws.val.general['phi_g'] * ws.val.this_carry['g_t']
+                + ws.val.this_annual['omega_g_t'])
 
+        ws.val.next_carry['z_t'] = (
+                ws.val.this_carry['z_t']
+                + ws.val.this_carry['g_t']
+                #+ ws.val.this_annual['omega_z_t']
+                )
+
+        ws.val.this_annual['process_loc'] = ws.val.this_carry['z_t']
+        # TODO: allow this scale to decay exponentially
+        ws.val.this_annual['process_scale'] = ws.val.general['sigma_proc_init']
     
-    @access_val('AR_sigma')
-    @access_annual('AR_mean')
-    @define('mu', prior_shape=[n_regions])
-    @define('sigma_pt', prior_shape=[n_regions])
+    @access_annual('process_loc')
+    @access_annual('process_scale')
     @define_annual(ktCO2e_ca_key, annual_shape=[])
     @define_annual(ktCO2e_pt_keys, annual_shape=[])
     def model_element_postprocess(self, ws:Workspace):
         assert n_regions == len(self.ktCO2e_pt_keys)
 
-        ws.dist.general['mu'] = dist.Normal().expand_by((n_regions,))
-        ws.dist.general['sigma_pt'] = dist.LogNormal(-1, 0.7).expand_by((n_regions,))
-
         pt_loc, pt_scale, pt_scale_floor = self._empirical_prior(ws)
 
-        ktCO2e_mu = (ws.val.general['mu'] + ws.val.annual['AR_mean']) * pt_scale + pt_loc
-        extra_obs_sigma = jnp.sqrt(ws.val.general['sigma_pt'] ** 2 + ws.val.general['AR_sigma'] ** 2)
-        ktCO2e_sigma = extra_obs_sigma * pt_scale + pt_scale_floor
+        ktCO2e_mu = ws.val.annual['process_loc'] * pt_scale + pt_loc
+        ktCO2e_sigma = ws.val.annual['process_scale'] * pt_scale + pt_scale_floor
 
-        ktCO2e_sigma_ca = jnp.sqrt((ktCO2e_sigma ** 2).sum(axis=0))
-        ktCO2e_mu_ca = ktCO2e_mu.sum(axis=1) # axis=0 is years
+        # axis=0 is years
+        ktCO2e_sigma_ca = jnp.sqrt((ktCO2e_sigma ** 2).sum(axis=1))
+        ktCO2e_mu_ca = ktCO2e_mu.sum(axis=1)
 
         for ii, (pt, ktCO2e_key) in enumerate(self.ktCO2e_pt_keys.items()):
             ws.dist.annual[self.ktCO2e_pt_keys[pt]] = dist.Normal(
                     ktCO2e_mu[:, ii],
-                    ktCO2e_sigma[ii])
+                    ktCO2e_sigma[:, ii])
 
         ws.dist.annual[self.ktCO2e_ca_key] = dist.Normal(
                 ktCO2e_mu_ca,
