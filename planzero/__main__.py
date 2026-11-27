@@ -102,6 +102,11 @@ def main_generate_assets(args):
     post.registry[args.post_cls].generate_assets()
 
 
+def main_benchmark_static_normals(args):
+    from . import main_benchmark_static_normals
+    main_benchmark_static_normals.main(args)
+
+
 if __name__ == '__main__':
 
     # create the top-level parser
@@ -143,6 +148,9 @@ if __name__ == '__main__':
     parser_generate_assets = subparsers.add_parser('generate_assets')
     parser_generate_assets.add_argument('--post-cls', help='post class name')
     parser_generate_assets.set_defaults(func=main_generate_assets)
+
+    parser_benchmark_static_normals = subparsers.add_parser('benchmark_static_normals')
+    parser_benchmark_static_normals.set_defaults(func=main_benchmark_static_normals)
 
 
     args = parser.parse_args()

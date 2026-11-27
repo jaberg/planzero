@@ -10,9 +10,11 @@ import numpy as np
 import numpyro
 from jax.lax import scan as jax_scan
 from jax.typing import ArrayLike
+from numpyro import diagnostics as numpyro_diagnostics
 from numpyro.contrib.control_flow import scan as numpyro_scan
 from numpyro.distributions import Distribution, kl
 from numpyro.infer import MCMC, NUTS
+from pydantic import BaseModel, ConfigDict
 
 from .base import (
     ElementAnnualKey,
@@ -28,6 +30,8 @@ from .base import (
     ObservationValid,
     ObservationWeight,
     Phase,
+    Sample,
+    SampleValid,
     Subphase,
     ThisCarry,
     UnassignedDefinitionError,
@@ -66,6 +70,9 @@ class ScanStorage_ThisAnnual_NdarrayD:
 
     def __init__(self, scanstor:ScanStorage):
         self.scanstor = scanstor
+
+    def __contains__(self, item:VarKey) -> bool:
+        return self.scanstor.this_annual_contains_ndarray(item, sample_if_necessary=True)
 
     def __getitem__(self, item:VarKey) -> jnp.ndarray:
         return self.scanstor.this_annual_get_ndarray(item, sample_if_necessary=True)
@@ -135,34 +142,57 @@ class ScanStorage:
                 self.next_carry_d[rng_var_key])
         return rval
 
+    def this_annual_contains_ndarray(
+            self,
+            var_key:VarKey,
+            sample_if_necessary:bool,
+            ) -> bool:
+        if var_key in self.this_annual_input_d:
+            # annual variable defined prior to the scan: its value at this
+            # step is the input slice.
+            return True
+
+        if var_key in self.this_annual_output_d:
+            # annual variable defined by the scan step itself.
+            return True
+
+        rval = sample_if_necessary and var_key in self.this_annual_dist_d
+        return rval
+
     def this_annual_get_ndarray(
             self,
             var_key:VarKey,
             sample_if_necessary:bool,
             default:jnp.ndarray|None=None,
             ) -> jnp.ndarray:
-        if var_key in self.this_annual_input_d:
+        try:
             # annual variable defined prior to the scan: its value at this
             # step is the input slice.
             return self.this_annual_input_d[var_key]
+        except KeyError:
+            pass
 
         # annual variable defined by the scan step itself.
         try:
             return self.this_annual_output_d[var_key]
-        except KeyError as err:
-            if (var_key not in self.this_annual_dist_d or not sample_if_necessary):
-                if default is not None:
-                    if self.phase == Phase.Prior:
-                        return default
-                    elif self.phase == Phase.Posterior:
-                        return jnp.expand_dims(default, -1)
-                    else:
-                        raise NotImplementedError(self.phase)
-                err.add_note(f'var_key in dist_d = {var_key in self.this_annual_dist_d}')
-                err.add_note(f'sample_if_necessary = {sample_if_necessary}')
-                raise
-        self.this_annual_set_ndarray_from_dist(var_key)
-        return self.this_annual_output_d[var_key]
+        except KeyError:
+            pass
+
+        if sample_if_necessary and var_key in self.this_annual_dist_d:
+            self.this_annual_set_ndarray_from_dist(var_key)
+            return self.this_annual_output_d[var_key]
+
+        if default is not None:
+            if self.phase == Phase.Prior:
+                return default
+            elif self.phase == Phase.Posterior:
+                return jnp.expand_dims(default, -1)
+            else:
+                raise NotImplementedError(self.phase)
+        err = KeyError(var_key)
+        err.add_note(f'var_key in dist_d = {var_key in self.this_annual_dist_d}')
+        err.add_note(f'sample_if_necessary = {sample_if_necessary}')
+        raise err
 
     def this_annual_set_ndarray(self, var_key:VarKey, value:jnp.ndarray) -> None:
         if var_key in self.this_annual_input_d:
@@ -177,7 +207,10 @@ class ScanStorage:
         assert var_key in self.this_annual_dist_d
         if var_key in self.this_annual_output_d:
             # if it's already set, this method can't promise it's
-            # set to the right distribution
+            # set to the right distribution without clobbering the old distribution
+            # ... but if it clobbers it, there might be a problematic mismatch
+            # between a previously sampled value and the newly assigned distribution
+            # maybe that's okay... but think about why this is happening.
             raise NotImplementedError()
 
         # accessing an undefined value of a general key after the dist
@@ -197,10 +230,20 @@ class ScanStorage:
                 fn=dist,
                 rng_key=self._split_rng_key(),
                 )
-        if isinstance(dist_sample, jnp.ndarray):
-            self.this_annual_set_ndarray(var_key, dist_sample)
+        assert isinstance(dist_sample, jnp.ndarray)
+
+        # sample is from MCMC
+        mcmc_sample_val = self.this_annual_input_d.get(Sample(prior_var_key=var_key))
+        mcmc_sample_valid = self.this_annual_input_d.get(
+                SampleValid(sample_var_key=Sample(prior_var_key=var_key)))
+
+        if mcmc_sample_val is not None:
+            assert self.phase == Phase.Posterior
+            assert mcmc_sample_valid is not None
+            sample_ii = jnp.where(mcmc_sample_valid, mcmc_sample_val, dist_sample)
+            self.this_annual_set_ndarray(var_key, sample_ii)
         else:
-            raise NotImplementedError(dist_sample)
+            self.this_annual_set_ndarray(var_key, dist_sample)
 
 
 def build_general_prior_shape(comp:Computation, var_key:VarKey, val_shape:tuple) -> list[int]:
@@ -384,8 +427,8 @@ def storage_nd_check_NextCarry(comp:Computation, var_key:NextCarry, val:jnp.ndar
 
 
 def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
-    """Is it okay for an obs, obs_valid, or obs_weight, obs_dist to have obs_shape?
-    as it relates to prior_var_key?
+    """Return True to indicate pad_right.
+    This function raises an exception on invalid shape (shape check by side-effect).
     """
     if isinstance(prior_var_key, ElementGeneralKey):
         # the observation can have fewer, equal, or more dimensions than the
@@ -437,17 +480,17 @@ def storage_nd_check_observation_shape(comp, prior_var_key, obs_shape) -> bool:
 
         elif comp.phase == Phase.Posterior:
             posterior_shape = build_annual_posterior_shape(comp, prior_var_key, ())
+            assert len(posterior_shape)
             if len(obs_shape) != len(posterior_shape):
                 raise NotImplementedError(
+                        'why?',
                         prior_var_key, posterior_shape, obs_shape)
-            assert len(posterior_shape)
-            assert tuple(posterior_shape[:-1]) == obs_shape[:-1], (
+            if obs_shape[0] != posterior_shape[0]:
+                raise NotImplementedError(
+                        'is this really necessary?',
                         prior_var_key, posterior_shape, obs_shape)
-            assert (
-                    posterior_shape[-1] == obs_shape[-1]
-                    or obs_shape[-1] == 1
-                    ), (
-                        prior_var_key, posterior_shape, obs_shape)
+            for osi, psi in zip(obs_shape, posterior_shape):
+                assert osi in (1, psi), (prior_var_key, obs_shape, posterior_shape)
 
             return False # don't pad
         else:
@@ -480,7 +523,7 @@ def storage_nd_check_ObservationValid(comp:Computation, var_key:ObservationValid
     return pad_right
 
 
-def storage_nd_check_ObservationWeight(comp:Computation, var_key:ObservationValid, val:jnp.ndarray) -> bool:
+def storage_nd_check_ObservationWeight(comp:Computation, var_key:ObservationWeight, val:jnp.ndarray) -> bool:
     # the order of things is for the model element to define the
     # valid mask first, before setting obs_val or obs_dist,
     # in order, at least possibly, to validate the observed data
@@ -1140,7 +1183,7 @@ class Computation:
         elif isinstance(item, ObservationWeight):
             pad_right = storage_nd_check_ObservationWeight(self, item, value)
 
-        elif isinstance(item, GroupedPosterior):
+        elif isinstance(item, (GroupedPosterior, Sample, SampleValid)):
             pad_right = False
 
         else:
@@ -1253,6 +1296,11 @@ class Computation:
 
         self.set_ndarray(var_key, transposed)
 
+        # TODO: it would be at least clearer,
+        # if not more correct,
+        # to adopt the approach from _load_annual_grouped_sample, e.g.
+        # self.set_ndarray(Sample(prior_var_key=var_key), transposed)
+
         # and a separate pull_from_sample_mask array of shape [n_years]
         # and these both need to be set up as annual inputs for the scan
         # and then the ws.dist.next_carry __setitem__ needs to
@@ -1281,41 +1329,48 @@ class Computation:
         assert transposed.shape[-1] == self.n_mcmc
         assert transposed.shape[1:-1] == tuple(annual_shape)
 
+        # Ndarray Variable Metadata
         nvm = self.model.mv.annual_nd[var_key]
 
         # an annual value can be defined in essentially two ways:
         # 1. all at once in either of model_element_prepare or model_element_postprocess
         # 2. stepwise in a model_element_annual_step
         #
-        if nvm.defining_subphase in (Subphase.Prep, Subphase.Proc):
+        # Either way, the loaded samples represent the observation of the initial
+        # years of the annual variable.
+        # If it's (2) then the annual_step ws.dist.this_annual assignment in Posterior
+        # phase needs to ignore input covered by these data and
+        # the annual_step  ws.val.this_annual read needs to either pull from this data
+        # or the ws.dist.this_annual distribution, depending on the year.
 
-            # If this annual value has been defined all at once, then `transposed`
-            # should be used as if the following appeared prior to its definition
-            # ws.obs_valid.annual[var_key] = year_idxs < n_prior_years
-            # ws.obs_val.annual[var_key] = jnp.where( year_idxs < n_prior_years, transposed, 0)
+        assert nvm.defining_subphase in (Subphase.Prep, Subphase.Proc, Subphase.Step)
 
-            # don't lookup scan_step_ii_key because it isn't defined yet
-            scan_step_ii = jnp.arange(self.model.n_posterior_years)
-            expanded_mask = jnp.reshape(
-                    scan_step_ii < self.model.n_prior_years,
-                    (self.model.n_posterior_years,) + (1,) * (transposed.ndim - 1))
-            self.set_ndarray(
-                    ObservationValid(
-                        obs_var_key=Observation(
-                            prior_var_key=var_key)),
-                    expanded_mask)
-            padding_years = self.model.n_posterior_years - self.model.n_prior_years
-            assert padding_years >= 0
-            padding = jnp.zeros((padding_years,) + transposed.shape[1:])
-            self.set_ndarray(
-                    Observation(prior_var_key=var_key),
-                    jnp.concatenate([transposed, padding]))
-        elif nvm.defining_subphase == Subphase.Step:
-            # If this annual value has been defined stepwise, then the
-            # technique used in _load_nextcarry_grouped_sample can be adapted.
-            raise NotImplementedError()
-        else:
-            raise NotImplementedError(nvm.defining_subphase)
+        # If this annual value has been defined all at once, then `transposed`
+        # should be used as if the following appeared prior to its definition
+        # ws.obs_valid.annual[var_key] = year_idxs < n_prior_years
+        # ws.obs_val.annual[var_key] = jnp.where( year_idxs < n_prior_years, transposed, 0)
+
+        # don't lookup scan_step_ii_key because it isn't defined yet
+        scan_step_ii = jnp.arange(self.model.n_posterior_years)
+        expanded_mask = jnp.reshape(
+                scan_step_ii < self.model.n_prior_years,
+                (self.model.n_posterior_years,) + (1,) * (transposed.ndim - 1))
+        self.set_ndarray(
+                SampleValid(
+                    sample_var_key=Sample(
+                        prior_var_key=var_key)),
+                expanded_mask)
+        padding_years = self.model.n_posterior_years - self.model.n_prior_years
+        assert padding_years >= 0
+        padding = jnp.zeros((padding_years,) + transposed.shape[1:])
+        self.set_ndarray(
+                Sample(prior_var_key=var_key),
+                jnp.concatenate([transposed, padding]))
+
+        # what needs to happen during computation is that the samples need to be
+        # pulled in if/when the val of of this variable is accessed.
+        # The mechanism for doing that is different for annual variables defined all at once,
+        # vs. stepwise.
 
     def set_phase_posterior(
             self,
@@ -1432,6 +1487,15 @@ class Computation:
                 for var_key, nvm in self.model.mv.annual_nd.items()
                 if nvm.defining_subphase == Subphase.Prep
                 }
+        if self.phase == Phase.Posterior:
+            # also include data loaded from MCMC samples
+            for var_key, nvm in self.model.mv.annual_nd.items():
+                if nvm.defining_subphase == Subphase.Step:
+                    sample_key = Sample(prior_var_key=var_key)
+                    sample_valid_key = SampleValid(sample_var_key=sample_key)
+                    if sample_key in self._ndarray_d:
+                        rval[sample_key] = self._ndarray_d[sample_key]
+                        rval[sample_valid_key] = self._ndarray_d[sample_valid_key]
         return rval
 
     def _elem_items(self, subphase:Subphase):
@@ -1578,47 +1642,142 @@ class Computation:
                 self._ndarray_d_forgotten[key] = True
 
 
-    def run(self):
+    def run(self, as_mcmc_trace=False):
         assert not self.has_run
         self._run_prep()
         self._run_step()
         self._run_proc()
-        if self.phase == Phase.Posterior:
-            self._forget_non_outputs()
-        _attempt_release_jax_memory()
+        if not as_mcmc_trace:
+            def maybe_block_until_ready(x):
+                if hasattr(x, 'block_until_ready'):
+                    x.block_until_ready()
+            jax.tree_util.tree_map(maybe_block_until_ready,
+                                   self._ndarray_d)
+            if self.phase == Phase.Posterior:
+                self._forget_non_outputs()
+            _attempt_release_jax_memory()
         self.has_run = True
+
+
+class MCMCDiagnostics(BaseModel):
+    """Convergence diagnostics computed from NumPyro's chain-grouped draws.
+
+    Keys are sample-site names; `Computation.sample_sites` maps these to VarKeys.
+    Each value has the same shape as a single draw from that sample site.
+    """
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    r_hat: dict[str, np.ndarray]
+    ess: dict[str, np.ndarray]
+    n_chains: int
+    n_draws: int
+    n_divergences: int | None = None
+    skipped_sites: tuple[str, ...] = ()
+
+
+def compute_mcmc_diagnostics(
+        mcmc:MCMC,
+        n_divergences:int|None=None,
+        ) -> MCMCDiagnostics:
+    """Compute split Rhat and ESS without adding a dependency on ArviZ.
+
+    Uses the chain-grouped samples, before `Computation.set_phase_posterior`
+    flattens the chain and draw dimensions into a single mcmc dimension.
+    Split Rhat works with one chain by comparing its two halves.
+    """
+    grouped_samples = {
+            site: np.asarray(draws)
+            for site, draws in mcmc.get_samples(group_by_chain=True).items()
+            }
+    if grouped_samples:
+        first = next(iter(grouped_samples.values()))
+        n_chains, n_draws = first.shape[:2]
+    else:
+        n_chains = getattr(mcmc, 'num_chains', 1)
+        n_draws = getattr(mcmc, 'num_samples', 0)
+
+    r_hat = {}
+    ess = {}
+    skipped_sites = []
+    for site, draws in grouped_samples.items():
+        # split_gelman_rubin needs at least 4 draws per chain;
+        # effective_sample_size needs at least 2.
+        if draws.shape[1] < 4:
+            skipped_sites.append(site)
+            continue
+        r_hat[site] = np.asarray(
+                numpyro_diagnostics.split_gelman_rubin(draws))
+        ess[site] = np.asarray(
+                numpyro_diagnostics.effective_sample_size(draws))
+
+    return MCMCDiagnostics(
+            r_hat=r_hat,
+            ess=ess,
+            n_chains=n_chains,
+            n_draws=n_draws,
+            n_divergences=n_divergences,
+            skipped_sites=tuple(skipped_sites),
+            )
+
+
+def _format_diagnostic_value(value:np.ndarray) -> str:
+    value = np.asarray(value)
+    if value.ndim == 0:
+        return f'{float(value):.3f}'
+    return f'[{np.nanmin(value):.3f}, {np.nanmax(value):.3f}]'
+
+
+def log_mcmc_diagnostics(diagnostics:MCMCDiagnostics) -> None:
+    """Log a compact summary; full per-element values remain on the object."""
+    print('planzero MCMC diagnostics:')
+    print(f'  chains={diagnostics.n_chains} draws={diagnostics.n_draws}'
+          + (f' divergences={diagnostics.n_divergences}'
+             if diagnostics.n_divergences is not None else ''))
+    if diagnostics.skipped_sites:
+        print('  skipped sites (too few draws):'
+              + ' ' + ', '.join(diagnostics.skipped_sites))
+    for site in sorted(set(diagnostics.r_hat) | set(diagnostics.ess)):
+        parts = []
+        if site in diagnostics.r_hat:
+            parts.append('r_hat=' + _format_diagnostic_value(
+                    diagnostics.r_hat[site]))
+        if site in diagnostics.ess:
+            parts.append('ess=' + _format_diagnostic_value(
+                    diagnostics.ess[site]))
+        print(f'  {site}: ' + ' '.join(parts))
 
 
 def run_mcmc(
         model:ScenarioModel,
         seed:int|ArrayLike,
-        progress_bar=True,
+        progress_bar:bool=True,
         ):
     def trace_fn():
         # TODO verify
         # the seed value is ignored
         # when running via MCMC
         obj = Computation(model=model, rng_key=jrandom.key(1))
-        obj.run()
+        obj.run(as_mcmc_trace=True)
     if isinstance(seed, int):
         rng_key = jrandom.key(seed=seed)
     else:
         rng_key = seed
     mcmc = MCMC(
             NUTS(trace_fn,
-                 target_accept_prob=0.995,
-                 #init_strategy=init_to_sample,
-                 ),
-            num_warmup=model.num_warmup,
-            thinning=model.thinning,
-            num_samples=model.num_samples,
-            progress_bar=progress_bar)
+                 #dense_mass=True,
+                 **model.MCMC_args.NUTS_args.as_kwargs()),
+            progress_bar=progress_bar,
+            **model.MCMC_args.as_kwargs())
     mcmc.run(rng_key=rng_key)
     extra_fields = mcmc.get_extra_fields()
+    n_divergences = None
     if "diverging" in extra_fields:
-        n_divergences = jnp.sum(extra_fields["diverging"])
-        assert n_divergences <= model.n_divergences_acceptable, (
-                n_divergences, model.n_divergences_acceptable)
+        n_divergences = int(jnp.sum(extra_fields["diverging"]))
+        assert n_divergences <= model.MCMC_args.n_divergences_acceptable, (
+                n_divergences, model.MCMC_args.n_divergences_acceptable)
+    diagnostics = compute_mcmc_diagnostics(mcmc, n_divergences=n_divergences)
+    log_mcmc_diagnostics(diagnostics)
+    mcmc.planzero_mcmc_diagnostics = diagnostics
     return mcmc
 
 

@@ -111,11 +111,12 @@ class SiteInference:
                 last_forecast_year=base.mv.year_0 + base.mv.n_posterior_years - 1,
                 data_cutoff=base.data_cutoff,
                 expect_all_sectors=base.expect_all_sectors,
-                num_warmup=base.num_warmup,
-                num_samples=base.num_samples,
-                thinning=base.thinning,
+                num_warmup=1,
+                num_samples=1,
                 add_builtins=False,
                 )
+        ablation.MCMC_args = base.MCMC_args
+        ablation._MCMC_args_by_group = dict(base._MCMC_args_by_group)
         for elem_id, elem in base.model_elements.items():
             if elem_id != strategy_elem_id:
                 ablation.add_element(

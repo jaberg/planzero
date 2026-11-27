@@ -170,7 +170,7 @@ def _shapes_from_comp(comp:Computation) -> dict[VarKey, list[int]]:
     for vk, dist in comp._dist_d.items():
         dshape = dist.shape()
         rval.setdefault(vk, dshape)
-        assert rval[vk] == dshape
+        assert rval[vk] == dshape, (vk, rval[vk], dshape)
     return rval
 
 

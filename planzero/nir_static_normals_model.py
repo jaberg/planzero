@@ -17,6 +17,8 @@ from .nir_model import (
 )
 from .scenario_model import (
     AnnualKey,
+    MCMC_Arguments,
+    NUTS_Arguments,
     Workspace,
     define,
     define_annual,
@@ -240,6 +242,7 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                 num_samples=500,
                 expect_all_sectors=(sectors==IPCC_Sector),
                 )
+
         # num samples can be larger if scenario_model/computation.py
         # can free some memory as it goes... as of writing, it does not.
         for sector in IPCC_Sector:
@@ -257,6 +260,15 @@ class StaticNormals_ScenarioModel(NIR_ScenarioModel):
                                 snorm_elem.ktCO2e_pt_keys.values())
                         self.mv.forgettable_dist_keys.add(
                                 snorm_elem.ktCO2e_ca_key)
+
+                        if (sector == IPCC_Sector.Transport__Road__Light_Duty_Gasoline_Trucks
+                            and ghg == GHG.CO2):
+                            self._MCMC_args_by_group[mcmc_group] = MCMC_Arguments(
+                                    num_warmup=self.MCMC_args.num_warmup,
+                                    num_samples=self.MCMC_args.num_samples,
+                                    NUTS_args=NUTS_Arguments(
+                                        target_accept_prob=0.995))
+
 
         self.add_emissions_sums()
         self.add_element_prenir_2025_m04()

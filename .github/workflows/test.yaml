@@ -43,7 +43,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: |
             base_requirements.txt
@@ -57,6 +57,9 @@ jobs:
 
       - name: Python package versions
         run: pip freeze
+
+      - name: Benchmark Static Normals
+        run: python -m planzero benchmark_static_normals
 
       # Static Normals 2024-12-31
 

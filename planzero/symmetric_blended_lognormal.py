@@ -532,4 +532,4 @@ def kl_divergence(p:SymmetricBlendedLogNormal, q:dist.Normal) -> jnp.ndarray:  #
         assert rval.shape == p.batch_shape
         return rval
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(q.batch_shape, p.batch_shape)
